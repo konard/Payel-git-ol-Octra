@@ -2,81 +2,63 @@ package grpc
 
 import (
 	"context"
-	"fmt"
-	"google.golang.org/grpc"
 	"log"
-	"manager/internal/fetcher/grpc/managerpb"
 	"net"
+
+	"manager/internal/fetcher/grpc/managerpb"
+
+	"google.golang.org/grpc"
 )
 
-// ManagerHandler — интерфейс для обработки запросов на создание менеджеров
-type ManagerHandler interface {
-	CreateManagers(ctx context.Context, req *managerpb.CreateManagersRequest) (*managerpb.CreateManagersResponse, error)
-	GetTaskStatus(ctx context.Context, req *managerpb.TaskStatusRequest) (*managerpb.TaskStatusResponse, error)
-}
-
+// Server — gRPC сервер manager сервиса
 type Server struct {
 	managerpb.UnimplementedManagerServiceServer
-	handler ManagerHandler
 }
 
-func NewServer(handler ManagerHandler) *Server {
-	return &Server{
-		handler: handler,
-	}
-}
-
+// CreateManagers принимает запрос на создание менеджеров
 func (s *Server) CreateManagers(ctx context.Context, req *managerpb.CreateManagersRequest) (*managerpb.CreateManagersResponse, error) {
-	log.Printf("Получен запрос на создание менеджеров: task=%s, username=%s, quantity=%d", req.TaskId, req.Username, req.QuantityManagers)
-	log.Printf("Роли: %v", req.Roles)
+	log.Printf("Получена задача: %s, менеджеров: %d, роли: %v", req.TaskId, req.QuantityManagers, req.Roles)
 
-	resp, err := s.handler.CreateManagers(ctx, req)
-	if err != nil {
-		log.Printf("Ошибка создания менеджеров: %v", err)
-		return &managerpb.CreateManagersResponse{
-			TaskId:  req.TaskId,
-			Status:  "error",
-			Message: err.Error(),
-		}, nil
+	managers := make([]*managerpb.ManagerInfo, 0, len(req.Roles))
+	for i, role := range req.Roles {
+		managers = append(managers, &managerpb.ManagerInfo{
+			Id:      "manager-" + string(rune(i)),
+			Role:    role,
+			AgentId: "agent-" + string(rune(i)),
+			Status:  "active",
+		})
 	}
 
-	return resp, nil
+	return &managerpb.CreateManagersResponse{
+		TaskId:          req.TaskId,
+		Status:          "success",
+		Message:         "Managers created",
+		CreatedManagers: int32(len(managers)),
+		Managers:        managers,
+	}, nil
 }
 
+// GetTaskStatus возвращает статус задачи
 func (s *Server) GetTaskStatus(ctx context.Context, req *managerpb.TaskStatusRequest) (*managerpb.TaskStatusResponse, error) {
-	log.Printf("Запрос статуса задачи: task=%s", req.TaskId)
-
-	resp, err := s.handler.GetTaskStatus(ctx, req)
-	if err != nil {
-		log.Printf("Ошибка получения статуса: %v", err)
-		return &managerpb.TaskStatusResponse{
-			TaskId:       req.TaskId,
-			Status:       "error",
-			ErrorMessage: err.Error(),
-		}, nil
-	}
-
-	return resp, nil
+	return &managerpb.TaskStatusResponse{
+		TaskId:        req.TaskId,
+		Status:        "processing",
+		ManagersCount: 0,
+		WorkersCount:  0,
+	}, nil
 }
 
-func Start(port string, handler ManagerHandler) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+// Start запускает gRPC сервер
+func Start(port string) error {
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %w", err)
+		return err
 	}
 
-	grpcServer := grpc.NewServer(
-		grpc.MaxRecvMsgSize(100*1024*1024),
-		grpc.MaxSendMsgSize(100*1024*1024),
-	)
+	server := grpc.NewServer()
+	managerpb.RegisterManagerServiceServer(server, &Server{})
 
-	managerpb.RegisterManagerServiceServer(grpcServer, NewServer(handler))
+	log.Printf("Manager gRPC сервер запущен на порту %s", port)
 
-	log.Printf("gRPC сервер manager запущен на порту %s", port)
-
-	if err := grpcServer.Serve(lis); err != nil {
-		return fmt.Errorf("failed to serve: %w", err)
-	}
-
-	return nil
+	return server.Serve(lis)
 }

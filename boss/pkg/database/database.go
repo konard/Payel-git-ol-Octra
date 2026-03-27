@@ -23,8 +23,10 @@ func InitDb() {
 	// Авто-миграция всех таблиц
 	migrations := []interface{}{
 		&models.Task{},
+		&models.BossDecision{},
 		&models.Manager{},
 		&models.Worker{},
+		&models.WorkerSolution{},
 	}
 
 	for _, model := range migrations {

@@ -2,77 +2,49 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
 	"boss/internal/fetcher/grpc/bosspb"
+	"boss/internal/service"
 
 	"google.golang.org/grpc"
 )
 
-type TaskHandler interface {
-	GenerateProject(ctx context.Context, req *bosspb.TaskRequest) ([]byte, error)
-}
-
+// Server — gRPC сервер boss сервиса
 type Server struct {
-	bosspb.UnimplementedTaskServiceServer
-	handler TaskHandler
+	bosspb.UnimplementedBossServiceServer
+	service *service.BossService
 }
 
-func NewServer(handler TaskHandler) *Server {
+func NewServer(service *service.BossService) *Server {
 	return &Server{
-		handler: handler,
+		service: service,
 	}
 }
 
-func (s *Server) Task(ctx context.Context, req *bosspb.TaskRequest) (*bosspb.TaskResponse, error) {
-	log.Printf("Получена задача: user=%s, task=%s, title=%s", req.Username, req.Taskname, req.Title)
-
-	// Генерируем проект через хендлер
-	zipData, err := s.handler.GenerateProject(ctx, req)
-	if err != nil {
-		log.Printf("Ошибка генерации: %v", err)
-		return &bosspb.TaskResponse{
-			Taskname:     req.Taskname,
-			Title:        req.Title,
-			Description:  req.Description,
-			Status:       "error",
-			ErrorMessage: err.Error(),
-		}, nil
-	}
-
-	log.Printf("Задача выполнена: размер архива=%d байт", len(zipData))
-
-	return &bosspb.TaskResponse{
-		Taskname:      req.Taskname,
-		Title:         req.Title,
-		Description:   req.Description,
-		Solution:      zipData,
-		Status:        "success",
-		ArchiveSize:   int64(len(zipData)),
-		ArchiveFormat: "zip",
-	}, nil
+func (s *Server) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequest) (*bosspb.BossDecision, error) {
+	return s.service.CreateTask(ctx, req)
 }
 
-func Start(port string, handler TaskHandler) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusRequest) (*bosspb.TaskStatusResponse, error) {
+	return s.service.GetTaskStatus(ctx, req)
+}
+
+// Start запускает gRPC сервер
+func Start(port string, service *service.BossService) error {
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %w", err)
+		return err
 	}
 
-	grpcServer := grpc.NewServer(
+	server := grpc.NewServer(
 		grpc.MaxRecvMsgSize(100*1024*1024),
 		grpc.MaxSendMsgSize(100*1024*1024),
 	)
+	bosspb.RegisterBossServiceServer(server, NewServer(service))
 
-	bosspb.RegisterTaskServiceServer(grpcServer, NewServer(handler))
+	log.Printf("Boss gRPC сервер запущен на порту %s", port)
 
-	log.Printf("gRPC сервер запущен на порту %s", port)
-
-	if err := grpcServer.Serve(lis); err != nil {
-		return fmt.Errorf("failed to serve: %w", err)
-	}
-
-	return nil
+	return server.Serve(lis)
 }

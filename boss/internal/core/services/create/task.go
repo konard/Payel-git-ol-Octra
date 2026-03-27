@@ -59,7 +59,6 @@ func (t *Tasker) CreateNewTask(ctx context.Context, req *bosspb.TaskRequest) (*m
 	return task, nil
 }
 
-// GetTask получает задачу по ID
 func (t *Tasker) GetTask(ctx context.Context, taskID uuid.UUID) (*models.Task, error) {
 	var task models.Task
 	if err := database.Db.Preload("Managers").Preload("Workers").First(&task, "id = ?", taskID).Error; err != nil {
@@ -68,7 +67,6 @@ func (t *Tasker) GetTask(ctx context.Context, taskID uuid.UUID) (*models.Task, e
 	return &task, nil
 }
 
-// UpdateTaskStatus обновляет статус задачи
 func (t *Tasker) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID, status string) error {
 	if err := database.Db.Model(&models.Task{}).Where("id = ?", taskID).Update("status", status).Error; err != nil {
 		return fmt.Errorf("failed to update task status: %w", err)

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package boss;
+
+option go_package = "boss/internal/fetcher/grpc/bosspb";
+
+import "google/protobuf/empty.proto";
+
+// Запрос от apigateway к boss
+message CreateTaskRequest {
+  string user_id = 1;
+  string username = 2;
+  string title = 3;
+  string description = 4;
+  repeated string tokens = 5;
+  map<string, string> meta = 6;
+}
+
+// Решение босса
+message BossDecision {
+  string task_id = 1;
+  string status = 2;  // planning, managers_assigned, processing, done, error
+  
+  // Босс расписывает сколько менеджеров и каких ролей нужно
+  int32 managers_count = 3;
+  repeated ManagerRole manager_roles = 4;
+  
+  // Техническое описание задачи для менеджеров
+  string technical_description = 5;
+  repeated string tech_stack = 6;
+  string architecture_notes = 7;
+  
+  string error_message = 8;
+}
+
+// Роль менеджера
+message ManagerRole {
+  string role = 1;  // "frontend", "backend", "testing", "deployment"
+  string description = 2;
+  int32 priority = 3;
+}
+
+// Запрос статуса задачи
+message TaskStatusRequest {
+  string task_id = 1;
+}
+
+message TaskStatusResponse {
+  string task_id = 1;
+  string status = 2;
+  string progress = 3;  // "25%", "backend done", etc.
+  string result_url = 4;
+}
+
+service BossService {
+  rpc CreateTask(CreateTaskRequest) returns (BossDecision);
+  rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
+}

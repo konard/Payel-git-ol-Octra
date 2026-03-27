@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package worker;
+
+option go_package = "worker/internal/fetcher/grpc/workerpb";
+
+// Запрос от manager к worker
+message AssignWorkersRequest {
+  string task_id = 1;
+  string manager_id = 2;
+  string manager_role = 3;  // "frontend", "backend", "testing"
+  repeated WorkerRole worker_roles = 4;
+  string task_md = 5;       // TASK.md от менеджера
+}
+
+// Ответ worker
+message AssignWorkersResponse {
+  string task_id = 1;
+  string status = 2;  // success, error, needs_revision
+  repeated WorkerInfo workers = 3;
+  string error_message = 4;
+}
+
+message WorkerInfo {
+  string id = 1;
+  string role = 2;
+  string status = 3;  // thinking, coding, testing, done, error
+  string solution_md = 4;  // SOLUTION.md
+  repeated string files = 5;  // Список созданных файлов
+}
+
+// Результат работы воркера
+message WorkerResult {
+  string task_id = 1;
+  string manager_id = 2;
+  string worker_id = 3;
+  
+  // Файлы проекта
+  map<string, bytes> files = 4;  // path -> content
+  
+  // Отчёт
+  string solution_md = 5;
+  string logs = 6;
+  bool success = 7;
+}
+
+// Запрос на проверку результата
+message ReviewRequest {
+  string task_id = 1;
+  string manager_id = 2;
+  WorkerResult result = 3;
+}
+
+message ReviewResponse {
+  bool approved = 1;
+  string feedback = 2;  // Если не одобрено - что исправить
+}
+
+service WorkerService {
+  rpc AssignWorkers(AssignWorkersRequest) returns (AssignWorkersResponse);
+  rpc SubmitResult(WorkerResult) returns (ReviewResponse);
+}

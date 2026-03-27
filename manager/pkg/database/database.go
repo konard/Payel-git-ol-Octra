@@ -5,7 +5,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
-	"manager/pkg/database/models"
+	"manager/pkg/models"
 )
 
 var Db *gorm.DB
