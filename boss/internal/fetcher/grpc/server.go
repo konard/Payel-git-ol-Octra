@@ -29,13 +29,28 @@ func NewServer(handler TaskHandler) *Server {
 func (s *Server) Task(ctx context.Context, req *bosspb.TaskRequest) (*bosspb.TaskResponse, error) {
 	log.Printf("Получена задача: user=%s, task=%s, title=%s", req.Username, req.Taskname, req.Title)
 
+	// Генерируем проект через хендлер
+	zipData, err := s.handler.GenerateProject(ctx, req)
+	if err != nil {
+		log.Printf("Ошибка генерации: %v", err)
+		return &bosspb.TaskResponse{
+			Taskname:     req.Taskname,
+			Title:        req.Title,
+			Description:  req.Description,
+			Status:       "error",
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	log.Printf("Задача выполнена: размер архива=%d байт", len(zipData))
+
 	return &bosspb.TaskResponse{
 		Taskname:      req.Taskname,
 		Title:         req.Title,
 		Description:   req.Description,
-		Solution:      nil,
+		Solution:      zipData,
 		Status:        "success",
-		ArchiveSize:   int64(len("")),
+		ArchiveSize:   int64(len(zipData)),
 		ArchiveFormat: "zip",
 	}, nil
 }

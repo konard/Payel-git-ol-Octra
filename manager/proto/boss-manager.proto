@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package manager;
+
+option go_package = "manager/internal/fetcher/grpc/managerpb";
+
+// Запрос от boss к manager на создание команды менеджеров
+message CreateManagersRequest {
+  string task_id = 1;           // ID задачи в БД
+  string taskname = 2;
+  string title = 3;
+  string description = 4;
+  string username = 5;          // Кто создал задачу
+
+  int32 quantity_managers = 6;  // Количество менеджеров
+  repeated string roles = 7;    // Роли менеджеров: ["frontend", "backend", "deployment", ...]
+
+  map<string, string> metadata = 8;  // Дополнительные метаданные
+}
+
+// Ответ manager на запрос
+message CreateManagersResponse {
+  string task_id = 1;
+  string status = 2;            // "success", "error", "processing"
+  string message = 3;           // Сообщение или ошибка
+
+  int32 created_managers = 4;   // Количество созданных менеджеров
+  repeated ManagerInfo managers = 5;  // Информация о созданных менеджерах
+}
+
+// Информация о менеджере
+message ManagerInfo {
+  string id = 1;
+  string role = 2;
+  string agent_id = 3;
+  string status = 4;
+}
+
+// Запрос на получение статуса задачи
+message TaskStatusRequest {
+  string task_id = 1;
+}
+
+// Статус задачи
+message TaskStatusResponse {
+  string task_id = 1;
+  string status = 2;            // pending, processing, managers_assigned, workers_assigned, done, error
+  string title = 3;
+  string description = 4;
+
+  int32 managers_count = 5;
+  int32 workers_count = 6;
+
+  string error_message = 7;
+}
+
+// Сервис для управления менеджерами
+service ManagerService {
+  // Создать команду менеджеров для задачи
+  rpc CreateManagers(CreateManagersRequest) returns (CreateManagersResponse);
+
+  // Получить статус задачи
+  rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
+}

@@ -1,11 +1,10 @@
-module boss
+module manager
 
 go 1.25.4
 
 require (
 	github.com/Payel-git-ol/azure/env v0.0.0-20260323131844-c3f97980771f
 	github.com/google/uuid v1.6.0
-	github.com/yhwhpe/llm-unified-client v1.2.2
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/postgres v1.6.0

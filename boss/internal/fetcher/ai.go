@@ -41,11 +41,12 @@ func (s *HttpManager) SendTaskWithAiBoss(req *bosspb.TaskRequest) {
 		Description: req.Description,
 	}
 
-	mess := string(promt) + task.Title + task.Description
+	mess := "Promt: " + string(promt) + "Title task: " + task.Title + "Description task: " + task.Description
 
 	response, err := llm.GenerateSimple(context.Background(), client, mess)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Println(response.Content)
 }
