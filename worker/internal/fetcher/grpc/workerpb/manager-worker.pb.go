@@ -161,6 +161,7 @@ type WorkerResult struct {
 	SolutionMd    string                 `protobuf:"bytes,5,opt,name=solution_md,json=solutionMd,proto3" json:"solution_md,omitempty"`
 	Logs          string                 `protobuf:"bytes,6,opt,name=logs,proto3" json:"logs,omitempty"`
 	Success       bool                   `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // tokens, model, modelUrl
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -244,6 +245,13 @@ func (x *WorkerResult) GetSuccess() bool {
 	return false
 }
 
+func (x *WorkerResult) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 // Запрос от manager к worker
 type AssignWorkersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -252,6 +260,7 @@ type AssignWorkersRequest struct {
 	ManagerRole   string                 `protobuf:"bytes,3,opt,name=manager_role,json=managerRole,proto3" json:"manager_role,omitempty"`
 	WorkerRoles   []*WorkerRole          `protobuf:"bytes,4,rep,name=worker_roles,json=workerRoles,proto3" json:"worker_roles,omitempty"`
 	TaskMd        string                 `protobuf:"bytes,5,opt,name=task_md,json=taskMd,proto3" json:"task_md,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // tokens, model, modelUrl
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -319,6 +328,13 @@ func (x *AssignWorkersRequest) GetTaskMd() string {
 		return x.TaskMd
 	}
 	return ""
+}
+
+func (x *AssignWorkersRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
 }
 
 // Ответ worker
@@ -519,7 +535,7 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1f\n" +
 	"\vsolution_md\x18\x04 \x01(\tR\n" +
 	"solutionMd\x12\x14\n" +
-	"\x05files\x18\x05 \x03(\tR\x05files\"\xa3\x02\n" +
+	"\x05files\x18\x05 \x03(\tR\x05files\"\xa0\x03\n" +
 	"\fWorkerResult\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
@@ -529,18 +545,26 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\vsolution_md\x18\x05 \x01(\tR\n" +
 	"solutionMd\x12\x12\n" +
 	"\x04logs\x18\x06 \x01(\tR\x04logs\x12\x18\n" +
-	"\asuccess\x18\a \x01(\bR\asuccess\x1a8\n" +
+	"\asuccess\x18\a \x01(\bR\asuccess\x12>\n" +
+	"\bmetadata\x18\b \x03(\v2\".worker.WorkerResult.MetadataEntryR\bmetadata\x1a8\n" +
 	"\n" +
 	"FilesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"\xc1\x01\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc6\x02\n" +
 	"\x14AssignWorkersRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
 	"manager_id\x18\x02 \x01(\tR\tmanagerId\x12!\n" +
 	"\fmanager_role\x18\x03 \x01(\tR\vmanagerRole\x125\n" +
 	"\fworker_roles\x18\x04 \x03(\v2\x12.worker.WorkerRoleR\vworkerRoles\x12\x17\n" +
-	"\atask_md\x18\x05 \x01(\tR\x06taskMd\"\x9b\x01\n" +
+	"\atask_md\x18\x05 \x01(\tR\x06taskMd\x12F\n" +
+	"\bmetadata\x18\x06 \x03(\v2*.worker.AssignWorkersRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9b\x01\n" +
 	"\x15AssignWorkersResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12,\n" +
@@ -570,7 +594,7 @@ func file_manager_worker_proto_rawDescGZIP() []byte {
 	return file_manager_worker_proto_rawDescData
 }
 
-var file_manager_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_manager_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_manager_worker_proto_goTypes = []any{
 	(*WorkerRole)(nil),            // 0: worker.WorkerRole
 	(*WorkerInfo)(nil),            // 1: worker.WorkerInfo
@@ -580,21 +604,25 @@ var file_manager_worker_proto_goTypes = []any{
 	(*ReviewRequest)(nil),         // 5: worker.ReviewRequest
 	(*ReviewResponse)(nil),        // 6: worker.ReviewResponse
 	nil,                           // 7: worker.WorkerResult.FilesEntry
+	nil,                           // 8: worker.WorkerResult.MetadataEntry
+	nil,                           // 9: worker.AssignWorkersRequest.MetadataEntry
 }
 var file_manager_worker_proto_depIdxs = []int32{
 	7, // 0: worker.WorkerResult.files:type_name -> worker.WorkerResult.FilesEntry
-	0, // 1: worker.AssignWorkersRequest.worker_roles:type_name -> worker.WorkerRole
-	1, // 2: worker.AssignWorkersResponse.workers:type_name -> worker.WorkerInfo
-	2, // 3: worker.ReviewRequest.result:type_name -> worker.WorkerResult
-	3, // 4: worker.WorkerService.AssignWorkers:input_type -> worker.AssignWorkersRequest
-	2, // 5: worker.WorkerService.SubmitResult:input_type -> worker.WorkerResult
-	4, // 6: worker.WorkerService.AssignWorkers:output_type -> worker.AssignWorkersResponse
-	6, // 7: worker.WorkerService.SubmitResult:output_type -> worker.ReviewResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	8, // 1: worker.WorkerResult.metadata:type_name -> worker.WorkerResult.MetadataEntry
+	0, // 2: worker.AssignWorkersRequest.worker_roles:type_name -> worker.WorkerRole
+	9, // 3: worker.AssignWorkersRequest.metadata:type_name -> worker.AssignWorkersRequest.MetadataEntry
+	1, // 4: worker.AssignWorkersResponse.workers:type_name -> worker.WorkerInfo
+	2, // 5: worker.ReviewRequest.result:type_name -> worker.WorkerResult
+	3, // 6: worker.WorkerService.AssignWorkers:input_type -> worker.AssignWorkersRequest
+	2, // 7: worker.WorkerService.SubmitResult:input_type -> worker.WorkerResult
+	4, // 8: worker.WorkerService.AssignWorkers:output_type -> worker.AssignWorkersResponse
+	6, // 9: worker.WorkerService.SubmitResult:output_type -> worker.ReviewResponse
+	8, // [8:10] is the sub-list for method output_type
+	6, // [6:8] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_manager_worker_proto_init() }
@@ -608,7 +636,7 @@ func file_manager_worker_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_manager_worker_proto_rawDesc), len(file_manager_worker_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

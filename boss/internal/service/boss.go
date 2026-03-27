@@ -7,30 +7,19 @@ import (
 
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/pkg/database"
+	"boss/pkg/llm"
 	"boss/pkg/models"
 
 	"github.com/google/uuid"
-	"github.com/yhwhpe/llm-unified-client"
 )
 
 // BossService — сервис босса
 type BossService struct {
 	bosspb.UnimplementedBossServiceServer
-	llm llm.Client
 }
 
-func NewBossService(apiKey string) *BossService {
-	client, err := llm.NewClient(llm.Config{
-		Provider: "azure",
-		APIKey:   apiKey,
-	})
-	if err != nil {
-		log.Fatalf("Failed to create LLM client: %v", err)
-	}
-
-	return &BossService{
-		llm: client,
-	}
+func NewBossService() *BossService {
+	return &BossService{}
 }
 
 // CreateTask принимает задачу от пользователя и расписывает план
@@ -57,8 +46,15 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		return nil, err
 	}
 
-	// 2. Босс думает над задачей через ИИ
-	decision, err := s.thinkAboutTask(req)
+	// 2. Получаем model и modelUrl из метаданных (или дефолтные)
+	model := req.Meta["model"]
+	modelURL := req.Meta["modelUrl"]
+
+	// 3. Создаём LLM клиент с токенами пользователя и кастомной моделью
+	llmClient := llm.NewOpenRouterClient(modelURL, model, req.Tokens)
+
+	// 4. Босс думает над задачей через ИИ
+	decision, err := s.thinkAboutTask(ctx, llmClient, req)
 	if err != nil {
 		return &bosspb.BossDecision{
 			TaskId:       task.ID.String(),
@@ -67,7 +63,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		}, nil
 	}
 
-	// 3. Сохраняем решение босса
+	// 5. Сохраняем решение босса
 	bossDecision := &models.BossDecision{
 		ID:                   uuid.New(),
 		TaskID:               task.ID,
@@ -87,7 +83,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		return nil, err
 	}
 
-	// 4. Обновляем статус задачи
+	// 6. Обновляем статус задачи
 	task.Status = "managers_assigned"
 	database.Db.Save(task)
 
@@ -125,7 +121,7 @@ func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {
 }
 
 // thinkAboutTask — босс думает над задачей через ИИ
-func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
+func (s *BossService) thinkAboutTask(ctx context.Context, llmClient llm.Client, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
 	prompt := `Ты технический директор (CTO) компании. Тебе дали задачу:
 
 Название: ` + req.Title + `
@@ -151,13 +147,15 @@ func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecisi
   "architecture_notes": "Заметки об архитектуре..."
 }`
 
-	resp, err := llm.GenerateSimple(context.Background(), s.llm, prompt)
+	resp, err := llmClient.Generate(ctx, prompt)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Printf("Босс получил ответ: %s", truncate(resp, 200))
+
 	var decision BossDecisionResult
-	if err := json.Unmarshal([]byte(resp.Content), &decision); err != nil {
+	if err := json.Unmarshal([]byte(resp), &decision); err != nil {
 		return nil, err
 	}
 
@@ -177,4 +175,11 @@ func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusR
 		Status:   task.Status,
 		Progress: "50%",
 	}, nil
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }

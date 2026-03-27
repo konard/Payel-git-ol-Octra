@@ -11,7 +11,7 @@ message CreateTaskRequest {
   string title = 3;
   string description = 4;
   repeated string tokens = 5;
-  map<string, string> meta = 6;
+  map<string, string> meta = 6;  // model, modelUrl, и другие метаданные
 }
 
 // Роль менеджера

@@ -9,36 +9,33 @@ import (
 
 	"worker/internal/fetcher/grpc/workerpb"
 	"worker/pkg/database"
+	"worker/pkg/llm"
 	"worker/pkg/models"
 
 	"github.com/google/uuid"
-	"github.com/yhwhpe/llm-unified-client"
 )
 
 // WorkerService — сервис рабочих
 type WorkerService struct {
 	workerpb.UnimplementedWorkerServiceServer
-	llm llm.Client
 }
 
-func NewWorkerService(apiKey string) *WorkerService {
-	client, err := llm.NewClient(llm.Config{
-		Provider: "azure",
-		APIKey:   apiKey,
-	})
-	if err != nil {
-		log.Fatalf("Failed to create LLM client: %v", err)
-	}
-
-	return &WorkerService{
-		llm: client,
-	}
+func NewWorkerService() *WorkerService {
+	return &WorkerService{}
 }
 
 // AssignWorkers принимает задачу от менеджера и создаёт воркеров
 func (s *WorkerService) AssignWorkers(ctx context.Context, req *workerpb.AssignWorkersRequest) (*workerpb.AssignWorkersResponse, error) {
 	log.Printf("Получена задача от менеджера %s: %s", req.ManagerId, req.ManagerRole)
 	log.Printf("Воркеры: %v", req.WorkerRoles)
+
+	// Парсим токены и настройки модели из метаданных
+	tokens := parseTokens(req.Metadata)
+	model := req.Metadata["model"]
+	modelURL := req.Metadata["modelUrl"]
+
+	// Создаём LLM клиент
+	llmClient := llm.NewOpenRouterClient(modelURL, model, tokens)
 
 	workers := make([]*workerpb.WorkerInfo, 0, len(req.WorkerRoles))
 
@@ -64,7 +61,7 @@ func (s *WorkerService) AssignWorkers(ctx context.Context, req *workerpb.AssignW
 		}
 
 		// Воркер думает над задачей через ИИ
-		solution, err := s.thinkAboutTask(req.TaskMd, role.Role)
+		solution, err := s.thinkAboutTask(ctx, llmClient, req.TaskMd, role.Role)
 		if err != nil {
 			worker.Status = "error"
 			database.Db.Save(worker)
@@ -72,7 +69,7 @@ func (s *WorkerService) AssignWorkers(ctx context.Context, req *workerpb.AssignW
 		}
 
 		// Генерирует код
-		files, err := s.generateCode(solution, role.Role, req.ManagerRole)
+		files, err := s.generateCode(ctx, llmClient, solution, role.Role, req.ManagerRole)
 		if err != nil {
 			worker.Status = "error"
 			database.Db.Save(worker)
@@ -122,7 +119,15 @@ func (s *WorkerService) SubmitResult(ctx context.Context, req *workerpb.WorkerRe
 	for k, v := range req.Files {
 		filesStr[k] = string(v)
 	}
-	approved, feedback := s.reviewCode(filesStr, req.SolutionMd, worker.TaskMD)
+
+	// Получаем токены и модель из метаданных (передаются менеджером)
+	tokens := parseTokens(req.Metadata)
+	model := req.Metadata["model"]
+	modelURL := req.Metadata["modelUrl"]
+
+	llmClient := llm.NewOpenRouterClient(modelURL, model, tokens)
+
+	approved, feedback := s.reviewCode(ctx, llmClient, filesStr, req.SolutionMd, worker.TaskMD)
 
 	worker.Approved = approved
 	worker.Feedback = feedback
@@ -135,7 +140,7 @@ func (s *WorkerService) SubmitResult(ctx context.Context, req *workerpb.WorkerRe
 }
 
 // thinkAboutTask — воркер думает над задачей
-func (s *WorkerService) thinkAboutTask(taskMD, role string) (string, error) {
+func (s *WorkerService) thinkAboutTask(ctx context.Context, llmClient llm.Client, taskMD, role string) (string, error) {
 	prompt := `Ты опытный разработчик (` + role + `). Тебе дали задачу:
 
 ` + taskMD + `
@@ -147,17 +152,17 @@ func (s *WorkerService) thinkAboutTask(taskMD, role string) (string, error) {
 
 Напиши подробное решение в формате SOLUTION.md`
 
-	resp, err := llm.GenerateSimple(context.Background(), s.llm, prompt)
+	resp, err := llmClient.Generate(ctx, prompt)
 	if err != nil {
 		return "", err
 	}
 
-	log.Printf("Воркер принял решение: %s", truncate(resp.Content, 100))
-	return resp.Content, nil
+	log.Printf("Воркер принял решение: %s", truncate(resp, 100))
+	return resp, nil
 }
 
 // generateCode — генерирует код на основе решения
-func (s *WorkerService) generateCode(solution, role, managerRole string) (map[string]string, error) {
+func (s *WorkerService) generateCode(ctx context.Context, llmClient llm.Client, solution, role, managerRole string) (map[string]string, error) {
 	prompt := `Ты разработчик (` + role + `) в команде под управлением ` + managerRole + `.
 
 У тебя есть решение:
@@ -172,13 +177,13 @@ func (s *WorkerService) generateCode(solution, role, managerRole string) (map[st
 
 Никакого markdown, только JSON.`
 
-	resp, err := llm.GenerateSimple(context.Background(), s.llm, prompt)
+	resp, err := llmClient.Generate(ctx, prompt)
 	if err != nil {
 		return nil, err
 	}
 
 	var files map[string]string
-	if err := json.Unmarshal([]byte(resp.Content), &files); err != nil {
+	if err := json.Unmarshal([]byte(resp), &files); err != nil {
 		return nil, err
 	}
 
@@ -187,7 +192,7 @@ func (s *WorkerService) generateCode(solution, role, managerRole string) (map[st
 }
 
 // reviewCode — ИИ проверка кода
-func (s *WorkerService) reviewCode(files map[string]string, solutionMD, taskMD string) (bool, string) {
+func (s *WorkerService) reviewCode(ctx context.Context, llmClient llm.Client, files map[string]string, solutionMD, taskMD string) (bool, string) {
 	filesJSON, _ := json.Marshal(files)
 
 	prompt := `Ты senior разработчик на code review.
@@ -218,7 +223,7 @@ func (s *WorkerService) reviewCode(files map[string]string, solutionMD, taskMD s
   "feedback": "Нужно исправить..."
 }`
 
-	resp, err := llm.GenerateSimple(context.Background(), s.llm, prompt)
+	resp, err := llmClient.Generate(ctx, prompt)
 	if err != nil {
 		return false, "Error during review: " + err.Error()
 	}
@@ -228,7 +233,7 @@ func (s *WorkerService) reviewCode(files map[string]string, solutionMD, taskMD s
 		Feedback string `json:"feedback"`
 	}
 
-	if err := json.Unmarshal([]byte(resp.Content), &result); err != nil {
+	if err := json.Unmarshal([]byte(resp), &result); err != nil {
 		return false, "Error parsing review: " + err.Error()
 	}
 
@@ -264,7 +269,27 @@ func min(a, b int) int {
 	return b
 }
 
-// StringsHas - проверка наличия подстроки
 func StringsHas(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+// parseTokens — парсит токены из метаданных
+func parseTokens(metadata map[string]string) []string {
+	// Ожидаем что токены переданы как JSON массив в metadata["tokens"]
+	tokensJSON := metadata["tokens"]
+	if tokensJSON == "" {
+		// Дефолтные токены для тестирования
+		return []string{
+			"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",
+			"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",
+			"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",
+		}
+	}
+
+	var tokens []string
+	if err := json.Unmarshal([]byte(tokensJSON), &tokens); err != nil {
+		return []string{tokensJSON} // Если не JSON, считаем что это один токен
+	}
+
+	return tokens
 }

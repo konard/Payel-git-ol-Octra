@@ -28,6 +28,7 @@ message WorkerResult {
   string solution_md = 5;
   string logs = 6;
   bool success = 7;
+  map<string, string> metadata = 8;  // tokens, model, modelUrl
 }
 
 // Запрос от manager к worker
@@ -37,6 +38,7 @@ message AssignWorkersRequest {
   string manager_role = 3;
   repeated WorkerRole worker_roles = 4;
   string task_md = 5;
+  map<string, string> metadata = 6;  // tokens, model, modelUrl
 }
 
 // Ответ worker
