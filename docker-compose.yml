@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - общая база данных для всех сервисов
+  postgres:
+    image: postgres:15-alpine
+    container_name: crewai-postgres
+    environment:
+      POSTGRES_USER: crewai
+      POSTGRES_PASSWORD: crewai_password
+      POSTGRES_DB: crewai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - crewai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crewai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Boss сервис - принимает задачи, ИИ планирование
+  boss:
+    build:
+      context: ./boss
+      dockerfile: Dockerfile
+    container_name: crewai-boss
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  # Manager сервис - создание менеджеров
+  manager:
+    build:
+      context: ./manager
+      dockerfile: Dockerfile
+    container_name: crewai-manager
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+    ports:
+      - "50052:50052"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  # Worker сервис - генерация кода
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: crewai-worker
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+    ports:
+      - "50053:50053"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  # Apigateway - HTTP шлюз
+  apigateway:
+    build:
+      context: ./apigateway
+      dockerfile: Dockerfile
+    container_name: crewai-apigateway
+    environment:
+      - BOSS_SERVICE_HOST=boss:50051
+    ports:
+      - "3111:3111"
+    depends_on:
+      - boss
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+networks:
+  crewai-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
