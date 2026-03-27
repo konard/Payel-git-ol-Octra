@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.0
-// source: proto/boss-manager.proto
+// source: boss-manager.proto
 
 package managerpb
 
@@ -19,20 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ManagerService_CreateManagers_FullMethodName = "/manager.ManagerService/CreateManagers"
-	ManagerService_GetTaskStatus_FullMethodName  = "/manager.ManagerService/GetTaskStatus"
+	ManagerService_AssignManagers_FullMethodName = "/manager.ManagerService/AssignManagers"
+	ManagerService_GetTask_FullMethodName        = "/manager.ManagerService/GetTask"
 )
 
 // ManagerServiceClient is the client API for ManagerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Сервис для управления менеджерами
 type ManagerServiceClient interface {
-	// Создать команду менеджеров для задачи
-	CreateManagers(ctx context.Context, in *CreateManagersRequest, opts ...grpc.CallOption) (*CreateManagersResponse, error)
-	// Получить статус задачи
-	GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
+	AssignManagers(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error)
+	GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error)
 }
 
 type managerServiceClient struct {
@@ -43,20 +39,20 @@ func NewManagerServiceClient(cc grpc.ClientConnInterface) ManagerServiceClient {
 	return &managerServiceClient{cc}
 }
 
-func (c *managerServiceClient) CreateManagers(ctx context.Context, in *CreateManagersRequest, opts ...grpc.CallOption) (*CreateManagersResponse, error) {
+func (c *managerServiceClient) AssignManagers(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateManagersResponse)
-	err := c.cc.Invoke(ctx, ManagerService_CreateManagers_FullMethodName, in, out, cOpts...)
+	out := new(AssignManagersResponse)
+	err := c.cc.Invoke(ctx, ManagerService_AssignManagers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *managerServiceClient) GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error) {
+func (c *managerServiceClient) GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TaskStatusResponse)
-	err := c.cc.Invoke(ctx, ManagerService_GetTaskStatus_FullMethodName, in, out, cOpts...)
+	out := new(GetTaskResponse)
+	err := c.cc.Invoke(ctx, ManagerService_GetTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +62,9 @@ func (c *managerServiceClient) GetTaskStatus(ctx context.Context, in *TaskStatus
 // ManagerServiceServer is the server API for ManagerService service.
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility.
-//
-// Сервис для управления менеджерами
 type ManagerServiceServer interface {
-	// Создать команду менеджеров для задачи
-	CreateManagers(context.Context, *CreateManagersRequest) (*CreateManagersResponse, error)
-	// Получить статус задачи
-	GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error)
+	AssignManagers(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error)
+	GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error)
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -83,11 +75,11 @@ type ManagerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedManagerServiceServer struct{}
 
-func (UnimplementedManagerServiceServer) CreateManagers(context.Context, *CreateManagersRequest) (*CreateManagersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateManagers not implemented")
+func (UnimplementedManagerServiceServer) AssignManagers(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssignManagers not implemented")
 }
-func (UnimplementedManagerServiceServer) GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTaskStatus not implemented")
+func (UnimplementedManagerServiceServer) GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTask not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
 func (UnimplementedManagerServiceServer) testEmbeddedByValue()                        {}
@@ -110,38 +102,38 @@ func RegisterManagerServiceServer(s grpc.ServiceRegistrar, srv ManagerServiceSer
 	s.RegisterService(&ManagerService_ServiceDesc, srv)
 }
 
-func _ManagerService_CreateManagers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateManagersRequest)
+func _ManagerService_AssignManagers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignManagersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServiceServer).CreateManagers(ctx, in)
+		return srv.(ManagerServiceServer).AssignManagers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ManagerService_CreateManagers_FullMethodName,
+		FullMethod: ManagerService_AssignManagers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).CreateManagers(ctx, req.(*CreateManagersRequest))
+		return srv.(ManagerServiceServer).AssignManagers(ctx, req.(*AssignManagersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ManagerService_GetTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskStatusRequest)
+func _ManagerService_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServiceServer).GetTaskStatus(ctx, in)
+		return srv.(ManagerServiceServer).GetTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ManagerService_GetTaskStatus_FullMethodName,
+		FullMethod: ManagerService_GetTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).GetTaskStatus(ctx, req.(*TaskStatusRequest))
+		return srv.(ManagerServiceServer).GetTask(ctx, req.(*GetTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -154,14 +146,14 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ManagerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateManagers",
-			Handler:    _ManagerService_CreateManagers_Handler,
+			MethodName: "AssignManagers",
+			Handler:    _ManagerService_AssignManagers_Handler,
 		},
 		{
-			MethodName: "GetTaskStatus",
-			Handler:    _ManagerService_GetTaskStatus_Handler,
+			MethodName: "GetTask",
+			Handler:    _ManagerService_GetTask_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/boss-manager.proto",
+	Metadata: "boss-manager.proto",
 }

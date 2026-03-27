@@ -4,29 +4,19 @@ package worker;
 
 option go_package = "worker/internal/fetcher/grpc/workerpb";
 
-// Запрос от manager к worker
-message AssignWorkersRequest {
-  string task_id = 1;
-  string manager_id = 2;
-  string manager_role = 3;  // "frontend", "backend", "testing"
-  repeated WorkerRole worker_roles = 4;
-  string task_md = 5;       // TASK.md от менеджера
+// Роль воркера
+message WorkerRole {
+  string role = 1;
+  string description = 2;
 }
 
-// Ответ worker
-message AssignWorkersResponse {
-  string task_id = 1;
-  string status = 2;  // success, error, needs_revision
-  repeated WorkerInfo workers = 3;
-  string error_message = 4;
-}
-
+// Информация о воркере
 message WorkerInfo {
   string id = 1;
   string role = 2;
-  string status = 3;  // thinking, coding, testing, done, error
-  string solution_md = 4;  // SOLUTION.md
-  repeated string files = 5;  // Список созданных файлов
+  string status = 3;
+  string solution_md = 4;
+  repeated string files = 5;
 }
 
 // Результат работы воркера
@@ -34,14 +24,27 @@ message WorkerResult {
   string task_id = 1;
   string manager_id = 2;
   string worker_id = 3;
-  
-  // Файлы проекта
-  map<string, bytes> files = 4;  // path -> content
-  
-  // Отчёт
+  map<string, bytes> files = 4;
   string solution_md = 5;
   string logs = 6;
   bool success = 7;
+}
+
+// Запрос от manager к worker
+message AssignWorkersRequest {
+  string task_id = 1;
+  string manager_id = 2;
+  string manager_role = 3;
+  repeated WorkerRole worker_roles = 4;
+  string task_md = 5;
+}
+
+// Ответ worker
+message AssignWorkersResponse {
+  string task_id = 1;
+  string status = 2;
+  repeated WorkerInfo workers = 3;
+  string error_message = 4;
 }
 
 // Запрос на проверку результата
@@ -53,7 +56,7 @@ message ReviewRequest {
 
 message ReviewResponse {
   bool approved = 1;
-  string feedback = 2;  // Если не одобрено - что исправить
+  string feedback = 2;
 }
 
 service WorkerService {

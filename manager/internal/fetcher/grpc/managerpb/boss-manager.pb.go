@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.0
-// source: proto/boss-manager.proto
+// source: boss-manager.proto
 
 package managerpb
 
@@ -21,36 +21,30 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Запрос от boss к manager на создание команды менеджеров
-type CreateManagersRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	TaskId           string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"` // ID задачи в БД
-	Taskname         string                 `protobuf:"bytes,2,opt,name=taskname,proto3" json:"taskname,omitempty"`
-	Title            string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Description      string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Username         string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`                                                                           // Кто создал задачу
-	QuantityManagers int32                  `protobuf:"varint,6,opt,name=quantity_managers,json=quantityManagers,proto3" json:"quantity_managers,omitempty"`                                  // Количество менеджеров
-	Roles            []string               `protobuf:"bytes,7,rep,name=roles,proto3" json:"roles,omitempty"`                                                                                 // Роли менеджеров: ["frontend", "backend", "deployment", ...]
-	Metadata         map[string]string      `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Дополнительные метаданные
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+// Роль воркера (определяется локально)
+type WorkerRole struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateManagersRequest) Reset() {
-	*x = CreateManagersRequest{}
-	mi := &file_proto_boss_manager_proto_msgTypes[0]
+func (x *WorkerRole) Reset() {
+	*x = WorkerRole{}
+	mi := &file_boss_manager_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateManagersRequest) String() string {
+func (x *WorkerRole) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateManagersRequest) ProtoMessage() {}
+func (*WorkerRole) ProtoMessage() {}
 
-func (x *CreateManagersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_boss_manager_proto_msgTypes[0]
+func (x *WorkerRole) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,142 +55,23 @@ func (x *CreateManagersRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateManagersRequest.ProtoReflect.Descriptor instead.
-func (*CreateManagersRequest) Descriptor() ([]byte, []int) {
-	return file_proto_boss_manager_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use WorkerRole.ProtoReflect.Descriptor instead.
+func (*WorkerRole) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreateManagersRequest) GetTaskId() string {
+func (x *WorkerRole) GetRole() string {
 	if x != nil {
-		return x.TaskId
+		return x.Role
 	}
 	return ""
 }
 
-func (x *CreateManagersRequest) GetTaskname() string {
-	if x != nil {
-		return x.Taskname
-	}
-	return ""
-}
-
-func (x *CreateManagersRequest) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *CreateManagersRequest) GetDescription() string {
+func (x *WorkerRole) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
-}
-
-func (x *CreateManagersRequest) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *CreateManagersRequest) GetQuantityManagers() int32 {
-	if x != nil {
-		return x.QuantityManagers
-	}
-	return 0
-}
-
-func (x *CreateManagersRequest) GetRoles() []string {
-	if x != nil {
-		return x.Roles
-	}
-	return nil
-}
-
-func (x *CreateManagersRequest) GetMetadata() map[string]string {
-	if x != nil {
-		return x.Metadata
-	}
-	return nil
-}
-
-// Ответ manager на запрос
-type CreateManagersResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	TaskId          string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	Status          string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`                                           // "success", "error", "processing"
-	Message         string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`                                         // Сообщение или ошибка
-	CreatedManagers int32                  `protobuf:"varint,4,opt,name=created_managers,json=createdManagers,proto3" json:"created_managers,omitempty"` // Количество созданных менеджеров
-	Managers        []*ManagerInfo         `protobuf:"bytes,5,rep,name=managers,proto3" json:"managers,omitempty"`                                       // Информация о созданных менеджерах
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *CreateManagersResponse) Reset() {
-	*x = CreateManagersResponse{}
-	mi := &file_proto_boss_manager_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateManagersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateManagersResponse) ProtoMessage() {}
-
-func (x *CreateManagersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_boss_manager_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateManagersResponse.ProtoReflect.Descriptor instead.
-func (*CreateManagersResponse) Descriptor() ([]byte, []int) {
-	return file_proto_boss_manager_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *CreateManagersResponse) GetTaskId() string {
-	if x != nil {
-		return x.TaskId
-	}
-	return ""
-}
-
-func (x *CreateManagersResponse) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *CreateManagersResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *CreateManagersResponse) GetCreatedManagers() int32 {
-	if x != nil {
-		return x.CreatedManagers
-	}
-	return 0
-}
-
-func (x *CreateManagersResponse) GetManagers() []*ManagerInfo {
-	if x != nil {
-		return x.Managers
-	}
-	return nil
 }
 
 // Информация о менеджере
@@ -204,15 +79,15 @@ type ManagerInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
-	AgentId       string                 `protobuf:"bytes,3,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	WorkerRoles   []*WorkerRole          `protobuf:"bytes,4,rep,name=worker_roles,json=workerRoles,proto3" json:"worker_roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ManagerInfo) Reset() {
 	*x = ManagerInfo{}
-	mi := &file_proto_boss_manager_proto_msgTypes[2]
+	mi := &file_boss_manager_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -224,7 +99,7 @@ func (x *ManagerInfo) String() string {
 func (*ManagerInfo) ProtoMessage() {}
 
 func (x *ManagerInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_boss_manager_proto_msgTypes[2]
+	mi := &file_boss_manager_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +112,7 @@ func (x *ManagerInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagerInfo.ProtoReflect.Descriptor instead.
 func (*ManagerInfo) Descriptor() ([]byte, []int) {
-	return file_proto_boss_manager_proto_rawDescGZIP(), []int{2}
+	return file_boss_manager_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ManagerInfo) GetId() string {
@@ -254,13 +129,6 @@ func (x *ManagerInfo) GetRole() string {
 	return ""
 }
 
-func (x *ManagerInfo) GetAgentId() string {
-	if x != nil {
-		return x.AgentId
-	}
-	return ""
-}
-
 func (x *ManagerInfo) GetStatus() string {
 	if x != nil {
 		return x.Status
@@ -268,29 +136,39 @@ func (x *ManagerInfo) GetStatus() string {
 	return ""
 }
 
-// Запрос на получение статуса задачи
-type TaskStatusRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *ManagerInfo) GetWorkerRoles() []*WorkerRole {
+	if x != nil {
+		return x.WorkerRoles
+	}
+	return nil
 }
 
-func (x *TaskStatusRequest) Reset() {
-	*x = TaskStatusRequest{}
-	mi := &file_proto_boss_manager_proto_msgTypes[3]
+// Запрос от boss к manager
+type AssignManagersRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TaskId               string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	TechnicalDescription string                 `protobuf:"bytes,2,opt,name=technical_description,json=technicalDescription,proto3" json:"technical_description,omitempty"`
+	TechStack            []string               `protobuf:"bytes,3,rep,name=tech_stack,json=techStack,proto3" json:"tech_stack,omitempty"`
+	ManagerRoles         []*ManagerRole         `protobuf:"bytes,4,rep,name=manager_roles,json=managerRoles,proto3" json:"manager_roles,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AssignManagersRequest) Reset() {
+	*x = AssignManagersRequest{}
+	mi := &file_boss_manager_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TaskStatusRequest) String() string {
+func (x *AssignManagersRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TaskStatusRequest) ProtoMessage() {}
+func (*AssignManagersRequest) ProtoMessage() {}
 
-func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_boss_manager_proto_msgTypes[3]
+func (x *AssignManagersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,47 +179,64 @@ func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TaskStatusRequest.ProtoReflect.Descriptor instead.
-func (*TaskStatusRequest) Descriptor() ([]byte, []int) {
-	return file_proto_boss_manager_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use AssignManagersRequest.ProtoReflect.Descriptor instead.
+func (*AssignManagersRequest) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *TaskStatusRequest) GetTaskId() string {
+func (x *AssignManagersRequest) GetTaskId() string {
 	if x != nil {
 		return x.TaskId
 	}
 	return ""
 }
 
-// Статус задачи
-type TaskStatusResponse struct {
+func (x *AssignManagersRequest) GetTechnicalDescription() string {
+	if x != nil {
+		return x.TechnicalDescription
+	}
+	return ""
+}
+
+func (x *AssignManagersRequest) GetTechStack() []string {
+	if x != nil {
+		return x.TechStack
+	}
+	return nil
+}
+
+func (x *AssignManagersRequest) GetManagerRoles() []*ManagerRole {
+	if x != nil {
+		return x.ManagerRoles
+	}
+	return nil
+}
+
+// Роль менеджера (копия из boss.proto для независимости)
+type ManagerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // pending, processing, managers_assigned, workers_assigned, done, error
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	ManagersCount int32                  `protobuf:"varint,5,opt,name=managers_count,json=managersCount,proto3" json:"managers_count,omitempty"`
-	WorkersCount  int32                  `protobuf:"varint,6,opt,name=workers_count,json=workersCount,proto3" json:"workers_count,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,7,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Priority      int32                  `protobuf:"varint,3,opt,name=priority,proto3" json:"priority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TaskStatusResponse) Reset() {
-	*x = TaskStatusResponse{}
-	mi := &file_proto_boss_manager_proto_msgTypes[4]
+func (x *ManagerRole) Reset() {
+	*x = ManagerRole{}
+	mi := &file_boss_manager_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TaskStatusResponse) String() string {
+func (x *ManagerRole) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TaskStatusResponse) ProtoMessage() {}
+func (*ManagerRole) ProtoMessage() {}
 
-func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_boss_manager_proto_msgTypes[4]
+func (x *ManagerRole) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,157 +247,313 @@ func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TaskStatusResponse.ProtoReflect.Descriptor instead.
-func (*TaskStatusResponse) Descriptor() ([]byte, []int) {
-	return file_proto_boss_manager_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use ManagerRole.ProtoReflect.Descriptor instead.
+func (*ManagerRole) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *TaskStatusResponse) GetTaskId() string {
+func (x *ManagerRole) GetRole() string {
 	if x != nil {
-		return x.TaskId
+		return x.Role
 	}
 	return ""
 }
 
-func (x *TaskStatusResponse) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *TaskStatusResponse) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *TaskStatusResponse) GetDescription() string {
+func (x *ManagerRole) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
 }
 
-func (x *TaskStatusResponse) GetManagersCount() int32 {
+func (x *ManagerRole) GetPriority() int32 {
 	if x != nil {
-		return x.ManagersCount
+		return x.Priority
 	}
 	return 0
 }
 
-func (x *TaskStatusResponse) GetWorkersCount() int32 {
-	if x != nil {
-		return x.WorkersCount
-	}
-	return 0
+// Ответ manager
+type AssignManagersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Managers      []*ManagerInfo         `protobuf:"bytes,3,rep,name=managers,proto3" json:"managers,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TaskStatusResponse) GetErrorMessage() string {
+func (x *AssignManagersResponse) Reset() {
+	*x = AssignManagersResponse{}
+	mi := &file_boss_manager_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssignManagersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssignManagersResponse) ProtoMessage() {}
+
+func (x *AssignManagersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssignManagersResponse.ProtoReflect.Descriptor instead.
+func (*AssignManagersResponse) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *AssignManagersResponse) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *AssignManagersResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *AssignManagersResponse) GetManagers() []*ManagerInfo {
+	if x != nil {
+		return x.Managers
+	}
+	return nil
+}
+
+func (x *AssignManagersResponse) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
 	return ""
 }
 
-var File_proto_boss_manager_proto protoreflect.FileDescriptor
+// Запрос на получение задачи для менеджера
+type GetTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ManagerId     string                 `protobuf:"bytes,1,opt,name=manager_id,json=managerId,proto3" json:"manager_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_proto_boss_manager_proto_rawDesc = "" +
+func (x *GetTaskRequest) Reset() {
+	*x = GetTaskRequest{}
+	mi := &file_boss_manager_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskRequest) ProtoMessage() {}
+
+func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskRequest) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetTaskRequest) GetManagerId() string {
+	if x != nil {
+		return x.ManagerId
+	}
+	return ""
+}
+
+type GetTaskResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TaskId               string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	TechnicalDescription string                 `protobuf:"bytes,2,opt,name=technical_description,json=technicalDescription,proto3" json:"technical_description,omitempty"`
+	TechStack            []string               `protobuf:"bytes,3,rep,name=tech_stack,json=techStack,proto3" json:"tech_stack,omitempty"`
+	ManagerRole          string                 `protobuf:"bytes,4,opt,name=manager_role,json=managerRole,proto3" json:"manager_role,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *GetTaskResponse) Reset() {
+	*x = GetTaskResponse{}
+	mi := &file_boss_manager_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskResponse) ProtoMessage() {}
+
+func (x *GetTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskResponse.ProtoReflect.Descriptor instead.
+func (*GetTaskResponse) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetTaskResponse) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *GetTaskResponse) GetTechnicalDescription() string {
+	if x != nil {
+		return x.TechnicalDescription
+	}
+	return ""
+}
+
+func (x *GetTaskResponse) GetTechStack() []string {
+	if x != nil {
+		return x.TechStack
+	}
+	return nil
+}
+
+func (x *GetTaskResponse) GetManagerRole() string {
+	if x != nil {
+		return x.ManagerRole
+	}
+	return ""
+}
+
+var File_boss_manager_proto protoreflect.FileDescriptor
+
+const file_boss_manager_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/boss-manager.proto\x12\amanager\"\xea\x02\n" +
-	"\x15CreateManagersRequest\x12\x17\n" +
-	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1a\n" +
-	"\btaskname\x18\x02 \x01(\tR\btaskname\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1a\n" +
-	"\busername\x18\x05 \x01(\tR\busername\x12+\n" +
-	"\x11quantity_managers\x18\x06 \x01(\x05R\x10quantityManagers\x12\x14\n" +
-	"\x05roles\x18\a \x03(\tR\x05roles\x12H\n" +
-	"\bmetadata\x18\b \x03(\v2,.manager.CreateManagersRequest.MetadataEntryR\bmetadata\x1a;\n" +
-	"\rMetadataEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc0\x01\n" +
-	"\x16CreateManagersResponse\x12\x17\n" +
-	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\x12)\n" +
-	"\x10created_managers\x18\x04 \x01(\x05R\x0fcreatedManagers\x120\n" +
-	"\bmanagers\x18\x05 \x03(\v2\x14.manager.ManagerInfoR\bmanagers\"d\n" +
+	"\x12boss-manager.proto\x12\amanager\"B\n" +
+	"\n" +
+	"WorkerRole\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x81\x01\n" +
 	"\vManagerInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04role\x18\x02 \x01(\tR\x04role\x12\x19\n" +
-	"\bagent_id\x18\x03 \x01(\tR\aagentId\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\",\n" +
-	"\x11TaskStatusRequest\x12\x17\n" +
-	"\atask_id\x18\x01 \x01(\tR\x06taskId\"\xee\x01\n" +
-	"\x12TaskStatusResponse\x12\x17\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x126\n" +
+	"\fworker_roles\x18\x04 \x03(\v2\x13.manager.WorkerRoleR\vworkerRoles\"\xbf\x01\n" +
+	"\x15AssignManagersRequest\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x123\n" +
+	"\x15technical_description\x18\x02 \x01(\tR\x14technicalDescription\x12\x1d\n" +
+	"\n" +
+	"tech_stack\x18\x03 \x03(\tR\ttechStack\x129\n" +
+	"\rmanager_roles\x18\x04 \x03(\v2\x14.manager.ManagerRoleR\fmanagerRoles\"_\n" +
+	"\vManagerRole\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
+	"\bpriority\x18\x03 \x01(\x05R\bpriority\"\xa0\x01\n" +
+	"\x16AssignManagersResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12%\n" +
-	"\x0emanagers_count\x18\x05 \x01(\x05R\rmanagersCount\x12#\n" +
-	"\rworkers_count\x18\x06 \x01(\x05R\fworkersCount\x12#\n" +
-	"\rerror_message\x18\a \x01(\tR\ferrorMessage2\xad\x01\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x120\n" +
+	"\bmanagers\x18\x03 \x03(\v2\x14.manager.ManagerInfoR\bmanagers\x12#\n" +
+	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\"/\n" +
+	"\x0eGetTaskRequest\x12\x1d\n" +
+	"\n" +
+	"manager_id\x18\x01 \x01(\tR\tmanagerId\"\xa1\x01\n" +
+	"\x0fGetTaskResponse\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x123\n" +
+	"\x15technical_description\x18\x02 \x01(\tR\x14technicalDescription\x12\x1d\n" +
+	"\n" +
+	"tech_stack\x18\x03 \x03(\tR\ttechStack\x12!\n" +
+	"\fmanager_role\x18\x04 \x01(\tR\vmanagerRole2\xa1\x01\n" +
 	"\x0eManagerService\x12Q\n" +
-	"\x0eCreateManagers\x12\x1e.manager.CreateManagersRequest\x1a\x1f.manager.CreateManagersResponse\x12H\n" +
-	"\rGetTaskStatus\x12\x1a.manager.TaskStatusRequest\x1a\x1b.manager.TaskStatusResponseB&Z$boss/internal/fetcher/grpc/managerpbb\x06proto3"
+	"\x0eAssignManagers\x12\x1e.manager.AssignManagersRequest\x1a\x1f.manager.AssignManagersResponse\x12<\n" +
+	"\aGetTask\x12\x17.manager.GetTaskRequest\x1a\x18.manager.GetTaskResponseB)Z'manager/internal/fetcher/grpc/managerpbb\x06proto3"
 
 var (
-	file_proto_boss_manager_proto_rawDescOnce sync.Once
-	file_proto_boss_manager_proto_rawDescData []byte
+	file_boss_manager_proto_rawDescOnce sync.Once
+	file_boss_manager_proto_rawDescData []byte
 )
 
-func file_proto_boss_manager_proto_rawDescGZIP() []byte {
-	file_proto_boss_manager_proto_rawDescOnce.Do(func() {
-		file_proto_boss_manager_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_boss_manager_proto_rawDesc), len(file_proto_boss_manager_proto_rawDesc)))
+func file_boss_manager_proto_rawDescGZIP() []byte {
+	file_boss_manager_proto_rawDescOnce.Do(func() {
+		file_boss_manager_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_boss_manager_proto_rawDesc), len(file_boss_manager_proto_rawDesc)))
 	})
-	return file_proto_boss_manager_proto_rawDescData
+	return file_boss_manager_proto_rawDescData
 }
 
-var file_proto_boss_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_proto_boss_manager_proto_goTypes = []any{
-	(*CreateManagersRequest)(nil),  // 0: manager.CreateManagersRequest
-	(*CreateManagersResponse)(nil), // 1: manager.CreateManagersResponse
-	(*ManagerInfo)(nil),            // 2: manager.ManagerInfo
-	(*TaskStatusRequest)(nil),      // 3: manager.TaskStatusRequest
-	(*TaskStatusResponse)(nil),     // 4: manager.TaskStatusResponse
-	nil,                            // 5: manager.CreateManagersRequest.MetadataEntry
+var file_boss_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_boss_manager_proto_goTypes = []any{
+	(*WorkerRole)(nil),             // 0: manager.WorkerRole
+	(*ManagerInfo)(nil),            // 1: manager.ManagerInfo
+	(*AssignManagersRequest)(nil),  // 2: manager.AssignManagersRequest
+	(*ManagerRole)(nil),            // 3: manager.ManagerRole
+	(*AssignManagersResponse)(nil), // 4: manager.AssignManagersResponse
+	(*GetTaskRequest)(nil),         // 5: manager.GetTaskRequest
+	(*GetTaskResponse)(nil),        // 6: manager.GetTaskResponse
 }
-var file_proto_boss_manager_proto_depIdxs = []int32{
-	5, // 0: manager.CreateManagersRequest.metadata:type_name -> manager.CreateManagersRequest.MetadataEntry
-	2, // 1: manager.CreateManagersResponse.managers:type_name -> manager.ManagerInfo
-	0, // 2: manager.ManagerService.CreateManagers:input_type -> manager.CreateManagersRequest
-	3, // 3: manager.ManagerService.GetTaskStatus:input_type -> manager.TaskStatusRequest
-	1, // 4: manager.ManagerService.CreateManagers:output_type -> manager.CreateManagersResponse
-	4, // 5: manager.ManagerService.GetTaskStatus:output_type -> manager.TaskStatusResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+var file_boss_manager_proto_depIdxs = []int32{
+	0, // 0: manager.ManagerInfo.worker_roles:type_name -> manager.WorkerRole
+	3, // 1: manager.AssignManagersRequest.manager_roles:type_name -> manager.ManagerRole
+	1, // 2: manager.AssignManagersResponse.managers:type_name -> manager.ManagerInfo
+	2, // 3: manager.ManagerService.AssignManagers:input_type -> manager.AssignManagersRequest
+	5, // 4: manager.ManagerService.GetTask:input_type -> manager.GetTaskRequest
+	4, // 5: manager.ManagerService.AssignManagers:output_type -> manager.AssignManagersResponse
+	6, // 6: manager.ManagerService.GetTask:output_type -> manager.GetTaskResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_proto_boss_manager_proto_init() }
-func file_proto_boss_manager_proto_init() {
-	if File_proto_boss_manager_proto != nil {
+func init() { file_boss_manager_proto_init() }
+func file_boss_manager_proto_init() {
+	if File_boss_manager_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_boss_manager_proto_rawDesc), len(file_proto_boss_manager_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_boss_manager_proto_rawDesc), len(file_boss_manager_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_boss_manager_proto_goTypes,
-		DependencyIndexes: file_proto_boss_manager_proto_depIdxs,
-		MessageInfos:      file_proto_boss_manager_proto_msgTypes,
+		GoTypes:           file_boss_manager_proto_goTypes,
+		DependencyIndexes: file_boss_manager_proto_depIdxs,
+		MessageInfos:      file_boss_manager_proto_msgTypes,
 	}.Build()
-	File_proto_boss_manager_proto = out.File
-	file_proto_boss_manager_proto_goTypes = nil
-	file_proto_boss_manager_proto_depIdxs = nil
+	File_boss_manager_proto = out.File
+	file_boss_manager_proto_goTypes = nil
+	file_boss_manager_proto_depIdxs = nil
 }

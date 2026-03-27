@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/pkg/database"
 	"boss/pkg/models"
+
 	"github.com/google/uuid"
 	"github.com/yhwhpe/llm-unified-client"
 )
@@ -15,21 +16,20 @@ import (
 // BossService — сервис босса
 type BossService struct {
 	bosspb.UnimplementedBossServiceServer
-	llm *llm.Client
+	llm llm.Client
 }
 
-func NewBossService() *BossService {
-	// Инициализация LLM клиента
-	llmClient, err := llm.NewClient(llm.Config{
+func NewBossService(apiKey string) *BossService {
+	client, err := llm.NewClient(llm.Config{
 		Provider: "azure",
-		// API ключ из env
+		APIKey:   apiKey,
 	})
 	if err != nil {
 		log.Fatalf("Failed to create LLM client: %v", err)
 	}
 
 	return &BossService{
-		llm: llmClient,
+		llm: client,
 	}
 }
 
@@ -61,8 +61,8 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	decision, err := s.thinkAboutTask(req)
 	if err != nil {
 		return &bosspb.BossDecision{
-			TaskId:      task.ID.String(),
-			Status:      "error",
+			TaskId:       task.ID.String(),
+			Status:       "error",
 			ErrorMessage: err.Error(),
 		}, nil
 	}
@@ -91,30 +91,41 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	task.Status = "managers_assigned"
 	database.Db.Save(task)
 
-	// 5. Отправляем задачу менеджер сервису
-	// TODO: Вызвать managerClient.AssignManagers()
-
 	return &bosspb.BossDecision{
 		TaskId:               task.ID.String(),
 		Status:               "managers_assigned",
 		ManagersCount:        decision.ManagersCount,
+		ManagerRoles:         decision.ManagerRolesProto(),
 		TechnicalDescription: decision.TechnicalDescription,
 		TechStack:            decision.TechStack,
 		ArchitectureNotes:    decision.ArchitectureNotes,
 	}, nil
 }
 
-// BossDecision — результат размышлений босса
-type BossDecision struct {
-	ManagersCount        int32
-	ManagerRoles         []models.ManagerRole
-	TechnicalDescription string
-	TechStack            []string
-	ArchitectureNotes    string
+// BossDecisionResult — результат размышлений босса
+type BossDecisionResult struct {
+	ManagersCount        int32                `json:"managers_count"`
+	ManagerRoles         []models.ManagerRole `json:"manager_roles"`
+	TechnicalDescription string               `json:"technical_description"`
+	TechStack            []string             `json:"tech_stack"`
+	ArchitectureNotes    string               `json:"architecture_notes"`
+}
+
+// ManagerRolesProto конвертирует в proto формат
+func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {
+	result := make([]*bosspb.ManagerRole, len(r.ManagerRoles))
+	for i, role := range r.ManagerRoles {
+		result[i] = &bosspb.ManagerRole{
+			Role:        role.Role,
+			Description: role.Description,
+			Priority:    role.Priority,
+		}
+	}
+	return result
 }
 
 // thinkAboutTask — босс думает над задачей через ИИ
-func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecision, error) {
+func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
 	prompt := `Ты технический директор (CTO) компании. Тебе дали задачу:
 
 Название: ` + req.Title + `
@@ -127,7 +138,7 @@ func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecisi
 4. Указать стек технологий
 5. Описать архитектуру решения
 
-Ответь в формате JSON:
+Ответь ТОЛЬКО в формате JSON без markdown:
 {
   "managers_count": 3,
   "manager_roles": [
@@ -140,23 +151,17 @@ func (s *BossService) thinkAboutTask(req *bosspb.CreateTaskRequest) (*BossDecisi
   "architecture_notes": "Заметки об архитектуре..."
 }`
 
-	// Вызов к ИИ
-	resp, err := s.llm.Chat(context.Background(), llm.Message{
-		Role:    "user",
-		Content: prompt,
-	})
+	resp, err := llm.GenerateSimple(context.Background(), s.llm, prompt)
 	if err != nil {
 		return nil, err
 	}
 
-	// Парсим ответ ИИ
-	var decision BossDecision
+	var decision BossDecisionResult
 	if err := json.Unmarshal([]byte(resp.Content), &decision); err != nil {
 		return nil, err
 	}
 
 	log.Printf("Босс принял решение: %+v", decision)
-
 	return &decision, nil
 }
 
@@ -168,8 +173,8 @@ func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusR
 	}
 
 	return &bosspb.TaskStatusResponse{
-		TaskId:  task.ID.String(),
-		Status:  task.Status,
-		Progress: "50%", // TODO: Считать прогресс
+		TaskId:   task.ID.String(),
+		Status:   task.Status,
+		Progress: "50%",
 	}, nil
 }

@@ -17,9 +17,9 @@ type Server struct {
 	service *service.BossService
 }
 
-func NewServer(service *service.BossService) *Server {
+func NewServer(s *service.BossService) *Server {
 	return &Server{
-		service: service,
+		service: s,
 	}
 }
 
@@ -32,19 +32,19 @@ func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusReques
 }
 
 // Start запускает gRPC сервер
-func Start(port string, service *service.BossService) error {
+func Start(port string, s *service.BossService) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}
 
-	server := grpc.NewServer(
+	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(100*1024*1024),
 		grpc.MaxSendMsgSize(100*1024*1024),
 	)
-	bosspb.RegisterBossServiceServer(server, NewServer(service))
+	bosspb.RegisterBossServiceServer(grpcServer, NewServer(s))
 
 	log.Printf("Boss gRPC сервер запущен на порту %s", port)
 
-	return server.Serve(lis)
+	return grpcServer.Serve(lis)
 }

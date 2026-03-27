@@ -4,34 +4,41 @@ package manager;
 
 option go_package = "manager/internal/fetcher/grpc/managerpb";
 
-import "boss.proto";
+// Роль воркера (определяется локально)
+message WorkerRole {
+  string role = 1;
+  string description = 2;
+}
+
+// Информация о менеджере
+message ManagerInfo {
+  string id = 1;
+  string role = 2;
+  string status = 3;
+  repeated WorkerRole worker_roles = 4;
+}
 
 // Запрос от boss к manager
 message AssignManagersRequest {
   string task_id = 1;
   string technical_description = 2;
   repeated string tech_stack = 3;
-  repeated ManagerRole manager_roles = 4;  // От босса
+  repeated ManagerRole manager_roles = 4;
+}
+
+// Роль менеджера (копия из boss.proto для независимости)
+message ManagerRole {
+  string role = 1;
+  string description = 2;
+  int32 priority = 3;
 }
 
 // Ответ manager
 message AssignManagersResponse {
   string task_id = 1;
-  string status = 2;  // success, error
+  string status = 2;
   repeated ManagerInfo managers = 3;
   string error_message = 4;
-}
-
-message ManagerInfo {
-  string id = 1;
-  string role = 2;  // "frontend", "backend", "testing"
-  string status = 3;  // active, completed, error
-  repeated WorkerRole worker_roles = 4;  // Менеджер решает сколько воркеров нужно
-}
-
-message WorkerRole {
-  string role = 1;  // "react-dev", "go-dev", "qa-automation"
-  string description = 2;
 }
 
 // Запрос на получение задачи для менеджера

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.0
-// source: proto/gateway-boss.proto
+// source: gateway-boss.proto
 
 package bosspb
 
@@ -19,103 +19,141 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TaskService_Task_FullMethodName = "/boss.TaskService/Task"
+	BossService_CreateTask_FullMethodName    = "/boss.BossService/CreateTask"
+	BossService_GetTaskStatus_FullMethodName = "/boss.BossService/GetTaskStatus"
 )
 
-// TaskServiceClient is the client API for TaskService service.
+// BossServiceClient is the client API for BossService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type TaskServiceClient interface {
-	Task(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error)
+type BossServiceClient interface {
+	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error)
+	GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
 }
 
-type taskServiceClient struct {
+type bossServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
-	return &taskServiceClient{cc}
+func NewBossServiceClient(cc grpc.ClientConnInterface) BossServiceClient {
+	return &bossServiceClient{cc}
 }
 
-func (c *taskServiceClient) Task(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error) {
+func (c *bossServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TaskResponse)
-	err := c.cc.Invoke(ctx, TaskService_Task_FullMethodName, in, out, cOpts...)
+	out := new(BossDecision)
+	err := c.cc.Invoke(ctx, BossService_CreateTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// TaskServiceServer is the server API for TaskService service.
-// All implementations must embed UnimplementedTaskServiceServer
-// for forward compatibility.
-type TaskServiceServer interface {
-	Task(context.Context, *TaskRequest) (*TaskResponse, error)
-	mustEmbedUnimplementedTaskServiceServer()
+func (c *bossServiceClient) GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TaskStatusResponse)
+	err := c.cc.Invoke(ctx, BossService_GetTaskStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-// UnimplementedTaskServiceServer must be embedded to have
+// BossServiceServer is the server API for BossService service.
+// All implementations must embed UnimplementedBossServiceServer
+// for forward compatibility.
+type BossServiceServer interface {
+	CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error)
+	GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error)
+	mustEmbedUnimplementedBossServiceServer()
+}
+
+// UnimplementedBossServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedTaskServiceServer struct{}
+type UnimplementedBossServiceServer struct{}
 
-func (UnimplementedTaskServiceServer) Task(context.Context, *TaskRequest) (*TaskResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Task not implemented")
+func (UnimplementedBossServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTask not implemented")
 }
-func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
-func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
+func (UnimplementedBossServiceServer) GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTaskStatus not implemented")
+}
+func (UnimplementedBossServiceServer) mustEmbedUnimplementedBossServiceServer() {}
+func (UnimplementedBossServiceServer) testEmbeddedByValue()                     {}
 
-// UnsafeTaskServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TaskServiceServer will
+// UnsafeBossServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to BossServiceServer will
 // result in compilation errors.
-type UnsafeTaskServiceServer interface {
-	mustEmbedUnimplementedTaskServiceServer()
+type UnsafeBossServiceServer interface {
+	mustEmbedUnimplementedBossServiceServer()
 }
 
-func RegisterTaskServiceServer(s grpc.ServiceRegistrar, srv TaskServiceServer) {
-	// If the following call panics, it indicates UnimplementedTaskServiceServer was
+func RegisterBossServiceServer(s grpc.ServiceRegistrar, srv BossServiceServer) {
+	// If the following call panics, it indicates UnimplementedBossServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&TaskService_ServiceDesc, srv)
+	s.RegisterService(&BossService_ServiceDesc, srv)
 }
 
-func _TaskService_Task_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskRequest)
+func _BossService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).Task(ctx, in)
+		return srv.(BossServiceServer).CreateTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_Task_FullMethodName,
+		FullMethod: BossService_CreateTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).Task(ctx, req.(*TaskRequest))
+		return srv.(BossServiceServer).CreateTask(ctx, req.(*CreateTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
+func _BossService_GetTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BossServiceServer).GetTaskStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BossService_GetTaskStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BossServiceServer).GetTaskStatus(ctx, req.(*TaskStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// BossService_ServiceDesc is the grpc.ServiceDesc for BossService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var TaskService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "boss.TaskService",
-	HandlerType: (*TaskServiceServer)(nil),
+var BossService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "boss.BossService",
+	HandlerType: (*BossServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Task",
-			Handler:    _TaskService_Task_Handler,
+			MethodName: "CreateTask",
+			Handler:    _BossService_CreateTask_Handler,
+		},
+		{
+			MethodName: "GetTaskStatus",
+			Handler:    _BossService_GetTaskStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/gateway-boss.proto",
+	Metadata: "gateway-boss.proto",
 }
