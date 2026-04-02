@@ -4,56 +4,22 @@ package manager;
 
 option go_package = "manager/internal/fetcher/grpc/managerpb";
 
-// Роль воркера (определяется локально)
-message WorkerRole {
-  string role = 1;
-  string description = 2;
-}
-
-// Информация о менеджере
-message ManagerInfo {
-  string id = 1;
-  string role = 2;
-  string status = 3;
-  repeated WorkerRole worker_roles = 4;
-}
-
 // Запрос от boss к manager
 message AssignManagersRequest {
   string task_id = 1;
   string technical_description = 2;
-  repeated string tech_stack = 3;
-  repeated ManagerRole manager_roles = 4;
+  repeated string roles = 3;
+  map<string, string> metadata = 4;
 }
 
-// Роль менеджера (копия из boss.proto для независимости)
-message ManagerRole {
-  string role = 1;
-  string description = 2;
-  int32 priority = 3;
-}
-
-// Ответ manager
+// Ответ manager с ZIP архивом
 message AssignManagersResponse {
   string task_id = 1;
   string status = 2;
-  repeated ManagerInfo managers = 3;
-  string error_message = 4;
-}
-
-// Запрос на получение задачи для менеджера
-message GetTaskRequest {
-  string manager_id = 1;
-}
-
-message GetTaskResponse {
-  string task_id = 1;
-  string technical_description = 2;
-  repeated string tech_stack = 3;
-  string manager_role = 4;
+  string message = 3;
+  bytes solution = 4;  // ZIP архив со всем проектом
 }
 
 service ManagerService {
-  rpc AssignManagers(AssignManagersRequest) returns (AssignManagersResponse);
-  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc AssignManagersAndWait(AssignManagersRequest) returns (AssignManagersResponse);
 }

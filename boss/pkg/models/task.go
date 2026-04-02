@@ -20,7 +20,7 @@ type Task struct {
 	Status string `gorm:"default:'pending'"` // pending, boss_planning, managers_assigned, workers_assigned, processing, reviewing, done, error
 
 	// Результаты
-	Solution      string `gorm:"type:bytea"` // ZIP архив
+	Solution      []byte `gorm:"type:bytea"` // ZIP архив
 	ResultArchive string // Путь к архиву /tasks/{task_id}/solution.zip
 }
 

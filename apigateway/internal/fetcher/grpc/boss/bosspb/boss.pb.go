@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Запрос от apigateway к boss
+// Request from apigateway to boss
 type CreateTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -29,7 +29,7 @@ type CreateTaskRequest struct {
 	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	Tokens        []string               `protobuf:"bytes,5,rep,name=tokens,proto3" json:"tokens,omitempty"`
-	Meta          map[string]string      `protobuf:"bytes,6,rep,name=meta,proto3" json:"meta,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Meta          map[string]string      `protobuf:"bytes,6,rep,name=meta,proto3" json:"meta,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // model, modelUrl
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -106,7 +106,7 @@ func (x *CreateTaskRequest) GetMeta() map[string]string {
 	return nil
 }
 
-// Роль менеджера
+// Manager role
 type ManagerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
@@ -167,17 +167,18 @@ func (x *ManagerRole) GetPriority() int32 {
 	return 0
 }
 
-// Решение босса
+// Boss decision with ZIP solution
 type BossDecision struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	TaskId               string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	Status               string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Status               string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // done, error
 	ManagersCount        int32                  `protobuf:"varint,3,opt,name=managers_count,json=managersCount,proto3" json:"managers_count,omitempty"`
 	ManagerRoles         []*ManagerRole         `protobuf:"bytes,4,rep,name=manager_roles,json=managerRoles,proto3" json:"manager_roles,omitempty"`
 	TechnicalDescription string                 `protobuf:"bytes,5,opt,name=technical_description,json=technicalDescription,proto3" json:"technical_description,omitempty"`
 	TechStack            []string               `protobuf:"bytes,6,rep,name=tech_stack,json=techStack,proto3" json:"tech_stack,omitempty"`
 	ArchitectureNotes    string                 `protobuf:"bytes,7,opt,name=architecture_notes,json=architectureNotes,proto3" json:"architecture_notes,omitempty"`
-	ErrorMessage         string                 `protobuf:"bytes,8,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	Solution             []byte                 `protobuf:"bytes,8,opt,name=solution,proto3" json:"solution,omitempty"` // ZIP archive
+	ErrorMessage         string                 `protobuf:"bytes,9,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -261,6 +262,13 @@ func (x *BossDecision) GetArchitectureNotes() string {
 	return ""
 }
 
+func (x *BossDecision) GetSolution() []byte {
+	if x != nil {
+		return x.Solution
+	}
+	return nil
+}
+
 func (x *BossDecision) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
@@ -268,7 +276,7 @@ func (x *BossDecision) GetErrorMessage() string {
 	return ""
 }
 
-// Запрос статуса задачи
+// Task status request
 type TaskStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
@@ -318,7 +326,6 @@ type TaskStatusResponse struct {
 	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	Progress      string                 `protobuf:"bytes,3,opt,name=progress,proto3" json:"progress,omitempty"`
-	ResultUrl     string                 `protobuf:"bytes,4,opt,name=result_url,json=resultUrl,proto3" json:"result_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -374,13 +381,6 @@ func (x *TaskStatusResponse) GetProgress() string {
 	return ""
 }
 
-func (x *TaskStatusResponse) GetResultUrl() string {
-	if x != nil {
-		return x.ResultUrl
-	}
-	return ""
-}
-
 var File_boss_proto protoreflect.FileDescriptor
 
 const file_boss_proto_rawDesc = "" +
@@ -400,7 +400,7 @@ const file_boss_proto_rawDesc = "" +
 	"\vManagerRole\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
-	"\bpriority\x18\x03 \x01(\x05R\bpriority\"\xc6\x02\n" +
+	"\bpriority\x18\x03 \x01(\x05R\bpriority\"\xe2\x02\n" +
 	"\fBossDecision\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12%\n" +
@@ -409,16 +409,15 @@ const file_boss_proto_rawDesc = "" +
 	"\x15technical_description\x18\x05 \x01(\tR\x14technicalDescription\x12\x1d\n" +
 	"\n" +
 	"tech_stack\x18\x06 \x03(\tR\ttechStack\x12-\n" +
-	"\x12architecture_notes\x18\a \x01(\tR\x11architectureNotes\x12#\n" +
-	"\rerror_message\x18\b \x01(\tR\ferrorMessage\",\n" +
+	"\x12architecture_notes\x18\a \x01(\tR\x11architectureNotes\x12\x1a\n" +
+	"\bsolution\x18\b \x01(\fR\bsolution\x12#\n" +
+	"\rerror_message\x18\t \x01(\tR\ferrorMessage\",\n" +
 	"\x11TaskStatusRequest\x12\x17\n" +
-	"\atask_id\x18\x01 \x01(\tR\x06taskId\"\x80\x01\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\"a\n" +
 	"\x12TaskStatusResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1a\n" +
-	"\bprogress\x18\x03 \x01(\tR\bprogress\x12\x1d\n" +
-	"\n" +
-	"result_url\x18\x04 \x01(\tR\tresultUrl2\x8c\x01\n" +
+	"\bprogress\x18\x03 \x01(\tR\bprogress2\x8c\x01\n" +
 	"\vBossService\x129\n" +
 	"\n" +
 	"CreateTask\x12\x17.boss.CreateTaskRequest\x1a\x12.boss.BossDecision\x12B\n" +

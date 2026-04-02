@@ -4,39 +4,40 @@ package boss;
 
 option go_package = "boss/internal/fetcher/grpc/bosspb";
 
-// Запрос от apigateway к boss
+// Request from apigateway to boss
 message CreateTaskRequest {
   string user_id = 1;
   string username = 2;
   string title = 3;
   string description = 4;
   repeated string tokens = 5;
-  map<string, string> meta = 6;  // model, modelUrl, и другие метаданные
+  map<string, string> meta = 6;  // model, modelUrl
 }
 
-// Роль менеджера
+// Manager role
 message ManagerRole {
   string role = 1;
   string description = 2;
   int32 priority = 3;
 }
 
-// Решение босса
+// Boss decision with ZIP solution
 message BossDecision {
   string task_id = 1;
-  string status = 2;
-  
+  string status = 2;  // done, error
+
   int32 managers_count = 3;
   repeated ManagerRole manager_roles = 4;
-  
+
   string technical_description = 5;
   repeated string tech_stack = 6;
   string architecture_notes = 7;
   
-  string error_message = 8;
+  bytes solution = 8;  // ZIP archive
+  string error_message = 9;
 }
 
-// Запрос статуса задачи
+// Task status request
 message TaskStatusRequest {
   string task_id = 1;
 }
@@ -45,7 +46,6 @@ message TaskStatusResponse {
   string task_id = 1;
   string status = 2;
   string progress = 3;
-  string result_url = 4;
 }
 
 service BossService {

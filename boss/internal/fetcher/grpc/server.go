@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Server — gRPC сервер boss сервиса
 type Server struct {
 	bosspb.UnimplementedBossServiceServer
 	service *service.BossService
@@ -31,7 +30,6 @@ func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusReques
 	return s.service.GetTaskStatus(ctx, req)
 }
 
-// Start запускает gRPC сервер
 func Start(port string, s *service.BossService) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {

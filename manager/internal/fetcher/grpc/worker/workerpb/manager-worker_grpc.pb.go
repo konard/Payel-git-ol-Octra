@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkerService_AssignWorkersAndWait_FullMethodName = "/worker.WorkerService/AssignWorkersAndWait"
+	WorkerService_AssignWorkers_FullMethodName = "/worker.WorkerService/AssignWorkers"
+	WorkerService_SubmitResult_FullMethodName  = "/worker.WorkerService/SubmitResult"
 )
 
 // WorkerServiceClient is the client API for WorkerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerServiceClient interface {
-	AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error)
+	AssignWorkers(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error)
+	SubmitResult(ctx context.Context, in *WorkerResult, opts ...grpc.CallOption) (*ReviewResponse, error)
 }
 
 type workerServiceClient struct {
@@ -37,10 +39,20 @@ func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
 	return &workerServiceClient{cc}
 }
 
-func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error) {
+func (c *workerServiceClient) AssignWorkers(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AssignWorkersResponse)
-	err := c.cc.Invoke(ctx, WorkerService_AssignWorkersAndWait_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, WorkerService_AssignWorkers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workerServiceClient) SubmitResult(ctx context.Context, in *WorkerResult, opts ...grpc.CallOption) (*ReviewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewResponse)
+	err := c.cc.Invoke(ctx, WorkerService_SubmitResult_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +63,8 @@ func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *Assi
 // All implementations must embed UnimplementedWorkerServiceServer
 // for forward compatibility.
 type WorkerServiceServer interface {
-	AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error)
+	AssignWorkers(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error)
+	SubmitResult(context.Context, *WorkerResult) (*ReviewResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -62,8 +75,11 @@ type WorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkerServiceServer struct{}
 
-func (UnimplementedWorkerServiceServer) AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AssignWorkersAndWait not implemented")
+func (UnimplementedWorkerServiceServer) AssignWorkers(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssignWorkers not implemented")
+}
+func (UnimplementedWorkerServiceServer) SubmitResult(context.Context, *WorkerResult) (*ReviewResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitResult not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
 func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
@@ -86,20 +102,38 @@ func RegisterWorkerServiceServer(s grpc.ServiceRegistrar, srv WorkerServiceServe
 	s.RegisterService(&WorkerService_ServiceDesc, srv)
 }
 
-func _WorkerService_AssignWorkersAndWait_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkerService_AssignWorkers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssignWorkersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkerServiceServer).AssignWorkersAndWait(ctx, in)
+		return srv.(WorkerServiceServer).AssignWorkers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: WorkerService_AssignWorkersAndWait_FullMethodName,
+		FullMethod: WorkerService_AssignWorkers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServiceServer).AssignWorkersAndWait(ctx, req.(*AssignWorkersRequest))
+		return srv.(WorkerServiceServer).AssignWorkers(ctx, req.(*AssignWorkersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkerService_SubmitResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkerResult)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServiceServer).SubmitResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkerService_SubmitResult_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServiceServer).SubmitResult(ctx, req.(*WorkerResult))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +146,12 @@ var WorkerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*WorkerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AssignWorkersAndWait",
-			Handler:    _WorkerService_AssignWorkersAndWait_Handler,
+			MethodName: "AssignWorkers",
+			Handler:    _WorkerService_AssignWorkers_Handler,
+		},
+		{
+			MethodName: "SubmitResult",
+			Handler:    _WorkerService_SubmitResult_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

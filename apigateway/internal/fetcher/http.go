@@ -13,7 +13,8 @@ var bossClient *boss.Client
 
 func init() {
 	var err error
-	bossClient, err = boss.NewClient("localhost:50051")
+	bossHost := "boss:50051"
+	bossClient, err = boss.NewClient(bossHost)
 	if err != nil {
 		log.Printf("Warning: failed to connect to boss service: %v", err)
 	}
@@ -48,6 +49,7 @@ func HttpManager(a *azure.Azure) {
 			return
 		}
 
+		// Call Boss and wait for full cycle
 		resp, err := bossClient.CreateTask(context.Background(), req.UserID, req.Username, req.Title, req.Description, req.Tokens, req.Meta)
 		if err != nil {
 			c.JsonStatus(500, azure.M{
@@ -57,14 +59,24 @@ func HttpManager(a *azure.Azure) {
 			return
 		}
 
+		// Check status
+		if resp.Status == "error" {
+			c.JsonStatus(500, azure.M{
+				"status":  "error",
+				"message": resp.ErrorMessage,
+			})
+			return
+		}
+
+		// Return ZIP archive to user
 		c.JsonStatus(200, azure.M{
 			"status":       "success",
 			"task_id":      resp.TaskId,
-			"task_status":  resp.Status,
 			"managers":     resp.ManagersCount,
 			"tech_stack":   resp.TechStack,
 			"description":  resp.TechnicalDescription,
 			"architecture": resp.ArchitectureNotes,
+			"solution":     resp.Solution, // ZIP archive bytes
 		})
 	})
 

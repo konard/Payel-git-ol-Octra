@@ -1,11 +1,14 @@
 package service
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
 
 	"boss/internal/fetcher/grpc/bosspb"
+	"boss/internal/fetcher/grpc/manager"
 	"boss/pkg/database"
 	"boss/pkg/llm"
 	"boss/pkg/models"
@@ -13,20 +16,28 @@ import (
 	"github.com/google/uuid"
 )
 
-// BossService — сервис босса
+// BossService — boss service
 type BossService struct {
 	bosspb.UnimplementedBossServiceServer
+	managerClient *manager.Client
 }
 
 func NewBossService() *BossService {
-	return &BossService{}
+	mgrClient, err := manager.NewClient("manager:50052")
+	if err != nil {
+		log.Printf("Warning: failed to connect to manager service: %v", err)
+	}
+
+	return &BossService{
+		managerClient: mgrClient,
+	}
 }
 
-// CreateTask принимает задачу от пользователя и расписывает план
+// CreateTask accepts task, executes full cycle and returns ZIP
 func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequest) (*bosspb.BossDecision, error) {
-	log.Printf("Получена задача от %s: %s", req.Username, req.Title)
+	log.Printf("Received task from %s: %s", req.Username, req.Title)
 
-	// 1. Сохраняем задачу в БД
+	// 1. Save task to DB
 	task := &models.Task{
 		ID:          uuid.New(),
 		UserID:      req.UserId,
@@ -36,7 +47,6 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		Status:      "boss_planning",
 	}
 
-	// Сериализуем токены и метаданные
 	tokensJSON, _ := json.Marshal(req.Tokens)
 	metaJSON, _ := json.Marshal(req.Meta)
 	task.Tokens = string(tokensJSON)
@@ -46,24 +56,32 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		return nil, err
 	}
 
-	// 2. Получаем model и modelUrl из метаданных (или дефолтные)
+	// 2. Get model and modelUrl
 	model := req.Meta["model"]
 	modelURL := req.Meta["modelUrl"]
+	if model == "" {
+		model = "openai/gpt-3.5-turbo"
+	}
+	if modelURL == "" {
+		modelURL = "https://openrouter.ai/api/v1"
+	}
 
-	// 3. Создаём LLM клиент с токенами пользователя и кастомной моделью
-	llmClient := llm.NewOpenRouterClient(modelURL, model, req.Tokens)
+	// Create LLM client (factory automatically detects provider)
+	llmClient := llm.NewLLMClient(modelURL, model, req.Tokens)
 
-	// 4. Босс думает над задачей через ИИ
+	// 3. Boss thinks about task
 	decision, err := s.thinkAboutTask(ctx, llmClient, req)
 	if err != nil {
+		task.Status = "error"
+		database.Db.Save(task)
 		return &bosspb.BossDecision{
 			TaskId:       task.ID.String(),
 			Status:       "error",
-			ErrorMessage: err.Error(),
+			ErrorMessage: "Failed to plan task: " + err.Error(),
 		}, nil
 	}
 
-	// 5. Сохраняем решение босса
+	// 4. Save boss decision
 	bossDecision := &models.BossDecision{
 		ID:                   uuid.New(),
 		TaskID:               task.ID,
@@ -73,7 +91,6 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		ArchitectureNotes:    decision.ArchitectureNotes,
 	}
 
-	// Сериализуем роли менеджеров и стек
 	rolesJSON, _ := json.Marshal(decision.ManagerRoles)
 	stackJSON, _ := json.Marshal(decision.TechStack)
 	bossDecision.ManagerRoles = string(rolesJSON)
@@ -83,22 +100,66 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		return nil, err
 	}
 
-	// 6. Обновляем статус задачи
-	task.Status = "managers_assigned"
+	// 5. Call Manager service (wait for full cycle)
+	log.Printf("Calling Manager service for full cycle...")
+
+	roles := make([]string, len(decision.ManagerRoles))
+	for i, r := range decision.ManagerRoles {
+		roles[i] = r.Role
+	}
+
+	// Call Manager and get ZIP archive
+	zipData, err := s.managerClient.AssignManagersAndWait(
+		ctx,
+		task.ID.String(),
+		decision.TechnicalDescription,
+		roles,
+		req.Tokens,
+		model,
+		modelURL,
+	)
+	if err != nil {
+		log.Printf("Error calling Manager: %v", err)
+		task.Status = "error"
+		database.Db.Save(task)
+		return &bosspb.BossDecision{
+			TaskId:       task.ID.String(),
+			Status:       "error",
+			ErrorMessage: "Failed to execute task: " + err.Error(),
+		}, nil
+	}
+
+	if len(zipData) == 0 {
+		task.Status = "error"
+		database.Db.Save(task)
+		return &bosspb.BossDecision{
+			TaskId:       task.ID.String(),
+			Status:       "error",
+			ErrorMessage: "No solution generated",
+		}, nil
+	}
+
+	// 6. Save ZIP solution
+	task.Solution = zipData
+	task.Status = "done"
 	database.Db.Save(task)
 
+	log.Printf("Task completed! ZIP size: %d bytes", len(zipData))
+
+	// 7. Return result with ZIP
 	return &bosspb.BossDecision{
 		TaskId:               task.ID.String(),
-		Status:               "managers_assigned",
+		Status:               "done",
 		ManagersCount:        decision.ManagersCount,
 		ManagerRoles:         decision.ManagerRolesProto(),
 		TechnicalDescription: decision.TechnicalDescription,
 		TechStack:            decision.TechStack,
 		ArchitectureNotes:    decision.ArchitectureNotes,
+		Solution:             zipData,
 	}, nil
 }
 
-// BossDecisionResult — результат размышлений босса
+// BossDecisionResult — result of boss thinking
 type BossDecisionResult struct {
 	ManagersCount        int32                `json:"managers_count"`
 	ManagerRoles         []models.ManagerRole `json:"manager_roles"`
@@ -107,7 +168,6 @@ type BossDecisionResult struct {
 	ArchitectureNotes    string               `json:"architecture_notes"`
 }
 
-// ManagerRolesProto конвертирует в proto формат
 func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {
 	result := make([]*bosspb.ManagerRole, len(r.ManagerRoles))
 	for i, role := range r.ManagerRoles {
@@ -120,50 +180,45 @@ func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {
 	return result
 }
 
-// thinkAboutTask — босс думает над задачей через ИИ
 func (s *BossService) thinkAboutTask(ctx context.Context, llmClient llm.Client, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
-	prompt := `Ты технический директор (CTO) компании. Тебе дали задачу:
+	log.Printf("Boss thinking about task: %s", req.Title)
 
-Название: ` + req.Title + `
-Описание: ` + req.Description + `
+	prompt := `You are CTO. Task:
 
-Твоя задача:
-1. Определить сколько менеджеров нужно для этой задачи
-2. Расписать роли менеджеров (frontend, backend, testing, deployment, devops)
-3. Описать техническое задание для менеджеров
-4. Указать стек технологий
-5. Описать архитектуру решения
+Title: ` + req.Title + `
+Description: ` + req.Description + `
 
-Ответь ТОЛЬКО в формате JSON без markdown:
+Reply ONLY with JSON:
 {
   "managers_count": 3,
   "manager_roles": [
-    {"role": "frontend", "description": "Отвечает за frontend часть", "priority": 1},
-    {"role": "backend", "description": "Отвечает за backend API", "priority": 2},
-    {"role": "testing", "description": "Тестирование и QA", "priority": 3}
+    {"role": "frontend", "description": "Frontend part", "priority": 1},
+    {"role": "backend", "description": "Backend API", "priority": 2},
+    {"role": "testing", "description": "Testing", "priority": 3}
   ],
-  "technical_description": "Подробное техническое описание...",
+  "technical_description": "Technical description...",
   "tech_stack": ["Go", "React", "PostgreSQL", "Docker"],
-  "architecture_notes": "Заметки об архитектуре..."
+  "architecture_notes": "Architecture notes..."
 }`
 
+	log.Printf("Sending request to AI...")
 	resp, err := llmClient.Generate(ctx, prompt)
 	if err != nil {
+		log.Printf("AI error: %v", err)
 		return nil, err
 	}
-
-	log.Printf("Босс получил ответ: %s", truncate(resp, 200))
 
 	var decision BossDecisionResult
 	if err := json.Unmarshal([]byte(resp), &decision); err != nil {
+		log.Printf("JSON parse error: %v", err)
 		return nil, err
 	}
 
-	log.Printf("Босс принял решение: %+v", decision)
+	log.Printf("Boss made decision: %+v", decision)
 	return &decision, nil
 }
 
-// GetTaskStatus возвращает статус задачи
+// GetTaskStatus returns task status
 func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusRequest) (*bosspb.TaskStatusResponse, error) {
 	var task models.Task
 	if err := database.Db.First(&task, "id = ?", req.TaskId).Error; err != nil {
@@ -177,9 +232,26 @@ func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusR
 	}, nil
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
+// CreateZipArchive creates ZIP from files
+func CreateZipArchive(files map[string]string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	w := zip.NewWriter(buf)
+
+	for path, content := range files {
+		f, err := w.Create(path)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write([]byte(content))
+		if err != nil {
+			return nil, err
+		}
 	}
-	return s[:max] + "..."
+
+	err := w.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
