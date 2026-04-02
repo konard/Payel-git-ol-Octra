@@ -12,7 +12,6 @@ import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
 	"boss/pkg/database"
-	"boss/pkg/llm"
 	"boss/pkg/models"
 
 	"github.com/google/uuid"
@@ -60,19 +59,33 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 
 	// 2. Get model and modelUrl
 	model := req.Meta["model"]
-	modelURL := req.Meta["modelUrl"]
 	if model == "" {
-		model = "openai/gpt-3.5-turbo"
-	}
-	if modelURL == "" {
-		modelURL = "https://openrouter.ai/api/v1"
+		model = "gpt-4-mini"
 	}
 
-	// Create LLM client (factory automatically detects provider)
-	llmClient := llm.NewLLMClient(modelURL, model, req.Tokens)
+	// Determine provider from model or use default
+	provider := "openai"
+	if len(req.Meta) > 0 {
+		if p, ok := req.Meta["provider"]; ok {
+			provider = p
+		}
+	}
+
+	// Create agents client
+	agentsClient, err := NewAgentClientWrapper()
+	if err != nil {
+		task.Status = "error"
+		database.Db.Save(task)
+		return &bosspb.BossDecision{
+			TaskId:       task.ID.String(),
+			Status:       "error",
+			ErrorMessage: "Failed to initialize AI client: " + err.Error(),
+		}, nil
+	}
+	defer agentsClient.Close()
 
 	// 3. Boss thinks about task
-	decision, err := s.thinkAboutTask(ctx, llmClient, req)
+	decision, err := s.thinkAboutTask(ctx, agentsClient, provider, model, req)
 	if err != nil {
 		task.Status = "error"
 		database.Db.Save(task)
@@ -118,7 +131,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		roles,
 		req.Tokens,
 		model,
-		modelURL,
+		provider,
 	)
 	if err != nil {
 		log.Printf("Error calling Manager: %v", err)
@@ -182,7 +195,7 @@ func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {
 	return result
 }
 
-func (s *BossService) thinkAboutTask(ctx context.Context, llmClient llm.Client, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
+func (s *BossService) thinkAboutTask(ctx context.Context, agentsClient *AgentClientWrapper, provider, model string, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
 	log.Printf("Boss thinking about task: %s", req.Title)
 
 	prompt := `You are CTO. Task:
@@ -204,7 +217,7 @@ Reply ONLY with JSON:
 }`
 
 	log.Printf("Sending request to AI...")
-	resp, err := llmClient.Generate(ctx, prompt)
+	resp, err := agentsClient.GenerateFromTask(ctx, provider, model, prompt, req.Tokens)
 	if err != nil {
 		log.Printf("AI error: %v", err)
 		return nil, err
@@ -271,28 +284,41 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 
 	// 2. Get model and modelUrl
 	model := req.Meta["model"]
-	modelURL := req.Meta["modelUrl"]
 	if model == "" {
-		model = "openai/gpt-3.5-turbo"
-	}
-	if modelURL == "" {
-		modelURL = "https://openrouter.ai/api/v1"
+		model = "gpt-4-mini"
 	}
 
-	// Create LLM client (factory automatically detects provider)
-	llmClient := llm.NewLLMClient(modelURL, model, req.Tokens)
+	// Determine provider
+	provider := "openai"
+	if len(req.Meta) > 0 {
+		if p, ok := req.Meta["provider"]; ok {
+			provider = p
+		}
+	}
+
+	// Create agents client
+	agentsClient, err := NewAgentClientWrapper()
+	if err != nil {
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ Failed to initialize AI client: " + err.Error(),
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+	defer agentsClient.Close()
 
 	// Send progress
 	_ = stream.Send(&bosspb.TaskUpdate{
 		TaskId:    taskID.String(),
-		Message:   "🤖 LLM client initialized (" + model + ")",
+		Message:   "🤖 AI client initialized (" + provider + "/" + model + ")",
 		Progress:  15,
 		Status:    "processing",
 		Timestamp: time.Now().Unix(),
 	})
 
 	// 3. Boss thinks about task
-	decision, err := s.thinkAboutTask(ctx, llmClient, req)
+	decision, err := s.thinkAboutTask(ctx, agentsClient, provider, model, req)
 	if err != nil {
 		task.Status = "error"
 		database.Db.Save(task)
@@ -365,7 +391,7 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 		roles,
 		req.Tokens,
 		model,
-		modelURL,
+		provider,
 	)
 	if err != nil {
 		log.Printf("Error calling Manager: %v", err)

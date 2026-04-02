@@ -22,65 +22,92 @@ services:
 
   boss:
     build:
-      context: ./boss
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./boss/Dockerfile
     container_name: crewai-boss
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - AGENTS_SERVICE_HOST=agents:50053
     ports:
       - "50051:50051"
     depends_on:
       postgres:
         condition: service_healthy
+      agents:
+        condition: service_started
     networks:
       - crewai-network
     restart: unless-stopped
 
   manager:
     build:
-      context: ./manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./manager/Dockerfile
     container_name: crewai-manager
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AGENTS_SERVICE_HOST=agents:50053
     ports:
       - "50052:50052"
     depends_on:
       postgres:
         condition: service_healthy
+      boss:
+        condition: service_started
+      agents:
+        condition: service_started
     networks:
       - crewai-network
     restart: unless-stopped
 
   worker:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./worker/Dockerfile
     container_name: crewai-worker
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
-      - AZURE_API_KEY=${AZURE_API_KEY:-}
-    ports:
-      - "50053:50053"
+      - AGENTS_SERVICE_HOST=agents:50053
     depends_on:
       postgres:
         condition: service_healthy
+      manager:
+        condition: service_started
+      agents:
+        condition: service_started
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  agents:
+    build:
+      context: .
+      dockerfile: ./agents/Dockerfile
+    container_name: crewai-agents
+    environment:
+      - AGENTS_PORT=50053
+    ports:
+      - "50053:50053"
     networks:
       - crewai-network
     restart: unless-stopped
 
   apigateway:
     build:
-      context: ./apigateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apigateway/Dockerfile
     container_name: crewai-apigateway
     environment:
       - BOSS_SERVICE_HOST=boss:50051
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
     ports:
       - "3111:3111"
     depends_on:
-      - boss
+      boss:
+        condition: service_started
+      agents:
+        condition: service_started
     networks:
       - crewai-network
     restart: unless-stopped

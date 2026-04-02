@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package agentspb;
+
+option go_package = "agents/pb;pb";
+
+// Agent service for AI content generation
+service AgentService {
+  rpc Generate(GenerateRequest) returns (GenerateResponse) {}
+}
+
+// GenerateRequest is the request to generate content
+message GenerateRequest {
+  string provider = 1;           // claude, gemini, openai, deepseek, grok
+  string model = 2;              // specific model name
+  string prompt = 3;             // the prompt
+  map<string, string> tokens = 4; // auth tokens
+  int32 max_tokens = 5;          // response max tokens
+  float temperature = 6;         // creativity parameter
+}
+
+// GenerateResponse is the response from generation
+message GenerateResponse {
+  string provider = 1;
+  string model = 2;
+  string content = 3;
+  int32 tokens_used = 4;
+  string error = 5;
+  string error_code = 6;
+}

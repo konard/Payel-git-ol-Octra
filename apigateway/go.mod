@@ -1,8 +1,9 @@
-module crewai
+module apigateway
 
 go 1.25.4
 
 require (
+	boss v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	google.golang.org/grpc v1.80.0
@@ -24,3 +25,5 @@ require (
 	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect
 )
+
+replace boss => ../boss

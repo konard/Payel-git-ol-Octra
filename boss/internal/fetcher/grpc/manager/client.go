@@ -36,12 +36,12 @@ func (c *Client) Close() error {
 }
 
 // AssignManagersAndWait отправляет запрос и ждёт ZIP архив
-func (c *Client) AssignManagersAndWait(ctx context.Context, taskID, techDesc string, roles, tokens []string, model, modelURL string) ([]byte, error) {
+func (c *Client) AssignManagersAndWait(ctx context.Context, taskID, techDesc string, roles []string, tokens map[string]string, model, provider string) ([]byte, error) {
 	tokensJSON, _ := json.Marshal(tokens)
 	metadata := map[string]string{
 		"tokens":   string(tokensJSON),
 		"model":    model,
-		"modelUrl": modelURL,
+		"provider": provider,
 	}
 
 	req := &managerpb.AssignManagersRequest{

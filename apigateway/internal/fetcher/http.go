@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"crewai/internal/core/services"
-	"crewai/internal/fetcher/grpc/boss"
-	"crewai/internal/fetcher/grpc/boss/bosspb"
-	"crewai/pkg/requests"
+	"apigateway/internal/core/services"
+	"apigateway/internal/fetcher/grpc/boss"
+	"apigateway/internal/fetcher/grpc/boss/bosspb"
+	"apigateway/pkg/requests"
 
 	"github.com/Payel-git-ol/azure"
 	"github.com/Payel-git-ol/azure/azurewebsockets"

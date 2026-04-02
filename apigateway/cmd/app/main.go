@@ -1,9 +1,10 @@
 package main
 
 import (
-	"crewai/internal/fetcher"
-	"github.com/Payel-git-ol/azure"
+	"apigateway/internal/fetcher"
 	"log"
+
+	"github.com/Payel-git-ol/azure"
 )
 
 func main() {

@@ -1,15 +1,16 @@
 FROM golang:1.25-alpine AS builder
 
-WORKDIR /app
+WORKDIR /workspace
 
 RUN apk add --no-cache git
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Копируем apigateway и boss модули (apigateway зависит от boss)
+COPY apigateway ./apigateway
+COPY boss ./boss
 
-COPY . .
+RUN cd apigateway && go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/app
+RUN cd apigateway && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
 FROM alpine:latest
 
@@ -17,6 +18,6 @@ WORKDIR /root/
 
 RUN apk --no-cache add ca-certificates
 
-COPY --from=builder /app/main .
+COPY --from=builder /workspace/main .
 
 CMD ["./main"]

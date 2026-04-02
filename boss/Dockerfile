@@ -1,19 +1,22 @@
 FROM golang:1.25-alpine AS builder
 
-WORKDIR /app
+WORKDIR /workspace
 
 # Устанавливаем зависимости
 RUN apk add --no-cache git
 
-# Копируем go.mod и go.sum
-COPY go.mod go.sum ./
-RUN go mod download
+# Копируем все модули и go.work
+COPY go.work ./
+COPY agents ./agents
+COPY boss ./boss
+COPY manager ./manager
+COPY worker ./worker
 
-# Копируем исходный код
-COPY . .
+# Скачиваем зависимости для boss
+RUN cd boss && go mod download
 
-# Собираем
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/app
+# Собираем binary
+RUN cd boss && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
 # Финальный образ
 FROM alpine:latest
@@ -24,7 +27,7 @@ WORKDIR /root/
 RUN apk --no-cache add ca-certificates
 
 # Копируем бинарник
-COPY --from=builder /app/main .
+COPY --from=builder /workspace/main .
 
 # Запускаем
 CMD ["./main"]

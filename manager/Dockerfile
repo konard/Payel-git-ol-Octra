@@ -1,15 +1,19 @@
 FROM golang:1.25-alpine AS builder
 
-WORKDIR /app
+WORKDIR /workspace
 
 RUN apk add --no-cache git
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Копируем все модули и go.work
+COPY go.work ./
+COPY agents ./agents
+COPY boss ./boss
+COPY manager ./manager
+COPY worker ./worker
 
-COPY . .
+RUN cd manager && go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/app
+RUN cd manager && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
 FROM alpine:latest
 
@@ -17,6 +21,6 @@ WORKDIR /root/
 
 RUN apk --no-cache add ca-certificates
 
-COPY --from=builder /app/main .
+COPY --from=builder /workspace/main .
 
 CMD ["./main"]

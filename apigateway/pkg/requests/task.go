@@ -5,7 +5,7 @@ type CreateTaskRequest struct {
 	Username    string            `json:"username"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
-	Tokens      []string          `json:"tokens"`
+	Tokens      map[string]string `json:"tokens"`
 	Meta        map[string]string `json:"meta"`
 }
 

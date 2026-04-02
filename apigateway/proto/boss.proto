@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package boss;
 
-option go_package = "crewai/internal/fetcher/grpc/boss/bosspb";
+option go_package = "apigateway/internal/fetcher/grpc/boss/bosspb";
 
 // Task update message for streaming
 message TaskUpdate {
@@ -20,8 +20,8 @@ message CreateTaskRequest {
   string username = 2;
   string title = 3;
   string description = 4;
-  repeated string tokens = 5;
-  map<string, string> meta = 6;  // model, modelUrl
+  map<string, string> tokens = 5;  // provider -> API key
+  map<string, string> meta = 6;    // model, modelUrl
 }
 
 // Manager role

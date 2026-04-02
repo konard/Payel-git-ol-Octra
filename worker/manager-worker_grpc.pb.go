@@ -8,7 +8,6 @@ package workerpb
 
 import (
 	context "context"
-	commonpb "crewai/internal/fetcher/grpc/commonpb"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -29,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerServiceClient interface {
 	// Streaming version - отправляет обновления по мере выполнения
-	AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[commonpb.TaskUpdate], error)
+	AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
 	// Legacy unary version (для совместимости)
 	AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error)
 }
@@ -42,13 +41,13 @@ func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
 	return &workerServiceClient{cc}
 }
 
-func (c *workerServiceClient) AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[commonpb.TaskUpdate], error) {
+func (c *workerServiceClient) AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_AssignWorkersAndWaitStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[AssignWorkersRequest, commonpb.TaskUpdate]{ClientStream: stream}
+	x := &grpc.GenericClientStream[AssignWorkersRequest, TaskUpdate]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -59,7 +58,7 @@ func (c *workerServiceClient) AssignWorkersAndWaitStream(ctx context.Context, in
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_AssignWorkersAndWaitStreamClient = grpc.ServerStreamingClient[commonpb.TaskUpdate]
+type WorkerService_AssignWorkersAndWaitStreamClient = grpc.ServerStreamingClient[TaskUpdate]
 
 func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -76,7 +75,7 @@ func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *Assi
 // for forward compatibility.
 type WorkerServiceServer interface {
 	// Streaming version - отправляет обновления по мере выполнения
-	AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[commonpb.TaskUpdate]) error
+	AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[TaskUpdate]) error
 	// Legacy unary version (для совместимости)
 	AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
@@ -89,7 +88,7 @@ type WorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkerServiceServer struct{}
 
-func (UnimplementedWorkerServiceServer) AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[commonpb.TaskUpdate]) error {
+func (UnimplementedWorkerServiceServer) AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
 	return status.Error(codes.Unimplemented, "method AssignWorkersAndWaitStream not implemented")
 }
 func (UnimplementedWorkerServiceServer) AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error) {
@@ -121,11 +120,11 @@ func _WorkerService_AssignWorkersAndWaitStream_Handler(srv interface{}, stream g
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(WorkerServiceServer).AssignWorkersAndWaitStream(m, &grpc.GenericServerStream[AssignWorkersRequest, commonpb.TaskUpdate]{ServerStream: stream})
+	return srv.(WorkerServiceServer).AssignWorkersAndWaitStream(m, &grpc.GenericServerStream[AssignWorkersRequest, TaskUpdate]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_AssignWorkersAndWaitStreamServer = grpc.ServerStreamingServer[commonpb.TaskUpdate]
+type WorkerService_AssignWorkersAndWaitStreamServer = grpc.ServerStreamingServer[TaskUpdate]
 
 func _WorkerService_AssignWorkersAndWait_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssignWorkersRequest)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"crewai/internal/fetcher/grpc/boss/bosspb"
+	"apigateway/internal/fetcher/grpc/boss/bosspb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -35,7 +35,7 @@ func (c *Client) Close() error {
 }
 
 // CreateTask отправляет задачу в boss сервис
-func (c *Client) CreateTask(ctx context.Context, userID, username, title, description string, tokens []string, meta map[string]string) (*bosspb.BossDecision, error) {
+func (c *Client) CreateTask(ctx context.Context, userID, username, title, description string, tokens map[string]string, meta map[string]string) (*bosspb.BossDecision, error) {
 	req := &bosspb.CreateTaskRequest{
 		UserId:      userID,
 		Username:    username,

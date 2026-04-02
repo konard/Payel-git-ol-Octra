@@ -7,7 +7,6 @@
 package workerpb
 
 import (
-	commonpb "crewai/internal/fetcher/grpc/commonpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -22,6 +21,91 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Task update message for streaming
+type TaskUpdate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Progress      int32                  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Data          map[string]string      `protobuf:"bytes,6,rep,name=data,proto3" json:"data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskUpdate) Reset() {
+	*x = TaskUpdate{}
+	mi := &file_manager_worker_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskUpdate) ProtoMessage() {}
+
+func (x *TaskUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_worker_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskUpdate.ProtoReflect.Descriptor instead.
+func (*TaskUpdate) Descriptor() ([]byte, []int) {
+	return file_manager_worker_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *TaskUpdate) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *TaskUpdate) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *TaskUpdate) GetProgress() int32 {
+	if x != nil {
+		return x.Progress
+	}
+	return 0
+}
+
+func (x *TaskUpdate) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *TaskUpdate) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+func (x *TaskUpdate) GetData() map[string]string {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 type WorkerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
@@ -32,7 +116,7 @@ type WorkerRole struct {
 
 func (x *WorkerRole) Reset() {
 	*x = WorkerRole{}
-	mi := &file_manager_worker_proto_msgTypes[0]
+	mi := &file_manager_worker_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +128,7 @@ func (x *WorkerRole) String() string {
 func (*WorkerRole) ProtoMessage() {}
 
 func (x *WorkerRole) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_worker_proto_msgTypes[0]
+	mi := &file_manager_worker_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +141,7 @@ func (x *WorkerRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerRole.ProtoReflect.Descriptor instead.
 func (*WorkerRole) Descriptor() ([]byte, []int) {
-	return file_manager_worker_proto_rawDescGZIP(), []int{0}
+	return file_manager_worker_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WorkerRole) GetRole() string {
@@ -88,7 +172,7 @@ type AssignWorkersRequest struct {
 
 func (x *AssignWorkersRequest) Reset() {
 	*x = AssignWorkersRequest{}
-	mi := &file_manager_worker_proto_msgTypes[1]
+	mi := &file_manager_worker_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -100,7 +184,7 @@ func (x *AssignWorkersRequest) String() string {
 func (*AssignWorkersRequest) ProtoMessage() {}
 
 func (x *AssignWorkersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_worker_proto_msgTypes[1]
+	mi := &file_manager_worker_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -113,7 +197,7 @@ func (x *AssignWorkersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignWorkersRequest.ProtoReflect.Descriptor instead.
 func (*AssignWorkersRequest) Descriptor() ([]byte, []int) {
-	return file_manager_worker_proto_rawDescGZIP(), []int{1}
+	return file_manager_worker_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AssignWorkersRequest) GetTaskId() string {
@@ -169,7 +253,7 @@ type AssignWorkersResponse struct {
 
 func (x *AssignWorkersResponse) Reset() {
 	*x = AssignWorkersResponse{}
-	mi := &file_manager_worker_proto_msgTypes[2]
+	mi := &file_manager_worker_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -181,7 +265,7 @@ func (x *AssignWorkersResponse) String() string {
 func (*AssignWorkersResponse) ProtoMessage() {}
 
 func (x *AssignWorkersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_worker_proto_msgTypes[2]
+	mi := &file_manager_worker_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -194,7 +278,7 @@ func (x *AssignWorkersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignWorkersResponse.ProtoReflect.Descriptor instead.
 func (*AssignWorkersResponse) Descriptor() ([]byte, []int) {
-	return file_manager_worker_proto_rawDescGZIP(), []int{2}
+	return file_manager_worker_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AssignWorkersResponse) GetTaskId() string {
@@ -222,7 +306,18 @@ var File_manager_worker_proto protoreflect.FileDescriptor
 
 const file_manager_worker_proto_rawDesc = "" +
 	"\n" +
-	"\x14manager-worker.proto\x12\x06worker\x1a\fcommon.proto\"B\n" +
+	"\x14manager-worker.proto\x12\x06worker\"\xfc\x01\n" +
+	"\n" +
+	"TaskUpdate\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1a\n" +
+	"\bprogress\x18\x03 \x01(\x05R\bprogress\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1c\n" +
+	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x120\n" +
+	"\x04data\x18\x06 \x03(\v2\x1c.worker.TaskUpdate.DataEntryR\x04data\x1a7\n" +
+	"\tDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\n" +
 	"WorkerRole\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
@@ -243,7 +338,7 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1a\n" +
 	"\bsolution\x18\x03 \x01(\fR\bsolution2\xb6\x01\n" +
 	"\rWorkerService\x12P\n" +
-	"\x1aAssignWorkersAndWaitStream\x12\x1c.worker.AssignWorkersRequest\x1a\x12.common.TaskUpdate0\x01\x12S\n" +
+	"\x1aAssignWorkersAndWaitStream\x12\x1c.worker.AssignWorkersRequest\x1a\x12.worker.TaskUpdate0\x01\x12S\n" +
 	"\x14AssignWorkersAndWait\x12\x1c.worker.AssignWorkersRequest\x1a\x1d.worker.AssignWorkersResponseB'Z%worker/internal/fetcher/grpc/workerpbb\x06proto3"
 
 var (
@@ -258,26 +353,28 @@ func file_manager_worker_proto_rawDescGZIP() []byte {
 	return file_manager_worker_proto_rawDescData
 }
 
-var file_manager_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_manager_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_manager_worker_proto_goTypes = []any{
-	(*WorkerRole)(nil),            // 0: worker.WorkerRole
-	(*AssignWorkersRequest)(nil),  // 1: worker.AssignWorkersRequest
-	(*AssignWorkersResponse)(nil), // 2: worker.AssignWorkersResponse
-	nil,                           // 3: worker.AssignWorkersRequest.MetadataEntry
-	(*commonpb.TaskUpdate)(nil),   // 4: common.TaskUpdate
+	(*TaskUpdate)(nil),            // 0: worker.TaskUpdate
+	(*WorkerRole)(nil),            // 1: worker.WorkerRole
+	(*AssignWorkersRequest)(nil),  // 2: worker.AssignWorkersRequest
+	(*AssignWorkersResponse)(nil), // 3: worker.AssignWorkersResponse
+	nil,                           // 4: worker.TaskUpdate.DataEntry
+	nil,                           // 5: worker.AssignWorkersRequest.MetadataEntry
 }
 var file_manager_worker_proto_depIdxs = []int32{
-	0, // 0: worker.AssignWorkersRequest.worker_roles:type_name -> worker.WorkerRole
-	3, // 1: worker.AssignWorkersRequest.metadata:type_name -> worker.AssignWorkersRequest.MetadataEntry
-	1, // 2: worker.WorkerService.AssignWorkersAndWaitStream:input_type -> worker.AssignWorkersRequest
-	1, // 3: worker.WorkerService.AssignWorkersAndWait:input_type -> worker.AssignWorkersRequest
-	4, // 4: worker.WorkerService.AssignWorkersAndWaitStream:output_type -> common.TaskUpdate
-	2, // 5: worker.WorkerService.AssignWorkersAndWait:output_type -> worker.AssignWorkersResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // 0: worker.TaskUpdate.data:type_name -> worker.TaskUpdate.DataEntry
+	1, // 1: worker.AssignWorkersRequest.worker_roles:type_name -> worker.WorkerRole
+	5, // 2: worker.AssignWorkersRequest.metadata:type_name -> worker.AssignWorkersRequest.MetadataEntry
+	2, // 3: worker.WorkerService.AssignWorkersAndWaitStream:input_type -> worker.AssignWorkersRequest
+	2, // 4: worker.WorkerService.AssignWorkersAndWait:input_type -> worker.AssignWorkersRequest
+	0, // 5: worker.WorkerService.AssignWorkersAndWaitStream:output_type -> worker.TaskUpdate
+	3, // 6: worker.WorkerService.AssignWorkersAndWait:output_type -> worker.AssignWorkersResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_manager_worker_proto_init() }
@@ -291,7 +388,7 @@ func file_manager_worker_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_manager_worker_proto_rawDesc), len(file_manager_worker_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

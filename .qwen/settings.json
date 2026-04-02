@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell *)",
+      "Bash(xcopy *)",
+      "Bash(go *)",
+      "Bash(docker-compose *)",
+      "Bash(.\\generate-proto.ps1)",
+      "Bash(get-content *)",
+      "Bash(select-string *)",
+      "Bash(type *)",
+      "Bash(findstr *)",
+      "Bash(del *)",
+      "Bash(protoc *)",
+      "Bash(dir *)"
+    ]
+  },
+  "$version": 3
+}
