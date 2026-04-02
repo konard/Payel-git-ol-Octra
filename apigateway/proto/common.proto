@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "crewai/internal/fetcher/grpc/commonpb";
+
+// Task update message для streaming обновлений
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;  // 0-100
+  string status = 4;   // processing, warning, error, success
+  int64 timestamp = 5;
+  
+  // Дополнительные данные в зависимости от типа обновления
+  map<string, string> data = 6;
+}

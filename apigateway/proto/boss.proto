@@ -4,6 +4,16 @@ package boss;
 
 option go_package = "crewai/internal/fetcher/grpc/boss/bosspb";
 
+// Task update message for streaming
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+}
+
 // Request from apigateway to boss
 message CreateTaskRequest {
   string user_id = 1;
@@ -49,6 +59,10 @@ message TaskStatusResponse {
 }
 
 service BossService {
+  // Streaming version - отправляет обновления по мере выполнения
+  rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
+  
+  // Legacy unary version (для совместимости)
   rpc CreateTask(CreateTaskRequest) returns (BossDecision);
   rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
 }

@@ -2,29 +2,67 @@ syntax = "proto3";
 
 package boss;
 
-option go_package = "./internal/fetcher/grpc/boss";
+option go_package = "./internal/fetcher/grpc/boss/bosspb";
 
-message TaskRequest {
-  string username = 1;
-  string taskname = 2;
+// Task update message for streaming
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+}
+
+// Request from apigateway to boss
+message CreateTaskRequest {
+  string user_id = 1;
+  string username = 2;
   string title = 3;
   string description = 4;
   repeated string tokens = 5;
-  map<string, string> metadata = 6;
+  map<string, string> meta = 6;  // model, modelUrl
 }
 
-message TaskResponse {
-  string taskname = 1;
-  string title = 2;
-  string description = 3;
-  bytes solution = 4;
+// Manager role
+message ManagerRole {
+  string role = 1;
+  string description = 2;
+  int32 priority = 3;
+}
+
+// Boss decision with ZIP solution
+message BossDecision {
+  string task_id = 1;
+  string status = 2;  // done, error
+
+  int32 managers_count = 3;
+  repeated ManagerRole manager_roles = 4;
+
+  string technical_description = 5;
+  repeated string tech_stack = 6;
+  string architecture_notes = 7;
   
-  string status = 5;
-  string error_message = 6;
-  int64 archive_size = 7;
-  string archive_format = 8;
+  bytes solution = 8;  // ZIP archive
+  string error_message = 9;
 }
 
-service TaskService {
-  rpc Task(TaskRequest) returns (TaskResponse);
+// Task status request
+message TaskStatusRequest {
+  string task_id = 1;
+}
+
+message TaskStatusResponse {
+  string task_id = 1;
+  string status = 2;
+  string progress = 3;
+}
+
+service BossService {
+  // Streaming version - отправляет обновления по мере выполнения
+  rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
+  
+  // Legacy unary version (для совместимости)
+  rpc CreateTask(CreateTaskRequest) returns (BossDecision);
+  rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
 }

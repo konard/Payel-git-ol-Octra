@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strconv"
+	"time"
 
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
@@ -216,6 +218,216 @@ Reply ONLY with JSON:
 
 	log.Printf("Boss made decision: %+v", decision)
 	return &decision, nil
+}
+
+// CreateTaskStream — streaming version that sends real-time updates
+func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
+	ctx := stream.Context()
+	log.Printf("🎯 Received task from %s: %s", req.Username, req.Title)
+
+	taskID := uuid.New()
+
+	// Send initial update
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "📝 Task received and processing started",
+		Progress:  5,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	// 1. Save task to DB
+	task := &models.Task{
+		ID:          taskID,
+		UserID:      req.UserId,
+		Username:    req.Username,
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      "boss_planning",
+	}
+
+	tokensJSON, _ := json.Marshal(req.Tokens)
+	metaJSON, _ := json.Marshal(req.Meta)
+	task.Tokens = string(tokensJSON)
+	task.Meta = string(metaJSON)
+
+	if err := database.Db.Create(task).Error; err != nil {
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ Database error: " + err.Error(),
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "💾 Task saved to database",
+		Progress:  10,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	// 2. Get model and modelUrl
+	model := req.Meta["model"]
+	modelURL := req.Meta["modelUrl"]
+	if model == "" {
+		model = "openai/gpt-3.5-turbo"
+	}
+	if modelURL == "" {
+		modelURL = "https://openrouter.ai/api/v1"
+	}
+
+	// Create LLM client (factory automatically detects provider)
+	llmClient := llm.NewLLMClient(modelURL, model, req.Tokens)
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "🤖 LLM client initialized (" + model + ")",
+		Progress:  15,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	// 3. Boss thinks about task
+	decision, err := s.thinkAboutTask(ctx, llmClient, req)
+	if err != nil {
+		task.Status = "error"
+		database.Db.Save(task)
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ AI planning failed: " + err.Error(),
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "✅ Architecture planned by AI",
+		Progress:  30,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+		Data: map[string]string{
+			"managers": strconv.Itoa(int(decision.ManagersCount)),
+		},
+	})
+
+	// 4. Save boss decision
+	bossDecision := &models.BossDecision{
+		ID:                   uuid.New(),
+		TaskID:               task.ID,
+		Status:               "planning",
+		ManagersCount:        decision.ManagersCount,
+		TechnicalDescription: decision.TechnicalDescription,
+		ArchitectureNotes:    decision.ArchitectureNotes,
+	}
+
+	rolesJSON, _ := json.Marshal(decision.ManagerRoles)
+	stackJSON, _ := json.Marshal(decision.TechStack)
+	bossDecision.ManagerRoles = string(rolesJSON)
+	bossDecision.TechStack = string(stackJSON)
+
+	if err := database.Db.Create(bossDecision).Error; err != nil {
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ Failed to save decision: " + err.Error(),
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "🏗️ Creating " + strconv.Itoa(int(decision.ManagersCount)) + " managers",
+		Progress:  40,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	// 5. Call Manager service (wait for full cycle)
+	log.Printf("Calling Manager service for full cycle...")
+
+	roles := make([]string, len(decision.ManagerRoles))
+	for i, r := range decision.ManagerRoles {
+		roles[i] = r.Role
+	}
+
+	// Call Manager and get ZIP archive
+	zipData, err := s.managerClient.AssignManagersAndWait(
+		ctx,
+		task.ID.String(),
+		decision.TechnicalDescription,
+		roles,
+		req.Tokens,
+		model,
+		modelURL,
+	)
+	if err != nil {
+		log.Printf("Error calling Manager: %v", err)
+		task.Status = "error"
+		database.Db.Save(task)
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ Manager failed: " + err.Error(),
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "👷 Managers completed code generation",
+		Progress:  70,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	if len(zipData) == 0 {
+		task.Status = "error"
+		database.Db.Save(task)
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "❌ No solution generated",
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// Send progress
+	_ = stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "📦 Packaging project (" + string(rune(len(zipData)/1024)) + "KB)",
+		Progress:  90,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+	})
+
+	// 6. Save ZIP solution
+	task.Solution = zipData
+	task.Status = "done"
+	database.Db.Save(task)
+
+	log.Printf("✅ Task completed! ZIP size: %d bytes", len(zipData))
+
+	// Send final success update
+	techStackBytes, _ := json.Marshal(decision.TechStack)
+	return stream.Send(&bosspb.TaskUpdate{
+		TaskId:    taskID.String(),
+		Message:   "🎉 Project ready! " + task.Title + " created successfully",
+		Progress:  100,
+		Status:    "success",
+		Timestamp: time.Now().Unix(),
+		Data: map[string]string{
+			"managers":  strconv.Itoa(int(decision.ManagersCount)),
+			"techStack": string(techStackBytes),
+		},
+	})
 }
 
 // GetTaskStatus returns task status

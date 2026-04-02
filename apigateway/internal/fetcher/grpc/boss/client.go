@@ -66,3 +66,13 @@ func (c *Client) GetTaskStatus(ctx context.Context, taskID string) (*bosspb.Task
 
 	return resp, nil
 }
+
+// CreateTaskStream отправляет задачу в boss сервис и получает stream обновлений
+func (c *Client) CreateTaskStream(ctx context.Context, req *bosspb.CreateTaskRequest) (bosspb.BossService_CreateTaskStreamClient, error) {
+	stream, err := c.client.CreateTaskStream(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("create task stream rpc failed: %w", err)
+	}
+
+	return stream, nil
+}

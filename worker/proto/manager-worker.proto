@@ -4,6 +4,16 @@ package worker;
 
 option go_package = "worker/internal/fetcher/grpc/workerpb";
 
+// Task update message for streaming
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+}
+
 message WorkerRole {
   string role = 1;
   string description = 2;
@@ -25,5 +35,9 @@ message AssignWorkersResponse {
 }
 
 service WorkerService {
+  // Streaming version - отправляет обновления по мере выполнения
+  rpc AssignWorkersAndWaitStream(AssignWorkersRequest) returns (stream TaskUpdate);
+  
+  // Legacy unary version (для совместимости)
   rpc AssignWorkersAndWait(AssignWorkersRequest) returns (AssignWorkersResponse);
 }

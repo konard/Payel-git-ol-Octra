@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CrewAI Real-time Task Monitor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 { color: #333; margin-bottom: 30px; font-size: 28px; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label { 
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .updates {
+            margin-top: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        .update {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .update.progress { background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2; }
+        .update.success { background: #e8f5e9; color: #388e3c; border-left: 4px solid #388e3c; }
+        .update.error { background: #ffebee; color: #d32f2f; border-left: 4px solid #d32f2f; }
+        .update.warning { background: #fff3e0; color: #f57c00; border-left: 4px solid #f57c00; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        .status { margin-top: 10px; font-size: 13px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 CrewAI Task Monitor</h1>
+        
+        <form id="taskForm">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" value="pavel" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Project Title</label>
+                <input type="text" id="title" value="E-commerce Platform" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="description" rows="3" required>Build a modern e-commerce platform with payment integration, product catalog, and user management</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>API Key (Gemini)</label>
+                <input type="password" id="apiKey" value="AIzaSyB-BUpO-Kf1eXx4oMtWelMZrC_YQvmvTWY" required>
+            </div>
+            
+            <button type="submit" id="submitBtn">Create Project</button>
+        </form>
+        
+        <div id="updates" class="updates" style="display: none;">
+            <h3>📊 Real-time Updates</h3>
+            <div id="updatesList"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="status">Progress: <span id="progressText">0</span>%</div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('taskForm');
+        const updatesList = document.getElementById('updatesList');
+        const updatesContainer = document.getElementById('updates');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let ws = null;
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            startTask();
+        });
+
+        function startTask() {
+            updatesList.innerHTML = '';
+            updatesContainer.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // Connect to WebSocket
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//localhost:3111/ws`);
+
+            ws.onopen = () => {
+                addUpdate('Connected to server', 'success');
+                
+                // Send task request
+                const taskRequest = {
+                    userId: 'user-' + Date.now(),
+                    username: document.getElementById('username').value,
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    tokens: [document.getElementById('apiKey').value],
+                    meta: {
+                        model: 'gemini-2.5-flash-lite',
+                        modelUrl: 'https://generativelanguage.googleapis.com/v1beta'
+                    }
+                };
+                
+                ws.send(JSON.stringify(taskRequest));
+                addUpdate('Task submitted to server', 'progress');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const update = JSON.parse(event.data);
+                    addUpdate(update.message, update.type);
+                    
+                    if (update.progress !== undefined) {
+                        progressFill.style.width = update.progress + '%';
+                        progressText.textContent = update.progress;
+                    }
+                    
+                    if (update.type === 'success' || update.type === 'error') {
+                        submitBtn.disabled = false;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse update:', e);
+                }
+            };
+
+            ws.onerror = (error) => {
+                addUpdate('WebSocket error: ' + error, 'error');
+                submitBtn.disabled = false;
+            };
+
+            ws.onclose = () => {
+                addUpdate('Disconnected from server', 'warning');
+                submitBtn.disabled = false;
+            };
+        }
+
+        function addUpdate(message, type = 'progress') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `update ${type}`;
+            div.textContent = `[${timestamp}] ${message}`;
+            updatesList.appendChild(div);
+            updatesList.scrollTop = updatesList.scrollHeight;
+        }
+    </script>
+</body>
+</html>

@@ -19,14 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BossService_CreateTask_FullMethodName    = "/boss.BossService/CreateTask"
-	BossService_GetTaskStatus_FullMethodName = "/boss.BossService/GetTaskStatus"
+	BossService_CreateTaskStream_FullMethodName = "/boss.BossService/CreateTaskStream"
+	BossService_CreateTask_FullMethodName       = "/boss.BossService/CreateTask"
+	BossService_GetTaskStatus_FullMethodName    = "/boss.BossService/GetTaskStatus"
 )
 
 // BossServiceClient is the client API for BossService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BossServiceClient interface {
+	// Streaming version - отправляет обновления по мере выполнения
+	CreateTaskStream(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
+	// Legacy unary version (для совместимости)
 	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error)
 	GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
 }
@@ -38,6 +42,25 @@ type bossServiceClient struct {
 func NewBossServiceClient(cc grpc.ClientConnInterface) BossServiceClient {
 	return &bossServiceClient{cc}
 }
+
+func (c *bossServiceClient) CreateTaskStream(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &BossService_ServiceDesc.Streams[0], BossService_CreateTaskStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[CreateTaskRequest, TaskUpdate]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BossService_CreateTaskStreamClient = grpc.ServerStreamingClient[TaskUpdate]
 
 func (c *bossServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -63,6 +86,9 @@ func (c *bossServiceClient) GetTaskStatus(ctx context.Context, in *TaskStatusReq
 // All implementations must embed UnimplementedBossServiceServer
 // for forward compatibility.
 type BossServiceServer interface {
+	// Streaming version - отправляет обновления по мере выполнения
+	CreateTaskStream(*CreateTaskRequest, grpc.ServerStreamingServer[TaskUpdate]) error
+	// Legacy unary version (для совместимости)
 	CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error)
 	GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error)
 	mustEmbedUnimplementedBossServiceServer()
@@ -75,6 +101,9 @@ type BossServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedBossServiceServer struct{}
 
+func (UnimplementedBossServiceServer) CreateTaskStream(*CreateTaskRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
+	return status.Error(codes.Unimplemented, "method CreateTaskStream not implemented")
+}
 func (UnimplementedBossServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTask not implemented")
 }
@@ -101,6 +130,17 @@ func RegisterBossServiceServer(s grpc.ServiceRegistrar, srv BossServiceServer) {
 	}
 	s.RegisterService(&BossService_ServiceDesc, srv)
 }
+
+func _BossService_CreateTaskStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(CreateTaskRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BossServiceServer).CreateTaskStream(m, &grpc.GenericServerStream[CreateTaskRequest, TaskUpdate]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BossService_CreateTaskStreamServer = grpc.ServerStreamingServer[TaskUpdate]
 
 func _BossService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateTaskRequest)
@@ -154,6 +194,12 @@ var BossService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BossService_GetTaskStatus_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "CreateTaskStream",
+			Handler:       _BossService_CreateTaskStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "gateway-boss.proto",
 }

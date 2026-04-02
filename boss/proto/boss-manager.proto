@@ -4,6 +4,16 @@ package manager;
 
 option go_package = "manager/internal/fetcher/grpc/managerpb";
 
+// Task update message for streaming
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+}
+
 // Запрос от boss к manager
 message AssignManagersRequest {
   string task_id = 1;
@@ -21,5 +31,9 @@ message AssignManagersResponse {
 }
 
 service ManagerService {
+  // Streaming version - отправляет обновления по мере выполнения
+  rpc AssignManagersAndWaitStream(AssignManagersRequest) returns (stream TaskUpdate);
+  
+  // Legacy unary version (для совместимости)
   rpc AssignManagersAndWait(AssignManagersRequest) returns (AssignManagersResponse);
 }

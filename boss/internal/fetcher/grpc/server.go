@@ -26,6 +26,10 @@ func (s *Server) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequest) 
 	return s.service.CreateTask(ctx, req)
 }
 
+func (s *Server) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
+	return s.service.CreateTaskStream(req, stream)
+}
+
 func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusRequest) (*bosspb.TaskStatusResponse, error) {
 	return s.service.GetTaskStatus(ctx, req)
 }
