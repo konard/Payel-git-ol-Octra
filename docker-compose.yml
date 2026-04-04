@@ -29,6 +29,8 @@ services:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - AGENTS_SERVICE_HOST=agents:50053
+      - MANAGER_SERVICE_HOST=manager:50052
+      - MERGER_SERVICE_HOST=merger:50054
     ports:
       - "50051:50051"
     depends_on:
@@ -48,6 +50,7 @@ services:
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AGENTS_SERVICE_HOST=agents:50053
+      - WORKER_SERVICE_HOST=worker:50053
     ports:
       - "50052:50052"
     depends_on:
@@ -89,6 +92,22 @@ services:
       - AGENTS_PORT=50053
     ports:
       - "50053:50053"
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  merger:
+    build:
+      context: .
+      dockerfile: ./merger/Dockerfile
+    container_name: crewai-merger
+    environment:
+      - MERGER_PORT=50054
+    ports:
+      - "50054:50054"
+    depends_on:
+      boss:
+        condition: service_started
     networks:
       - crewai-network
     restart: unless-stopped

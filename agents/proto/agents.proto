@@ -7,6 +7,7 @@ option go_package = "agents/pb;pb";
 // Agent service for AI content generation
 service AgentService {
   rpc Generate(GenerateRequest) returns (GenerateResponse) {}
+  rpc GenerateStream(GenerateRequest) returns (stream GenerateStreamChunk) {}
 }
 
 // GenerateRequest is the request to generate content
@@ -27,4 +28,12 @@ message GenerateResponse {
   int32 tokens_used = 4;
   string error = 5;
   string error_code = 6;
+}
+
+// GenerateStreamChunk is a streaming chunk of generated content
+message GenerateStreamChunk {
+  string content = 1;      // partial content
+  bool done = 2;           // true when generation is complete
+  string error = 3;        // error message if any
+  int32 tokens_used = 4;   // tokens used so far
 }

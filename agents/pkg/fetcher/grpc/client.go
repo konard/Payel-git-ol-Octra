@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"agents/pb"
@@ -69,6 +70,50 @@ func (c *AgentClient) Generate(ctx context.Context, provider, model, prompt stri
 	}
 
 	return resp.Content, nil
+}
+
+// GenerateStream calls the GenerateStream RPC and returns full content
+func (c *AgentClient) GenerateStream(ctx context.Context, provider, model, prompt string, tokens map[string]string, maxTokens int32, temperature float32, onChunk func(string)) (string, error) {
+	grpcTokens := make(map[string]string)
+	for k, v := range tokens {
+		grpcTokens[k] = v
+	}
+
+	req := &pb.GenerateRequest{
+		Provider:    provider,
+		Model:       model,
+		Prompt:      prompt,
+		Tokens:      grpcTokens,
+		MaxTokens:   maxTokens,
+		Temperature: temperature,
+	}
+
+	stream, err := c.client.GenerateStream(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("failed to stream with %s: %w", provider, err)
+	}
+
+	var fullContent string
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fullContent, fmt.Errorf("stream error: %w", err)
+		}
+		if chunk.Error != "" {
+			return fullContent, fmt.Errorf("agent service error: %s", chunk.Error)
+		}
+		if !chunk.Done {
+			fullContent += chunk.Content
+			if onChunk != nil {
+				onChunk(chunk.Content)
+			}
+		}
+	}
+
+	return fullContent, nil
 }
 
 // Close closes the client connection

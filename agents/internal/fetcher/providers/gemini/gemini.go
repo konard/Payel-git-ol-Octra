@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -12,34 +13,59 @@ import (
 
 // GeminiProvider implements the AIProvider interface for Google Gemini
 type GeminiProvider struct {
+	mu     sync.Mutex
 	client *genai.Client
 	config *models.ProviderConfig
 }
 
 // New creates a new Gemini provider
 func New(config *models.ProviderConfig) (*GeminiProvider, error) {
-	if config.APIKey == "" {
-		log.Printf("Gemini provider not configured - missing API key")
-		return &GeminiProvider{config: config}, nil
+	return &GeminiProvider{config: config}, nil
+}
+
+// getClient returns or creates client using API key from tokens
+func (p *GeminiProvider) getClient(tokens map[string]interface{}) (*genai.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.client != nil {
+		return p.client, nil
+	}
+
+	apiKey, _ := tokens["gemini"].(string)
+	if apiKey == "" {
+		// Try string value
+		for _, v := range tokens {
+			if s, ok := v.(string); ok && len(s) > 10 {
+				apiKey = s
+				break
+			}
+		}
+	}
+
+	if apiKey == "" && p.config.APIKey != "" {
+		apiKey = p.config.APIKey
+	}
+
+	if apiKey == "" {
+		return nil, fmt.Errorf("Gemini API key not found in tokens")
 	}
 
 	ctx := context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(config.APIKey))
+	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
-		log.Printf("Failed to create Gemini client: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	return &GeminiProvider{
-		client: client,
-		config: config,
-	}, nil
+	p.client = client
+	return client, nil
 }
 
 // Generate generates content using Gemini
 func (p *GeminiProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
-	if p.client == nil {
-		return "", fmt.Errorf("Gemini provider not configured")
+	client, err := p.getClient(tokens)
+	if err != nil {
+		return "", err
 	}
 
 	model := p.config.Model
@@ -47,7 +73,7 @@ func (p *GeminiProvider) Generate(ctx context.Context, prompt string, tokens map
 		model = "gemini-2.0-flash"
 	}
 
-	modelClient := p.client.GenerativeModel(model)
+	modelClient := client.GenerativeModel(model)
 
 	// Set temperature
 	if p.config.Temperature > 0 {
@@ -84,15 +110,19 @@ func (p *GeminiProvider) Name() string {
 	return "gemini"
 }
 
-// IsConfigured checks if the provider is properly configured
+// IsConfigured always returns true since API key comes from tokens
 func (p *GeminiProvider) IsConfigured() bool {
-	return p.client != nil && p.config != nil && p.config.APIKey != ""
+	return true
 }
 
 // Close closes the client
 func (p *GeminiProvider) Close() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.client != nil {
-		return p.client.Close()
+		err := p.client.Close()
+		p.client = nil
+		return err
 	}
 	return nil
 }

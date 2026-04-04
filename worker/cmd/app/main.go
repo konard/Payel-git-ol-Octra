@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
+	"worker/internal/service/worker"
 
 	"worker/internal/fetcher/grpc"
-	"worker/internal/service"
 	"worker/pkg/database"
 )
 
@@ -13,7 +13,7 @@ func main() {
 	database.InitDb()
 
 	// Создаём сервис воркеров
-	workerService := service.NewWorkerService()
+	workerService := worker.NewWorkerService()
 
 	// Запускаем gRPC сервер на порту 50053
 	log.Println("Запуск worker gRPC сервера на порту 50053...")

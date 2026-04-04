@@ -155,7 +155,7 @@ func processTaskStreamAzureWS(ws *azurewebsockets.Conn, taskReq requests.CreateT
 		Meta:        taskReq.Meta,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	// Send initial progress

@@ -5,4 +5,6 @@ use (
 	./boss
 	./manager
 	./worker
+	./apigateway
+	./merger
 )

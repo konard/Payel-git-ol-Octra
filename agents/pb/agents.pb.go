@@ -191,6 +191,75 @@ func (x *GenerateResponse) GetErrorCode() string {
 	return ""
 }
 
+// GenerateStreamChunk is a streaming chunk of generated content
+type GenerateStreamChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`                          // partial content
+	Done          bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`                               // true when generation is complete
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                              // error message if any
+	TokensUsed    int32                  `protobuf:"varint,4,opt,name=tokens_used,json=tokensUsed,proto3" json:"tokens_used,omitempty"` // tokens used so far
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateStreamChunk) Reset() {
+	*x = GenerateStreamChunk{}
+	mi := &file_agents_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateStreamChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateStreamChunk) ProtoMessage() {}
+
+func (x *GenerateStreamChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_agents_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateStreamChunk.ProtoReflect.Descriptor instead.
+func (*GenerateStreamChunk) Descriptor() ([]byte, []int) {
+	return file_agents_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GenerateStreamChunk) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *GenerateStreamChunk) GetDone() bool {
+	if x != nil {
+		return x.Done
+	}
+	return false
+}
+
+func (x *GenerateStreamChunk) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *GenerateStreamChunk) GetTokensUsed() int32 {
+	if x != nil {
+		return x.TokensUsed
+	}
+	return 0
+}
+
 var File_agents_proto protoreflect.FileDescriptor
 
 const file_agents_proto_rawDesc = "" +
@@ -215,9 +284,16 @@ const file_agents_proto_rawDesc = "" +
 	"tokensUsed\x12\x14\n" +
 	"\x05error\x18\x05 \x01(\tR\x05error\x12\x1d\n" +
 	"\n" +
-	"error_code\x18\x06 \x01(\tR\terrorCode2S\n" +
+	"error_code\x18\x06 \x01(\tR\terrorCode\"z\n" +
+	"\x13GenerateStreamChunk\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x12\x12\n" +
+	"\x04done\x18\x02 \x01(\bR\x04done\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12\x1f\n" +
+	"\vtokens_used\x18\x04 \x01(\x05R\n" +
+	"tokensUsed2\xa3\x01\n" +
 	"\fAgentService\x12C\n" +
-	"\bGenerate\x12\x19.agentspb.GenerateRequest\x1a\x1a.agentspb.GenerateResponse\"\x00B\x0eZ\fagents/pb;pbb\x06proto3"
+	"\bGenerate\x12\x19.agentspb.GenerateRequest\x1a\x1a.agentspb.GenerateResponse\"\x00\x12N\n" +
+	"\x0eGenerateStream\x12\x19.agentspb.GenerateRequest\x1a\x1d.agentspb.GenerateStreamChunk\"\x000\x01B\x0eZ\fagents/pb;pbb\x06proto3"
 
 var (
 	file_agents_proto_rawDescOnce sync.Once
@@ -231,18 +307,21 @@ func file_agents_proto_rawDescGZIP() []byte {
 	return file_agents_proto_rawDescData
 }
 
-var file_agents_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_agents_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_agents_proto_goTypes = []any{
-	(*GenerateRequest)(nil),  // 0: agentspb.GenerateRequest
-	(*GenerateResponse)(nil), // 1: agentspb.GenerateResponse
-	nil,                      // 2: agentspb.GenerateRequest.TokensEntry
+	(*GenerateRequest)(nil),     // 0: agentspb.GenerateRequest
+	(*GenerateResponse)(nil),    // 1: agentspb.GenerateResponse
+	(*GenerateStreamChunk)(nil), // 2: agentspb.GenerateStreamChunk
+	nil,                         // 3: agentspb.GenerateRequest.TokensEntry
 }
 var file_agents_proto_depIdxs = []int32{
-	2, // 0: agentspb.GenerateRequest.tokens:type_name -> agentspb.GenerateRequest.TokensEntry
+	3, // 0: agentspb.GenerateRequest.tokens:type_name -> agentspb.GenerateRequest.TokensEntry
 	0, // 1: agentspb.AgentService.Generate:input_type -> agentspb.GenerateRequest
-	1, // 2: agentspb.AgentService.Generate:output_type -> agentspb.GenerateResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	0, // 2: agentspb.AgentService.GenerateStream:input_type -> agentspb.GenerateRequest
+	1, // 3: agentspb.AgentService.Generate:output_type -> agentspb.GenerateResponse
+	2, // 4: agentspb.AgentService.GenerateStream:output_type -> agentspb.GenerateStreamChunk
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -259,7 +338,7 @@ func file_agents_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agents_proto_rawDesc), len(file_agents_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

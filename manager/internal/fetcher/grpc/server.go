@@ -2,9 +2,9 @@ package grpc
 
 import (
 	"context"
+	"manager/internal/service/manager"
 
 	"manager/internal/fetcher/grpc/managerpb"
-	"manager/internal/service"
 	"net"
 
 	"google.golang.org/grpc"
@@ -13,10 +13,10 @@ import (
 // Server — gRPC сервер manager сервиса
 type Server struct {
 	managerpb.UnimplementedManagerServiceServer
-	service *service.ManagerService
+	service *manager.ManagerService
 }
 
-func NewServer(s *service.ManagerService) *Server {
+func NewServer(s *manager.ManagerService) *Server {
 	return &Server{
 		service: s,
 	}
@@ -26,8 +26,12 @@ func (s *Server) AssignManagersAndWait(ctx context.Context, req *managerpb.Assig
 	return s.service.AssignManagersAndWait(ctx, req)
 }
 
+func (s *Server) AssignManager(ctx context.Context, req *managerpb.AssignManagerRequest) (*managerpb.ManagerResult, error) {
+	return s.service.AssignManager(ctx, req)
+}
+
 // Start запускает gRPC сервер
-func Start(port string, s *service.ManagerService) error {
+func Start(port string, s *manager.ManagerService) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err

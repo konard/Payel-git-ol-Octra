@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"agents/pkg/models"
 
@@ -12,33 +13,62 @@ import (
 
 // GrokProvider implements the AIProvider interface for Grok (via xAI)
 type GrokProvider struct {
+	mu     sync.Mutex
 	client *grok.Client
 	config *models.ProviderConfig
 }
 
 // New creates a new Grok provider
 func New(config *models.ProviderConfig) (*GrokProvider, error) {
-	if config.APIKey == "" {
-		log.Printf("Grok provider not configured - missing API key")
-		return &GrokProvider{config: config}, nil
+	return &GrokProvider{config: config}, nil
+}
+
+// getClient returns or creates client using API key from tokens
+func (p *GrokProvider) getClient(tokens map[string]interface{}) (*grok.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.client != nil {
+		return p.client, nil
 	}
 
-	client, err := grok.NewClient(config.APIKey)
+	apiKey := extractAPIKey(tokens)
+	if apiKey == "" && p.config.APIKey != "" {
+		apiKey = p.config.APIKey
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("Grok API key not found in tokens")
+	}
+
+	client, err := grok.NewClient(apiKey)
 	if err != nil {
-		log.Printf("Failed to create Grok client: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create Grok client: %w", err)
 	}
+	p.client = client
+	return client, nil
+}
 
-	return &GrokProvider{
-		client: client,
-		config: config,
-	}, nil
+func extractAPIKey(tokens map[string]interface{}) string {
+	for _, key := range []string{"grok", "xai", "api_key", "apiKey", "token"} {
+		if v, ok := tokens[key]; ok {
+			if s, ok := v.(string); ok && len(s) > 10 {
+				return s
+			}
+		}
+	}
+	for _, v := range tokens {
+		if s, ok := v.(string); ok && len(s) > 10 {
+			return s
+		}
+	}
+	return ""
 }
 
 // Generate generates content using Grok
 func (p *GrokProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
-	if p.client == nil {
-		return "", fmt.Errorf("Grok provider not configured")
+	client, err := p.getClient(tokens)
+	if err != nil {
+		return "", err
 	}
 
 	model := p.config.Model
@@ -46,7 +76,7 @@ func (p *GrokProvider) Generate(ctx context.Context, prompt string, tokens map[s
 		model = "grok-2"
 	}
 
-	resp, err := grok.CreateChatCompletion(ctx, p.client, &grok.ChatCompletionRequest{
+	resp, err := grok.CreateChatCompletion(ctx, client, &grok.ChatCompletionRequest{
 		Model: model,
 		Messages: []grok.ChatCompletionMessage{
 			{
@@ -75,7 +105,7 @@ func (p *GrokProvider) Name() string {
 	return "grok"
 }
 
-// IsConfigured checks if the provider is properly configured
+// IsConfigured always returns true since API key comes from tokens
 func (p *GrokProvider) IsConfigured() bool {
-	return p.client != nil && p.config != nil && p.config.APIKey != ""
+	return true
 }

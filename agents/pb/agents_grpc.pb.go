@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AgentService_Generate_FullMethodName = "/agentspb.AgentService/Generate"
+	AgentService_Generate_FullMethodName       = "/agentspb.AgentService/Generate"
+	AgentService_GenerateStream_FullMethodName = "/agentspb.AgentService/GenerateStream"
 )
 
 // AgentServiceClient is the client API for AgentService service.
@@ -29,6 +30,7 @@ const (
 // Agent service for AI content generation
 type AgentServiceClient interface {
 	Generate(ctx context.Context, in *GenerateRequest, opts ...grpc.CallOption) (*GenerateResponse, error)
+	GenerateStream(ctx context.Context, in *GenerateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GenerateStreamChunk], error)
 }
 
 type agentServiceClient struct {
@@ -49,6 +51,25 @@ func (c *agentServiceClient) Generate(ctx context.Context, in *GenerateRequest, 
 	return out, nil
 }
 
+func (c *agentServiceClient) GenerateStream(ctx context.Context, in *GenerateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GenerateStreamChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[0], AgentService_GenerateStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[GenerateRequest, GenerateStreamChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_GenerateStreamClient = grpc.ServerStreamingClient[GenerateStreamChunk]
+
 // AgentServiceServer is the server API for AgentService service.
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
@@ -56,6 +77,7 @@ func (c *agentServiceClient) Generate(ctx context.Context, in *GenerateRequest, 
 // Agent service for AI content generation
 type AgentServiceServer interface {
 	Generate(context.Context, *GenerateRequest) (*GenerateResponse, error)
+	GenerateStream(*GenerateRequest, grpc.ServerStreamingServer[GenerateStreamChunk]) error
 	mustEmbedUnimplementedAgentServiceServer()
 }
 
@@ -68,6 +90,9 @@ type UnimplementedAgentServiceServer struct{}
 
 func (UnimplementedAgentServiceServer) Generate(context.Context, *GenerateRequest) (*GenerateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Generate not implemented")
+}
+func (UnimplementedAgentServiceServer) GenerateStream(*GenerateRequest, grpc.ServerStreamingServer[GenerateStreamChunk]) error {
+	return status.Error(codes.Unimplemented, "method GenerateStream not implemented")
 }
 func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
 func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
@@ -108,6 +133,17 @@ func _AgentService_Generate_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AgentService_GenerateStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GenerateRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AgentServiceServer).GenerateStream(m, &grpc.GenericServerStream[GenerateRequest, GenerateStreamChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_GenerateStreamServer = grpc.ServerStreamingServer[GenerateStreamChunk]
+
 // AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -120,6 +156,12 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AgentService_Generate_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GenerateStream",
+			Handler:       _AgentService_GenerateStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "agents.proto",
 }

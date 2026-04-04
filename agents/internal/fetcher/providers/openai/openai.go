@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"agents/pkg/models"
 
@@ -13,29 +14,61 @@ import (
 
 // OpenAIProvider implements the AIProvider interface for OpenAI
 type OpenAIProvider struct {
+	mu     sync.Mutex
 	client *openai.Client
 	config *models.ProviderConfig
 }
 
 // New creates a new OpenAI provider
 func New(config *models.ProviderConfig) (*OpenAIProvider, error) {
-	if config.APIKey == "" {
-		log.Printf("OpenAI provider not configured - missing API key")
-		return &OpenAIProvider{config: config}, nil
+	return &OpenAIProvider{config: config}, nil
+}
+
+// getClient returns or creates client using API key from tokens
+func (p *OpenAIProvider) getClient(tokens map[string]interface{}) (*openai.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.client != nil {
+		return p.client, nil
 	}
 
-	client := openai.NewClient(option.WithAPIKey(config.APIKey))
+	apiKey := extractAPIKey(tokens)
+	if apiKey == "" && p.config.APIKey != "" {
+		apiKey = p.config.APIKey
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("OpenAI API key not found in tokens")
+	}
 
-	return &OpenAIProvider{
-		&client,
-		config,
-	}, nil
+	client := openai.NewClient(option.WithAPIKey(apiKey))
+	p.client = &client
+	return p.client, nil
+}
+
+func extractAPIKey(tokens map[string]interface{}) string {
+	// Try common key names
+	for _, key := range []string{"openai", "api_key", "apiKey", "token"} {
+		if v, ok := tokens[key]; ok {
+			if s, ok := v.(string); ok && len(s) > 10 {
+				return s
+			}
+		}
+	}
+	// Fallback: first string value that looks like a key
+	for _, v := range tokens {
+		if s, ok := v.(string); ok && len(s) > 10 {
+			return s
+		}
+	}
+	return ""
 }
 
 // Generate generates content using OpenAI
 func (p *OpenAIProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
-	if p.client == nil {
-		return "", fmt.Errorf("OpenAI provider not configured")
+	client, err := p.getClient(tokens)
+	if err != nil {
+		return "", err
 	}
 
 	model := p.config.Model
@@ -48,7 +81,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, prompt string, tokens map
 		maxTokens = p.config.MaxTokens
 	}
 
-	response, err := p.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+	response, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(prompt),
 		},
@@ -78,7 +111,7 @@ func (p *OpenAIProvider) Name() string {
 	return "openai"
 }
 
-// IsConfigured checks if the provider is properly configured
+// IsConfigured always returns true since API key comes from tokens
 func (p *OpenAIProvider) IsConfigured() bool {
-	return p.client != nil && p.config != nil && p.config.APIKey != ""
+	return true
 }

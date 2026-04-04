@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -12,29 +13,59 @@ import (
 
 // ClaudeProvider implements the AIProvider interface for Anthropic Claude
 type ClaudeProvider struct {
+	mu     sync.Mutex
 	client *anthropic.Client
 	config *models.ProviderConfig
 }
 
 // New creates a new Claude provider
 func New(config *models.ProviderConfig) (*ClaudeProvider, error) {
-	if config.APIKey == "" {
-		log.Printf("Claude provider not configured - missing API key")
-		return &ClaudeProvider{config: config}, nil
+	return &ClaudeProvider{config: config}, nil
+}
+
+// getClient returns or creates client using API key from tokens
+func (p *ClaudeProvider) getClient(tokens map[string]interface{}) (*anthropic.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.client != nil {
+		return p.client, nil
 	}
 
-	client := anthropic.NewClient(option.WithAPIKey(config.APIKey))
+	apiKey := extractAPIKey(tokens)
+	if apiKey == "" && p.config.APIKey != "" {
+		apiKey = p.config.APIKey
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("Claude API key not found in tokens")
+	}
 
-	return &ClaudeProvider{
-		client: &client,
-		config: config,
-	}, nil
+	client := anthropic.NewClient(option.WithAPIKey(apiKey))
+	p.client = &client
+	return p.client, nil
+}
+
+func extractAPIKey(tokens map[string]interface{}) string {
+	for _, key := range []string{"claude", "anthropic", "api_key", "apiKey", "token"} {
+		if v, ok := tokens[key]; ok {
+			if s, ok := v.(string); ok && len(s) > 10 {
+				return s
+			}
+		}
+	}
+	for _, v := range tokens {
+		if s, ok := v.(string); ok && len(s) > 10 {
+			return s
+		}
+	}
+	return ""
 }
 
 // Generate generates content using Claude
 func (p *ClaudeProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
-	if p.client == nil {
-		return "", fmt.Errorf("Claude provider not configured")
+	client, err := p.getClient(tokens)
+	if err != nil {
+		return "", err
 	}
 
 	maxTokens := 1024
@@ -47,7 +78,7 @@ func (p *ClaudeProvider) Generate(ctx context.Context, prompt string, tokens map
 		model = "claude-3-5-sonnet-20241022"
 	}
 
-	message, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
+	message, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     model,
 		MaxTokens: int64(maxTokens),
 		Messages: []anthropic.MessageParam{
@@ -64,11 +95,7 @@ func (p *ClaudeProvider) Generate(ctx context.Context, prompt string, tokens map
 		return "", fmt.Errorf("no content in Claude response")
 	}
 
-	// The first content block should have the text
-	// In anthropic SDK, ContentBlockUnion can directly contain Text field
 	contentBlock := message.Content[0]
-
-	// Try to access Text directly (union type flattening)
 	return contentBlock.Text, nil
 }
 
@@ -77,7 +104,7 @@ func (p *ClaudeProvider) Name() string {
 	return "claude"
 }
 
-// IsConfigured checks if the provider is properly configured
+// IsConfigured always returns true since API key comes from tokens
 func (p *ClaudeProvider) IsConfigured() bool {
-	return p.client != nil && p.config != nil && p.config.APIKey != ""
+	return true
 }

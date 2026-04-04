@@ -19,6 +19,9 @@ type Client struct {
 
 // NewClient подключается к Manager сервису
 func NewClient(address string) (*Client, error) {
+	if address == "" {
+		address = "manager:50052"
+	}
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to manager service: %w", err)
@@ -35,7 +38,17 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// AssignManagersAndWait отправляет запрос и ждёт ZIP архив
+// AssignManager вызывает ОДНОГО менеджера (новый метод)
+func (c *Client) AssignManager(ctx context.Context, req *managerpb.AssignManagerRequest) (*managerpb.ManagerResult, error) {
+	resp, err := c.client.AssignManager(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("assign manager rpc failed: %w", err)
+	}
+
+	return resp, nil
+}
+
+// AssignManagersAndWait отправляет запрос и ждёт ZIP архив (legacy)
 func (c *Client) AssignManagersAndWait(ctx context.Context, taskID, techDesc string, roles []string, tokens map[string]string, model, provider string) ([]byte, error) {
 	tokensJSON, _ := json.Marshal(tokens)
 	metadata := map[string]string{

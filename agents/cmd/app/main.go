@@ -4,18 +4,29 @@ import (
 	"log"
 	"os"
 
-	"agents/pkg/fetcher/grpc"
 	"agents/internal/service"
+	"agents/pkg/fetcher/grpc"
+	"agents/pkg/models"
 )
 
 func main() {
 	// Initialize agent service
-	// NOTE: API keys are provided per-request via tokens field
-	// NOT loaded from environment
 	agentService := service.NewAgentService()
 
-	// Load optional environmental configuration (model defaults, feature flags, etc.)
-	availableProviders := []string{"claude", "gemini", "openai", "deepseek", "grok"}
+	// API keys will be provided per-request via tokens field
+	providers := map[string]*models.ProviderConfig{
+		"claude":     {Model: "claude-opus-4-6"},
+		"gemini":     {Model: "gemini-2.5-flash"},
+		"openai":     {Model: "gpt-4o"},
+		"deepseek":   {Model: "deepseek-chat"},
+		"grok":       {Model: "grok-3"},
+		"openrouter": {Model: "qwen/qwen3.6-plus:free"},
+	}
+
+	// Initialize and register each provider
+	InitProvider(providers, agentService)
+
+	availableProviders := agentService.GetAvailableProviders()
 	log.Printf("✅ Available AI providers: %v", availableProviders)
 
 	// Start gRPC server

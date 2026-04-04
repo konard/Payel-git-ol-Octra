@@ -19,14 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkerService_AssignWorkersAndWait_FullMethodName = "/worker.WorkerService/AssignWorkersAndWait"
+	WorkerService_AssignWorkersAndWaitStream_FullMethodName = "/worker.WorkerService/AssignWorkersAndWaitStream"
+	WorkerService_AssignWorkersAndWait_FullMethodName       = "/worker.WorkerService/AssignWorkersAndWait"
+	WorkerService_ReviewWorker_FullMethodName               = "/worker.WorkerService/ReviewWorker"
 )
 
 // WorkerServiceClient is the client API for WorkerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerServiceClient interface {
+	// Streaming version - отправляет обновления по мере выполнения
+	AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
+	// Основной метод — назначить воркеров и ждать результат
 	AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error)
+	// Review — отправить воркеру замечания для исправления
+	ReviewWorker(ctx context.Context, in *ReviewRequest, opts ...grpc.CallOption) (*ReviewResponse, error)
 }
 
 type workerServiceClient struct {
@@ -36,6 +43,25 @@ type workerServiceClient struct {
 func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
 	return &workerServiceClient{cc}
 }
+
+func (c *workerServiceClient) AssignWorkersAndWaitStream(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_AssignWorkersAndWaitStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[AssignWorkersRequest, TaskUpdate]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type WorkerService_AssignWorkersAndWaitStreamClient = grpc.ServerStreamingClient[TaskUpdate]
 
 func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *AssignWorkersRequest, opts ...grpc.CallOption) (*AssignWorkersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -47,11 +73,26 @@ func (c *workerServiceClient) AssignWorkersAndWait(ctx context.Context, in *Assi
 	return out, nil
 }
 
+func (c *workerServiceClient) ReviewWorker(ctx context.Context, in *ReviewRequest, opts ...grpc.CallOption) (*ReviewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewResponse)
+	err := c.cc.Invoke(ctx, WorkerService_ReviewWorker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkerServiceServer is the server API for WorkerService service.
 // All implementations must embed UnimplementedWorkerServiceServer
 // for forward compatibility.
 type WorkerServiceServer interface {
+	// Streaming version - отправляет обновления по мере выполнения
+	AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[TaskUpdate]) error
+	// Основной метод — назначить воркеров и ждать результат
 	AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error)
+	// Review — отправить воркеру замечания для исправления
+	ReviewWorker(context.Context, *ReviewRequest) (*ReviewResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -62,8 +103,14 @@ type WorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkerServiceServer struct{}
 
+func (UnimplementedWorkerServiceServer) AssignWorkersAndWaitStream(*AssignWorkersRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
+	return status.Error(codes.Unimplemented, "method AssignWorkersAndWaitStream not implemented")
+}
 func (UnimplementedWorkerServiceServer) AssignWorkersAndWait(context.Context, *AssignWorkersRequest) (*AssignWorkersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssignWorkersAndWait not implemented")
+}
+func (UnimplementedWorkerServiceServer) ReviewWorker(context.Context, *ReviewRequest) (*ReviewResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReviewWorker not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
 func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
@@ -86,6 +133,17 @@ func RegisterWorkerServiceServer(s grpc.ServiceRegistrar, srv WorkerServiceServe
 	s.RegisterService(&WorkerService_ServiceDesc, srv)
 }
 
+func _WorkerService_AssignWorkersAndWaitStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AssignWorkersRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(WorkerServiceServer).AssignWorkersAndWaitStream(m, &grpc.GenericServerStream[AssignWorkersRequest, TaskUpdate]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type WorkerService_AssignWorkersAndWaitStreamServer = grpc.ServerStreamingServer[TaskUpdate]
+
 func _WorkerService_AssignWorkersAndWait_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssignWorkersRequest)
 	if err := dec(in); err != nil {
@@ -104,6 +162,24 @@ func _WorkerService_AssignWorkersAndWait_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkerService_ReviewWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServiceServer).ReviewWorker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkerService_ReviewWorker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServiceServer).ReviewWorker(ctx, req.(*ReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkerService_ServiceDesc is the grpc.ServiceDesc for WorkerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,7 +191,17 @@ var WorkerService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "AssignWorkersAndWait",
 			Handler:    _WorkerService_AssignWorkersAndWait_Handler,
 		},
+		{
+			MethodName: "ReviewWorker",
+			Handler:    _WorkerService_ReviewWorker_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "AssignWorkersAndWaitStream",
+			Handler:       _WorkerService_AssignWorkersAndWaitStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "manager-worker.proto",
 }

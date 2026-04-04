@@ -4,9 +4,8 @@ WORKDIR /workspace
 
 RUN apk add --no-cache git
 
-# Копируем apigateway и boss модули (apigateway зависит от boss)
+# Apigateway is self-contained (proto files are copied locally)
 COPY apigateway ./apigateway
-COPY boss ./boss
 
 RUN cd apigateway && go mod download
 

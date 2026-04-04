@@ -7,8 +7,10 @@ RUN apk add --no-cache git
 # Копируем все модули и go.work
 COPY go.work ./
 COPY agents ./agents
+COPY apigateway ./apigateway
 COPY boss ./boss
 COPY manager ./manager
+COPY merger ./merger
 COPY worker ./worker
 
 RUN cd worker && go mod download

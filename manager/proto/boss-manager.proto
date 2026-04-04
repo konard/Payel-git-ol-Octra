@@ -4,12 +4,57 @@ package manager;
 
 option go_package = "manager/internal/fetcher/grpc/managerpb";
 
-// Запрос от boss к manager
-message AssignManagersRequest {
+// Task update message for streaming
+message TaskUpdate {
   string task_id = 1;
-  string technical_description = 2;
-  repeated string roles = 3;
-  map<string, string> metadata = 4;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+}
+
+// ManagerConfig — конфигурация для одного менеджера
+message ManagerConfig {
+  string manager_id = 1;
+  string role = 2;
+  string description = 3;
+  int32 priority = 4;
+}
+
+// WorkerResult — результат работы воркера (для коммуникации между воркерами)
+message WorkerResult {
+  string worker_id = 1;
+  string role = 2;
+  string task_md = 3;
+  string solution_md = 4;
+  map<string, string> files = 5;   // path -> content
+  bool success = 6;
+  string feedback = 7;
+  bool approved = 8;
+}
+
+// Запрос от boss к manager — ОДИН менеджер на запрос
+message AssignManagerRequest {
+  string task_id = 1;
+  string manager_id = 2;            // уникальный ID менеджера
+  string role = 3;                  // роль менеджера (frontend, backend, etc)
+  string description = 4;           // описание роли от Boss
+  string technical_description = 5; // общее техническое описание от Boss
+  int32 priority = 6;               // приоритет
+  map<string, string> metadata = 7; // tokens, model, provider
+  repeated WorkerResult other_workers_results = 8; // результаты других воркеров для контекста
+}
+
+// Результат работы одного менеджера
+message ManagerResult {
+  string task_id = 1;
+  string manager_id = 2;
+  string role = 3;
+  string status = 4;                 // success, error
+  bytes solution = 5;               // ZIP архив от менеджера
+  repeated WorkerResult worker_results = 6; // результаты всех воркеров
+  string review_summary = 7;        // резюме проверки менеджера
 }
 
 // Ответ manager с ZIP архивом
@@ -18,8 +63,24 @@ message AssignManagersResponse {
   string status = 2;
   string message = 3;
   bytes solution = 4;  // ZIP архив со всем проектом
+  repeated ManagerResult manager_results = 5; // результаты всех менеджеров
 }
 
 service ManagerService {
+  // Assign ONE manager — Boss вызывает для каждого менеджера отдельно
+  rpc AssignManager(AssignManagerRequest) returns (ManagerResult);
+
+  // Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
   rpc AssignManagersAndWait(AssignManagersRequest) returns (AssignManagersResponse);
+
+  // Streaming version - отправляет обновления по мере выполнения
+  rpc AssignManagersAndWaitStream(AssignManagersRequest) returns (stream TaskUpdate);
+}
+
+// Legacy request for backward compatibility
+message AssignManagersRequest {
+  string task_id = 1;
+  string technical_description = 2;
+  repeated string roles = 3;
+  map<string, string> metadata = 4;
 }

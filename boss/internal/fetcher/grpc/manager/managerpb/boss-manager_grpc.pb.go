@@ -19,14 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ManagerService_AssignManagersAndWait_FullMethodName = "/manager.ManagerService/AssignManagersAndWait"
+	ManagerService_AssignManager_FullMethodName               = "/manager.ManagerService/AssignManager"
+	ManagerService_AssignManagersAndWait_FullMethodName       = "/manager.ManagerService/AssignManagersAndWait"
+	ManagerService_AssignManagersAndWaitStream_FullMethodName = "/manager.ManagerService/AssignManagersAndWaitStream"
 )
 
 // ManagerServiceClient is the client API for ManagerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerServiceClient interface {
+	// Assign ONE manager — Boss вызывает для каждого менеджера отдельно
+	AssignManager(ctx context.Context, in *AssignManagerRequest, opts ...grpc.CallOption) (*ManagerResult, error)
+	// Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
 	AssignManagersAndWait(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error)
+	// Streaming version - отправляет обновления по мере выполнения
+	AssignManagersAndWaitStream(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
 }
 
 type managerServiceClient struct {
@@ -35,6 +42,16 @@ type managerServiceClient struct {
 
 func NewManagerServiceClient(cc grpc.ClientConnInterface) ManagerServiceClient {
 	return &managerServiceClient{cc}
+}
+
+func (c *managerServiceClient) AssignManager(ctx context.Context, in *AssignManagerRequest, opts ...grpc.CallOption) (*ManagerResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ManagerResult)
+	err := c.cc.Invoke(ctx, ManagerService_AssignManager_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *managerServiceClient) AssignManagersAndWait(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error) {
@@ -47,11 +64,35 @@ func (c *managerServiceClient) AssignManagersAndWait(ctx context.Context, in *As
 	return out, nil
 }
 
+func (c *managerServiceClient) AssignManagersAndWaitStream(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ManagerService_ServiceDesc.Streams[0], ManagerService_AssignManagersAndWaitStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[AssignManagersRequest, TaskUpdate]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ManagerService_AssignManagersAndWaitStreamClient = grpc.ServerStreamingClient[TaskUpdate]
+
 // ManagerServiceServer is the server API for ManagerService service.
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility.
 type ManagerServiceServer interface {
+	// Assign ONE manager — Boss вызывает для каждого менеджера отдельно
+	AssignManager(context.Context, *AssignManagerRequest) (*ManagerResult, error)
+	// Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
 	AssignManagersAndWait(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error)
+	// Streaming version - отправляет обновления по мере выполнения
+	AssignManagersAndWaitStream(*AssignManagersRequest, grpc.ServerStreamingServer[TaskUpdate]) error
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -62,8 +103,14 @@ type ManagerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedManagerServiceServer struct{}
 
+func (UnimplementedManagerServiceServer) AssignManager(context.Context, *AssignManagerRequest) (*ManagerResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssignManager not implemented")
+}
 func (UnimplementedManagerServiceServer) AssignManagersAndWait(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssignManagersAndWait not implemented")
+}
+func (UnimplementedManagerServiceServer) AssignManagersAndWaitStream(*AssignManagersRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
+	return status.Error(codes.Unimplemented, "method AssignManagersAndWaitStream not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
 func (UnimplementedManagerServiceServer) testEmbeddedByValue()                        {}
@@ -86,6 +133,24 @@ func RegisterManagerServiceServer(s grpc.ServiceRegistrar, srv ManagerServiceSer
 	s.RegisterService(&ManagerService_ServiceDesc, srv)
 }
 
+func _ManagerService_AssignManager_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignManagerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).AssignManager(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagerService_AssignManager_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).AssignManager(ctx, req.(*AssignManagerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ManagerService_AssignManagersAndWait_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssignManagersRequest)
 	if err := dec(in); err != nil {
@@ -104,6 +169,17 @@ func _ManagerService_AssignManagersAndWait_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ManagerService_AssignManagersAndWaitStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AssignManagersRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ManagerServiceServer).AssignManagersAndWaitStream(m, &grpc.GenericServerStream[AssignManagersRequest, TaskUpdate]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ManagerService_AssignManagersAndWaitStreamServer = grpc.ServerStreamingServer[TaskUpdate]
+
 // ManagerService_ServiceDesc is the grpc.ServiceDesc for ManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -112,10 +188,20 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ManagerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "AssignManager",
+			Handler:    _ManagerService_AssignManager_Handler,
+		},
+		{
 			MethodName: "AssignManagersAndWait",
 			Handler:    _ManagerService_AssignManagersAndWait_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "AssignManagersAndWaitStream",
+			Handler:       _ManagerService_AssignManagersAndWaitStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "boss-manager.proto",
 }

@@ -5,35 +5,66 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/cohesion-org/deepseek-go"
 )
 
 // DeepSeekProvider implements the AIProvider interface for DeepSeek
 type DeepSeekProvider struct {
+	mu     sync.Mutex
 	client *deepseek.Client
 	config *models.ProviderConfig
 }
 
 // New creates a new DeepSeek provider
 func New(config *models.ProviderConfig) (*DeepSeekProvider, error) {
-	if config.APIKey == "" {
-		log.Printf("DeepSeek provider not configured - missing API key")
-		return &DeepSeekProvider{config: config}, nil
+	return &DeepSeekProvider{config: config}, nil
+}
+
+// getClient returns or creates client using API key from tokens
+func (p *DeepSeekProvider) getClient(tokens map[string]interface{}) (*deepseek.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.client != nil {
+		return p.client, nil
 	}
 
-	client := deepseek.NewClient(config.APIKey)
+	apiKey := extractAPIKey(tokens)
+	if apiKey == "" && p.config.APIKey != "" {
+		apiKey = p.config.APIKey
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("DeepSeek API key not found in tokens")
+	}
 
-	return &DeepSeekProvider{
-		client: client,
-		config: config,
-	}, nil
+	client := deepseek.NewClient(apiKey)
+	p.client = client
+	return client, nil
+}
+
+func extractAPIKey(tokens map[string]interface{}) string {
+	for _, key := range []string{"deepseek", "api_key", "apiKey", "token"} {
+		if v, ok := tokens[key]; ok {
+			if s, ok := v.(string); ok && len(s) > 10 {
+				return s
+			}
+		}
+	}
+	for _, v := range tokens {
+		if s, ok := v.(string); ok && len(s) > 10 {
+			return s
+		}
+	}
+	return ""
 }
 
 // Generate generates content using DeepSeek
 func (p *DeepSeekProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
-	if p.client == nil {
-		return "", fmt.Errorf("DeepSeek provider not configured")
+	client, err := p.getClient(tokens)
+	if err != nil {
+		return "", err
 	}
 
 	model := p.config.Model
@@ -41,7 +72,7 @@ func (p *DeepSeekProvider) Generate(ctx context.Context, prompt string, tokens m
 		model = "deepseek-chat"
 	}
 
-	resp, err := p.client.CreateChatCompletion(ctx, &deepseek.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, &deepseek.ChatCompletionRequest{
 		Model: model,
 		Messages: []deepseek.ChatCompletionMessage{
 			{
@@ -70,7 +101,7 @@ func (p *DeepSeekProvider) Name() string {
 	return "deepseek"
 }
 
-// IsConfigured checks if the provider is properly configured
+// IsConfigured always returns true since API key comes from tokens
 func (p *DeepSeekProvider) IsConfigured() bool {
-	return p.client != nil && p.config != nil && p.config.APIKey != ""
+	return true
 }

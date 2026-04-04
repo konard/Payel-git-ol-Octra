@@ -1,22 +1,21 @@
 package grpc
 
 import (
+	"boss/internal/service/boss"
 	"context"
 	"log"
 	"net"
 
 	"boss/internal/fetcher/grpc/bosspb"
-	"boss/internal/service"
-
 	"google.golang.org/grpc"
 )
 
 type Server struct {
 	bosspb.UnimplementedBossServiceServer
-	service *service.BossService
+	service *boss.BossService
 }
 
-func NewServer(s *service.BossService) *Server {
+func NewServer(s *boss.BossService) *Server {
 	return &Server{
 		service: s,
 	}
@@ -34,7 +33,7 @@ func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusReques
 	return s.service.GetTaskStatus(ctx, req)
 }
 
-func Start(port string, s *service.BossService) error {
+func Start(port string, s *boss.BossService) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
