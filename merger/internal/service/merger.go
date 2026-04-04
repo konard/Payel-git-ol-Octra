@@ -66,6 +66,26 @@ func createZipArchive(files map[string]string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf)
 
+	dirs := make(map[string]bool)
+	for path := range files {
+		dir := ""
+		parts := splitPath(path)
+		for i := 0; i < len(parts)-1; i++ {
+			if dir == "" {
+				dir = parts[i]
+			} else {
+				dir = dir + "/" + parts[i]
+			}
+			if !dirs[dir] {
+				dirs[dir] = true
+				_, err := w.Create(dir + "/")
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
 	for path, content := range files {
 		f, err := w.Create(path)
 		if err != nil {
@@ -83,4 +103,78 @@ func createZipArchive(files map[string]string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func splitPath(path string) []string {
+	var parts []string
+	for {
+		dir, file := path, ""
+		if i := len(path) - 1; i >= 0 {
+			for j := i; j >= 0; j-- {
+				if path[j] == '/' || path[j] == '\\' {
+					dir = path[:j]
+					file = path[j+1:]
+					break
+				}
+			}
+			if dir == path {
+				parts = append([]string{path}, parts...)
+				break
+			}
+			parts = append([]string{file}, parts...)
+			path = dir
+		}
+	}
+	return parts
+}
+			if !dirs[dir] {
+				dirs[dir] = true
+				_, err := w.Create(dir + "/")
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	for path, content := range files {
+		f, err := w.Create(path)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write([]byte(content))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err := w.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func splitPath(path string) []string {
+	var parts []string
+	for {
+		dir, file := path, ""
+		if i := len(path) - 1; i >= 0 {
+			for j := i; j >= 0; j-- {
+				if path[j] == '/' || path[j] == '\\' {
+					dir = path[:j]
+					file = path[j+1:]
+					break
+				}
+			}
+			if dir == path {
+				parts = append([]string{path}, parts...)
+				break
+			}
+			parts = append([]string{file}, parts...)
+			path = dir
+		}
+	}
+	return parts
 }
