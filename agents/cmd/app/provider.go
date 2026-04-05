@@ -7,6 +7,7 @@ import (
 	"agents/internal/fetcher/providers/grok"
 	"agents/internal/fetcher/providers/openai"
 	"agents/internal/fetcher/providers/openrouter"
+	"agents/internal/fetcher/providers/qwen"
 	"agents/internal/service"
 	"agents/pkg/models"
 )
@@ -29,5 +30,8 @@ func InitProvider(providers map[string]*models.ProviderConfig, agentService *ser
 	}
 	if p, err := openrouter.New(providers["openrouter"]); err == nil {
 		agentService.RegisterProvider("openrouter", p)
+	}
+	if p, err := qwen.New(providers["qwen"]); err == nil {
+		agentService.RegisterProvider("cliproxy", p)
 	}
 }

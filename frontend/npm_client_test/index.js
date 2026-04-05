@@ -1,72 +1,93 @@
 const WebSocket = require('ws');
 
-
-const WS_URL = 'ws://localhost:3111/task/create'; 
+const WS_URL = 'ws://localhost:3111/task/create';
 
 const TASK_REQUEST = {
   username: "pavel",
-  title: "Прокси сервер",
-  description: "Напиши прокси сервис на go",
-  tokens: {
-    openrouter: "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"
-  },
+  title: "Тест",
+  description: "Напиши HTTP сервер на Go",
+  tokens: {},
   meta: {
-    provider: "openrouter",
-    model: "qwen/qwen3.6-plus:free"
+    provider: "cliproxy",
+    model: "qwen-code"
   }
 };
 
-console.log(`🔌 Подключение к ${WS_URL}...`);
+const RECONNECT_DELAY = 1000; // 1 секунда
+const MAX_RECONNECT_DELAY = 10000; // 10 секунд максимум
+let reconnectAttempts = 0;
+let isTaskCompleted = false; // Флаг завершения задачи
 
-const ws = new WebSocket(WS_URL);
+function connect() {
+  const delay = Math.min(RECONNECT_DELAY * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+  reconnectAttempts++;
 
-ws.on('open', () => {
-  console.log('✅ Соединение установлено');
-  console.log('📤 Отправляю запрос задачи...\n');
+  console.log(`🔌 Подключение к ${WS_URL}... (попытка ${reconnectAttempts})`);
 
-  ws.send(JSON.stringify(TASK_REQUEST));
-});
+  const ws = new WebSocket(WS_URL);
 
-ws.on('message', (data) => {
-  let msg;
-  try {
-    msg = JSON.parse(data.toString());
-  } catch {
-    console.log('📨 Не-JSON сообщение:', data.toString());
-    return;
-  }
+  ws.on('open', () => {
+    console.log('✅ Соединение установлено');
+    reconnectAttempts = 0; // Сбрасываем счётчик при успешном подключении
 
-  const type = msg.type || 'unknown';
-  const emoji = {
-    connected: '🟢',
-    progress: '🔄',
-    error: '❌',
-    done: '✅',
-    status: 'ℹ️ ',
-  }[type] || '📨';
+    console.log('📤 Отправляю запрос задачи...\n');
+    ws.send(JSON.stringify(TASK_REQUEST));
+  });
 
-  console.log(`${emoji} [${type}]`, JSON.stringify(msg, null, 2));
-  console.log('---');
+  ws.on('message', (data) => {
+    let msg;
+    try {
+      msg = JSON.parse(data.toString());
+    } catch {
+      console.log('📨 Не-JSON сообщение:', data.toString());
+      return;
+    }
 
-  if (type === 'error' || type === 'done') {
-    console.log('\n🏁 Завершение');
-    ws.close();
-  }
-});
+    const type = msg.type || 'unknown';
+    const emoji = {
+      connected: '🟢',
+      processing: '🔄',
+      progress: '🔄',
+      error: '❌',
+      done: '✅',
+      success: '✅',
+      status: 'ℹ️ ',
+    }[type] || '📨';
 
-ws.on('close', (code) => {
-  console.log(`🔌 Соединение закрыто (code: ${code})`);
-  process.exit(0);
-});
+    console.log(`${emoji} [${type}]`, JSON.stringify(msg, null, 2));
+    console.log('---');
 
-ws.on('error', (err) => {
-  console.error('💥 Ошибка:', err.message);
-  process.exit(1);
-});
+    if (type === 'error' || type === 'done' || type === 'success') {
+      console.log('\n🏁 Завершение');
+      isTaskCompleted = true;
+      ws.close();
+    }
+  });
 
-while (true) {
-  setTimeout(() => {
-    console.log('⏱️ Таймаут 5 минут, закрываю...');
-    ws.close();
-  }, 500 * 60 * 1000);
+  ws.on('close', (code, reason) => {
+    const reasonStr = reason ? `, reason: ${reason}` : '';
+    console.log(`🔌 Соединение закрыто (code: ${code}${reasonStr})`);
+
+    if (!isTaskCompleted) {
+      console.log(`⏳ Переподключение через ${delay / 1000}с...`);
+      setTimeout(connect, delay);
+    } else {
+      process.exit(0);
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error(`💥 Ошибка соединения: ${err.message}`);
+    // WebSocket сам закроет соединение после ошибки, сработает on('close')
+  });
 }
+
+// Запуск
+connect();
+
+// Глобальный таймаут 5 минут
+setTimeout(() => {
+  console.log('⏱️ Таймаут 5 минут, закрываю...');
+  isTaskCompleted = true;
+  process.exit(0);
+}, 5 * 60 * 1000);

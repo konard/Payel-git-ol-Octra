@@ -6,16 +6,33 @@ import (
 	"boss/pkg/models"
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // assignManagersParallelWithProgress calls AssignManager for each manager IN PARALLEL with progress updates
 func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) ([]*managerpb.ManagerResult, []byte, error) {
-	return s.assignManagersParallel(ctx, taskID, decision, req, func(role string, progress int, message string) {
-		_ = stream.Send(&bosspb.TaskUpdate{
+	// Create a thread-safe progress sender
+	sendCh := make(chan *bosspb.TaskUpdate, 64)
+	doneCh := make(chan struct{})
+
+	// Dedicated goroutine for all stream.Send() calls — prevents HTTP/2 race condition
+	go func() {
+		defer close(doneCh)
+		for update := range sendCh {
+			if err := stream.Send(update); err != nil {
+				log.Printf("Boss stream send error: %v", err)
+				return
+			}
+		}
+	}()
+
+	callback := func(role string, progress int, message string) {
+		select {
+		case sendCh <- &bosspb.TaskUpdate{
 			TaskId:    taskID,
 			Message:   message,
 			Progress:  int32(progress),
@@ -24,8 +41,15 @@ func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, ta
 			Data: map[string]string{
 				"current_role": role,
 			},
-		})
-	})
+		}:
+		case <-ctx.Done():
+		}
+	}
+
+	results, zipData, err := s.assignManagersParallel(ctx, taskID, decision, req, callback)
+	close(sendCh)
+	<-doneCh // Wait for all pending sends to complete
+	return results, zipData, err
 }
 
 // assignManagersParallel calls AssignManager for each manager IN PARALLEL

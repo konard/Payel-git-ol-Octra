@@ -1,0 +1,107 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Light theme — default */
+  --background: #ffffff;
+  --surface: #f5f5f5;
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --text: #111111;
+  --text-muted: #6b7280;
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #eab308;
+  --border: rgba(0, 0, 0, 0.12);
+
+  /* React Flow variables */
+  --bg-canvas: #ffffff;
+  --bg-node: #f5f5f5;
+  --text-node: #111111;
+  --edge-color: #9ca3af;
+  --edge-active: #f97316;
+}
+
+.dark {
+  /* Dark theme — dark gray / black */
+  --background: #111111;
+  --surface: #1a1a1a;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --text: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #eab308;
+  --border: rgba(255, 255, 255, 0.1);
+
+  /* React Flow variables */
+  --bg-canvas: #111111;
+  --bg-node: #1a1a1a;
+  --text-node: #e5e5e5;
+  --edge-color: #525252;
+  --edge-active: #f97316;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  
+  /* React Flow */
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-node: var(--bg-node);
+  --color-text-node: var(--text-node);
+  --color-edge: var(--edge-color);
+  --color-edge-active: var(--edge-active);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Node appear animation */
+  @keyframes nodeAppear {
+    from {
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Pulse animation for active nodes */
+  @keyframes pulse-shadow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+    }
+  }
+
+  .animate-node-appear {
+    animation: nodeAppear 0.3s ease-out;
+  }
+
+  .animate-node-pulse {
+    animation: pulse-shadow 2s infinite;
+  }
+}

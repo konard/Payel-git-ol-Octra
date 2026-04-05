@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
@@ -87,6 +88,11 @@ func HttpManager(a *azure.Azure) {
 func handleTaskCreateWebSocket(ws *azurewebsockets.Conn, opcode int, data []byte) {
 	switch opcode {
 	case azurewebsockets.OpText:
+		// Ignore empty or whitespace-only frames (initial connection)
+		if len(data) == 0 || len(bytes.TrimSpace(data)) == 0 {
+			return
+		}
+
 		// Parse initial task request
 		var taskReq requests.CreateTaskRequest
 		if err := json.Unmarshal(data, &taskReq); err != nil {

@@ -1,0 +1,34 @@
+# CLIProxyAPI configuration for Qwen Code
+# This configuration enables Qwen Code CLI via OAuth authentication
+
+# Server settings
+host: ""
+port: 8317
+# Authentication directory (OAuth tokens storage)
+# Dedicated directory with only OAuth credentials (no todos, settings, etc.)
+auth-dir: "C:/Users/pasaz/.qwen/cliproxy-auth"
+# Authentication - API keys for your internal services
+api-keys:
+  - "cliproxy-dev-key-change-me"
+# Management API settings (for OAuth setup)
+remote-management:
+  allow-remote: true # Allow access from localhost
+  secret-key: "$2a$10$TU054FQe6923rCkq3oGx6Oavv19oJvy.5D9b7obI/7ir0t07s6Vzq"
+# Debug logging
+debug: true
+# Retry settings
+request-retry: 3
+# OAuth model aliases for Qwen Code
+# This maps to your locally-installed Qwen Code OAuth model
+oauth-model-alias:
+  qwen:
+    - name: "coder-model" # Your actual local model name
+      alias: "qwen-code" # Alias used in API requests
+      fork: false
+# OAuth excluded models for Qwen
+oauth-excluded-models:
+  qwen:
+    - "vision-model"
+# Routing strategy
+routing:
+  strategy: "round-robin"

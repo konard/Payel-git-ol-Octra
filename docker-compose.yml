@@ -90,10 +90,13 @@ services:
     container_name: crewai-agents
     environment:
       - AGENTS_PORT=50053
+      - CLIPROXY_API_URL=http://host.docker.internal:8317/v1
     ports:
       - "50053:50053"
     networks:
       - crewai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   merger:

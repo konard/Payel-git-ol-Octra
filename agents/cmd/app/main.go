@@ -21,6 +21,7 @@ func main() {
 		"deepseek":   {Model: "deepseek-chat"},
 		"grok":       {Model: "grok-3"},
 		"openrouter": {Model: "qwen/qwen3.6-plus:free"},
+		"qwen":       {Model: "qwen-code", APIKey: "cliproxy-dev-key-change-me"}, // CLIProxyAPI Qwen Code via OAuth
 	}
 
 	// Initialize and register each provider
