@@ -34,6 +34,7 @@ export function useWebSocket(url: string) {
   // Track managers across messages
   const managerCounter = useRef(0);
   const managersKnown = useRef<Set<string>>(new Set());
+  const zipNodeAdded = useRef(false);
 
   const storeActions = {
     setConnectionStatus: useTaskStore((state) => state.setConnectionStatus),
@@ -78,6 +79,17 @@ export function useWebSocket(url: string) {
         if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
         }
+        // Update all nodes to done including ZIP
+        finalizeAllNodes('done');
+
+        // Update ZIP node with file info if available
+        if (msg.data?.filesCount || msg.data?.zipSize) {
+          storeActions.updateNode('zip-archive', {
+            status: 'done',
+            filesCount: msg.data.filesCount,
+            fileSize: msg.data.zipSize ? `${(msg.data.zipSize / 1024).toFixed(1)} KB` : '',
+          });
+        }
         break;
 
       case 'error':
@@ -86,6 +98,8 @@ export function useWebSocket(url: string) {
           message: msg.message || 'Error occurred',
           type: 'error',
         });
+        // Update all nodes to error
+        finalizeAllNodes('error');
         break;
     }
   };
@@ -96,6 +110,43 @@ export function useWebSocket(url: string) {
       .split(/[_\s]+/)
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
+  };
+
+  // Helper: finalize all nodes (done/error)
+  const finalizeAllNodes = (status: 'done' | 'error') => {
+    const nodes = storeActions.nodes;
+    nodes.forEach((node) => {
+      storeActions.updateNode(node.id, { status });
+    });
+  };
+
+  // Helper: add ZIP Archive node with edges from all managers
+  const addZIPArchiveNode = () => {
+    if (zipNodeAdded.current) return;
+    zipNodeAdded.current = true;
+
+    const managerCount = managersKnown.current.size;
+    const totalWidth = Math.max(managerCount - 1, 1) * 250;
+    const startX = 200 + totalWidth / 2;
+
+    storeActions.addNode({
+      id: 'zip-archive',
+      type: 'zip',
+      role: 'ZIP Archive',
+      status: 'working',
+      fileName: 'project.zip',
+      position: { x: startX, y: 450 },
+    });
+
+    // Add edges from all managers to ZIP
+    managersKnown.current.forEach((role) => {
+      const idx = [...managersKnown.current].indexOf(role);
+      if (idx >= 0) {
+        storeActions.addEdge({ from: `manager-${idx}`, to: 'zip-archive' });
+      }
+    });
+
+    console.log('[WS] => ZIP Archive node added with', managerCount, 'edges');
   };
 
   const handleProgressMessage = (msg: WebSocketMessage) => {
@@ -115,6 +166,7 @@ export function useWebSocket(url: string) {
       storeActions.setTaskStatus('planning');
       managerCounter.current = 0;
       managersKnown.current.clear();
+      zipNodeAdded.current = false;
       storeActions.addNode({
         id: 'boss-1',
         type: 'boss',
@@ -125,10 +177,10 @@ export function useWebSocket(url: string) {
       });
     }
 
-    // === MANAGERS — "Starting manager: backend" ===
-    const startingMatch = message.match(/Starting manager:\s*(\S+)/i);
+    // === MANAGERS — "Starting manager: Project Lead / Architect" ===
+    const startingMatch = message.match(/Starting manager:\s*(.+)/i);
     if (startingMatch) {
-      const role = startingMatch[1];
+      const role = startingMatch[1].trim();
       if (!managersKnown.current.has(role)) {
         managersKnown.current.add(role);
         const idx = managerCounter.current++;
@@ -155,20 +207,20 @@ export function useWebSocket(url: string) {
       }
     }
 
-    // === MANAGER WORKING ===
-    const workingMatch = message.match(/Manager working:\s*(\S+)/i);
+    // === MANAGER WORKING — "Manager working: Project Lead / Architect" ===
+    const workingMatch = message.match(/Manager working:\s*(.+)/i);
     if (workingMatch) {
-      const role = workingMatch[1];
+      const role = workingMatch[1].trim();
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
         storeActions.updateNode(`manager-${idx}`, { status: 'working' });
       }
     }
 
-    // === MANAGER COMPLETED ===
-    const completedMatch = message.match(/Manager completed:\s*(\S+)/i);
+    // === MANAGER COMPLETED — "Manager completed: Project Lead / Architect" ===
+    const completedMatch = message.match(/Manager completed:\s*(.+)/i);
     if (completedMatch) {
-      const role = completedMatch[1];
+      const role = completedMatch[1].trim();
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
         storeActions.updateNode(`manager-${idx}`, { status: 'done' });
@@ -184,16 +236,28 @@ export function useWebSocket(url: string) {
           storeActions.updateNode(`manager-${idx}`, { status: 'done' });
         }
       });
+
+      // Add ZIP Archive node
+      addZIPArchiveNode();
     }
 
     // === BOSS VALIDATING ===
     if (message.includes('Boss validating')) {
       storeActions.updateNode('boss-1', { status: 'reviewing' });
+
+      // Ensure ZIP node exists (if not added by "All managers completed")
+      addZIPArchiveNode();
     }
 
     // === PACKAGING ===
     if (message.includes('Packaging')) {
       storeActions.updateNode('boss-1', { status: 'done' });
+
+      // Update ZIP node to done
+      storeActions.updateNode('zip-archive', { status: 'done' });
+
+      // Ensure ZIP node exists
+      addZIPArchiveNode();
     }
   };
 
@@ -214,10 +278,6 @@ export function useWebSocket(url: string) {
       console.log('[WS] ✅ Connected to', url);
       reconnectAttempts.current = 0;
       storeActions.setConnectionStatus(true);
-      storeActions.addLog({
-        message: 'WebSocket подключено',
-        type: 'success',
-      });
     };
 
     ws.onclose = (event) => {
@@ -226,13 +286,10 @@ export function useWebSocket(url: string) {
       storeActions.setConnectionStatus(false);
 
       if (event.code === 1000 || isManuallyClosed.current) {
-        storeActions.addLog({
-          message: 'WebSocket отключено',
-          type: 'info',
-        });
+        // Normal close — no user-facing log needed
       } else {
         storeActions.addLog({
-          message: `WebSocket отключено (code: ${event.code}), переподключение...`,
+          message: 'Соединение потеряно, переподключение...',
           type: 'warning',
         });
         if (!isMounted.current || isManuallyClosed.current) return;

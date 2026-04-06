@@ -9,12 +9,13 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTaskStore } from '../../stores/taskStore';
-import { BossNode, ManagerNode, WorkerNode } from './nodes';
+import { BossNode, ManagerNode, WorkerNode, ZIPArchiveNode } from './nodes';
 
 const nodeTypes = {
   boss: BossNode,
   manager: ManagerNode,
   worker: WorkerNode,
+  zip: ZIPArchiveNode,
 };
 
 export function Canvas() {
@@ -22,7 +23,7 @@ export function Canvas() {
   const edges = useTaskStore((state) => state.edges);
   const addEdgeToStore = useTaskStore((state) => state.addEdge);
 
-  const rfNodes: Node[] = useMemo(() => 
+  const rfNodes: Node[] = useMemo(() =>
     nodes.map((node) => ({
       id: node.id,
       type: node.type,
@@ -34,6 +35,9 @@ export function Canvas() {
         filesCount: node.filesCount,
         progress: node.progress,
         techStack: node.techStack,
+        // ZIP Archive specific fields
+        fileName: node.fileName,
+        fileSize: node.fileSize,
       },
     })), [nodes]);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
+import { ConsolePanel } from './components/ConsolePanel';
 import { Canvas } from './components/Canvas';
 import { BottomInput } from './components/BottomInput';
 import type { TaskData } from './components/BottomInput';
@@ -29,7 +30,10 @@ export default function App() {
   }, []);
 
   const handleCreateTask = (data: TaskData) => {
-    const tokenKey = data.provider === 'openrouter' ? 'openrouter' 
+    // Reset previous task state (clear canvas)
+    useTaskStore.getState().resetTask();
+
+    const tokenKey = data.provider === 'openrouter' ? 'openrouter'
       : data.provider === 'gemini' ? 'gemini'
       : data.provider === 'openai' ? 'openai'
       : 'claude';
@@ -66,9 +70,11 @@ export default function App() {
       />
       
       <Canvas />
-      
+
       <StatusBar />
-      
+
+      <ConsolePanel />
+
       <BottomInput
         onSubmit={handleCreateTask}
         isSubmitting={isSubmitting}

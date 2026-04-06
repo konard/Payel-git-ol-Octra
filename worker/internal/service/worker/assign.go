@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
+	"os"
+
 	"worker/internal/fetcher/grpc/workerpb"
 	"worker/pkg/database"
 	"worker/pkg/models"
+
+	"github.com/google/uuid"
 )
 
 // AssignWorkersAndWait accepts task, generates code via AI agents and returns ZIP
@@ -111,7 +114,20 @@ func (s *WorkerService) AssignWorkersAndWait(ctx context.Context, req *workerpb.
 		database.Db.Save(worker)
 
 		// Generate code via agents service
-		files, err := s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+		// Check WORKER_MODE env var: "multypass" (optimized) or "nplus1" (legacy)
+		workerMode := os.Getenv("WORKER_MODE")
+		if workerMode == "" {
+			workerMode = "multypass" // Default to optimized mode
+		}
+
+		var files map[string]string
+		if workerMode == "multypass" {
+			files, err = s.generateCodeMultiPass(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+		} else {
+			// Fallback to legacy N+1 approach
+			files, err = s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+		}
+
 		if err != nil {
 			log.Printf("AI error (generate): %v", err)
 			worker.Status = "error"

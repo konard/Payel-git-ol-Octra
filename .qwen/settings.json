@@ -42,7 +42,12 @@
       "Bash(do *)",
       "Bash(copy *)",
       "Bash(docker info)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "Bash(npm init *)",
+      "Bash(npm cache *)",
+      "Bash(tasklist)",
+      "Bash(npm uninstall *)",
+      "Bash(node_modules\\electron\\dist\\electron.exe *)"
     ]
   },
   "$version": 3

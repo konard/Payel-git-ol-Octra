@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AgentNodeType = 'boss' | 'manager' | 'worker';
+export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'zip';
 export type AgentNodeStatus = 'pending' | 'thinking' | 'working' | 'reviewing' | 'done' | 'error';
 export type TaskStatus = 'idle' | 'creating' | 'planning' | 'executing' | 'done' | 'error';
 
@@ -14,6 +14,9 @@ export interface AgentNode {
   workerCount?: number;
   techStack?: string[];
   position?: { x: number; y: number };
+  // ZIP Archive specific fields
+  fileName?: string;
+  fileSize?: string;
 }
 
 export interface Edge {

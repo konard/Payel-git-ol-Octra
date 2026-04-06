@@ -20,6 +20,23 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: crewai-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - crewai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   boss:
     build:
       context: .
@@ -31,6 +48,8 @@ services:
       - AGENTS_SERVICE_HOST=agents:50053
       - MANAGER_SERVICE_HOST=manager:50052
       - MERGER_SERVICE_HOST=merger:50054
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
     ports:
       - "50051:50051"
     depends_on:
@@ -38,6 +57,8 @@ services:
         condition: service_healthy
       agents:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - crewai-network
     restart: unless-stopped
@@ -72,6 +93,9 @@ services:
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AGENTS_SERVICE_HOST=agents:50053
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - WORKER_MODE=multypass
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +103,8 @@ services:
         condition: service_started
       agents:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - crewai-network
     restart: unless-stopped
@@ -123,6 +149,8 @@ services:
     environment:
       - BOSS_SERVICE_HOST=boss:50051
       - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
     ports:
       - "3111:3111"
     depends_on:
@@ -130,6 +158,8 @@ services:
         condition: service_started
       agents:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - crewai-network
     restart: unless-stopped
@@ -140,3 +170,4 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:
