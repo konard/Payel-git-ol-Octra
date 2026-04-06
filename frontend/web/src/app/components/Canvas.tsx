@@ -70,7 +70,7 @@ export function Canvas() {
         className="bg-[var(--bg-canvas)]"
         proOptions={{ hideAttribution: true }}
       >
-        <Controls className="bg-[var(--bg-node)] text-[var(--text-node)]" />
+        <Controls />
         <Background 
           color="var(--edge-color)" 
           gap={16} 

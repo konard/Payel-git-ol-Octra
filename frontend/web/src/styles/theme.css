@@ -105,3 +105,29 @@
     animation: pulse-shadow 2s infinite;
   }
 }
+
+/* React Flow Controls — theme adaptation */
+.react-flow__controls {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--text-muted) !important;
+  background-opacity: 0.1 !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--text) !important;
+}
+
+.react-flow__controls-button:disabled svg {
+  fill: var(--text-muted) !important;
+}
