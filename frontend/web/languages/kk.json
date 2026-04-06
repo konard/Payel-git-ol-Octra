@@ -1,0 +1,80 @@
+{
+  "app": {
+    "title": "CrewAI",
+    "subtitle": "ЖИ агенттер компаниясы"
+  },
+  "topbar": {
+    "download": "Жүктеу",
+    "settings": "Параметрлер",
+    "theme": "Тақырып",
+    "language": "Тіл",
+    "lightTheme": "Ашық тақырып",
+    "darkTheme": "Қараңғы тақырып",
+    "profile": "Профиль"
+  },
+  "statusbar": {
+    "connected": "Қосылды",
+    "disconnected": "Ажыратылды",
+    "status": "Күй",
+    "tokens": "Токендер",
+    "time": "Уақыт",
+    "waiting": "Күту",
+    "creating": "Тапсырма жасау",
+    "planning": "Жоспарлау",
+    "executing": "Орындау",
+    "done": "Аяқталды",
+    "error": "Қате"
+  },
+  "console": {
+    "title": "Консоль",
+    "empty": "Тапсырма әлі басталмаған. Логтарды көру үшін тапсырма жасаңыз.",
+    "connectionLost": "Байланыс жоғалды, қайта қосылу..."
+  },
+  "bottomInput": {
+    "provider": "Провайдер",
+    "model": "Модель",
+    "apiKey": "API кілт",
+    "taskTitle": "Тапсырма атауы (міндетті емес)",
+    "taskDescription": "Тапсырманы сипаттаңыз... Мысалы: Маршрутизациямен Go proxy қызметін жазыңыз",
+    "settings": "Параметрлер",
+    "send": "Жіберу",
+    "stop": "Тоқтату",
+    "reconnecting": "Серверге қайта қосылу...",
+    "taskCreated": "Тапсырма жасалды",
+    "sendError": "Тапсырма жіберу қатесі"
+  },
+  "nodes": {
+    "ceo": "CEO",
+    "zipArchive": "ZIP мұрағат",
+    "pending": "Күту",
+    "building": "Құрастыру...",
+    "ready": "Дайын",
+    "error": "Қате",
+    "filesCount": "Файлдар",
+    "size": "Өлшем"
+  },
+  "modelSelector": {
+    "title": "Модель таңдау",
+    "search": "Модельдерді іздеу...",
+    "noResults": "Модельдер табылмады",
+    "close": "Жабу"
+  },
+  "settings": {
+    "apiTokens": "API және Токендер",
+    "language": "Тіл",
+    "appearance": "Көрініс",
+    "interface": "Интерфейс",
+    "title": "Параметрлер",
+    "defaultToken": "API токен әдепкі бойынша",
+    "hideApiKey": "API кілт жолағын жасыру",
+    "save": "Сақтау",
+    "cancel": "Болдырмау"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "hy": "Հայերեն",
+    "kk": "Қазақша",
+    "uz": "O'zbekcha"
+  }
+}

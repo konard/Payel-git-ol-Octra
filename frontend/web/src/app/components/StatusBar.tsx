@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Wifi, WifiOff, Clock, Coins } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
+import { t } from '../../hooks/useI18n';
 
 export function StatusBar() {
   const isConnected = useTaskStore((state) => state.isConnected);
@@ -26,12 +27,12 @@ export function StatusBar() {
   }, [startTime]);
 
   const statusLabels: Record<string, string> = {
-    idle: 'Ожидание',
-    creating: 'Создание задачи',
-    planning: 'Планирование',
-    executing: 'Выполнение',
-    done: 'Завершено',
-    error: 'Ошибка',
+    idle: t('statusbar.waiting'),
+    creating: t('statusbar.creating'),
+    planning: t('statusbar.planning'),
+    executing: t('statusbar.executing'),
+    done: t('statusbar.done'),
+    error: t('statusbar.error'),
   };
 
   return (
@@ -42,19 +43,19 @@ export function StatusBar() {
           {isConnected ? (
             <>
               <Wifi size={14} className="text-green-500" />
-              <span className="text-green-500">Подключено</span>
+              <span className="text-green-500">{t('statusbar.connected')}</span>
             </>
           ) : (
             <>
               <WifiOff size={14} className="text-gray-500" />
-              <span>Отключено</span>
+              <span>{t('statusbar.disconnected')}</span>
             </>
           )}
         </div>
 
         {/* Task status */}
         <div className="flex items-center gap-1.5">
-          <span>Статус:</span>
+          <span>{t('statusbar.status')}:</span>
           <span className="text-[var(--text)] font-medium">{statusLabels[status] || status}</span>
         </div>
       </div>
@@ -64,7 +65,7 @@ export function StatusBar() {
         {tokensUsed > 0 && (
           <div className="flex items-center gap-1.5">
             <Coins size={14} />
-            <span>Токенов: {tokensUsed.toLocaleString()}</span>
+            <span>{t('statusbar.tokens')}: {tokensUsed.toLocaleString()}</span>
           </div>
         )}
 
@@ -72,7 +73,7 @@ export function StatusBar() {
         {startTime && (
           <div className="flex items-center gap-1.5">
             <Clock size={14} />
-            <span>Время: {elapsed}</span>
+            <span>{t('statusbar.time')}: {elapsed}</span>
           </div>
         )}
       </div>

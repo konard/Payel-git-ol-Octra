@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import type { AgentNode } from '../stores/taskStore';
+import { t } from './useI18n';
 
 interface WebSocketMessage {
   type: 'connected' | 'progress' | 'processing' | 'success' | 'error';
@@ -360,7 +361,7 @@ export function useWebSocket(url: string) {
         // Normal close — no user-facing log needed
       } else {
         storeActions.addLog({
-          message: 'Соединение потеряно, переподключение...',
+          message: t('console.connectionLost'),
           type: 'warning',
         });
         if (!isMounted.current || isManuallyClosed.current) return;
@@ -392,7 +393,7 @@ export function useWebSocket(url: string) {
   const send = useCallback((data: CreateTaskPayload) => {
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || wsRef.current.readyState === WebSocket.CLOSING) {
       storeActions.addLog({
-        message: 'Переподключение к серверу...',
+        message: t('bottomInput.reconnecting'),
         type: 'warning',
       });
       isManuallyClosed.current = false;
@@ -430,13 +431,13 @@ export function useWebSocket(url: string) {
       storeActions.setTaskStatus('creating');
       storeActions.setTaskId(`task-${Date.now()}`);
       storeActions.addLog({
-        message: `Задача создана: ${data.title}`,
+        message: `${t('bottomInput.taskCreated')}: ${data.title}`,
         type: 'success',
       });
     }).catch((err) => {
       console.error('[WS] Send error:', err);
       storeActions.addLog({
-        message: 'Ошибка отправки задачи: ' + err.message,
+        message: `${t('bottomInput.sendError')}: ${err.message}`,
         type: 'error',
       });
     });

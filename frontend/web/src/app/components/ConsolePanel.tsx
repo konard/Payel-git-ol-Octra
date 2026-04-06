@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTaskStore } from '../../stores/taskStore';
 import { ChevronDown, ChevronUp, Terminal, XCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { t } from '../../hooks/useI18n';
 
 export function ConsolePanel() {
   const logs = useTaskStore((state) => state.logs);
@@ -63,7 +64,7 @@ export function ConsolePanel() {
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
           <span className="text-sm font-medium text-[var(--text)]">
-            Консоль
+            {t('console.title')}
             <span className="ml-2 text-xs text-[var(--text-muted)]">({logs.length})</span>
           </span>
           {!isCollapsed || (
@@ -93,7 +94,7 @@ export function ConsolePanel() {
         <div className="max-h-48 overflow-y-auto px-4 pb-3 font-mono text-xs space-y-0.5">
           {logs.length === 0 ? (
             <div className="text-[var(--text-muted)] py-4 text-center">
-              Задача ещё не запущена. Создайте задачу чтобы увидеть логи.
+              {t('console.empty')}
             </div>
           ) : (
             logs.map((log) => (

@@ -1,0 +1,80 @@
+{
+  "app": {
+    "title": "CrewAI",
+    "subtitle": "Բանավոր ընկերություն"
+  },
+  "topbar": {
+    "download": "Ներբեռնել",
+    "settings": "Կարգավորումներ",
+    "theme": "Թեմա",
+    "language": "Լեզու",
+    "lightTheme": "Բաց թեմա",
+    "darkTheme": "Մուգ թեմա",
+    "profile": "Պրոֆիլ"
+  },
+  "statusbar": {
+    "connected": "Միացված է",
+    "disconnected": "Անջատված է",
+    "status": "Կարգավիճակ",
+    "tokens": "Թոքեններ",
+    "time": "Ժամանակ",
+    "waiting": "Սպասում",
+    "creating": "Խնդրի ստեղծում",
+    "planning": "Պլանավորում",
+    "executing": "Կատարում",
+    "done": "Ավարտված է",
+    "error": "Սխալ"
+  },
+  "console": {
+    "title": "Կոնսոլ",
+    "empty": "Խնդիրը դեռ չի սկսվել: Ստեղծեք խնդիր՝ մուտքագրելու համար:",
+    "connectionLost": "Կապը կորել է, վերամիանում..."
+  },
+  "bottomInput": {
+    "provider": "Մատակարար",
+    "model": "Մոդել",
+    "apiKey": "API բանալի",
+    "taskTitle": "Խնդրի անվանում (ոչ պարտադիր)",
+    "taskDescription": "Նկարագրեք խնդիրը... Օրինակ՝ Գրեք Go proxy ծառայություն մարշրուտիզացիայով",
+    "settings": "Կարգավորումներ",
+    "send": "Ուղարկել",
+    "stop": "Կանգ",
+    "reconnecting": "Վերամիանում սերվերին...",
+    "taskCreated": "Խնդիրը ստեղծվել է",
+    "sendError": "Խնդրի ուղարկման սխալ"
+  },
+  "nodes": {
+    "ceo": "CEO",
+    "zipArchive": "ZIP արխիվ",
+    "pending": "Սպասում",
+    "building": "Հավաքում...",
+    "ready": "Պատրաստ է",
+    "error": "Սխալ",
+    "filesCount": "Ֆայլեր",
+    "size": "Չափ"
+  },
+  "modelSelector": {
+    "title": "Մոդելի ընտրություն",
+    "search": "Մոդելների որոնում...",
+    "noResults": "Մոդելներ չեն գտնվել",
+    "close": "Փակել"
+  },
+  "settings": {
+    "apiTokens": "API և Թոքեններ",
+    "language": "Լեզու",
+    "appearance": "Տեսք",
+    "interface": "Ինտերֆեյս",
+    "title": "Կարգավորումներ",
+    "defaultToken": "API թոքեն լռելյայն",
+    "hideApiKey": "Թաքցնել API բանալի դաշտը",
+    "save": "Պահպանել",
+    "cancel": "Չեղարկել"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "hy": "Հայերեն",
+    "kk": "Қазақша",
+    "uz": "O'zbekcha"
+  }
+}

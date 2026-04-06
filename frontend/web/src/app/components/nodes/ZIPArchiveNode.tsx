@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { FolderArchive, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import type { AgentNodeStatus } from '../../../stores/taskStore';
+import { t } from '../../../hooks/useI18n';
 
 interface ZIPArchiveNodeProps {
   data: {
@@ -18,25 +19,25 @@ const statusConfig: Record<string, { border: string; bg: string; icon: React.Rea
     border: 'border-gray-400',
     bg: 'bg-gray-100 dark:bg-gray-800',
     icon: <Loader2 size={16} className="text-gray-400" />,
-    label: 'Ожидание',
+    label: t('nodes.pending'),
   },
   working: {
     border: 'border-orange-500',
     bg: 'bg-orange-50 dark:bg-orange-950/30',
     icon: <Loader2 size={16} className="text-orange-500 animate-spin" />,
-    label: 'Сборка...',
+    label: t('nodes.building'),
   },
   done: {
     border: 'border-green-500',
     bg: 'bg-green-50 dark:bg-green-950/30',
     icon: <CheckCircle size={16} className="text-green-500" />,
-    label: 'Готово',
+    label: t('nodes.ready'),
   },
   error: {
     border: 'border-red-500',
     bg: 'bg-red-50 dark:bg-red-950/30',
     icon: <XCircle size={16} className="text-red-500" />,
-    label: 'Ошибка',
+    label: t('nodes.error'),
   },
 };
 
@@ -53,7 +54,7 @@ function ZIPArchiveNodeComponent({ data }: ZIPArchiveNodeProps) {
       <div className={`${config.bg} px-3 py-2 rounded-t-lg border-b ${config.border}`}>
         <div className="flex items-center gap-2">
           <FolderArchive size={18} className="text-[var(--text)]" />
-          <span className="text-sm font-semibold text-[var(--text)]">ZIP Archive</span>
+          <span className="text-sm font-semibold text-[var(--text)]">{t('nodes.zipArchive')}</span>
         </div>
       </div>
 
@@ -73,14 +74,14 @@ function ZIPArchiveNodeComponent({ data }: ZIPArchiveNodeProps) {
         {/* File size */}
         {fileSize && (
           <div className="text-xs text-[var(--text-muted)]">
-            Размер: {fileSize}
+            {t('nodes.size')}: {fileSize}
           </div>
         )}
 
         {/* Files count */}
         {filesCount !== undefined && (
           <div className="text-xs text-[var(--text-muted)]">
-            Файлов: {filesCount}
+            {t('nodes.filesCount')}: {filesCount}
           </div>
         )}
       </div>

@@ -7,11 +7,13 @@ import { BottomInput } from './components/BottomInput';
 import type { TaskData } from './components/BottomInput';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTaskStore } from '../stores/taskStore';
+import { useI18n } from '../hooks/useI18n';
 
 export default function App() {
   const [isDark, setIsDark] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+  const { language, changeLanguage } = useI18n();
+
   const { connect, send } = useWebSocket('ws://localhost:3111/task/create');
   
   const status = useTaskStore((state) => state.status);

@@ -1,0 +1,80 @@
+{
+  "app": {
+    "title": "CrewAI",
+    "subtitle": "AI Agents Company"
+  },
+  "topbar": {
+    "download": "Download",
+    "settings": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "profile": "Profile"
+  },
+  "statusbar": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "status": "Status",
+    "tokens": "Tokens",
+    "time": "Time",
+    "waiting": "Waiting",
+    "creating": "Creating task",
+    "planning": "Planning",
+    "executing": "Executing",
+    "done": "Completed",
+    "error": "Error"
+  },
+  "console": {
+    "title": "Console",
+    "empty": "Task not started yet. Create a task to see logs.",
+    "connectionLost": "Connection lost, reconnecting..."
+  },
+  "bottomInput": {
+    "provider": "Provider",
+    "model": "Model",
+    "apiKey": "API Key",
+    "taskTitle": "Task title (optional)",
+    "taskDescription": "Describe the task... For example: Write a Go proxy service with routing and load balancing",
+    "settings": "Settings",
+    "send": "Send",
+    "stop": "Stop",
+    "reconnecting": "Reconnecting to server...",
+    "taskCreated": "Task created",
+    "sendError": "Task send error"
+  },
+  "nodes": {
+    "ceo": "CEO",
+    "zipArchive": "ZIP Archive",
+    "pending": "Waiting",
+    "building": "Building...",
+    "ready": "Ready",
+    "error": "Error",
+    "filesCount": "Files",
+    "size": "Size"
+  },
+  "modelSelector": {
+    "title": "Select Model",
+    "search": "Search models...",
+    "noResults": "No models found",
+    "close": "Close"
+  },
+  "settings": {
+    "apiTokens": "API & Tokens",
+    "language": "Language",
+    "appearance": "Appearance",
+    "interface": "Interface",
+    "title": "Settings",
+    "defaultToken": "Default API Token",
+    "hideApiKey": "Hide API Key input",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "hy": "Հայերեն",
+    "kk": "Қазақша",
+    "uz": "O'zbekcha"
+  }
+}

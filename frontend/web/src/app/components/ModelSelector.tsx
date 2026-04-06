@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Star, Check } from 'lucide-react';
 import { PROVIDERS, ALL_MODELS, type ProviderModel } from '../../config/providers';
+import { t } from '../../hooks/useI18n';
 
 interface ModelSelectorProps {
   selectedProvider: string;
@@ -82,7 +83,7 @@ export function ModelSelector({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-        <h3 className="text-sm font-semibold text-[var(--text)]">Выбор модели</h3>
+        <h3 className="text-sm font-semibold text-[var(--text)]">{t('modelSelector.title')}</h3>
         <button onClick={onClose} className="p-1 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text-muted)]">
           <X size={14} />
         </button>
@@ -94,7 +95,7 @@ export function ModelSelector({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Поиск модели..."
+          placeholder={t('modelSelector.search')}
           className="w-full px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded-lg text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
           autoFocus
         />
@@ -103,7 +104,7 @@ export function ModelSelector({
       {/* Models list */}
       <div ref={listRef} className="overflow-y-auto max-h-72 px-2 pb-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-6 text-[var(--text-muted)] text-sm">Модели не найдены</div>
+          <div className="text-center py-6 text-[var(--text-muted)] text-sm">{t('modelSelector.noResults')}</div>
         ) : (
           <div className="space-y-0.5">
             {filtered.map((model) => {

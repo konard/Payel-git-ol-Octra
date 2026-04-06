@@ -3,6 +3,7 @@ import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight }
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS, getProviderById } from '../../config/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { t } from '../../hooks/useI18n';
 
 interface BottomInputProps {
   onSubmit: (data: TaskData) => void;
@@ -91,7 +92,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
             {/* Provider Dropdown */}
             <div className="relative">
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                Провайдер
+                {t('bottomInput.provider')}
               </label>
               <button
                 ref={providerBtnRef}
@@ -144,7 +145,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
             {/* Model Selector */}
             <div ref={modelInputRef} className="relative">
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                Модель
+                {t('bottomInput.model')}
               </label>
               <button
                 type="button"
@@ -174,7 +175,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
             {!hideApiKeyInput && (
               <div>
                 <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                  API ключ
+                  {t('bottomInput.apiKey')}
                 </label>
                 <input
                   type="password"
@@ -201,7 +202,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
               type="button"
               onClick={onToggleExpand}
               className="p-1.5 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text-muted)]"
-              title="Настройки"
+              title={t('bottomInput.settings')}
             >
               <Settings2 size={16} />
             </button>
@@ -222,7 +223,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm mb-2 placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-                placeholder="Название задачи (необязательно)"
+                placeholder={t('bottomInput.taskTitle')}
               />
             )}
 
@@ -231,7 +232,7 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
               className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl text-[var(--text)] text-sm resize-none placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-              placeholder="Опишите задачу... Например: Напиши прокси сервис на Go с маршрутизацией и балансировкой нагрузки"
+              placeholder={t('bottomInput.taskDescription')}
             />
           </div>
 

@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode, t } from '../../hooks/useI18n';
 
-type SettingsTab = 'api' | 'appearance' | 'visibility';
+type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility';
 
 interface SettingsSection {
   id: SettingsTab;
-  label: string;
+  labelKey: string;
   icon: typeof Key;
 }
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
-  { id: 'api', label: 'API и токены', icon: Key },
-  { id: 'appearance', label: 'Внешний вид', icon: Palette },
-  { id: 'visibility', label: 'Интерфейс', icon: Eye },
+  { id: 'api', labelKey: 'settings.apiTokens', icon: Key },
+  { id: 'language', labelKey: 'settings.language', icon: Languages },
+  { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
+  { id: 'visibility', labelKey: 'settings.interface', icon: Eye },
 ];
 
 interface TopBarProps {
@@ -31,6 +33,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
+  const { language, changeLanguage } = useI18n();
 
   useEffect(() => {
     if (!showSettings) {
@@ -83,7 +86,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
           <button
             onClick={onToggleTheme}
             className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
-            title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+            title={isDark ? t('topbar.lightTheme') : t('topbar.darkTheme')}
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -92,13 +95,13 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
             className={`p-2 rounded-md transition-colors text-[var(--text)] ${
               showSettings ? 'bg-[var(--accent)]/15 text-[var(--accent)]' : 'hover:bg-[var(--background)]'
             }`}
-            title="Настройки"
+            title={t('topbar.settings')}
           >
             <Settings size={18} />
           </button>
           <button
             className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
-            title="Профиль"
+            title={t('topbar.profile')}
           >
             <User size={18} />
           </button>
@@ -131,7 +134,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                     }`}
                   >
                     <Icon size={16} />
-                    <span className="truncate">{section.label}</span>
+                    <span className="truncate">{t(section.labelKey)}</span>
                   </button>
                 );
               })}
@@ -142,7 +145,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
                 <h2 className="text-base font-semibold text-[var(--text)]">
-                  {SETTINGS_SECTIONS.find((s) => s.id === activeTab)?.label}
+                  {t(SETTINGS_SECTIONS.find((s) => s.id === activeTab)?.labelKey || '')}
                 </h2>
                 <button
                   onClick={() => setShowSettings(false)}
@@ -173,6 +176,53 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                       <p className="mt-1.5 text-xs text-[var(--text-muted)]">
                         Будет использоваться автоматически для всех задач
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'language' && (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm font-medium text-[var(--text)] mb-1">Язык интерфейса</div>
+                      <div className="text-xs text-[var(--text-muted)] mb-3">
+                        Выберите язык для отображения текста в приложении
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {SUPPORTED_LANGUAGES.map((code) => {
+                          const isActive = language === code;
+                          const langNames: Record<string, string> = {
+                            en: 'English',
+                            ru: 'Русский',
+                            hy: 'Հայերեն',
+                            kk: 'Қазақша',
+                            uz: "O'zbekcha",
+                          };
+                          const langFlags: Record<string, string> = {
+                            en: '🇬🇧',
+                            ru: '🇷🇺',
+                            hy: '🇦🇲',
+                            kk: '🇰🇿',
+                            uz: '🇺🇿',
+                          };
+                          return (
+                            <button
+                              key={code}
+                              onClick={() => changeLanguage(code as LanguageCode)}
+                              className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                                isActive
+                                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                                  : 'border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]/50'
+                              }`}
+                            >
+                              <span className="text-lg">{langFlags[code]}</span>
+                              <span className="text-sm font-medium">{langNames[code]}</span>
+                              {isActive && (
+                                <span className="ml-auto text-xs">✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
