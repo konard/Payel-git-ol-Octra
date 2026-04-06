@@ -164,17 +164,17 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                   <div>
                     <div>
                       <label className="block text-sm font-medium text-[var(--text)] mb-2">
-                        Токен по умолчанию
+                        {t('settings.defaultToken')}
                       </label>
                       <input
                         type="password"
                         value={defaultToken}
                         onChange={(e) => setDefaultToken(e.target.value)}
                         className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-                        placeholder="sk-or-v1-..."
+                        placeholder={t('settings.defaultTokenPlaceholder')}
                       />
                       <p className="mt-1.5 text-xs text-[var(--text-muted)]">
-                        Будет использоваться автоматически для всех задач
+                        {t('settings.defaultTokenHint')}
                       </p>
                     </div>
                   </div>
@@ -183,9 +183,9 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                 {activeTab === 'language' && (
                   <div className="space-y-4">
                     <div>
-                      <div className="text-sm font-medium text-[var(--text)] mb-1">Язык интерфейса</div>
+                      <div className="text-sm font-medium text-[var(--text)] mb-1">{t('settings.interfaceLanguage')}</div>
                       <div className="text-xs text-[var(--text-muted)] mb-3">
-                        Выберите язык для отображения текста в приложении
+                        {t('settings.languageHint')}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {SUPPORTED_LANGUAGES.map((code) => {
@@ -231,16 +231,16 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium text-[var(--text)]">Тема оформления</div>
+                        <div className="text-sm font-medium text-[var(--text)]">{t('settings.themeTitle')}</div>
                         <div className="text-xs text-[var(--text-muted)]">
-                          Текущая: {isDark ? 'Тёмная' : 'Светлая'}
+                          {t('settings.themeCurrent')}: {isDark ? t('settings.themeDark') : t('settings.themeLight')}
                         </div>
                       </div>
                       <button
                         onClick={onToggleTheme}
                         className="px-3 py-1.5 text-xs font-medium bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] hover:border-[var(--accent)] transition-colors"
                       >
-                        Переключить
+                        {t('settings.themeToggle')}
                       </button>
                     </div>
                   </div>
@@ -251,10 +251,10 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-[var(--text)]">
-                          Не показывать поле ввода токена
+                          {t('settings.hideTokenField')}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
-                          Скрыть поле API ключа на главном экране
+                          {t('settings.hideTokenFieldHint')}
                         </div>
                       </div>
                       <button

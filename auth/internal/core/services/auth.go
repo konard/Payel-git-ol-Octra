@@ -1,0 +1,233 @@
+package services
+
+import (
+	"auth/pkg/database"
+	"auth/pkg/models"
+	"auth/pkg/requests"
+	"errors"
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+)
+
+const (
+	AccessTokenExpiry  = 15 * time.Minute
+	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 дней
+)
+
+// GenerateTokens generates access and refresh JWT tokens
+func GenerateTokens(user models.UserRegister) (string, string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "default-secret-change-in-production"
+	}
+
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if refreshSecret == "" {
+		refreshSecret = "default-refresh-secret-change-in-production"
+	}
+
+	// Access Token
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"exp":      time.Now().Add(AccessTokenExpiry).Unix(),
+		"iat":      time.Now().Unix(),
+		"type":     "access",
+	})
+
+	accessTokenString, err := accessToken.SignedString([]byte(secret))
+	if err != nil {
+		return "", "", err
+	}
+
+	// Refresh Token
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"exp":      time.Now().Add(RefreshTokenExpiry).Unix(),
+		"iat":      time.Now().Unix(),
+		"type":     "refresh",
+	})
+
+	refreshTokenString, err := refreshToken.SignedString([]byte(refreshSecret))
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessTokenString, refreshTokenString, nil
+}
+
+// ValidateAccessToken validates and parses access token
+func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "default-secret-change-in-production"
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	return token, nil
+}
+
+// ValidateRefreshToken validates and parses refresh token
+func ValidateRefreshToken(tokenString string) (*jwt.Token, error) {
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if refreshSecret == "" {
+		refreshSecret = "default-refresh-secret-change-in-production"
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(refreshSecret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	return token, nil
+}
+
+// LoginUser authenticates user and returns tokens
+func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
+	// Find user by email
+	var user models.UserRegister
+	err := database.Db.Where("email = ?", req.Email).First(&user).Error
+	if err != nil {
+		return nil, errors.New("invalid email or password")
+	}
+
+	// Check password
+	err = CheckPasswordHash(req.Password, user.Password)
+	if err != nil {
+		return nil, errors.New("invalid email or password")
+	}
+
+	// Generate tokens
+	accessToken, refreshToken, err := GenerateTokens(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"user": map[string]interface{}{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+		},
+	}, nil
+}
+
+// RefreshTokens generates new tokens from refresh token
+func RefreshTokens(req requests.RefreshTokenRequest) (map[string]interface{}, error) {
+	// Validate refresh token
+	token, err := ValidateRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	// Find user
+	var user models.UserRegister
+	userID := claims["user_id"].(float64)
+	err = database.Db.First(&user, userID).Error
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Generate new tokens
+	accessToken, refreshToken, err := GenerateTokens(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	}, nil
+}
+
+// GetMe returns current user info from access token
+func GetMe(tokenString string) (map[string]interface{}, error) {
+	token, err := ValidateAccessToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	return map[string]interface{}{
+		"user_id":  claims["user_id"],
+		"username": claims["username"],
+		"email":    claims["email"],
+	}, nil
+}
+
+// RegisterUser registers user and returns tokens
+func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, error) {
+	hashPs, err := HashedPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	user := models.UserRegister{
+		Id:       uuid.New(),
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashPs,
+	}
+
+	err = database.Db.Create(&user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate tokens
+	accessToken, refreshToken, err := GenerateTokens(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"user": map[string]interface{}{
+			"id":       user.Id.String(),
+			"username": user.Username,
+			"email":    user.Email,
+		},
+	}, nil
+}

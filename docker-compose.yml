@@ -151,6 +151,7 @@ services:
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
+      - AUTH_SERVICE_HOST=auth:3112
     ports:
       - "3111:3111"
     depends_on:
@@ -159,6 +160,25 @@ services:
       agents:
         condition: service_started
       redis:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./auth/Dockerfile
+    container_name: crewai-auth
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-refresh-in-production}
+      - AUTH_PORT=3112
+    ports:
+      - "3112:3112"
+    depends_on:
+      postgres:
         condition: service_healthy
     networks:
       - crewai-network
