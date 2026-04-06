@@ -70,6 +70,9 @@ service ManagerService {
   // Assign ONE manager — Boss вызывает для каждого менеджера отдельно
   rpc AssignManager(AssignManagerRequest) returns (ManagerResult);
 
+  // Streaming version of AssignManager — sends worker progress updates
+  rpc AssignManagerStream(AssignManagerRequest) returns (stream TaskUpdate);
+
   // Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
   rpc AssignManagersAndWait(AssignManagersRequest) returns (AssignManagersResponse);
 

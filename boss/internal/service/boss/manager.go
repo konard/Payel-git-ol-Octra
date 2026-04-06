@@ -139,6 +139,18 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 			}
 
 			log.Printf("AssignManager #%d %s completed", idx+1, role.Role)
+
+			// Send worker-specific updates from manager results
+			if progressCallback != nil && result != nil {
+				for wi, wr := range result.WorkerResults {
+					progressCallback(wr.Role, 62+wi*2, "👷 Starting worker: "+wr.Role)
+				}
+				// Simulate worker completion updates
+				for wi, wr := range result.WorkerResults {
+					filesCount := len(wr.Files)
+					progressCallback(wr.Role, 64+wi*2, fmt.Sprintf("✅ Worker completed: %s (%d files)", wr.Role, filesCount))
+				}
+			}
 		}(i, role)
 	}
 

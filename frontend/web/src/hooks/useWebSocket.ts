@@ -35,6 +35,8 @@ export function useWebSocket(url: string) {
   const managerCounter = useRef(0);
   const managersKnown = useRef<Set<string>>(new Set());
   const zipNodeAdded = useRef(false);
+  const workerCounters = useRef<Record<string, number>>({});
+  const workersByManager = useRef<Record<string, string[]>>({});
 
   const storeActions = {
     setConnectionStatus: useTaskStore((state) => state.setConnectionStatus),
@@ -120,14 +122,18 @@ export function useWebSocket(url: string) {
     });
   };
 
-  // Helper: add ZIP Archive node with edges from all managers
+  // Helper: add ZIP Archive node with edges from all workers
   const addZIPArchiveNode = () => {
     if (zipNodeAdded.current) return;
     zipNodeAdded.current = true;
 
-    const managerCount = managersKnown.current.size;
-    const totalWidth = Math.max(managerCount - 1, 1) * 250;
-    const startX = 200 + totalWidth / 2;
+    // Find all worker nodes
+    const workerNodes = storeActions.nodes.filter(n => n.type === 'worker');
+    const managerNodes = storeActions.nodes.filter(n => n.type === 'manager');
+    
+    // Calculate center position
+    const allX = [...workerNodes, ...managerNodes].map(n => n.position?.x || 0);
+    const centerX = allX.length > 0 ? Math.min(...allX) + (Math.max(...allX) - Math.min(...allX)) / 2 : 400;
 
     storeActions.addNode({
       id: 'zip-archive',
@@ -135,18 +141,16 @@ export function useWebSocket(url: string) {
       role: 'ZIP Archive',
       status: 'working',
       fileName: 'project.zip',
-      position: { x: startX, y: 450 },
+      position: { x: centerX, y: 520 },
     });
 
-    // Add edges from all managers to ZIP
-    managersKnown.current.forEach((role) => {
-      const idx = [...managersKnown.current].indexOf(role);
-      if (idx >= 0) {
-        storeActions.addEdge({ from: `manager-${idx}`, to: 'zip-archive' });
-      }
+    // Add edges from all workers to ZIP (or managers if no workers)
+    const edgeSources = workerNodes.length > 0 ? workerNodes : managerNodes;
+    edgeSources.forEach((node) => {
+      storeActions.addEdge({ from: node.id, to: 'zip-archive' });
     });
 
-    console.log('[WS] => ZIP Archive node added with', managerCount, 'edges');
+    console.log('[WS] => ZIP Archive node added with', edgeSources.length, 'edges');
   };
 
   const handleProgressMessage = (msg: WebSocketMessage) => {
@@ -167,6 +171,8 @@ export function useWebSocket(url: string) {
       managerCounter.current = 0;
       managersKnown.current.clear();
       zipNodeAdded.current = false;
+      workerCounters.current = {};
+      workersByManager.current = {};
       storeActions.addNode({
         id: 'boss-1',
         type: 'boss',
@@ -224,6 +230,71 @@ export function useWebSocket(url: string) {
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
         storeActions.updateNode(`manager-${idx}`, { status: 'done' });
+      }
+    }
+
+    // === WORKER STARTING — "Starting worker: Network Protocol Engineer" ===
+    const workerStartMatch = message.match(/Starting worker:\s*(.+)/i);
+    if (workerStartMatch) {
+      const role = workerStartMatch[1].trim();
+      const managerRole = msg.data?.current_role || '';
+      const managerIdx = [...managersKnown.current].indexOf(managerRole);
+
+      // Initialize worker tracking for this manager
+      if (!workersByManager.current[managerRole]) {
+        workersByManager.current[managerRole] = [];
+      }
+      if (!workerCounters.current[managerRole]) {
+        workerCounters.current[managerRole] = 0;
+      }
+
+      // Check if worker already exists (by role uniqueness)
+      if (!workersByManager.current[managerRole].includes(role)) {
+        const wIdx = workerCounters.current[managerRole]++;
+        workersByManager.current[managerRole].push(role);
+        const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
+
+        // Position: under the manager
+        const mgrPosition = managerIdx >= 0 ? 
+          (nodes.find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
+        const workerX = mgrPosition + (wIdx - 1) * 120;
+        const workerY = 370;
+
+        storeActions.addNode({
+          id: workerId,
+          type: 'worker',
+          role: capitalizeRole(role),
+          status: 'working',
+          position: { x: workerX, y: workerY },
+        });
+
+        // Edge from manager to worker
+        if (managerIdx >= 0) {
+          storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+        }
+
+        console.log('[WS] => Adding worker:', role, 'under manager:', managerRole);
+      }
+    }
+
+    // === WORKER COMPLETED — "Worker completed: Network Protocol Engineer (5 files)" ===
+    const workerCompleteMatch = message.match(/Worker completed:\s*(.+?)(?:\s*\((\d+)\s*files?\))?$/i);
+    if (workerCompleteMatch) {
+      const role = workerCompleteMatch[1].trim();
+      const filesCount = workerCompleteMatch[2] ? parseInt(workerCompleteMatch[2], 10) : undefined;
+      const managerRole = msg.data?.current_role || '';
+
+      // Find worker by role and manager
+      if (workersByManager.current[managerRole]) {
+        const wIdx = workersByManager.current[managerRole].indexOf(role);
+        if (wIdx >= 0) {
+          const sanitizedManagerRole = managerRole.replace(/[^a-zA-Z0-9]/g, '');
+          const workerId = `worker-${sanitizedManagerRole}-${wIdx}`;
+          storeActions.updateNode(workerId, { 
+            status: 'done',
+            filesCount,
+          });
+        }
       }
     }
 
