@@ -6,23 +6,38 @@ import (
 	"auth/pkg/requests"
 	"os"
 
-	"github.com/Payel-git-ol/azure"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	database.InitDb()
-	a := azure.Defoult
+	r := gin.Default()
+
+	// CORS Middleware
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
 
 	// Health check
-	a.Get("/health", func(c *azure.Context) {
-		c.Json(azure.M{"status": "ok"})
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
 	})
 
 	// POST /register - Register new user
-	a.Post("/register", func(c *azure.Context) {
+	r.POST("/register", func(c *gin.Context) {
 		var req requests.UserRegisterRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JsonStatus(400, azure.M{
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
 				"status": "error",
 				"error":  "Invalid request body: " + err.Error(),
 			})
@@ -31,7 +46,7 @@ func main() {
 
 		// Validate required fields
 		if req.Username == "" || req.Email == "" || req.Password == "" {
-			c.JsonStatus(400, azure.M{
+			c.JSON(400, gin.H{
 				"status": "error",
 				"error":  "Username, email and password are required",
 			})
@@ -44,26 +59,27 @@ func main() {
 			if err.Error() == "UNIQUE constraint failed" || err.Error() == "duplicate key value violates unique constraint" {
 				status = 409
 			}
-			c.JsonStatus(status, azure.M{
+			c.JSON(status, gin.H{
 				"status": "error",
 				"error":  err.Error(),
 			})
 			return
 		}
 
-		c.SetCookie("refresh_token", result["refresh_token"].(string))
+		c.SetSameSite(2)
+		c.SetCookie("refresh_token", result["refresh_token"].(string), 604800, "/", "", false, true)
 
-		c.Json(azure.M{
+		c.JSON(200, gin.H{
 			"status": "ok",
 			"data":   result,
 		})
 	})
 
 	// POST /login - Login user
-	a.Post("/login", func(c *azure.Context) {
+	r.POST("/login", func(c *gin.Context) {
 		var req requests.UserLoginRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JsonStatus(400, azure.M{
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
 				"status": "error",
 				"error":  "Invalid request body: " + err.Error(),
 			})
@@ -72,26 +88,27 @@ func main() {
 
 		result, err := services.LoginUser(req)
 		if err != nil {
-			c.JsonStatus(401, azure.M{
+			c.JSON(401, gin.H{
 				"status": "error",
 				"error":  err.Error(),
 			})
 			return
 		}
 
-		c.SetCookie("refresh_token", result["refresh_token"].(string))
+		c.SetSameSite(2)
+		c.SetCookie("refresh_token", result["refresh_token"].(string), 604800, "/", "", false, true)
 
-		c.Json(azure.M{
+		c.JSON(200, gin.H{
 			"status": "ok",
 			"data":   result,
 		})
 	})
 
 	// POST /refresh - Refresh access token
-	a.Post("/refresh", func(c *azure.Context) {
+	r.POST("/refresh", func(c *gin.Context) {
 		var req requests.RefreshTokenRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JsonStatus(400, azure.M{
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
 				"status": "error",
 				"error":  "Invalid request body: " + err.Error(),
 			})
@@ -100,14 +117,14 @@ func main() {
 
 		// Try to get refresh token from cookie if not in body
 		if req.RefreshToken == "" {
-			token, ok := c.GetCookie("refresh_token")
-			if ok {
+			token, err := c.Cookie("refresh_token")
+			if err == nil {
 				req.RefreshToken = token
 			}
 		}
 
 		if req.RefreshToken == "" {
-			c.JsonStatus(400, azure.M{
+			c.JSON(400, gin.H{
 				"status": "error",
 				"error":  "Refresh token is required",
 			})
@@ -116,33 +133,34 @@ func main() {
 
 		result, err := services.RefreshTokens(req)
 		if err != nil {
-			c.JsonStatus(401, azure.M{
+			c.JSON(401, gin.H{
 				"status": "error",
 				"error":  err.Error(),
 			})
 			return
 		}
 
-		c.SetCookie("refresh_token", result["refresh_token"].(string))
+		c.SetSameSite(2)
+		c.SetCookie("refresh_token", result["refresh_token"].(string), 604800, "/", "", false, true)
 
-		c.Json(azure.M{
+		c.JSON(200, gin.H{
 			"status": "ok",
 			"data":   result,
 		})
 	})
 
 	// GET /me - Get current user info
-	a.Get("/me", func(c *azure.Context) {
+	r.GET("/me", func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
-			tokenVal, ok := c.GetCookie("access_token")
-			if ok {
+			tokenVal, err := c.Cookie("access_token")
+			if err == nil {
 				token = tokenVal
 			}
 		}
 
 		if token == "" {
-			c.JsonStatus(401, azure.M{
+			c.JSON(401, gin.H{
 				"status": "error",
 				"error":  "Authorization token is required",
 			})
@@ -156,25 +174,25 @@ func main() {
 
 		user, err := services.GetMe(token)
 		if err != nil {
-			c.JsonStatus(401, azure.M{
+			c.JSON(401, gin.H{
 				"status": "error",
 				"error":  "Invalid or expired token: " + err.Error(),
 			})
 			return
 		}
 
-		c.Json(azure.M{
+		c.JSON(200, gin.H{
 			"status": "ok",
 			"data":   user,
 		})
 	})
 
 	// POST /logout - Logout user
-	a.Post("/logout", func(c *azure.Context) {
-		c.SetCookie("refresh_token", "")
-		c.SetCookie("access_token", "")
+	r.POST("/logout", func(c *gin.Context) {
+		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+		c.SetCookie("access_token", "", -1, "/", "", false, true)
 
-		c.Json(azure.M{
+		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Logged out successfully",
 		})
@@ -187,5 +205,5 @@ func main() {
 	}
 
 	println("Auth service starting on port :" + port)
-	a.Run(":" + port)
+	r.Run(":" + port)
 }

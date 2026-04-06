@@ -5,31 +5,37 @@ WORKDIR /workspace
 # Устанавливаем зависимости
 RUN apk add --no-cache git
 
-# Копируем все модули и go.work
-COPY go.work ./
-COPY agents ./agents
-COPY apigateway ./apigateway
-COPY boss ./boss
-COPY manager ./manager
-COPY merger ./merger
-COPY worker ./worker
+# Создаём минимальный go.work только для boss
+RUN printf 'go 1.25.4\n\nuse (\n\t./agents\n\t./boss\n)\n' > go.work
 
-# Скачиваем зависимости для boss
+# Копируем агентов целиком
+COPY agents/go.mod agents/go.sum ./agents/
+COPY agents/internal ./agents/internal
+COPY agents/pkg ./agents/pkg
+COPY agents/cmd ./agents/cmd
+COPY agents/proto ./agents/proto
+COPY agents/pb ./agents/pb
+
+# Копируем boss целиком
+COPY boss/go.mod boss/go.sum ./boss/
+COPY boss/internal ./boss/internal
+COPY boss/pkg ./boss/pkg
+COPY boss/cmd ./boss/cmd
+COPY boss/proto ./boss/proto
+
+# Скачиваем зависимости напрямую
+RUN cd agents && go mod download
 RUN cd boss && go mod download
 
 # Собираем binary
 RUN cd boss && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
-# Финальный образ
 FROM alpine:latest
 
 WORKDIR /root/
 
-# Устанавливаем ca-certificates для HTTPS
 RUN apk --no-cache add ca-certificates
 
-# Копируем бинарник
 COPY --from=builder /workspace/main .
 
-# Запускаем
 CMD ["./main"]

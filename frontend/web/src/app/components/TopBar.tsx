@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode, t } from '../../hooks/useI18n';
+import { useAuthStore } from '../../stores/authStore';
+import { useThemeStore } from '../../stores/themeStore';
 
 type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility';
 
@@ -20,11 +22,11 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 ];
 
 interface TopBarProps {
-  onToggleTheme: () => void;
-  isDark: boolean;
+  isAuthenticated: boolean;
+  onShowAuth: () => void;
 }
 
-export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
+export function TopBar({ isAuthenticated, onShowAuth }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const [showSettings, setShowSettings] = useState(false);
@@ -34,6 +36,9 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
   const { language, changeLanguage } = useI18n();
+  const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
+  const { isDark, toggleTheme } = useThemeStore();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     if (!showSettings) {
@@ -84,7 +89,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
         {/* Right: Theme & Settings & Profile */}
         <div className="flex items-center gap-2">
           <button
-            onClick={onToggleTheme}
+            onClick={toggleTheme}
             className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
             title={isDark ? t('topbar.lightTheme') : t('topbar.darkTheme')}
           >
@@ -99,12 +104,45 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
           >
             <Settings size={18} />
           </button>
-          <button
-            className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
-            title={t('topbar.profile')}
-          >
-            <User size={18} />
-          </button>
+          {isAuthenticated ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
+                title={t('topbar.profile')}
+              >
+                <User size={18} />
+              </button>
+              {showProfileMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-lg shadow-xl z-50 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        logout();
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                    >
+                      <LogOut size={16} />
+                      <span>Выйти</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onShowAuth}
+              className="px-3 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-md transition-colors"
+              title="Войти"
+            >
+              Войти
+            </button>
+          )}
         </div>
       </header>
 
@@ -237,7 +275,7 @@ export function TopBar({ onToggleTheme, isDark }: TopBarProps) {
                         </div>
                       </div>
                       <button
-                        onClick={onToggleTheme}
+                        onClick={toggleTheme}
                         className="px-3 py-1.5 text-xs font-medium bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] hover:border-[var(--accent)] transition-colors"
                       >
                         {t('settings.themeToggle')}

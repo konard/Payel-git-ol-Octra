@@ -2,12 +2,12 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
+COPY auth/go.mod auth/go.sum ./
+COPY auth .
+RUN go mod download && go mod tidy
 
-COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-service ./cmd/app/main.go
+# Собираем binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /auth-service ./cmd/app
 
 FROM alpine:latest
 

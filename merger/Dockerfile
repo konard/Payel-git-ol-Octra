@@ -4,17 +4,11 @@ WORKDIR /workspace
 
 RUN apk add --no-cache git
 
-COPY go.work ./
-COPY agents ./agents
-COPY apigateway ./apigateway
-COPY boss ./boss
-COPY manager ./manager
-COPY merger ./merger
-COPY worker ./worker
+COPY merger .
 
-RUN cd merger && go mod download
+RUN go mod download
 
-RUN cd merger && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
 FROM alpine:latest
 

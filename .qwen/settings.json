@@ -47,7 +47,8 @@
       "Bash(npm cache *)",
       "Bash(tasklist)",
       "Bash(npm uninstall *)",
-      "Bash(node_modules\\electron\\dist\\electron.exe *)"
+      "Bash(node_modules\\electron\\dist\\electron.exe *)",
+      "Bash(docker build *)"
     ]
   },
   "$version": 3

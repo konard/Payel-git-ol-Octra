@@ -8,17 +8,22 @@ import type { TaskData } from './components/BottomInput';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthStore } from '../stores/authStore';
+import { useThemeStore } from '../stores/themeStore';
 
 export default function App() {
-  const [isDark, setIsDark] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { language, changeLanguage } = useI18n();
+  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isDark, toggleTheme } = useThemeStore();
 
   const { connect, send } = useWebSocket('ws://localhost:3111/task/create');
-  
+
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
-  
+
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -27,9 +32,25 @@ export default function App() {
     }
   }, [isDark]);
 
+  // Проверяем авторизацию при загрузке
   useEffect(() => {
-    connect();
+    checkAuth();
   }, []);
+
+  // Подключаемся к WebSocket только если авторизованы
+  useEffect(() => {
+    if (isAuthenticated) {
+      connect();
+    }
+  }, [isAuthenticated]);
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleShowAuth = () => {
+    setShowAuthModal(true);
+  };
 
   const handleCreateTask = (data: TaskData) => {
     // Reset previous task state (clear canvas)
@@ -56,10 +77,6 @@ export default function App() {
     useTaskStore.getState().setStartTime(Date.now());
   };
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
-
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
@@ -67,10 +84,10 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
       <TopBar
-        onToggleTheme={toggleTheme}
-        isDark={isDark}
+        isAuthenticated={isAuthenticated}
+        onShowAuth={handleShowAuth}
       />
-      
+
       <Canvas />
 
       <StatusBar />
@@ -83,6 +100,13 @@ export default function App() {
         isExpanded={isExpanded}
         onToggleExpand={toggleExpand}
       />
+
+      {showAuthModal && !isAuthenticated && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   );
 }
