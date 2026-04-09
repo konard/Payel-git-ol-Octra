@@ -8,7 +8,7 @@ import (
 // Manager — менеджер назначенный на задачу
 type Manager struct {
 	gorm.Model
-	ID       uuid.UUID `gorm:"primary_key;type:uuid;default:gen_random_uuid()"`
+	ID       uuid.UUID `gorm:"column:id;primaryKey;type:uuid;default:gen_random_uuid()"`
 	TaskID   uuid.UUID `gorm:"type:uuid;not null;index"`
 	Role     string    `gorm:"not null"` // frontend, backend, deployment, etc.
 	AgentID  string    // ID ИИ агента

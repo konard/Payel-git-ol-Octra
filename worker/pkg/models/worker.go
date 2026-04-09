@@ -8,7 +8,7 @@ import (
 // Worker — рабочий назначенный на задачу
 type Worker struct {
 	gorm.Model
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	TaskID    uuid.UUID `gorm:"type:uuid;not null;index"`
 	ManagerID uuid.UUID `gorm:"type:uuid;not null;index"`
 
@@ -30,7 +30,7 @@ type Worker struct {
 // WorkerSolution — файл решения
 type WorkerSolution struct {
 	gorm.Model
-	ID       uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID       uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	WorkerID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Worker   Worker    `gorm:"foreignKey:WorkerID"`
 

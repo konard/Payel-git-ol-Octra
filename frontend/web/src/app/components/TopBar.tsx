@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode, t } from '../../hooks/useI18n';
@@ -23,10 +23,12 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 
 interface TopBarProps {
   isAuthenticated: boolean;
+  hasSubscription: boolean;
   onShowAuth: () => void;
+  onShowSubscription: () => void;
 }
 
-export function TopBar({ isAuthenticated, onShowAuth }: TopBarProps) {
+export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const [showSettings, setShowSettings] = useState(false);
@@ -141,6 +143,16 @@ export function TopBar({ isAuthenticated, onShowAuth }: TopBarProps) {
               title="Войти"
             >
               Войти
+            </button>
+          )}
+          {isAuthenticated && !hasSubscription && (
+            <button
+              onClick={onShowSubscription}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-sm font-semibold rounded-full transition-all shadow-md hover:shadow-lg hover:shadow-orange-500/25"
+              title="Оформить подписку Pro"
+            >
+              <Crown size={14} />
+              <span>Pro</span>
             </button>
           )}
         </div>

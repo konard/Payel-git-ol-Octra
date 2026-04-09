@@ -3,7 +3,8 @@
  * Сервис для работы с API авторизации
  */
 
-const AUTH_API_URL = 'http://localhost:3112';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '/auth';
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || '/api';
 
 export interface UserRegisterRequest {
   username: string;
@@ -38,7 +39,7 @@ export interface AuthResponse {
 export interface UserResponse {
   status: string;
   data: {
-    user_id: number;
+    user_id: string;
     username: string;
     email: string;
   };

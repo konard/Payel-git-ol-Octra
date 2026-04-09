@@ -14,3 +14,13 @@ type UserRegisterRequest struct {
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
+
+type SubscribeRequest struct {
+	UserID string `json:"user_id"`
+	Plan   string `json:"plan"`
+}
+
+type PromoCodeRequest struct {
+	UserID string `json:"user_id"`
+	Code   string `json:"code"`
+}

@@ -152,6 +152,12 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
       - AUTH_SERVICE_HOST=auth:3112
+      # Rate Limiting
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_TASK_CREATE=${RATE_LIMIT_TASK_CREATE:-10/60}
+      - RATE_LIMIT_TASK_STATUS=${RATE_LIMIT_TASK_STATUS:-60/60}
+      - RATE_LIMIT_TASK_RECONNECT=${RATE_LIMIT_TASK_RECONNECT:-30/60}
+      - RATE_LIMIT_HEALTH=${RATE_LIMIT_HEALTH:-120/60}
     ports:
       - "3111:3111"
     depends_on:
@@ -180,6 +186,24 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
+    container_name: crewai-frontend
+    environment:
+      - FRONTEND_PORT=80
+    ports:
+      - "80:80"
+    depends_on:
+      auth:
+        condition: service_started
+      apigateway:
+        condition: service_started
     networks:
       - crewai-network
     restart: unless-stopped

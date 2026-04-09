@@ -2,6 +2,7 @@ package database
 
 import (
 	"auth/pkg/models"
+
 	"github.com/Payel-git-ol/azure/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,5 +19,6 @@ func InitDb() {
 		panic(err)
 	}
 
-	Db.AutoMigrate(&models.UserRegister{})
+	// Migrate all tables
+	Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{})
 }

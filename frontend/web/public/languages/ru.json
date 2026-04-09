@@ -1,0 +1,90 @@
+{
+  "app": {
+    "title": "CrewAI",
+    "subtitle": "Компания ИИ-агентов"
+  },
+  "topbar": {
+    "download": "Скачать",
+    "settings": "Настройки",
+    "theme": "Тема",
+    "language": "Язык",
+    "lightTheme": "Светлая тема",
+    "darkTheme": "Тёмная тема",
+    "profile": "Профиль"
+  },
+  "statusbar": {
+    "connected": "Подключено",
+    "disconnected": "Отключено",
+    "status": "Статус",
+    "tokens": "Токены",
+    "time": "Время",
+    "waiting": "Ожидание",
+    "creating": "Создание задачи",
+    "planning": "Планирование",
+    "executing": "Выполнение",
+    "done": "Завершено",
+    "error": "Ошибка"
+  },
+  "console": {
+    "title": "Консоль",
+    "empty": "Задача ещё не запущена. Создайте задачу чтобы увидеть логи.",
+    "connectionLost": "Соединение потеряно, переподключение..."
+  },
+  "bottomInput": {
+    "provider": "Провайдер",
+    "model": "Модель",
+    "apiKey": "API ключ",
+    "taskTitle": "Название задачи (необязательно)",
+    "taskDescription": "Опишите задачу... Например: Напиши прокси сервис на Go с маршрутизацией и балансировкой нагрузки",
+    "settings": "Настройки",
+    "send": "Отправить",
+    "stop": "Стоп",
+    "reconnecting": "Переподключение к серверу...",
+    "taskCreated": "Задача создана",
+    "sendError": "Ошибка отправки задачи"
+  },
+  "nodes": {
+    "ceo": "CEO",
+    "zipArchive": "ZIP Архив",
+    "pending": "Ожидание",
+    "building": "Сборка...",
+    "ready": "Готово",
+    "error": "Ошибка",
+    "filesCount": "Файлов",
+    "size": "Размер"
+  },
+  "modelSelector": {
+    "title": "Выбор модели",
+    "search": "Поиск модели...",
+    "noResults": "Модели не найдены",
+    "close": "Закрыть"
+  },
+  "settings": {
+    "apiTokens": "API и токены",
+    "language": "Язык",
+    "appearance": "Внешний вид",
+    "interface": "Интерфейс",
+    "title": "Настройки",
+    "defaultToken": "Токен по умолчанию",
+    "defaultTokenPlaceholder": "sk-or-v1-...",
+    "defaultTokenHint": "Будет использоваться автоматически для всех задач",
+    "interfaceLanguage": "Язык интерфейса",
+    "languageHint": "Выберите язык для отображения текста в приложении",
+    "themeTitle": "Тема оформления",
+    "themeCurrent": "Текущая",
+    "themeDark": "Тёмная",
+    "themeLight": "Светлая",
+    "themeToggle": "Переключить",
+    "hideTokenField": "Не показывать поле ввода токена",
+    "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
+    "save": "Сохранить",
+    "cancel": "Отмена"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "hy": "Հայերեն",
+    "kk": "Қазақша",
+    "uz": "O'zbekcha"
+  }
+}

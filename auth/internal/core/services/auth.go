@@ -6,6 +6,7 @@ import (
 	"auth/pkg/requests"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +32,7 @@ func GenerateTokens(user models.UserRegister) (string, string, error) {
 
 	// Access Token
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID,
+		"user_id":  user.ID.String(),
 		"username": user.Username,
 		"email":    user.Email,
 		"exp":      time.Now().Add(AccessTokenExpiry).Unix(),
@@ -46,7 +47,7 @@ func GenerateTokens(user models.UserRegister) (string, string, error) {
 
 	// Refresh Token
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID,
+		"user_id":  user.ID.String(),
 		"username": user.Username,
 		"email":    user.Email,
 		"exp":      time.Now().Add(RefreshTokenExpiry).Unix(),
@@ -137,7 +138,7 @@ func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 		"user": map[string]interface{}{
-			"id":       user.ID,
+			"id":       user.ID.String(),
 			"username": user.Username,
 			"email":    user.Email,
 		},
@@ -157,10 +158,14 @@ func RefreshTokens(req requests.RefreshTokenRequest) (map[string]interface{}, er
 		return nil, errors.New("invalid token claims")
 	}
 
-	// Find user
+	// Find user by UUID
 	var user models.UserRegister
-	userID := claims["user_id"].(float64)
-	err = database.Db.First(&user, userID).Error
+	userIDStr, _ := claims["user_id"].(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return nil, errors.New("invalid user id in token")
+	}
+	err = database.Db.Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -189,10 +194,31 @@ func GetMe(tokenString string) (map[string]interface{}, error) {
 		return nil, errors.New("invalid token claims")
 	}
 
+	userIDStr, _ := claims["user_id"].(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+
+	var user models.UserRegister
+	err = database.Db.Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	hasSubscription := user.SubscriptionEnd != nil && time.Unix(*user.SubscriptionEnd, 0).After(time.Now())
+	var subscriptionEnd *time.Time
+	if user.SubscriptionEnd != nil {
+		t := time.Unix(*user.SubscriptionEnd, 0)
+		subscriptionEnd = &t
+	}
+
 	return map[string]interface{}{
-		"user_id":  claims["user_id"],
-		"username": claims["username"],
-		"email":    claims["email"],
+		"user_id":          user.ID.String(),
+		"username":         user.Username,
+		"email":            user.Email,
+		"has_subscription": hasSubscription,
+		"subscription_end": subscriptionEnd,
 	}, nil
 }
 
@@ -200,11 +226,11 @@ func GetMe(tokenString string) (map[string]interface{}, error) {
 func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, error) {
 	hashPs, err := HashedPassword(req.Password)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
 	}
 
 	user := models.UserRegister{
-		Id:       uuid.New(),
+		ID: uuid.New(),
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashPs,
@@ -212,7 +238,12 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 
 	err = database.Db.Create(&user).Error
 	if err != nil {
-		return nil, err
+		println("Register error: " + err.Error())
+		// Check for duplicate email/username
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			return nil, errors.New("Пользователь с таким email или именем уже существует")
+		}
+		return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
 	}
 
 	// Generate tokens
@@ -225,7 +256,7 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 		"user": map[string]interface{}{
-			"id":       user.Id.String(),
+			"id":       user.ID.String(),
 			"username": user.Username,
 			"email":    user.Email,
 		},

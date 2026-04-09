@@ -44,6 +44,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  hasSubscription: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -52,6 +53,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  setSubscription: (has: boolean) => void;
   clearError: () => void;
 }
 
@@ -60,6 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: getStoredAccessToken(),
   refreshToken: getStoredRefreshToken(),
   isAuthenticated: !!getStoredAccessToken(),
+  hasSubscription: false,
   isLoading: false,
   error: null,
 
@@ -73,9 +76,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
         isAuthenticated: true,
+        hasSubscription: false,
         isLoading: false,
         error: null,
       });
+      // Check subscription status (new users don't have one)
+      try {
+        const userResponse = await getCurrentUser(response.data.access_token);
+        set({
+          hasSubscription: (userResponse.data as any).has_subscription || false,
+        });
+      } catch {
+        // ignore
+      }
     } catch (error) {
       set({
         isLoading: false,
@@ -95,9 +108,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
         isAuthenticated: true,
+        hasSubscription: false,
         isLoading: false,
         error: null,
       });
+      // Immediately check subscription status from server
+      try {
+        const userResponse = await getCurrentUser(response.data.access_token);
+        set({
+          hasSubscription: (userResponse.data as any).has_subscription || false,
+        });
+      } catch {
+        // ignore - will check on next page load
+      }
     } catch (error) {
       set({
         isLoading: false,
@@ -119,14 +142,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
+        hasSubscription: false,
         error: null,
       });
     }
   },
 
+  setSubscription: (has: boolean) => {
+    set({ hasSubscription: has });
+  },
+
   checkAuth: async () => {
     const { accessToken, refreshToken } = get();
-    
+
     // Если нет access токена, пробуем обновить через refresh токен
     if (!accessToken) {
       if (refreshToken) {
@@ -139,26 +167,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             isAuthenticated: true,
             error: null,
           });
-          // Теперь проверяем пользователя
           const userResponse = await getCurrentUser(response.data.access_token);
           set({
             user: {
-              id: userResponse.data.user_id.toString(),
+              id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
             },
+            hasSubscription: (userResponse.data as any).has_subscription || false,
             isAuthenticated: true,
             error: null,
           });
           return;
         } catch (error) {
-          // Refresh токен истек или невалиден
           removeTokens();
           set({
             user: null,
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
+            hasSubscription: false,
             error: null,
           });
           return;
@@ -173,10 +201,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await getCurrentUser(accessToken);
       set({
         user: {
-          id: response.data.user_id.toString(),
+          id: response.data.user_id,
           username: response.data.username,
           email: response.data.email,
         },
+        hasSubscription: (response.data as any).has_subscription || false,
         isAuthenticated: true,
         error: null,
       });
@@ -190,14 +219,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             accessToken: refreshResponse.data.access_token,
             refreshToken: refreshResponse.data.refresh_token,
           });
-          // Повторно проверяем пользователя
           const userResponse = await getCurrentUser(refreshResponse.data.access_token);
           set({
             user: {
-              id: userResponse.data.user_id.toString(),
+              id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
             },
+            hasSubscription: (userResponse.data as any).has_subscription || false,
             isAuthenticated: true,
             error: null,
           });
@@ -208,6 +237,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
+            hasSubscription: false,
             error: null,
           });
         }

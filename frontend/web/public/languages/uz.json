@@ -1,0 +1,90 @@
+{
+  "app": {
+    "title": "CrewAI",
+    "subtitle": "Sun'iy intellekt agentlari kompaniyasi"
+  },
+  "topbar": {
+    "download": "Yuklab olish",
+    "settings": "Sozlamalar",
+    "theme": "Mavzu",
+    "language": "Til",
+    "lightTheme": "Ochiq mavzu",
+    "darkTheme": "Qorong'i mavzu",
+    "profile": "Profil"
+  },
+  "statusbar": {
+    "connected": "Ulangan",
+    "disconnected": "Uzildi",
+    "status": "Holat",
+    "tokens": "Tokenlar",
+    "time": "Vaqt",
+    "waiting": "Kutilmoqda",
+    "creating": "Vazifa yaratish",
+    "planning": "Rejalashtirish",
+    "executing": "Bajarish",
+    "done": "Tugallandi",
+    "error": "Xato"
+  },
+  "console": {
+    "title": "Konsol",
+    "empty": "Vazifa hali boshlanmadi. Loglarni ko'rish uchun vazifa yarating.",
+    "connectionLost": "Ulanish uzildi, qayta ulanmoqda..."
+  },
+  "bottomInput": {
+    "provider": "Provayder",
+    "model": "Model",
+    "apiKey": "API kalit",
+    "taskTitle": "Vazifa nomi (ixtiyoriy)",
+    "taskDescription": "Vazifani tavsiflang... Masalan: Marshrutizatsiya bilan Go proxy xizmatini yozing",
+    "settings": "Sozlamalar",
+    "send": "Yuborish",
+    "stop": "To'xtatish",
+    "reconnecting": "Serverga qayta ulanmoqda...",
+    "taskCreated": "Vazifa yaratildi",
+    "sendError": "Vazifani yuborish xatosi"
+  },
+  "nodes": {
+    "ceo": "CEO",
+    "zipArchive": "ZIP arxiv",
+    "pending": "Kutilmoqda",
+    "building": "Yig'ilmoqda...",
+    "ready": "Tayyor",
+    "error": "Xato",
+    "filesCount": "Fayllar",
+    "size": "Hajm"
+  },
+  "modelSelector": {
+    "title": "Model tanlash",
+    "search": "Modellarni qidirish...",
+    "noResults": "Modellar topilmadi",
+    "close": "Yopish"
+  },
+  "settings": {
+    "apiTokens": "API va Tokenlar",
+    "language": "Til",
+    "appearance": "Ko'rinish",
+    "interface": "Interfeys",
+    "title": "Sozlamalar",
+    "defaultToken": "Token sukut bo'yicha",
+    "defaultTokenPlaceholder": "sk-or-v1-...",
+    "defaultTokenHint": "Barcha vazifalar uchun avtomatik ishlatiladi",
+    "interfaceLanguage": "Interfeys tili",
+    "languageHint": "Ilova matni uchun til tanlang",
+    "themeTitle": "Mavzu",
+    "themeCurrent": "Joriy",
+    "themeDark": "Qorong'i",
+    "themeLight": "Ochiq",
+    "themeToggle": "O'zgartirish",
+    "hideTokenField": "Token kiritish maydonini yashirish",
+    "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "hy": "Հայերեն",
+    "kk": "Қазақша",
+    "uz": "O'zbekcha"
+  }
+}

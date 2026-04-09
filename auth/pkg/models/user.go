@@ -1,14 +1,18 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type UserRegister struct {
-	gorm.Model
-	Id       uuid.UUID `json:"id" gorm:"primaryKey"`
-	Username string    `json:"username" gorm:"unique"`
-	Email    string    `json:"email" gorm:"unique"`
-	Password string    `json:"password" gorm:"not null"`
+	ID              uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       *time.Time `gorm:"index"`
+	Username        string     `gorm:"unique"`
+	Email           string     `gorm:"unique"`
+	Password        string     `gorm:"not null"`
+	SubscriptionEnd *int64     `json:"subscription_end"`
 }

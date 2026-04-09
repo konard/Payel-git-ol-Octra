@@ -7,10 +7,12 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
 	database.InitDb()
+	services.InitDefaultPromoCodes()
 	r := gin.Default()
 
 	// CORS Middleware
@@ -195,6 +197,136 @@ func main() {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Logged out successfully",
+		})
+	})
+
+	// GET /plans - Get subscription plans
+	r.GET("/plans", func(c *gin.Context) {
+		plans := services.GetSubscriptionPlans()
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"data":   plans,
+		})
+	})
+
+	// POST /subscribe - Subscribe user to a plan
+	r.POST("/subscribe", func(c *gin.Context) {
+		var req requests.SubscribeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body: " + err.Error(),
+			})
+			return
+		}
+
+		if req.UserID == "" || req.Plan == "" {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "User ID and plan are required",
+			})
+			return
+		}
+
+		userID, err := uuid.Parse(req.UserID)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid user ID format",
+			})
+			return
+		}
+
+		err = services.SubscribeUser(userID, req.Plan)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "Subscription activated successfully",
+		})
+	})
+
+	// POST /subscribe/promo - Activate promo code
+	r.POST("/subscribe/promo", func(c *gin.Context) {
+		var req requests.PromoCodeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body: " + err.Error(),
+			})
+			return
+		}
+
+		if req.UserID == "" || req.Code == "" {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "User ID and promo code are required",
+			})
+			return
+		}
+
+		userID, err := uuid.Parse(req.UserID)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid user ID format",
+			})
+			return
+		}
+
+		err = services.ActivatePromoCode(userID, req.Code)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "Promo code activated successfully",
+		})
+	})
+
+	// GET /subscription/status - Get user subscription status
+	r.GET("/subscription/status", func(c *gin.Context) {
+		userIDParam := c.Query("user_id")
+		if userIDParam == "" {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "user_id is required",
+			})
+			return
+		}
+
+		userID, err := uuid.Parse(userIDParam)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid user_id",
+			})
+			return
+		}
+
+		info, err := services.GetUserSubscriptionInfo(userID)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"data":   info,
 		})
 	})
 

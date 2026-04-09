@@ -9,17 +9,20 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
+import { SubscriptionModal } from '../components/SubscriptionModal';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 
 export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { language, changeLanguage } = useI18n();
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated, hasSubscription, checkAuth, setSubscription } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
 
-  const { connect, send } = useWebSocket('ws://localhost:3111/task/create');
+  const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
+  const { connect, send } = useWebSocket(wsUrl);
 
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
@@ -46,6 +49,8 @@ export default function App() {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
+    // После авторизации показываем подписку
+    setShowSubscriptionModal(true);
   };
 
   const handleShowAuth = () => {
@@ -53,6 +58,12 @@ export default function App() {
   };
 
   const handleCreateTask = (data: TaskData) => {
+    // Проверяем подписку перед отправкой задачи
+    if (!hasSubscription) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+
     // Reset previous task state (clear canvas)
     useTaskStore.getState().resetTask();
 
@@ -85,7 +96,9 @@ export default function App() {
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
       <TopBar
         isAuthenticated={isAuthenticated}
+        hasSubscription={hasSubscription}
         onShowAuth={handleShowAuth}
+        onShowSubscription={() => setShowSubscriptionModal(true)}
       />
 
       <Canvas />
@@ -105,6 +118,16 @@ export default function App() {
         <AuthModal
           onClose={() => setShowAuthModal(false)}
           onAuthSuccess={handleAuthSuccess}
+        />
+      )}
+
+      {showSubscriptionModal && isAuthenticated && (
+        <SubscriptionModal
+          onClose={() => setShowSubscriptionModal(false)}
+          onSubscribe={() => {
+            setSubscription(true);
+            setShowSubscriptionModal(false);
+          }}
         />
       )}
     </div>

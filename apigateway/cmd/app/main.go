@@ -1,17 +1,33 @@
 package main
 
 import (
-	"apigateway/internal/fetcher"
 	"log"
+	"os"
 
-	"github.com/Payel-git-ol/azure"
+	"apigateway/internal/fetcher"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	a := azure.Defoult
-	fetcher.HttpManager(a)
+	gin.SetMode(gin.ReleaseMode)
 
-	if err := a.Run("3111"); err != nil {
-		log.Fatal("HTTP server error:", err)
+	r := gin.New()
+
+	// Global middleware
+	r.Use(gin.Recovery())
+	r.Use(gin.Logger())
+
+	// Register all routes
+	fetcher.RegisterRoutes(r)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3111"
+	}
+
+	log.Printf("🚀 Apigateway starting on port %s...", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("❌ Failed to start server: %v", err)
 	}
 }

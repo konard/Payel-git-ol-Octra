@@ -8,7 +8,7 @@ import (
 // Task — задача от пользователя
 type Task struct {
 	gorm.Model
-	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID          uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID      string    `gorm:"not null;index"`
 	Username    string
 	Title       string `gorm:"not null"`
@@ -27,7 +27,7 @@ type Task struct {
 // BossDecision — решение босса
 type BossDecision struct {
 	gorm.Model
-	ID     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID     uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	TaskID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Task   Task      `gorm:"foreignKey:TaskID"`
 	Status string    `gorm:"default:'planning'"`
@@ -50,7 +50,7 @@ type ManagerRole struct {
 // Manager — менеджер назначенный на задачу
 type Manager struct {
 	gorm.Model
-	ID             uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID             uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	TaskID         uuid.UUID `gorm:"type:uuid;not null;index"`
 	Task           Task      `gorm:"foreignKey:TaskID"`
 	BossDecisionID uuid.UUID `gorm:"type:uuid;index"`
@@ -73,7 +73,7 @@ type WorkerRole struct {
 // Worker — рабочий назначенный на задачу
 type Worker struct {
 	gorm.Model
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	TaskID    uuid.UUID `gorm:"type:uuid;not null;index"`
 	ManagerID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Manager   Manager   `gorm:"foreignKey:ManagerID"`
@@ -88,7 +88,7 @@ type Worker struct {
 // WorkerSolution — результат работы воркера
 type WorkerSolution struct {
 	gorm.Model
-	ID       uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID       uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
 	WorkerID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Worker   Worker    `gorm:"foreignKey:WorkerID"`
 	TaskID   uuid.UUID `gorm:"type:uuid;not null;index"`

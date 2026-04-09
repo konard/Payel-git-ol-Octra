@@ -15,4 +15,17 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
   base: './',
+  server: {
+    proxy: {
+      '/auth': {
+        target: 'http://localhost:3112',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://localhost:3111',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  },
 })
