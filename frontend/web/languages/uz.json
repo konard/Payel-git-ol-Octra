@@ -86,5 +86,40 @@
     "hy": "Հայերեն",
     "kk": "Қазақша",
     "uz": "O'zbekcha"
+  },
+  "sidebar": {
+    "title": "Agentlar",
+    "subtitle": "Tugunni kanvasga suring va boshqalar bilan ulang",
+    "boss": {
+      "label": "Boss",
+      "type": "CEO",
+      "description": "Arxitekturani rejalashtiradi va jamoani boshqaradi"
+    },
+    "manager": {
+      "label": "Menejer",
+      "type": "Jamoa yetakchisi",
+      "description": "Vazifalarni taqsimlaydi va kodni ko'rib chiqadi"
+    },
+    "worker": {
+      "label": "Vorker",
+      "type": "Dasturchi",
+      "description": "Vazifa uchun kod generatsiya qiladi"
+    },
+    "tip": {
+      "title": "Maslahat:",
+      "items": [
+        "Tugunni kanvasga suring",
+        "Handle orqali ulang",
+        "O'ng tugma — sozlamalar",
+        "Del — o'chirish uchun"
+      ]
+    },
+    "addAgent": "Агент қўшиш"
+  },
+  "contextMenu": {
+    "changeRole": "Rolni o'zgartirish:",
+    "duplicate": "Tugunni nusxalash",
+    "delete": "Tugunni o'chirish",
+    "notConnected": "Ulanmagan"
   }
 }

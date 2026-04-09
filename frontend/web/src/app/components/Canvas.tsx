@@ -1,15 +1,20 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Controls,
   Background,
+  useReactFlow,
+  useNodesState,
   type Node,
   type Edge,
   type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useTaskStore } from '../../stores/taskStore';
+import { useTaskStore, type AgentNodeType } from '../../stores/taskStore';
 import { BossNode, ManagerNode, WorkerNode, ZIPArchiveNode } from './nodes';
+import { NodeSidebar } from './NodeSidebar';
+import { NodeContextMenu } from './NodeContextMenu';
+import { useI18n } from '../../hooks/useI18n';
 
 const nodeTypes = {
   boss: BossNode,
@@ -18,13 +23,41 @@ const nodeTypes = {
   zip: ZIPArchiveNode,
 };
 
+const nodeRoleDefaults: Record<string, string> = {
+  boss: 'CEO',
+  manager: 'Backend',
+  worker: 'Developer',
+};
+
 export function Canvas() {
   const nodes = useTaskStore((state) => state.nodes);
   const edges = useTaskStore((state) => state.edges);
   const addEdgeToStore = useTaskStore((state) => state.addEdge);
+  const addNodeToStore = useTaskStore((state) => state.addNode);
+  const removeNode = useTaskStore((state) => state.removeNode);
+  const { t } = useI18n();
 
-  const rfNodes: Node[] = useMemo(() =>
-    nodes.map((node) => ({
+  const { screenToFlowPosition: rfScreenToFlow } = useReactFlow();
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    nodeId: string;
+    nodeType: AgentNodeType;
+    nodeRole: string;
+  } | null>(null);
+
+  const rfNodes: Node[] = useMemo(() => {
+    // Определяем какие ноды подключены
+    const connectedNodeIds = new Set<string>();
+    edges.forEach((edge) => {
+      connectedNodeIds.add(edge.from);
+      connectedNodeIds.add(edge.to);
+    });
+
+    return nodes.map((node) => ({
       id: node.id,
       type: node.type,
       position: node.position || { x: 0, y: 0 },
@@ -38,8 +71,11 @@ export function Canvas() {
         // ZIP Archive specific fields
         fileName: node.fileName,
         fileSize: node.fileSize,
+        // Статус подключённости
+        isConnected: connectedNodeIds.has(node.id),
       },
-    })), [nodes]);
+    }));
+  }, [nodes, edges]);
 
   const rfEdges: Edge[] = useMemo(() =>
     edges.map((edge, idx) => ({
@@ -59,24 +95,138 @@ export function Canvas() {
     [addEdgeToStore]
   );
 
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData('application/reactflow/node-type') as 'boss' | 'manager' | 'worker';
+      if (!type) return;
+
+      const position = rfScreenToFlow(
+        {
+          x: event.clientX,
+          y: event.clientY,
+        },
+        { snapToGrid: true }
+      );
+
+      addNodeToStore({
+        id: `node-${Date.now()}`,
+        type,
+        role: nodeRoleDefaults[type],
+        status: 'pending',
+        progress: 0,
+        position,
+      });
+    },
+    [rfScreenToFlow, addNodeToStore]
+  );
+
+  const onDragStartFromSidebar = useCallback((type: 'boss' | 'manager' | 'worker', event: React.DragEvent) => {
+    event.dataTransfer.setData('application/reactflow/node-type', type);
+    event.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  // Удаление нод по клавише Delete
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        selectedNodeIds.forEach((id) => removeNode(id));
+        setSelectedNodeIds(new Set());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeIds, removeNode]);
+
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNodeIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(node.id)) {
+        newSet.delete(node.id);
+      } else {
+        newSet.add(node.id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeIds(new Set());
+    setContextMenu(null);
+  }, []);
+
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      nodeId: node.id,
+      nodeType: node.type as AgentNodeType,
+      nodeRole: node.data?.role || 'Unknown',
+    });
+  }, []);
+
   return (
-    <div className="flex-1 bg-[var(--bg-canvas)]">
-      <ReactFlow
-        nodes={rfNodes}
-        edges={rfEdges}
-        nodeTypes={nodeTypes}
-        onConnect={onConnect}
-        fitView
-        className="bg-[var(--bg-canvas)]"
-        proOptions={{ hideAttribution: true }}
+    <div className="flex-1 bg-[var(--bg-canvas)] relative">
+      {/* Кнопка открытия панели */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className={`absolute right-4 top-4 z-10 bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 hover:bg-[var(--accent)] hover:text-white transition-colors shadow-lg ${
+          sidebarOpen ? 'hidden' : ''
+        }`}
       >
-        <Controls />
-        <Background 
-          color="var(--edge-color)" 
-          gap={16} 
-          size={1} 
+        + {t('sidebar.addAgent')}
+      </button>
+
+      <div ref={reactFlowWrapper} className="w-full h-full">
+        <ReactFlow
+          nodes={rfNodes}
+          edges={rfEdges}
+          nodeTypes={nodeTypes}
+          onConnect={onConnect}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onNodeClick={onNodeClick}
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneClick={onPaneClick}
+          fitView
+          className="bg-[var(--bg-canvas)]"
+          proOptions={{ hideAttribution: true }}
+        >
+          <Controls />
+          <Background
+            color="var(--edge-color)"
+            gap={16}
+            size={1}
+          />
+        </ReactFlow>
+      </div>
+
+      {/* Правая панель с шаблонами */}
+      <NodeSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onDragStart={onDragStartFromSidebar}
+      />
+
+      {/* Контекстное меню */}
+      {contextMenu && (
+        <NodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
+          nodeRole={contextMenu.nodeRole}
+          onClose={() => setContextMenu(null)}
         />
-      </ReactFlow>
+      )}
     </div>
   );
 }

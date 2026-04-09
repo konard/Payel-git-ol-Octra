@@ -86,5 +86,40 @@
     "hy": "Հայերեն",
     "kk": "Қазақша",
     "uz": "O'zbekcha"
+  },
+  "sidebar": {
+    "title": "Agents",
+    "subtitle": "Drag a node onto the canvas and connect it to others",
+    "boss": {
+      "label": "Boss",
+      "type": "CEO",
+      "description": "Plans architecture and manages the team"
+    },
+    "manager": {
+      "label": "Manager",
+      "type": "Team Lead",
+      "description": "Distributes tasks and reviews code"
+    },
+    "worker": {
+      "label": "Worker",
+      "type": "Developer",
+      "description": "Generates code for the task"
+    },
+    "tip": {
+      "title": "Tip:",
+      "items": [
+        "Drag a node onto the canvas",
+        "Connect via Handles",
+        "Right-click for node settings",
+        "Del to delete"
+      ]
+    },
+    "addAgent": "Add Agent"
+  },
+  "contextMenu": {
+    "changeRole": "Change role:",
+    "duplicate": "Duplicate node",
+    "delete": "Delete node",
+    "notConnected": "Not connected"
   }
 }

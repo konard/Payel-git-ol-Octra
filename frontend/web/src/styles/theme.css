@@ -111,6 +111,8 @@
   background-color: var(--surface) !important;
   border-color: var(--border) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  left: auto !important;
+  right: 8px !important;
 }
 
 .react-flow__controls-button {

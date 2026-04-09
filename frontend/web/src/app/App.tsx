@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
 import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
 import { ConsolePanel } from './components/ConsolePanel';
@@ -101,7 +102,9 @@ export default function App() {
         onShowSubscription={() => setShowSubscriptionModal(true)}
       />
 
-      <Canvas />
+      <ReactFlowProvider>
+        <Canvas />
+      </ReactFlowProvider>
 
       <StatusBar />
 
