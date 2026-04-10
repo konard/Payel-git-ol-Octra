@@ -73,6 +73,9 @@ export default function App() {
       : data.provider === 'openai' ? 'openai'
       : 'claude';
 
+    // Get workflow from store (from Canvas)
+    const workflow = useTaskStore.getState().getWorkflow();
+
     send({
       username: 'user',
       title: data.title,
@@ -84,6 +87,7 @@ export default function App() {
         provider: data.provider,
         model: data.model,
       },
+      ...(workflow && { workflow }),
     });
 
     useTaskStore.getState().setStartTime(Date.now());

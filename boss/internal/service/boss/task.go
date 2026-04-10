@@ -7,10 +7,11 @@ import (
 	"boss/pkg/models"
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // CreateTaskStream — streaming version that sends real-time updates
@@ -90,29 +91,66 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 		Timestamp: time.Now().Unix(),
 	})
 
-	// 3. Boss thinks about task
-	decision, err := s.thinkAboutTask(ctx, agentsClient, provider, model, req)
-	if err != nil {
-		task.Status = "error"
-		database.Db.Save(task)
-		return stream.Send(&bosspb.TaskUpdate{
+	// 3. Check if we should use AI planning or predefined workflow
+	var decision *BossDecisionResult
+	var planErr error
+
+	useAI := req.UseAiPlanning || len(req.PredefinedManagers) == 0
+	if useAI {
+		// Use AI to plan architecture
+		_ = stream.Send(&bosspb.TaskUpdate{
 			TaskId:    taskID.String(),
-			Message:   "❌ AI planning failed: " + err.Error(),
-			Status:    "error",
+			Message:   "🤖 AI is planning architecture...",
+			Progress:  15,
+			Status:    "processing",
 			Timestamp: time.Now().Unix(),
 		})
-	}
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "✅ Architecture planned by AI",
-		Progress:  30,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-		Data: map[string]string{
-			"managers": strconv.Itoa(int(decision.ManagersCount)),
-		},
-	})
+		decision, planErr = s.thinkAboutTask(ctx, agentsClient, provider, model, req)
+		if planErr != nil {
+			task.Status = "error"
+			database.Db.Save(task)
+			return stream.Send(&bosspb.TaskUpdate{
+				TaskId:    taskID.String(),
+				Message:   "❌ AI planning failed: " + planErr.Error(),
+				Status:    "error",
+				Timestamp: time.Now().Unix(),
+			})
+		}
+
+		_ = stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "✅ Architecture planned by AI",
+			Progress:  30,
+			Status:    "processing",
+			Timestamp: time.Now().Unix(),
+			Data: map[string]string{
+				"managers": strconv.Itoa(int(decision.ManagersCount)),
+			},
+		})
+	} else {
+		// Use predefined workflow from user
+		_ = stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "📋 Using predefined workflow (" + strconv.Itoa(len(req.PredefinedManagers)) + " managers)",
+			Progress:  15,
+			Status:    "processing",
+			Timestamp: time.Now().Unix(),
+		})
+
+		decision = s.buildDecisionFromPredefined(req)
+
+		_ = stream.Send(&bosspb.TaskUpdate{
+			TaskId:    taskID.String(),
+			Message:   "✅ Predefined workflow loaded",
+			Progress:  30,
+			Status:    "processing",
+			Timestamp: time.Now().Unix(),
+			Data: map[string]string{
+				"managers": strconv.Itoa(int(decision.ManagersCount)),
+			},
+		})
+	}
 
 	// 4. Save boss decision
 	bossDecision := &models.BossDecision{
@@ -400,3 +438,55 @@ Reply ONLY with JSON:
 	log.Printf("Boss made decision: %+v", decision)
 	return &decision, nil
 }
+
+// buildDecisionFromPredefined создаёт BossDecision из пользовательского workflow
+func (s *BossService) buildDecisionFromPredefined(req *bosspb.CreateTaskRequest) *BossDecisionResult {
+	log.Printf("📋 Building decision from predefined workflow: %d managers", len(req.PredefinedManagers))
+
+	// Преобразуем ManagerConfig в ManagerRole (models)
+	managerRoles := make([]models.ManagerRole, 0, len(req.PredefinedManagers))
+	workerRolesMap := make(map[string][]models.WorkerRole)
+
+	for _, mc := range req.PredefinedManagers {
+		managerRoles = append(managerRoles, models.ManagerRole{
+			Role:        mc.Role,
+			Description: mc.Description,
+			Priority:    mc.Priority,
+		})
+
+		// Сохраняем worker roles для этого менеджера
+		if len(mc.Workers) > 0 {
+			workers := make([]models.WorkerRole, 0, len(mc.Workers))
+			for _, w := range mc.Workers {
+				workers = append(workers, models.WorkerRole{
+					Role:        w.Role,
+					Description: w.Description,
+				})
+			}
+			workerRolesMap[mc.Role] = workers
+		}
+	}
+
+	// Если пользователь не указал архитектуру, используем описание задачи
+	techDescription := req.PredefinedArchitecture
+	if techDescription == "" {
+		techDescription = "Predefined workflow for: " + req.Title + "\n" + req.Description
+	}
+
+	// Если пользователь не указал стек, оставляем пустым
+	techStack := req.PredefinedTechStack
+	if techStack == nil {
+		techStack = []string{"custom"}
+	}
+
+	return &BossDecisionResult{
+		ManagersCount:        int32(len(req.PredefinedManagers)),
+		ManagerRoles:         managerRoles,
+		TechnicalDescription: techDescription,
+		TechStack:            techStack,
+		ArchitectureNotes:    "Predefined workflow by user",
+		ManagerWorkerRoles:   workerRolesMap,
+	}
+}
+
+// extractJSONFromMarkdown извлекает JSON из markdown-обёртки

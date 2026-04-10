@@ -42,6 +42,8 @@ type BossDecisionResult struct {
 	TechnicalDescription string               `json:"technical_description"`
 	TechStack            []string             `json:"tech_stack"`
 	ArchitectureNotes    string               `json:"architecture_notes"`
+	// Predefined worker roles per manager (from user workflow)
+	ManagerWorkerRoles map[string][]models.WorkerRole `json:"manager_worker_roles,omitempty"`
 }
 
 // GetTaskStatus returns task status

@@ -752,10 +752,9 @@ const file_boss_manager_proto_rawDesc = "" +
 	"\bmetadata\x18\x04 \x03(\v2,.manager.AssignManagersRequest.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xd5\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x88\x02\n" +
 	"\x0eManagerService\x12F\n" +
-	"\rAssignManager\x12\x1d.manager.AssignManagerRequest\x1a\x16.manager.ManagerResult\x12K\n" +
-	"\x13AssignManagerStream\x12\x1d.manager.AssignManagerRequest\x1a\x13.manager.TaskUpdate0\x01\x12X\n" +
+	"\rAssignManager\x12\x1d.manager.AssignManagerRequest\x1a\x16.manager.ManagerResult\x12X\n" +
 	"\x15AssignManagersAndWait\x12\x1e.manager.AssignManagersRequest\x1a\x1f.manager.AssignManagersResponse\x12T\n" +
 	"\x1bAssignManagersAndWaitStream\x12\x1e.manager.AssignManagersRequest\x1a\x13.manager.TaskUpdate0\x01B)Z'manager/internal/fetcher/grpc/managerpbb\x06proto3"
 
@@ -796,15 +795,13 @@ var file_boss_manager_proto_depIdxs = []int32{
 	5,  // 6: manager.AssignManagersResponse.manager_results:type_name -> manager.ManagerResult
 	11, // 7: manager.AssignManagersRequest.metadata:type_name -> manager.AssignManagersRequest.MetadataEntry
 	4,  // 8: manager.ManagerService.AssignManager:input_type -> manager.AssignManagerRequest
-	4,  // 9: manager.ManagerService.AssignManagerStream:input_type -> manager.AssignManagerRequest
-	7,  // 10: manager.ManagerService.AssignManagersAndWait:input_type -> manager.AssignManagersRequest
-	7,  // 11: manager.ManagerService.AssignManagersAndWaitStream:input_type -> manager.AssignManagersRequest
-	5,  // 12: manager.ManagerService.AssignManager:output_type -> manager.ManagerResult
-	0,  // 13: manager.ManagerService.AssignManagerStream:output_type -> manager.TaskUpdate
-	6,  // 14: manager.ManagerService.AssignManagersAndWait:output_type -> manager.AssignManagersResponse
-	0,  // 15: manager.ManagerService.AssignManagersAndWaitStream:output_type -> manager.TaskUpdate
-	12, // [12:16] is the sub-list for method output_type
-	8,  // [8:12] is the sub-list for method input_type
+	7,  // 9: manager.ManagerService.AssignManagersAndWait:input_type -> manager.AssignManagersRequest
+	7,  // 10: manager.ManagerService.AssignManagersAndWaitStream:input_type -> manager.AssignManagersRequest
+	5,  // 11: manager.ManagerService.AssignManager:output_type -> manager.ManagerResult
+	6,  // 12: manager.ManagerService.AssignManagersAndWait:output_type -> manager.AssignManagersResponse
+	0,  // 13: manager.ManagerService.AssignManagersAndWaitStream:output_type -> manager.TaskUpdate
+	11, // [11:14] is the sub-list for method output_type
+	8,  // [8:11] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name

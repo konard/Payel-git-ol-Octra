@@ -14,6 +14,20 @@ message TaskUpdate {
   map<string, string> data = 6;
 }
 
+// Worker configuration within a manager team
+message WorkerRole {
+  string role = 1;
+  string description = 2;
+}
+
+// Manager configuration with workers (for predefined workflow)
+message ManagerConfig {
+  string role = 1;
+  string description = 2;
+  int32 priority = 3;
+  repeated WorkerRole workers = 4;
+}
+
 // Request from apigateway to boss
 message CreateTaskRequest {
   string user_id = 1;
@@ -22,6 +36,12 @@ message CreateTaskRequest {
   string description = 4;
   map<string, string> tokens = 5;  // provider -> API key
   map<string, string> meta = 6;    // model, modelUrl
+
+  // Predefined workflow (optional) — if provided, skip AI planning
+  bool use_ai_planning = 7;                        // default: true — use AI to plan architecture
+  repeated ManagerConfig predefined_managers = 8;   // user-defined managers with workers
+  string predefined_architecture = 9;               // user-defined technical description
+  repeated string predefined_tech_stack = 10;       // user-defined tech stack
 }
 
 // Manager role

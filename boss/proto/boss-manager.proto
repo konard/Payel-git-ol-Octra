@@ -34,6 +34,12 @@ message WorkerResult {
   bool approved = 8;
 }
 
+// WorkerRoleConfig — конфигурация воркера (для predefined workflow)
+message WorkerRoleConfig {
+  string role = 1;
+  string description = 2;
+}
+
 // Запрос от boss к manager — ОДИН менеджер на запрос
 message AssignManagerRequest {
   string task_id = 1;
@@ -44,6 +50,7 @@ message AssignManagerRequest {
   int32 priority = 6;               // приоритет
   map<string, string> metadata = 7; // tokens, model, provider
   repeated WorkerResult other_workers_results = 8; // результаты других воркеров для контекста
+  repeated WorkerRoleConfig worker_roles = 9;      // predefined worker roles (empty = AI decides)
 }
 
 // Результат работы одного менеджера

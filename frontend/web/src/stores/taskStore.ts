@@ -19,6 +19,18 @@ export interface AgentNode {
   fileSize?: string;
 }
 
+export interface WorkflowConfig {
+  useAiPlanning: boolean;
+  managers: Array<{
+    role: string;
+    description: string;
+    priority: number;
+    workers: Array<{ role: string; description: string }>;
+  }>;
+  architecture: string;
+  techStack: string[];
+}
+
 export interface Edge {
   from: string;
   to: string;
@@ -36,6 +48,7 @@ interface TaskState {
   status: TaskStatus;
   nodes: AgentNode[];
   edges: Edge[];
+  workflow: WorkflowConfig | null;
   logs: LogEntry[];
   solutionZip: Blob | null;
   zipUrl: string | null;
@@ -56,6 +69,8 @@ interface TaskState {
   setConnectionStatus: (connected: boolean) => void;
   setTokensUsed: (tokens: number) => void;
   setStartTime: (time: number) => void;
+  getWorkflow: () => WorkflowConfig | null;
+  setWorkflow: (workflow: WorkflowConfig | null) => void;
   resetTask: () => void;
 }
 
@@ -66,6 +81,7 @@ export const useTaskStore = create<TaskState>((set) => ({
   status: 'idle',
   nodes: [],
   edges: [],
+  workflow: null,
   logs: [],
   solutionZip: null,
   zipUrl: null,
@@ -113,11 +129,18 @@ export const useTaskStore = create<TaskState>((set) => ({
 
   setStartTime: (time) => set({ startTime: time }),
 
+  getWorkflow: () => {
+    return get().workflow;
+  },
+
+  setWorkflow: (workflow) => set({ workflow }),
+
   resetTask: () => set({
     taskId: null,
     status: 'idle',
     nodes: [],
     edges: [],
+    workflow: null,
     logs: [],
     solutionZip: null,
     zipUrl: null,

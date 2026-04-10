@@ -11,6 +11,18 @@ interface WebSocketMessage {
   task_id?: string;
 }
 
+interface WorkflowConfig {
+  useAiPlanning: boolean;
+  managers: Array<{
+    role: string;
+    description: string;
+    priority: number;
+    workers: Array<{ role: string; description: string }>;
+  }>;
+  architecture: string;
+  techStack: string[];
+}
+
 interface CreateTaskPayload {
   username: string;
   title: string;
@@ -20,6 +32,7 @@ interface CreateTaskPayload {
     provider: string;
     model: string;
   };
+  workflow?: WorkflowConfig;
 }
 
 const RECONNECT_INTERVAL = 3000;

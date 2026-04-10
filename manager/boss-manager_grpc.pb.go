@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ManagerService_AssignManager_FullMethodName               = "/manager.ManagerService/AssignManager"
-	ManagerService_AssignManagerStream_FullMethodName         = "/manager.ManagerService/AssignManagerStream"
 	ManagerService_AssignManagersAndWait_FullMethodName       = "/manager.ManagerService/AssignManagersAndWait"
 	ManagerService_AssignManagersAndWaitStream_FullMethodName = "/manager.ManagerService/AssignManagersAndWaitStream"
 )
@@ -31,8 +30,6 @@ const (
 type ManagerServiceClient interface {
 	// Assign ONE manager — Boss вызывает для каждого менеджера отдельно
 	AssignManager(ctx context.Context, in *AssignManagerRequest, opts ...grpc.CallOption) (*ManagerResult, error)
-	// Streaming version of AssignManager — sends worker progress updates
-	AssignManagerStream(ctx context.Context, in *AssignManagerRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
 	// Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
 	AssignManagersAndWait(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error)
 	// Streaming version - отправляет обновления по мере выполнения
@@ -57,25 +54,6 @@ func (c *managerServiceClient) AssignManager(ctx context.Context, in *AssignMana
 	return out, nil
 }
 
-func (c *managerServiceClient) AssignManagerStream(ctx context.Context, in *AssignManagerRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ManagerService_ServiceDesc.Streams[0], ManagerService_AssignManagerStream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[AssignManagerRequest, TaskUpdate]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ManagerService_AssignManagerStreamClient = grpc.ServerStreamingClient[TaskUpdate]
-
 func (c *managerServiceClient) AssignManagersAndWait(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AssignManagersResponse)
@@ -88,7 +66,7 @@ func (c *managerServiceClient) AssignManagersAndWait(ctx context.Context, in *As
 
 func (c *managerServiceClient) AssignManagersAndWaitStream(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ManagerService_ServiceDesc.Streams[1], ManagerService_AssignManagersAndWaitStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ManagerService_ServiceDesc.Streams[0], ManagerService_AssignManagersAndWaitStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +89,6 @@ type ManagerService_AssignManagersAndWaitStreamClient = grpc.ServerStreamingClie
 type ManagerServiceServer interface {
 	// Assign ONE manager — Boss вызывает для каждого менеджера отдельно
 	AssignManager(context.Context, *AssignManagerRequest) (*ManagerResult, error)
-	// Streaming version of AssignManager — sends worker progress updates
-	AssignManagerStream(*AssignManagerRequest, grpc.ServerStreamingServer[TaskUpdate]) error
 	// Assign ALL managers — Boss вызывает один раз, менеджер сам координирует
 	AssignManagersAndWait(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error)
 	// Streaming version - отправляет обновления по мере выполнения
@@ -129,9 +105,6 @@ type UnimplementedManagerServiceServer struct{}
 
 func (UnimplementedManagerServiceServer) AssignManager(context.Context, *AssignManagerRequest) (*ManagerResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssignManager not implemented")
-}
-func (UnimplementedManagerServiceServer) AssignManagerStream(*AssignManagerRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
-	return status.Error(codes.Unimplemented, "method AssignManagerStream not implemented")
 }
 func (UnimplementedManagerServiceServer) AssignManagersAndWait(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssignManagersAndWait not implemented")
@@ -177,17 +150,6 @@ func _ManagerService_AssignManager_Handler(srv interface{}, ctx context.Context,
 	}
 	return interceptor(ctx, in, info, handler)
 }
-
-func _ManagerService_AssignManagerStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(AssignManagerRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ManagerServiceServer).AssignManagerStream(m, &grpc.GenericServerStream[AssignManagerRequest, TaskUpdate]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ManagerService_AssignManagerStreamServer = grpc.ServerStreamingServer[TaskUpdate]
 
 func _ManagerService_AssignManagersAndWait_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssignManagersRequest)
@@ -235,11 +197,6 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "AssignManagerStream",
-			Handler:       _ManagerService_AssignManagerStream_Handler,
-			ServerStreams: true,
-		},
 		{
 			StreamName:    "AssignManagersAndWaitStream",
 			Handler:       _ManagerService_AssignManagersAndWaitStream_Handler,

@@ -104,6 +104,19 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				progressCallback(role.Role, 45+idx*5, "👷 Manager working: "+role.Role)
 			}
 
+			// Get worker roles for this manager (from predefined workflow or empty)
+			var workerRolesProto []*managerpb.WorkerRoleConfig
+			if decision.ManagerWorkerRoles != nil {
+				if workers, ok := decision.ManagerWorkerRoles[role.Role]; ok {
+					for _, w := range workers {
+						workerRolesProto = append(workerRolesProto, &managerpb.WorkerRoleConfig{
+							Role:        w.Role,
+							Description: w.Description,
+						})
+					}
+				}
+			}
+
 			mgrReq := &managerpb.AssignManagerRequest{
 				TaskId:               taskID,
 				ManagerId:            managerID,
@@ -113,6 +126,7 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				Priority:             role.Priority,
 				Metadata:             metadata,
 				OtherWorkersResults:  contextResults,
+				WorkerRoles:          workerRolesProto, // predefined worker roles
 			}
 
 			log.Printf("Calling AssignManager #%d: %s", idx+1, role.Role)

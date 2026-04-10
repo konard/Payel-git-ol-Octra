@@ -106,22 +106,149 @@ func (x *TaskUpdate) GetData() map[string]string {
 	return nil
 }
 
-// Request from apigateway to boss
-type CreateTaskRequest struct {
+// Worker configuration within a manager team
+type WorkerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Tokens        map[string]string      `protobuf:"bytes,5,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // provider -> API key
-	Meta          map[string]string      `protobuf:"bytes,6,rep,name=meta,proto3" json:"meta,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`     // model, provider
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *WorkerRole) Reset() {
+	*x = WorkerRole{}
+	mi := &file_gateway_boss_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkerRole) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkerRole) ProtoMessage() {}
+
+func (x *WorkerRole) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_boss_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkerRole.ProtoReflect.Descriptor instead.
+func (*WorkerRole) Descriptor() ([]byte, []int) {
+	return file_gateway_boss_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *WorkerRole) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *WorkerRole) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+// Manager configuration with workers (for predefined workflow)
+type ManagerConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Priority      int32                  `protobuf:"varint,3,opt,name=priority,proto3" json:"priority,omitempty"`
+	Workers       []*WorkerRole          `protobuf:"bytes,4,rep,name=workers,proto3" json:"workers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManagerConfig) Reset() {
+	*x = ManagerConfig{}
+	mi := &file_gateway_boss_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManagerConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagerConfig) ProtoMessage() {}
+
+func (x *ManagerConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_boss_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagerConfig.ProtoReflect.Descriptor instead.
+func (*ManagerConfig) Descriptor() ([]byte, []int) {
+	return file_gateway_boss_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ManagerConfig) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *ManagerConfig) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ManagerConfig) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+func (x *ManagerConfig) GetWorkers() []*WorkerRole {
+	if x != nil {
+		return x.Workers
+	}
+	return nil
+}
+
+// Request from apigateway to boss
+type CreateTaskRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	UserId      string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username    string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Title       string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Description string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Tokens      map[string]string      `protobuf:"bytes,5,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // provider -> API key
+	Meta        map[string]string      `protobuf:"bytes,6,rep,name=meta,proto3" json:"meta,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`     // model, provider
+	// Predefined workflow (optional) — if provided, skip AI planning
+	UseAiPlanning          bool             `protobuf:"varint,7,opt,name=use_ai_planning,json=useAiPlanning,proto3" json:"use_ai_planning,omitempty"`                         // default: true — use AI to plan architecture
+	PredefinedManagers     []*ManagerConfig `protobuf:"bytes,8,rep,name=predefined_managers,json=predefinedManagers,proto3" json:"predefined_managers,omitempty"`             // user-defined managers with workers
+	PredefinedArchitecture string           `protobuf:"bytes,9,opt,name=predefined_architecture,json=predefinedArchitecture,proto3" json:"predefined_architecture,omitempty"` // user-defined technical description
+	PredefinedTechStack    []string         `protobuf:"bytes,10,rep,name=predefined_tech_stack,json=predefinedTechStack,proto3" json:"predefined_tech_stack,omitempty"`       // user-defined tech stack
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
 func (x *CreateTaskRequest) Reset() {
 	*x = CreateTaskRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[1]
+	mi := &file_gateway_boss_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -133,7 +260,7 @@ func (x *CreateTaskRequest) String() string {
 func (*CreateTaskRequest) ProtoMessage() {}
 
 func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[1]
+	mi := &file_gateway_boss_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -146,7 +273,7 @@ func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskRequest.ProtoReflect.Descriptor instead.
 func (*CreateTaskRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{1}
+	return file_gateway_boss_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateTaskRequest) GetUserId() string {
@@ -191,6 +318,34 @@ func (x *CreateTaskRequest) GetMeta() map[string]string {
 	return nil
 }
 
+func (x *CreateTaskRequest) GetUseAiPlanning() bool {
+	if x != nil {
+		return x.UseAiPlanning
+	}
+	return false
+}
+
+func (x *CreateTaskRequest) GetPredefinedManagers() []*ManagerConfig {
+	if x != nil {
+		return x.PredefinedManagers
+	}
+	return nil
+}
+
+func (x *CreateTaskRequest) GetPredefinedArchitecture() string {
+	if x != nil {
+		return x.PredefinedArchitecture
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetPredefinedTechStack() []string {
+	if x != nil {
+		return x.PredefinedTechStack
+	}
+	return nil
+}
+
 // Manager role
 type ManagerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -203,7 +358,7 @@ type ManagerRole struct {
 
 func (x *ManagerRole) Reset() {
 	*x = ManagerRole{}
-	mi := &file_gateway_boss_proto_msgTypes[2]
+	mi := &file_gateway_boss_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +370,7 @@ func (x *ManagerRole) String() string {
 func (*ManagerRole) ProtoMessage() {}
 
 func (x *ManagerRole) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[2]
+	mi := &file_gateway_boss_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +383,7 @@ func (x *ManagerRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagerRole.ProtoReflect.Descriptor instead.
 func (*ManagerRole) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{2}
+	return file_gateway_boss_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ManagerRole) GetRole() string {
@@ -270,7 +425,7 @@ type BossDecision struct {
 
 func (x *BossDecision) Reset() {
 	*x = BossDecision{}
-	mi := &file_gateway_boss_proto_msgTypes[3]
+	mi := &file_gateway_boss_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -282,7 +437,7 @@ func (x *BossDecision) String() string {
 func (*BossDecision) ProtoMessage() {}
 
 func (x *BossDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[3]
+	mi := &file_gateway_boss_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -295,7 +450,7 @@ func (x *BossDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BossDecision.ProtoReflect.Descriptor instead.
 func (*BossDecision) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{3}
+	return file_gateway_boss_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BossDecision) GetTaskId() string {
@@ -371,7 +526,7 @@ type TaskStatusRequest struct {
 
 func (x *TaskStatusRequest) Reset() {
 	*x = TaskStatusRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[4]
+	mi := &file_gateway_boss_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -383,7 +538,7 @@ func (x *TaskStatusRequest) String() string {
 func (*TaskStatusRequest) ProtoMessage() {}
 
 func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[4]
+	mi := &file_gateway_boss_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -396,7 +551,7 @@ func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskStatusRequest.ProtoReflect.Descriptor instead.
 func (*TaskStatusRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{4}
+	return file_gateway_boss_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TaskStatusRequest) GetTaskId() string {
@@ -417,7 +572,7 @@ type TaskStatusResponse struct {
 
 func (x *TaskStatusResponse) Reset() {
 	*x = TaskStatusResponse{}
-	mi := &file_gateway_boss_proto_msgTypes[5]
+	mi := &file_gateway_boss_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -429,7 +584,7 @@ func (x *TaskStatusResponse) String() string {
 func (*TaskStatusResponse) ProtoMessage() {}
 
 func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[5]
+	mi := &file_gateway_boss_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -442,7 +597,7 @@ func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskStatusResponse.ProtoReflect.Descriptor instead.
 func (*TaskStatusResponse) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{5}
+	return file_gateway_boss_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TaskStatusResponse) GetTaskId() string {
@@ -481,14 +636,28 @@ const file_gateway_boss_proto_rawDesc = "" +
 	"\x04data\x18\x06 \x03(\v2\x1a.boss.TaskUpdate.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe8\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
+	"\n" +
+	"WorkerRole\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x8d\x01\n" +
+	"\rManagerConfig\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
+	"\bpriority\x18\x03 \x01(\x05R\bpriority\x12*\n" +
+	"\aworkers\x18\x04 \x03(\v2\x10.boss.WorkerRoleR\aworkers\"\xc3\x04\n" +
 	"\x11CreateTaskRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12;\n" +
 	"\x06tokens\x18\x05 \x03(\v2#.boss.CreateTaskRequest.TokensEntryR\x06tokens\x125\n" +
-	"\x04meta\x18\x06 \x03(\v2!.boss.CreateTaskRequest.MetaEntryR\x04meta\x1a9\n" +
+	"\x04meta\x18\x06 \x03(\v2!.boss.CreateTaskRequest.MetaEntryR\x04meta\x12&\n" +
+	"\x0fuse_ai_planning\x18\a \x01(\bR\ruseAiPlanning\x12D\n" +
+	"\x13predefined_managers\x18\b \x03(\v2\x13.boss.ManagerConfigR\x12predefinedManagers\x127\n" +
+	"\x17predefined_architecture\x18\t \x01(\tR\x16predefinedArchitecture\x122\n" +
+	"\x15predefined_tech_stack\x18\n" +
+	" \x03(\tR\x13predefinedTechStack\x1a9\n" +
 	"\vTokensEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -534,34 +703,38 @@ func file_gateway_boss_proto_rawDescGZIP() []byte {
 	return file_gateway_boss_proto_rawDescData
 }
 
-var file_gateway_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_gateway_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_gateway_boss_proto_goTypes = []any{
 	(*TaskUpdate)(nil),         // 0: boss.TaskUpdate
-	(*CreateTaskRequest)(nil),  // 1: boss.CreateTaskRequest
-	(*ManagerRole)(nil),        // 2: boss.ManagerRole
-	(*BossDecision)(nil),       // 3: boss.BossDecision
-	(*TaskStatusRequest)(nil),  // 4: boss.TaskStatusRequest
-	(*TaskStatusResponse)(nil), // 5: boss.TaskStatusResponse
-	nil,                        // 6: boss.TaskUpdate.DataEntry
-	nil,                        // 7: boss.CreateTaskRequest.TokensEntry
-	nil,                        // 8: boss.CreateTaskRequest.MetaEntry
+	(*WorkerRole)(nil),         // 1: boss.WorkerRole
+	(*ManagerConfig)(nil),      // 2: boss.ManagerConfig
+	(*CreateTaskRequest)(nil),  // 3: boss.CreateTaskRequest
+	(*ManagerRole)(nil),        // 4: boss.ManagerRole
+	(*BossDecision)(nil),       // 5: boss.BossDecision
+	(*TaskStatusRequest)(nil),  // 6: boss.TaskStatusRequest
+	(*TaskStatusResponse)(nil), // 7: boss.TaskStatusResponse
+	nil,                        // 8: boss.TaskUpdate.DataEntry
+	nil,                        // 9: boss.CreateTaskRequest.TokensEntry
+	nil,                        // 10: boss.CreateTaskRequest.MetaEntry
 }
 var file_gateway_boss_proto_depIdxs = []int32{
-	6, // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
-	7, // 1: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
-	8, // 2: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
-	2, // 3: boss.BossDecision.manager_roles:type_name -> boss.ManagerRole
-	1, // 4: boss.BossService.CreateTaskStream:input_type -> boss.CreateTaskRequest
-	1, // 5: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
-	4, // 6: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
-	0, // 7: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
-	3, // 8: boss.BossService.CreateTask:output_type -> boss.BossDecision
-	5, // 9: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	8,  // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
+	1,  // 1: boss.ManagerConfig.workers:type_name -> boss.WorkerRole
+	9,  // 2: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
+	10, // 3: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
+	2,  // 4: boss.CreateTaskRequest.predefined_managers:type_name -> boss.ManagerConfig
+	4,  // 5: boss.BossDecision.manager_roles:type_name -> boss.ManagerRole
+	3,  // 6: boss.BossService.CreateTaskStream:input_type -> boss.CreateTaskRequest
+	3,  // 7: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
+	6,  // 8: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
+	0,  // 9: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
+	5,  // 10: boss.BossService.CreateTask:output_type -> boss.BossDecision
+	7,  // 11: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
+	9,  // [9:12] is the sub-list for method output_type
+	6,  // [6:9] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_gateway_boss_proto_init() }
@@ -575,7 +748,7 @@ func file_gateway_boss_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_boss_proto_rawDesc), len(file_gateway_boss_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

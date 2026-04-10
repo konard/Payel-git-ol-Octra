@@ -161,6 +161,29 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 		Meta:        taskReq.Meta,
 	}
 
+	// Add predefined workflow if provided
+	if taskReq.Workflow != nil {
+		wf := taskReq.Workflow
+		grpcReq.UseAiPlanning = wf.UseAIPlanning
+		grpcReq.PredefinedArchitecture = wf.Architecture
+		grpcReq.PredefinedTechStack = wf.TechStack
+
+		for _, mgr := range wf.Managers {
+			protoMgr := &bosspb.ManagerConfig{
+				Role:        mgr.Role,
+				Description: mgr.Description,
+				Priority:    mgr.Priority,
+			}
+			for _, w := range mgr.Workers {
+				protoMgr.Workers = append(protoMgr.Workers, &bosspb.WorkerRole{
+					Role:        w.Role,
+					Description: w.Description,
+				})
+			}
+			grpcReq.PredefinedManagers = append(grpcReq.PredefinedManagers, protoMgr)
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
