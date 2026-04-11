@@ -6,6 +6,7 @@ import grokIcon from '../images/grok.png';
 import qwenIcon from '../images/qwen-color.png';
 import openaiIcon from '../images/icon.png';
 import openrouterIcon from '../images/openrouter.svg';
+import zaiIcon from '../images/zai.png';
 
 // Все модели (для OpenRouter — доступны все)
 export const ALL_MODELS: ProviderModel[] = [
@@ -106,6 +107,10 @@ export const ALL_MODELS: ProviderModel[] = [
   { id: 'qwen/qwen2-vl-72b-instruct', name: 'Qwen2 VL 72B Instruct', icon: qwenIcon, free: false, recommended: false, providerId: 'openrouter' },
   { id: 'qwen/qwq-32b', name: 'QwQ 32B', icon: qwenIcon, free: false, recommended: false, providerId: 'openrouter' },
   { id: 'qwen/qvq-72b-preview', name: 'QvQ 72B Preview', icon: qwenIcon, free: false, recommended: false, providerId: 'openrouter' },
+  // Z.AI models via OpenRouter
+  { id: 'z-ai/glm-4.5-air', name: 'GLM 4.5 Air', icon: zaiIcon, free: false, recommended: true, providerId: 'openrouter' },
+  { id: 'z-ai/glm-4.5', name: 'GLM 4.5', icon: zaiIcon, free: false, recommended: false, providerId: 'openrouter' },
+  { id: 'z-ai/glm-4', name: 'GLM 4', icon: zaiIcon, free: false, recommended: false, providerId: 'openrouter' },
   // Free models
   { id: 'google/gemini-exp-1206:free', name: 'Gemini Exp 1206', icon: geminiIcon, free: true, recommended: false, providerId: 'openrouter' },
   { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash Exp', icon: geminiIcon, free: true, recommended: false, providerId: 'openrouter' },
@@ -238,6 +243,21 @@ export const PROVIDERS: ProviderConfig[] = [
       { id: 'qwen/qwen2-vl-72b-instruct', name: 'Qwen2 VL 72B Instruct', icon: qwenIcon, free: false, recommended: false, providerId: 'qwen' },
       { id: 'qwen/qwq-32b', name: 'QwQ 32B', icon: qwenIcon, free: false, recommended: false, providerId: 'qwen' },
       { id: 'qwen/qvq-72b-preview', name: 'QvQ 72B Preview', icon: qwenIcon, free: false, recommended: false, providerId: 'qwen' },
+    ],
+  },
+  {
+    id: 'zai',
+    name: 'Z.AI',
+    color: '#06b6d4',
+    bgColor: 'rgba(6, 182, 212, 0.15)',
+    icon: zaiIcon,
+    description: '',
+    defaultModel: 'glm-4.5-air',
+    pricing: 'Paid',
+    models: [
+      { id: 'glm-4.5-air', name: 'GLM 4.5 Air', icon: zaiIcon, free: false, recommended: true, providerId: 'zai' },
+      { id: 'glm-4.5', name: 'GLM 4.5', icon: zaiIcon, free: false, recommended: false, providerId: 'zai' },
+      { id: 'glm-4', name: 'GLM 4', icon: zaiIcon, free: false, recommended: false, providerId: 'zai' },
     ],
   },
 ];

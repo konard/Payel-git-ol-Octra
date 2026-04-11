@@ -4,11 +4,12 @@ import type { AgentNode } from '../stores/taskStore';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
-  type: 'connected' | 'progress' | 'processing' | 'success' | 'error';
+  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error';
   progress?: number;
   message?: string;
   data?: Record<string, any>;
   task_id?: string;
+  status?: string;
 }
 
 interface WorkflowConfig {
@@ -44,6 +45,8 @@ export function useWebSocket(url: string) {
   const reconnectAttempts = useRef(0);
   const isMounted = useRef(false);
   const isManuallyClosed = useRef(false);
+  const lastTaskPayload = useRef<CreateTaskPayload | null>(null);
+  const activeTaskId = useRef<string | null>(null);
 
   // Track managers across messages
   const managerCounter = useRef(0);
@@ -79,6 +82,25 @@ export function useWebSocket(url: string) {
           message: msg.message || 'Connected to task creation service',
           type: 'info',
         });
+        // Save the task_id for reconnection
+        if (msg.task_id) {
+          activeTaskId.current = msg.task_id;
+          console.log('[WS] Task ID saved:', msg.task_id);
+        }
+        break;
+
+      case 'reconnected':
+        storeActions.addLog({
+          message: msg.message || `Reconnected (progress: ${msg.progress || 0}%)`,
+          type: 'info',
+        });
+        // Restore task status from backend
+        if (msg.status) {
+          storeActions.setTaskStatus(msg.status as any);
+        }
+        if (msg.task_id) {
+          storeActions.setTaskId(msg.task_id);
+        }
         break;
 
       case 'progress':
@@ -97,6 +119,9 @@ export function useWebSocket(url: string) {
         }
         // Update all nodes to done including ZIP
         finalizeAllNodes('done');
+        // Clear stored task payload — task is complete, no need to resend
+        lastTaskPayload.current = null;
+        activeTaskId.current = null;
 
         // Update ZIP node with file info if available
         if (msg.data?.filesCount || msg.data?.zipSize) {
@@ -116,6 +141,9 @@ export function useWebSocket(url: string) {
         });
         // Update all nodes to error
         finalizeAllNodes('error');
+        // Clear stored task payload — task failed, don't auto-resend
+        lastTaskPayload.current = null;
+        activeTaskId.current = null;
         break;
     }
   };
@@ -356,13 +384,30 @@ export function useWebSocket(url: string) {
       wsRef.current = null;
     }
 
-    const ws = new WebSocket(url);
+    // On reconnect, use /api/task/reconnect with task_id instead of creating a new task
+    const isReconnect = activeTaskId.current !== null;
+    const connectUrl = isReconnect
+      ? url.replace('/task/create', '/task/reconnect')
+      : url;
+
+    console.log('[WS] 🔌 Connecting to', connectUrl, isReconnect ? '(reconnect)' : '(new)');
+    const ws = new WebSocket(connectUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('[WS] ✅ Connected to', url);
+      console.log('[WS] ✅ Connected to', connectUrl);
       reconnectAttempts.current = 0;
       storeActions.setConnectionStatus(true);
+
+      // On reconnect, send task_id to restore state from Redis
+      if (isReconnect && activeTaskId.current) {
+        console.log('[WS] 🔄 Reconnecting to task:', activeTaskId.current);
+        ws.send(JSON.stringify({ task_id: activeTaskId.current }));
+        storeActions.addLog({
+          message: t('console.reconnecting'),
+          type: 'info',
+        });
+      }
     };
 
     ws.onclose = (event) => {
@@ -440,6 +485,8 @@ export function useWebSocket(url: string) {
     };
 
     waitForOpen().then(() => {
+      // Store the payload for potential reconnection
+      lastTaskPayload.current = data;
       wsRef.current!.send(JSON.stringify(data));
       storeActions.setTaskStatus('creating');
       storeActions.setTaskId(`task-${Date.now()}`);
@@ -459,6 +506,8 @@ export function useWebSocket(url: string) {
   const disconnect = useCallback(() => {
     isManuallyClosed.current = true;
     clearReconnectTimer();
+    lastTaskPayload.current = null;
+    activeTaskId.current = null;
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.close(1000);

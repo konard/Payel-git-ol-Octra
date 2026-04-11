@@ -400,23 +400,35 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 func (s *BossService) thinkAboutTask(ctx context.Context, agentsClient *service.AgentClientWrapper, provider, model string, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
 	log.Printf("Boss thinking about task: %s", req.Title)
 
-	prompt := `You are CTO. Task:
+	prompt := `You are CTO. Analyze the task and decide what manager roles are needed.
 
 Title: ` + req.Title + `
 Description: ` + req.Description + `
 
+IMPORTANT RULES:
+- Create ONLY the managers that are actually needed for this specific task
+- Do NOT create frontend manager if the task is backend-only, API, CLI tool, or infrastructure
+- Do NOT add unnecessary managers just for the sake of having them
+- Each manager must have a clear purpose related to the task
+- Typical projects need 1-3 managers, not more
+
 Reply ONLY with JSON:
 {
-  "managers_count": 3,
+  "managers_count": 2,
   "manager_roles": [
-    {"role": "frontend", "description": "Frontend part", "priority": 1},
-    {"role": "backend", "description": "Backend API", "priority": 2},
-    {"role": "testing", "description": "Testing", "priority": 3}
+    {"role": "backend", "description": "Backend API and business logic", "priority": 1},
+    {"role": "testing", "description": "Unit and integration tests", "priority": 2}
   ],
   "technical_description": "Technical description...",
-  "tech_stack": ["Go", "React", "PostgreSQL", "Docker"],
+  "tech_stack": ["Python", "FastAPI", "Redis"],
   "architecture_notes": "Architecture notes..."
-}`
+}
+
+Choose the tech stack based on what the task actually needs — don't copy the example.
+If the task is a CLI tool: Go, Cobra, etc.
+If it's a web app: React, Node.js, etc.
+If it's a proxy/API: Go, gorilla/mux, etc.
+Always include only the technologies that are genuinely required.`
 
 	log.Printf("Sending request to AI...")
 	resp, err := agentsClient.GenerateFromTask(ctx, provider, model, prompt, req.Tokens)

@@ -10,6 +10,8 @@ import (
 	"agents/internal/fetcher/providers/gemini"
 	"agents/internal/fetcher/providers/grok"
 	"agents/internal/fetcher/providers/openai"
+	"agents/internal/fetcher/providers/qwen"
+	"agents/internal/fetcher/providers/zai"
 	"agents/pkg/models"
 )
 
@@ -75,6 +77,24 @@ func (s *AgentService) InitializeAllProviders(configs map[string]*models.Provide
 			s.RegisterProvider("grok", p)
 		} else {
 			log.Printf("⚠️  Failed to initialize Grok: %v", err)
+		}
+	}
+
+	// Initialize Qwen
+	if cfg, ok := configs["qwen"]; ok {
+		if p, err := qwen.New(cfg); err == nil {
+			s.RegisterProvider("qwen", p)
+		} else {
+			log.Printf("⚠️  Failed to initialize Qwen: %v", err)
+		}
+	}
+
+	// Initialize Z.AI
+	if cfg, ok := configs["zai"]; ok {
+		if p, err := zai.New(cfg); err == nil {
+			s.RegisterProvider("zai", p)
+		} else {
+			log.Printf("⚠️  Failed to initialize Z.AI: %v", err)
 		}
 	}
 

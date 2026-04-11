@@ -28,7 +28,8 @@
   "console": {
     "title": "Console",
     "empty": "Task not started yet. Create a task to see logs.",
-    "connectionLost": "Connection lost, reconnecting..."
+    "connectionLost": "Connection lost, reconnecting...",
+    "reconnecting": "Reconnecting to task..."
   },
   "bottomInput": {
     "provider": "Provider",

@@ -8,6 +8,7 @@ import (
 	"agents/internal/fetcher/providers/openai"
 	"agents/internal/fetcher/providers/openrouter"
 	"agents/internal/fetcher/providers/qwen"
+	"agents/internal/fetcher/providers/zai"
 	"agents/internal/service"
 	"agents/pkg/models"
 )
@@ -32,6 +33,9 @@ func InitProvider(providers map[string]*models.ProviderConfig, agentService *ser
 		agentService.RegisterProvider("openrouter", p)
 	}
 	if p, err := qwen.New(providers["qwen"]); err == nil {
-		agentService.RegisterProvider("cliproxy", p)
+		agentService.RegisterProvider("qwen", p)
+	}
+	if p, err := zai.New(providers["zai"]); err == nil {
+		agentService.RegisterProvider("zai", p)
 	}
 }

@@ -71,6 +71,7 @@ export default function App() {
     const tokenKey = data.provider === 'openrouter' ? 'openrouter'
       : data.provider === 'gemini' ? 'gemini'
       : data.provider === 'openai' ? 'openai'
+      : data.provider === 'zai' ? 'zai'
       : 'claude';
 
     // Get workflow from store (from Canvas)
