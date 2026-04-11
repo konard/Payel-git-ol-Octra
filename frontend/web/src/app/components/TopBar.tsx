@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode, t } from '../../hooks/useI18n';
+import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
+import { useIntegrationStore, type IntegrationType } from '../../stores/integrationStore';
+import { IntegrationCard } from '../../components/IntegrationCard';
+import lefineIcon from '../../images/lefine.pro.jpg';
+import telegramIcon from '../../images/Telegram.webp';
 
-type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility';
+type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility' | 'integrations';
 
 interface SettingsSection {
   id: SettingsTab;
@@ -19,6 +23,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'language', labelKey: 'settings.language', icon: Languages },
   { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   { id: 'visibility', labelKey: 'settings.interface', icon: Eye },
+  { id: 'integrations', labelKey: 'settings.integrations', icon: Puzzle },
 ];
 
 interface TopBarProps {
@@ -37,10 +42,16 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
-  const { language, changeLanguage } = useI18n();
+  const { language, changeLanguage, t } = useI18n();
   const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
+  // Integration state
+  const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
+  const telegramIntegration = useIntegrationStore((state) => state.integrations.telegram);
+  const setIntegrationConnected = useIntegrationStore((state) => state.setIntegrationConnected);
+  const disconnectIntegration = useIntegrationStore((state) => state.disconnectIntegration);
 
   useEffect(() => {
     if (!showSettings) {
@@ -320,6 +331,49 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                         />
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'integrations' && (
+                  <div className="space-y-4 max-w-lg">
+                    <div>
+                      <div className="text-sm font-medium text-[var(--text)] mb-1">{t('integrations.title')}</div>
+                      <div className="text-xs text-[var(--text-muted)] mb-4">
+                        {t('integrations.description')}
+                      </div>
+                    </div>
+                    
+                    {/* Lefine.pro Integration */}
+                    <IntegrationCard
+                      type="lefine"
+                      name={t('integrations.lefine.name')}
+                      description={t('integrations.lefine.description')}
+                      icon={lefineIcon}
+                      connected={lefineIntegration.connected}
+                      config={lefineIntegration.config}
+                      onConnect={(config) => {
+                        setIntegrationConnected('lefine', true, config);
+                      }}
+                      onDisconnect={() => {
+                        disconnectIntegration('lefine');
+                      }}
+                    />
+
+                    {/* Telegram Integration */}
+                    <IntegrationCard
+                      type="telegram"
+                      name={t('integrations.telegram.name')}
+                      description={t('integrations.telegram.description')}
+                      icon={telegramIcon}
+                      connected={telegramIntegration.connected}
+                      config={telegramIntegration.config}
+                      onConnect={(config) => {
+                        setIntegrationConnected('telegram', true, config);
+                      }}
+                      onDisconnect={() => {
+                        disconnectIntegration('telegram');
+                      }}
+                    />
                   </div>
                 )}
               </div>

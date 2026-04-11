@@ -1,38 +1,77 @@
 import { SUPPORTED_LANGUAGES, type LanguageCode } from '../config/languages';
-import { useI18nStore, t as translate } from '../stores/i18nStore';
+import { useI18nStore, t as staticT } from '../stores/i18nStore';
 import { useState, useEffect, useCallback } from 'react';
 
-export { SUPPORTED_LANGUAGES, translate as t };
+export { SUPPORTED_LANGUAGES, staticT as t };
 export type { LanguageCode };
+
+// Cache for loaded translations
+const translationsCache: Record<string, Record<string, any>> = {};
 
 // React hook for i18n
 export function useI18n() {
   const language = useI18nStore((state) => state.language);
-  const loaded = useI18nStore((state) => state.loaded);
   const setLanguage = useI18nStore((state) => state.setLanguage);
   const loadTranslations = useI18nStore((state) => state.loadTranslations);
-  const translations = useI18nStore((state) => state.translations);
+  
+  // Keep translations in local React state to ensure proper re-rendering
+  const [translations, setTranslations] = useState<Record<string, any>>(
+    () => translationsCache[language] || {}
+  );
+  const [loading, setLoading] = useState(Object.keys(translations).length === 0);
 
   const changeLanguage = useCallback((lang: LanguageCode) => {
     setLanguage(lang);
   }, [setLanguage]);
 
-  // Load initial language
+  // Load translations when language changes
   useEffect(() => {
-    if (!translations[language]) {
-      fetch(`/languages/${language}.json`)
-        .then((res) => res.json())
-        .then((data) => {
-          loadTranslations(language, data);
-        })
-        .catch((err) => console.error(`Failed to load ${language}:`, err));
+    // Check cache first
+    if (translationsCache[language]) {
+      setTranslations(translationsCache[language]);
+      setLoading(false);
+      return;
     }
-  }, []);
+
+    // Load from file
+    setLoading(true);
+    fetch(`/languages/${language}.json`)
+      .then((res) => res.json())
+      .then((data) => {
+        translationsCache[language] = data;
+        setTranslations(data);
+        loadTranslations(language, data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(`Failed to load ${language}:`, err);
+        setLoading(false);
+      });
+  }, [language]);
+
+  // Reactive t function
+  const t = useCallback(
+    (key: string): string => {
+      if (Object.keys(translations).length === 0) return key;
+
+      const keys = key.split('.');
+      let current: any = translations;
+      for (const k of keys) {
+        if (current && typeof current === 'object' && k in current) {
+          current = current[k];
+        } else {
+          return key;
+        }
+      }
+      return typeof current === 'string' ? current : key;
+    },
+    [translations]
+  );
 
   return {
     language,
-    loading: !loaded && !translations[language],
+    loading,
     changeLanguage,
-    t: translate,
+    t,
   };
 }
