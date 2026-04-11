@@ -90,6 +90,10 @@
   "sidebar": {
     "title": "Агенты",
     "subtitle": "Перетащите ноду на канву и соедините с другими",
+    "create": "Создать",
+    "myWorkflows": "Мои Workflow",
+    "noWorkflows": "Нет сохранённых workflow",
+    "dragToCanvas": "Перетащите на канвас",
     "boss": {
       "label": "Босс",
       "type": "CEO",
@@ -114,12 +118,54 @@
         "Del для удаления"
       ]
     },
-    "addAgent": "Добавить агента"
+    "addAgent": "Добавить агента",
+    "openLibrary": "Открыть библиотеку"
   },
   "contextMenu": {
     "changeRole": "Сменить роль:",
     "duplicate": "Дублировать ноду",
     "delete": "Удалить ноду",
     "notConnected": "Не подключён"
+  },
+  "workflowLibrary": {
+    "title": "Библиотека Workflow",
+    "public": "Публичные",
+    "my": "Мои",
+    "allCategories": "Все категории",
+    "saveCurrent": "Сохранить текущий",
+    "loading": "Загрузка...",
+    "noAuth": "Необходима авторизация для просмотра ваших workflow",
+    "noSaved": "У вас пока нет сохранённых workflow",
+    "noPublic": "Нет публичных workflow",
+    "import": "Импортировать",
+    "delete": "Удалить",
+    "deleteConfirm": "Вы уверены, что хотите удалить этот workflow?",
+    "openLibrary": "Открыть библиотеку",
+    "saveTitle": "Сохранить Workflow",
+    "nameLabel": "Название *",
+    "namePlaceholder": "Мой workflow",
+    "descriptionLabel": "Описание",
+    "descriptionPlaceholder": "Описание workflow...",
+    "categoryLabel": "Категория",
+    "categoryPlaceholder": "web, api, data...",
+    "publishLabel": "Опубликовать (видно всем пользователям)",
+    "saveBtn": "Сохранить",
+    "savingBtn": "Сохранение...",
+    "cancelBtn": "Отмена",
+    "author": "Автор",
+    "downloads": "скачиваний",
+    "exportWorkflow": "Экспорт",
+    "exportTitle": "Экспорт Workflow",
+    "exportDesc": "Скопируйте JSON вашего workflow для редактирования или обмена",
+    "copyJson": "Копировать JSON",
+    "copied": "Скопировано!",
+    "downloadJson": "Скачать .json",
+    "importWorkflow": "Импорт JSON",
+    "importTitle": "Импорт Workflow из JSON",
+    "importDesc": "Вставьте JSON workflow или загрузите файл",
+    "pasteJson": "Вставьте JSON здесь...",
+    "importBtn": "Импортировать",
+    "chooseFile": "Выбрать файл",
+    "invalidJson": "Неверный формат JSON"
   }
 }

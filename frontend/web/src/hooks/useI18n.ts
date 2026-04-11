@@ -1,13 +1,9 @@
 import { SUPPORTED_LANGUAGES, type LanguageCode } from '../config/languages';
-
-export { SUPPORTED_LANGUAGES };
-export type { LanguageCode };
-
-export { t } from '../stores/i18nStore';
-
-import { useI18nStore } from '../stores/i18nStore';
+import { useI18nStore, t as translate } from '../stores/i18nStore';
 import { useState, useEffect, useCallback } from 'react';
-import { t as translate } from '../stores/i18nStore';
+
+export { SUPPORTED_LANGUAGES, translate as t };
+export type { LanguageCode };
 
 // React hook for i18n
 export function useI18n() {

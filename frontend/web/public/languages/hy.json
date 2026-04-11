@@ -90,6 +90,10 @@
   "sidebar": {
     "title": "Ագենտներ",
     "subtitle": "Քաշեք նոդը կտավի վրա և միացրեք մյուսներին",
+    "create": "Ստեղծել",
+    "myWorkflows": "Իմ Workflow-ներ",
+    "noWorkflows": "Չկան պահպանված workflow-ներ",
+    "dragToCanvas": "Քաշեք կտավի վրա",
     "boss": {
       "label": "Բոսս",
       "type": "CEO",
@@ -114,12 +118,54 @@
         "Del՝ ջնջելու համար"
       ]
     },
-    "addAgent": "Ավելացնել ագենտ"
+    "addAgent": "Ավելացնել ագենտ",
+    "openLibrary": "Բացել գրադարանը"
   },
   "contextMenu": {
     "changeRole": "Փոխել դերը.",
     "duplicate": "Կրկնօրինակել նոդը",
     "delete": "Ջնջել նոդը",
     "notConnected": "Միացված չէ"
+  },
+  "workflowLibrary": {
+    "title": "Workflow Գրադարան",
+    "public": "Հանրային",
+    "my": "Իմ",
+    "allCategories": "Բոլոր կատեգորիաները",
+    "saveCurrent": "Պահպանել ընթացիկ",
+    "loading": "Բեռնում...",
+    "noAuth": "Ձեր workflow-ները դիտելու համար անհրաժեշտ է հեղինակացում",
+    "noSaved": "Դուք դեռ չունեք պահպանված workflow-ներ",
+    "noPublic": "Հանրային workflow-ներ չկան",
+    "import": "Ներմուծել",
+    "delete": "Ջնջել",
+    "deleteConfirm": "Վստա՞հ եք, որ ցանկանում եք ջնջել այս workflow-ն",
+    "openLibrary": "Բացել գրադարանը",
+    "saveTitle": "Պահպանել Workflow",
+    "nameLabel": "Անվանում *",
+    "namePlaceholder": "Իմ workflow",
+    "descriptionLabel": "Նկարագրություն",
+    "descriptionPlaceholder": "Workflow-ի նկարագրություն...",
+    "categoryLabel": "Կատեգորիա",
+    "categoryPlaceholder": "web, api, data...",
+    "publishLabel": "Հրապարակել (տեսանելի բոլոր օգտատերերին)",
+    "saveBtn": "Պահպանել",
+    "savingBtn": "Պահպանում...",
+    "cancelBtn": "Չեղարկել",
+    "author": "Հեղինակ",
+    "downloads": "ներբեռնումներ",
+    "exportWorkflow": "Արտահանել",
+    "exportTitle": "Արտահանել Workflow",
+    "exportDesc": "Պատճենեք workflow JSON-ը խմբագրելու կամ փոխանակելու համար",
+    "copyJson": "Պատճենել JSON",
+    "copied": "Պատճենված է!",
+    "downloadJson": "Ներբեռնել .json",
+    "importWorkflow": "Ներմուծել JSON",
+    "importTitle": "Ներմուծել Workflow JSON-ից",
+    "importDesc": "Փակցրեք workflow JSON կամ բեռնեք ֆայլ",
+    "pasteJson": "Փակցրեք JSON այստեղ...",
+    "importBtn": "Ներմուծել",
+    "chooseFile": "Ընտրել ֆայլ",
+    "invalidJson": "Սխալ JSON ֆորմատ"
   }
 }

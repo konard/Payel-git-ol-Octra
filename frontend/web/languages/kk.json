@@ -90,6 +90,10 @@
   "sidebar": {
     "title": "Агенттер",
     "subtitle": "Түйінді кенвасқа сүйреңіз және басқаларымен қосыңыз",
+    "create": "Жасау",
+    "myWorkflows": "Менің Workflow-ларым",
+    "noWorkflows": "Сақталған workflow жоқ",
+    "dragToCanvas": "Кенвасқа сүйреңіз",
     "boss": {
       "label": "Босс",
       "type": "CEO",
@@ -114,12 +118,54 @@
         "Del — жою үшін"
       ]
     },
-    "addAgent": "Агентті қосу"
+    "addAgent": "Агентті қосу",
+    "openLibrary": "Кітапхананы ашу"
   },
   "contextMenu": {
     "changeRole": "Рөлді өзгерту:",
     "duplicate": "Түйінді көшіру",
     "delete": "Түйінді жою",
     "notConnected": "Қосылмаған"
+  },
+  "workflowLibrary": {
+    "title": "Workflow Кітапханасы",
+    "public": "Жария",
+    "my": "Менің",
+    "allCategories": "Барлық санаттар",
+    "saveCurrent": "Ағымдағыны сақтау",
+    "loading": "Жүктелуде...",
+    "noAuth": "Сіздің workflow-ларды көру үшін авторизация қажет",
+    "noSaved": "Сізде әлі сақталған workflow жоқ",
+    "noPublic": "Жария workflow-лар жоқ",
+    "import": "Импорттау",
+    "delete": "Жою",
+    "deleteConfirm": "Бұл workflow-ды шынымен жойғыңыз келе ме?",
+    "openLibrary": "Кітапхананы ашу",
+    "saveTitle": "Workflow Сақтау",
+    "nameLabel": "Атауы *",
+    "namePlaceholder": "Менің workflow",
+    "descriptionLabel": "Сипаттама",
+    "descriptionPlaceholder": "Workflow сипаттамасы...",
+    "categoryLabel": "Санат",
+    "categoryPlaceholder": "web, api, data...",
+    "publishLabel": "Жариялау (барлық пайдаланушыларға көрінеді)",
+    "saveBtn": "Сақтау",
+    "savingBtn": "Сақталуда...",
+    "cancelBtn": "Болдырмау",
+    "author": "Автор",
+    "downloads": "жүктеулер",
+    "exportWorkflow": "Экспорт",
+    "exportTitle": "Workflow Экспорттау",
+    "exportDesc": "Workflow JSON-ды көшіру немесе бөлісу",
+    "copyJson": "JSON көшіру",
+    "copied": "Көшірілді!",
+    "downloadJson": "Жүктеу .json",
+    "importWorkflow": "JSON импорттау",
+    "importTitle": "Workflow JSON-дан импорттау",
+    "importDesc": "Workflow JSON қою немесе файл жүктеу",
+    "pasteJson": "JSON осында қою...",
+    "importBtn": "Импорттау",
+    "chooseFile": "Файлды таңдау",
+    "invalidJson": "JSON пішімі жарамсыз"
   }
 }

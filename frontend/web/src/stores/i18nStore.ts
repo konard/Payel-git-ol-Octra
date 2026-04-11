@@ -79,19 +79,14 @@ export const useI18nStore = create<I18nState>((set, get) => {
   };
 });
 
-// Translate helper - reads from store
-let currentStore: ReturnType<typeof useI18nStore.getState> | null = null;
-
-// Subscribe to store changes
-useI18nStore.subscribe((state) => {
-  currentStore = state;
-});
+// Translate helper - reads from store lazily
+function getCurrentStoreState() {
+  return useI18nStore.getState();
+}
 
 export function t(key: string): string {
-  if (!currentStore) {
-    currentStore = useI18nStore.getState();
-  }
-  const dict = currentStore.translations[currentStore.language];
+  const state = getCurrentStoreState();
+  const dict = state.translations[state.language];
   if (!dict) return key;
 
   const keys = key.split('.');

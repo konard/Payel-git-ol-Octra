@@ -10,10 +10,12 @@ import {
   type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useTaskStore, type AgentNodeType } from '../../stores/taskStore';
+import { useTaskStore, type AgentNodeType, type AgentNode } from '../../stores/taskStore';
 import { BossNode, ManagerNode, WorkerNode, ZIPArchiveNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
+import { WorkflowLibrary } from '../../components/WorkflowLibrary';
+import { WorkflowExport } from '../../components/WorkflowExport';
 import { useI18n } from '../../hooks/useI18n';
 
 const nodeTypes = {
@@ -40,6 +42,7 @@ export function Canvas() {
   const { screenToFlowPosition: rfScreenToFlow } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [workflowLibraryOpen, setWorkflowLibraryOpen] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -96,36 +99,88 @@ export function Canvas() {
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    // Only intercept drops from sidebar nodes or workflows
+    const hasNodeType = event.dataTransfer.types.includes('application/reactflow/node-type');
+    const hasWorkflowData = event.dataTransfer.types.includes('application/reactflow/workflow-data');
+    if (hasNodeType || hasWorkflowData) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+    // Let ReactFlow handle its own internal node dragging
   }, []);
 
-  const onDrop = useCallback(
+  // Импорт workflow из библиотеки на канвас
+  const handleImportWorkflow = useCallback((workflowData: { nodes: any[]; edges: any[] }) => {
+    // Очищаем текущий канвас
+    useTaskStore.getState().resetTask();
+
+    // Создаём новые ноды из импортированного workflow
+    workflowData.nodes.forEach((nodeData) => {
+      addNodeToStore({
+        id: nodeData.id || `node-${Date.now()}-${Math.random()}`,
+        type: nodeData.type as AgentNodeType,
+        role: nodeData.role || 'Unknown',
+        status: nodeData.status || 'pending',
+        progress: 0,
+        position: nodeData.position || { x: 0, y: 0 },
+        workerCount: nodeData.workerCount,
+        filesCount: nodeData.filesCount,
+        techStack: nodeData.techStack,
+      } as Omit<AgentNode, 'progress'>);
+    });
+
+    // Создаём соединения
+    workflowData.edges.forEach((edgeData) => {
+      addEdgeToStore({ from: edgeData.from, to: edgeData.to });
+    });
+  }, [addNodeToStore, addEdgeToStore]);
+
+  const onCanvasDrop = useCallback(
     (event: React.DragEvent) => {
-      event.preventDefault();
+      // Only handle drops from external sources (sidebar), not internal ReactFlow nodes
+      const workflowDataStr = event.dataTransfer.getData('application/reactflow/workflow-data');
+      if (workflowDataStr && workflowDataStr.trim()) {
+        event.preventDefault();
+        try {
+          const workflowData = JSON.parse(workflowDataStr);
+          handleImportWorkflow(workflowData);
+          return;
+        } catch {
+          // ignore
+        }
+      }
 
       const type = event.dataTransfer.getData('application/reactflow/node-type') as 'boss' | 'manager' | 'worker';
-      if (!type) return;
-
-      const position = rfScreenToFlow(
-        {
-          x: event.clientX,
-          y: event.clientY,
-        },
-        { snapToGrid: true }
-      );
-
-      addNodeToStore({
-        id: `node-${Date.now()}`,
-        type,
-        role: nodeRoleDefaults[type],
-        status: 'pending',
-        progress: 0,
-        position,
-      });
+      if (type) {
+        event.preventDefault();
+        const position = rfScreenToFlow(
+          { x: event.clientX, y: event.clientY },
+          { snapToGrid: true }
+        );
+        addNodeToStore({
+          id: `node-${Date.now()}`,
+          type,
+          role: nodeRoleDefaults[type],
+          status: 'pending',
+          progress: 0,
+          position,
+        });
+      }
     },
-    [rfScreenToFlow, addNodeToStore]
+    [rfScreenToFlow, addNodeToStore, handleImportWorkflow]
   );
+
+  // Импорт из JSON строки
+  const handleImportJSON = useCallback((jsonText: string) => {
+    try {
+      const data = JSON.parse(jsonText);
+      if (data.nodes && data.edges) {
+        handleImportWorkflow({ nodes: data.nodes, edges: data.edges });
+      }
+    } catch {
+      // invalid JSON — ignore
+    }
+  }, [handleImportWorkflow]);
 
   const onDragStartFromSidebar = useCallback((type: 'boss' | 'manager' | 'worker', event: React.DragEvent) => {
     event.dataTransfer.setData('application/reactflow/node-type', type);
@@ -235,14 +290,15 @@ export function Canvas() {
         + {t('sidebar.addAgent')}
       </button>
 
-      <div ref={reactFlowWrapper} className="w-full h-full">
+      <div ref={reactFlowWrapper} className="w-full h-full"
+        onDragOver={onDragOver}
+        onDrop={onCanvasDrop}
+      >
         <ReactFlow
           nodes={rfNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
           onConnect={onConnect}
-          onDragOver={onDragOver}
-          onDrop={onDrop}
           onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}
           onPaneClick={onPaneClick}
@@ -264,6 +320,7 @@ export function Canvas() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onDragStart={onDragStartFromSidebar}
+        onOpenWorkflowLibrary={() => setWorkflowLibraryOpen(true)}
       />
 
       {/* Контекстное меню */}
@@ -277,6 +334,17 @@ export function Canvas() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      {/* Библиотека Workflow */}
+      {workflowLibraryOpen && (
+        <WorkflowLibrary
+          onClose={() => setWorkflowLibraryOpen(false)}
+          onImportWorkflow={handleImportWorkflow}
+        />
+      )}
+
+      {/* Экспорт/Импорт Workflow */}
+      <WorkflowExport onImportJSON={handleImportJSON} />
     </div>
   );
 }

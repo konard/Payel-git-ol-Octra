@@ -90,6 +90,10 @@
   "sidebar": {
     "title": "Agents",
     "subtitle": "Drag a node onto the canvas and connect it to others",
+    "create": "Create",
+    "myWorkflows": "My Workflows",
+    "noWorkflows": "No saved workflows",
+    "dragToCanvas": "Drag to canvas",
     "boss": {
       "label": "Boss",
       "type": "CEO",
@@ -114,12 +118,54 @@
         "Del to delete"
       ]
     },
-    "addAgent": "Add Agent"
+    "addAgent": "Add Agent",
+    "openLibrary": "Open Library"
   },
   "contextMenu": {
     "changeRole": "Change role:",
     "duplicate": "Duplicate node",
     "delete": "Delete node",
     "notConnected": "Not connected"
+  },
+  "workflowLibrary": {
+    "title": "Workflow Library",
+    "public": "Public",
+    "my": "My",
+    "allCategories": "All Categories",
+    "saveCurrent": "Save Current",
+    "loading": "Loading...",
+    "noAuth": "Authentication required to view your workflows",
+    "noSaved": "You don't have any saved workflows yet",
+    "noPublic": "No public workflows available",
+    "import": "Import",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this workflow?",
+    "openLibrary": "Open Library",
+    "saveTitle": "Save Workflow",
+    "nameLabel": "Name *",
+    "namePlaceholder": "My workflow",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Workflow description...",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "web, api, data...",
+    "publishLabel": "Publish (visible to all users)",
+    "saveBtn": "Save",
+    "savingBtn": "Saving...",
+    "cancelBtn": "Cancel",
+    "author": "Author",
+    "downloads": "downloads",
+    "exportWorkflow": "Export",
+    "exportTitle": "Export Workflow",
+    "exportDesc": "Copy your workflow JSON for editing or sharing",
+    "copyJson": "Copy JSON",
+    "copied": "Copied!",
+    "downloadJson": "Download .json",
+    "importWorkflow": "Import JSON",
+    "importTitle": "Import Workflow from JSON",
+    "importDesc": "Paste workflow JSON or upload a file",
+    "pasteJson": "Paste JSON here...",
+    "importBtn": "Import",
+    "chooseFile": "Choose file",
+    "invalidJson": "Invalid JSON format"
   }
 }

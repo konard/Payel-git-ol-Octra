@@ -76,7 +76,7 @@ interface TaskState {
 
 let nodeIdCounter = 0;
 
-export const useTaskStore = create<TaskState>((set) => ({
+export const useTaskStore = create<TaskState>((set, get) => ({
   taskId: null,
   status: 'idle',
   nodes: [],
@@ -129,9 +129,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 
   setStartTime: (time) => set({ startTime: time }),
 
-  getWorkflow: () => {
-    return get().workflow;
-  },
+  getWorkflow: () => get().workflow,
 
   setWorkflow: (workflow) => set({ workflow }),
 

@@ -90,6 +90,10 @@
   "sidebar": {
     "title": "Agentlar",
     "subtitle": "Tugunni kanvasga suring va boshqalar bilan ulang",
+    "create": "Yaratish",
+    "myWorkflows": "Mening Workflow-larim",
+    "noWorkflows": "Saqlangan workflow yo'q",
+    "dragToCanvas": "Kanvasga suring",
     "boss": {
       "label": "Boss",
       "type": "CEO",
@@ -114,12 +118,54 @@
         "Del — o'chirish uchun"
       ]
     },
-    "addAgent": "Агент қўшиш"
+    "addAgent": "Агент қўшиш",
+    "openLibrary": "Kutubxonani ochish"
   },
   "contextMenu": {
     "changeRole": "Rolni o'zgartirish:",
     "duplicate": "Tugunni nusxalash",
     "delete": "Tugunni o'chirish",
     "notConnected": "Ulanmagan"
+  },
+  "workflowLibrary": {
+    "title": "Workflow Kutubxonasi",
+    "public": "Ommaviy",
+    "my": "Mening",
+    "allCategories": "Barcha kategoriyalar",
+    "saveCurrent": "Joriyni saqlash",
+    "loading": "Yuklanmoqda...",
+    "noAuth": "Workflow-laringizni ko'rish uchun avtorizatsiya kerak",
+    "noSaved": "Sizda hali saqlangan workflow yo'q",
+    "noPublic": "Ommaviy workflow mavjud emas",
+    "import": "Import qilish",
+    "delete": "O'chirish",
+    "deleteConfirm": "Rostdan ham bu workflow-ni o'chirmoqchimisiz?",
+    "openLibrary": "Kutubxonani ochish",
+    "saveTitle": "Workflow Saqlash",
+    "nameLabel": "Nomi *",
+    "namePlaceholder": "Mening workflow",
+    "descriptionLabel": "Tavsif",
+    "descriptionPlaceholder": "Workflow tavsifi...",
+    "categoryLabel": "Kategoriya",
+    "categoryPlaceholder": "web, api, data...",
+    "publishLabel": "Chop etish (barcha foydalanuvchilarga ko'rinadi)",
+    "saveBtn": "Saqlash",
+    "savingBtn": "Saqlanmoqda...",
+    "cancelBtn": "Bekor qilish",
+    "author": "Muallif",
+    "downloads": "yuklab olishlar",
+    "exportWorkflow": "Eksport",
+    "exportTitle": "Workflow Eksport",
+    "exportDesc": "Tahrirlash yoki almashish uchun workflow JSON-ni nusxalash",
+    "copyJson": "JSON nusxalash",
+    "copied": "Nusxalandi!",
+    "downloadJson": "Yuklab olish .json",
+    "importWorkflow": "JSON Import",
+    "importTitle": "Workflow JSON-dan import",
+    "importDesc": "Workflow JSON joylash yoki fayl yuklash",
+    "pasteJson": "JSON shu yerga joylang...",
+    "importBtn": "Import qilish",
+    "chooseFile": "Faylni tanlash",
+    "invalidJson": "JSON format noto'g'ri"
   }
 }

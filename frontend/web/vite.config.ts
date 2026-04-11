@@ -15,6 +15,9 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
   base: './',
+  build: {
+    sourcemap: true,
+  },
   server: {
     proxy: {
       '/auth': {

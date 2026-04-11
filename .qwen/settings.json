@@ -53,7 +53,12 @@
       "Bash(docker compose up *)",
       "Bash(docker compose logs *)",
       "Bash(docker compose exec *)",
-      "Bash(docker compose restart *)"
+      "Bash(docker compose restart *)",
+      "Bash(git checkout *)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose build *)",
+      "Bash(docker rm *)",
+      "Bash(docker rmi *)"
     ]
   },
   "$version": 3

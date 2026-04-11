@@ -535,3 +535,50 @@
     }
 }
 
+/* === Sidebar Scrollbar === */
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-secondary) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-border-secondary);
+    border-radius: var(--radius-full);
+    transition: background var(--transition-fast);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-light);
+}
+
+/* Dropdown анимации */
+.dropdown-enter {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.dropdown-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+.dropdown-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dropdown-exit-active {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
