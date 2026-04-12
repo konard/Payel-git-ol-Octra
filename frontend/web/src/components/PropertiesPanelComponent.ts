@@ -148,7 +148,7 @@ export class PropertiesPanelComponent extends BaseComponent<HTMLDivElement> {
         this.emptyElement = document.createElement('div');
         this.emptyElement.className = 'crewai-properties__empty';
         this.emptyElement.innerHTML = `
-            <div class="crewai-properties__empty-icon">📝</div>
+            <div class="crewai-properties__empty-icon">Edit</div>
             <div class="crewai-properties__empty-text">Select a node to view its properties</div>
         `;
         this.contentElement.appendChild(this.emptyElement);
@@ -364,10 +364,10 @@ export class PropertiesPanelComponent extends BaseComponent<HTMLDivElement> {
         label.render(this.formElement);
 
         const statusLabels: Record<string, string> = {
-            idle: '⏸️ Idle',
-            active: '▶️ Active',
-            error: '❌ Error',
-            completed: '✅ Completed',
+            idle: 'Idle',
+            active: 'Active',
+            error: 'Error',
+            completed: 'Completed',
         };
 
         const statusVariants: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {

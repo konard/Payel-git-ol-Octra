@@ -331,7 +331,7 @@ export function WorkflowLibrary({ onClose, onImportWorkflow }: WorkflowLibraryPr
                       {workflow.name}
                     </h3>
                     <span className="text-xs text-[var(--text-muted)] ml-2">
-                      ⬇ {workflow.downloads}
+                      {workflow.downloads}
                     </span>
                   </div>
 

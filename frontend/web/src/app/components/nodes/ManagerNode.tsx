@@ -15,14 +15,14 @@ interface ManagerNodeData {
 function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
   const { role = 'Backend', status = 'pending', workerCount, progress = 0, isConnected = false } = data;
   const { t } = useI18n();
-  
+
   const statusIcons: Record<string, string> = {
-    pending: '⏳',
-    thinking: '💭',
-    working: '⚙️',
-    reviewing: '🔍',
-    done: '✅',
-    error: '❌',
+    pending: 'WAITING',
+    thinking: 'THINKING',
+    working: 'WORKING',
+    reviewing: 'REVIEWING',
+    done: 'DONE',
+    error: 'ERROR',
   };
 
   const statusColors: Record<string, string> = {
@@ -49,7 +49,7 @@ function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
           <img src={managerImage} alt="Manager" className="w-10 h-10 object-contain" />
           <span className="font-bold text-base">MANAGER</span>
         </div>
-        <span className="text-xl">{statusIcons[status] || '⏳'}</span>
+        <span className="text-xl">{statusIcons[status] || 'WAITING'}</span>
       </div>
 
       {/* Body */}
@@ -63,7 +63,7 @@ function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
 
         {!isConnected && (
           <div className="text-xs text-orange-500 font-semibold">
-            ⚠️ {t('contextMenu.notConnected')}
+            {t('contextMenu.notConnected')}
           </div>
         )}
 

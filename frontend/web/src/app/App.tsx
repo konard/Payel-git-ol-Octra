@@ -13,6 +13,7 @@ import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -22,6 +23,15 @@ export default function App() {
   const { isAuthenticated, hasSubscription, checkAuth, setSubscription } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
 
+  // Определяем, показывать лендинг или приложение
+  const isLandingPage = window.location.pathname === '/' && !isAuthenticated;
+
+  // Если мы на главной и не авторизован - показываем лендинг
+  if (isLandingPage) {
+    return <LandingPage />;
+  }
+
+  // Иначе показываем приложение
   const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
   const { connect, send } = useWebSocket(wsUrl);
 
@@ -36,12 +46,10 @@ export default function App() {
     }
   }, [isDark]);
 
-  // Проверяем авторизацию при загрузке
   useEffect(() => {
     checkAuth();
   }, []);
 
-  // Подключаемся к WebSocket только если авторизованы
   useEffect(() => {
     if (isAuthenticated) {
       connect();
@@ -50,7 +58,6 @@ export default function App() {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
-    // После авторизации показываем подписку
     setShowSubscriptionModal(true);
   };
 
@@ -59,13 +66,11 @@ export default function App() {
   };
 
   const handleCreateTask = (data: TaskData) => {
-    // Проверяем подписку перед отправкой задачи
     if (!hasSubscription) {
       setShowSubscriptionModal(true);
       return;
     }
 
-    // Reset previous task state (clear canvas)
     useTaskStore.getState().resetTask();
 
     const tokenKey = data.provider === 'openrouter' ? 'openrouter'
@@ -74,7 +79,6 @@ export default function App() {
       : data.provider === 'zai' ? 'zai'
       : 'claude';
 
-    // Get workflow from store (from Canvas)
     const workflow = useTaskStore.getState().getWorkflow();
 
     send({

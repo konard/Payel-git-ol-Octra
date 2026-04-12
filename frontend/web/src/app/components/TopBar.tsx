@@ -3,10 +3,12 @@ import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogO
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
+import { LANGUAGES_INFO } from '../../config/languages';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
 import { useIntegrationStore, type IntegrationType } from '../../stores/integrationStore';
 import { IntegrationCard } from '../../components/IntegrationCard';
+import { UserProfile } from '../../components/UserProfile';
 import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
 
@@ -40,12 +42,17 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
   const defaultToken = useSettingsStore((state) => state.defaultToken);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
+  const hideServerStatus = useSettingsStore((state) => state.hideServerStatus);
+  const hideConsole = useSettingsStore((state) => state.hideConsole);
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
+  const setHideServerStatus = useSettingsStore((state) => state.setHideServerStatus);
+  const setHideConsole = useSettingsStore((state) => state.setHideConsole);
   const { language, changeLanguage, t } = useI18n();
   const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   
   // Integration state
   const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
@@ -120,32 +127,15 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
           {isAuthenticated ? (
             <div className="relative">
               <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                onClick={() => {
+                  setShowUserProfile(true);
+                  setShowProfileMenu(false);
+                }}
                 className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
                 title={t('topbar.profile')}
               >
                 <User size={18} />
               </button>
-              {showProfileMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowProfileMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-lg shadow-xl z-50 overflow-hidden">
-                    <button
-                      onClick={() => {
-                        logout();
-                        setShowProfileMenu(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-                    >
-                      <LogOut size={16} />
-                      <span>Выйти</span>
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           ) : (
             <button
@@ -248,23 +238,21 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       <div className="text-xs text-[var(--text-muted)] mb-3">
                         {t('settings.languageHint')}
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1">
                         {SUPPORTED_LANGUAGES.map((code) => {
                           const isActive = language === code;
-                          const langNames: Record<string, string> = {
-                            en: 'English',
-                            ru: 'Русский',
-                            hy: 'Հայերեն',
-                            kk: 'Қазақша',
-                            uz: "O'zbekcha",
-                          };
-                          const langFlags: Record<string, string> = {
-                            en: '🇬🇧',
-                            ru: '🇷🇺',
-                            hy: '🇦🇲',
-                            kk: '🇰🇿',
-                            uz: '🇺🇿',
-                          };
+                          const langInfo = LANGUAGES_INFO[code as LanguageCode];
+                          
+                          // SVG flag emoji using country code
+                          const flagSvg = langInfo ? (
+                            <img 
+                              src={`https://flagcdn.com/w40/${langInfo.flag.toLowerCase()}.png`} 
+                              alt={langInfo.name}
+                              className="w-5 h-4 object-cover rounded-sm"
+                              loading="lazy"
+                            />
+                          ) : null;
+                          
                           return (
                             <button
                               key={code}
@@ -275,8 +263,8 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                                   : 'border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]/50'
                               }`}
                             >
-                              <span className="text-lg">{langFlags[code]}</span>
-                              <span className="text-sm font-medium">{langNames[code]}</span>
+                              {flagSvg && <span className="w-5 flex-shrink-0">{flagSvg}</span>}
+                              <span className="text-sm font-medium">{langInfo?.nativeName || code}</span>
                               {isActive && (
                                 <span className="ml-auto text-xs">✓</span>
                               )}
@@ -331,6 +319,52 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                         />
                       </button>
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text)]">
+                          {t('settings.hideServerStatus')}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          {t('settings.hideServerStatusHint')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setHideServerStatus(!hideServerStatus)}
+                        className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+                          hideServerStatus ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                            hideServerStatus ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text)]">
+                          {t('settings.hideConsole')}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          {t('settings.hideConsoleHint')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setHideConsole(!hideConsole)}
+                        className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+                          hideConsole ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                            hideConsole ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -380,6 +414,11 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             </div>
           </div>
         </div>
+      )}
+
+      {/* User Profile Modal */}
+      {showUserProfile && isAuthenticated && (
+        <UserProfile onClose={() => setShowUserProfile(false)} />
       )}
     </>
   );

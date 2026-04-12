@@ -5,9 +5,14 @@ import {
   Background,
   useReactFlow,
   useNodesState,
+  addEdge,
+  applyNodeChanges,
   type Node,
   type Edge,
   type Connection,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTaskStore, type AgentNodeType, type AgentNode } from '../../stores/taskStore';
@@ -96,6 +101,19 @@ export function Canvas() {
       }
     },
     [addEdgeToStore]
+  );
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => {
+      changes.forEach((change) => {
+        if (change.type === 'position' && change.position) {
+          // Update node position in store
+          const nodeId = change.id;
+          useTaskStore.getState().updateNode(nodeId, { position: change.position });
+        }
+      });
+    },
+    []
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -230,8 +248,8 @@ export function Canvas() {
 
   // Экспорт workflow в store при изменении нод/соединений
   useEffect(() => {
+    // Don't clear workflow when canvas is empty - keep it for user's next task
     if (nodes.length === 0) {
-      useTaskStore.getState().setWorkflow(null);
       return;
     }
 
@@ -298,6 +316,7 @@ export function Canvas() {
           nodes={rfNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}

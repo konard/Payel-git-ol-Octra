@@ -25,6 +25,8 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  subscription_end?: number;
+  created_at?: string;
 }
 
 export interface AuthResponse {

@@ -11,18 +11,18 @@ interface WorkerNodeData {
   isConnected?: boolean;
 }
 
+const statusIcons: Record<string, string> = {
+  pending: 'WAITING',
+  thinking: 'THINKING',
+  working: 'WORKING',
+  reviewing: 'REVIEWING',
+  done: 'DONE',
+  error: 'ERROR',
+};
+
 function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
   const { role = 'Developer', status = 'pending', filesCount, isConnected = false } = data;
   const { t } = useI18n();
-  
-  const statusIcons: Record<string, string> = {
-    pending: '⏳',
-    thinking: '💭',
-    working: '⚙️',
-    reviewing: '🔍',
-    done: '✅',
-    error: '❌',
-  };
 
   const statusColors: Record<string, string> = {
     pending: 'border-gray-500',
@@ -45,7 +45,7 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
           <img src={workerImage} alt="Worker" className="w-10 h-10 object-contain" />
           <span className="font-bold text-base">WORKER</span>
         </div>
-        <span className="text-xl">{statusIcons[status] || '⏳'}</span>
+        <span className="text-xl">{statusIcons[status] || 'WAITING'}</span>
       </div>
 
       {/* Body */}
@@ -59,7 +59,7 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
 
         {!isConnected && (
           <div className="text-xs text-orange-500 font-semibold">
-            ⚠️ {t('contextMenu.notConnected')}
+            {t('contextMenu.notConnected')}
           </div>
         )}
 

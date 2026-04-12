@@ -125,13 +125,13 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
           onClick={handleDuplicate}
           className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-[var(--background)] text-[var(--text)] transition-colors flex items-center gap-2"
         >
-          <span>📋</span> {t('contextMenu.duplicate')}
+          <span>Duplicate</span> {t('contextMenu.duplicate')}
         </button>
         <button
           onClick={handleDelete}
           className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-red-500/20 text-red-500 transition-colors flex items-center gap-2"
         >
-          <span>🗑️</span> {t('contextMenu.delete')}
+          <span>Delete</span> {t('contextMenu.delete')}
         </button>
       </div>
     </div>

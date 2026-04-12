@@ -136,14 +136,14 @@ export class AgentSidebarComponent extends BaseComponent<HTMLDivElement> {
      */
     private createCategoryGroup(category: string): NodeTemplateGroupComponent {
         const categoryLabels: Record<string, string> = {
-            chief: '🎯 Chiefs',
-            manager: '📋 Managers',
-            designer: '🎨 Designers',
-            frontend: '🌐 Frontend',
-            backend: '🔧 Backend',
-            tester: '🧪 Testers',
-            devops: '🔄 DevOps',
-            analyst: '📊 Analysts',
+            chief: 'Chiefs',
+            manager: 'Managers',
+            designer: 'Designers',
+            frontend: 'Frontend',
+            backend: 'Backend',
+            tester: 'Testers',
+            devops: 'DevOps',
+            analyst: 'Analysts',
         };
 
         const group = new NodeTemplateGroupComponent(categoryLabels[category] || category);
@@ -219,14 +219,14 @@ export class AgentSidebarComponent extends BaseComponent<HTMLDivElement> {
         types: AgentType[]
     ): NodeTemplateGroupComponent {
         const categoryLabels: Record<string, string> = {
-            chief: '🎯 Chiefs',
-            manager: '📋 Managers',
-            designer: '🎨 Designers',
-            frontend: '🌐 Frontend',
-            backend: '🔧 Backend',
-            tester: '🧪 Testers',
-            devops: '🔄 DevOps',
-            analyst: '📊 Analysts',
+            chief: 'Chiefs',
+            manager: 'Managers',
+            designer: 'Designers',
+            frontend: 'Frontend',
+            backend: 'Backend',
+            tester: 'Testers',
+            devops: 'DevOps',
+            analyst: 'Analysts',
         };
 
         const group = new NodeTemplateGroupComponent(categoryLabels[category] || category);

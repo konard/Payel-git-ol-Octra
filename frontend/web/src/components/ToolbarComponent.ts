@@ -283,7 +283,7 @@ export class ToolbarComponent extends BaseComponent<HTMLDivElement> {
 
         // Clear
         this.clearButton = this.buttonGroup.createButton({
-            icon: '🗑️',
+            icon: 'trash',
             variant: 'ghost',
             size: 'sm',
             title: 'Clear Canvas',
@@ -294,7 +294,7 @@ export class ToolbarComponent extends BaseComponent<HTMLDivElement> {
 
         // Save
         this.saveButton = this.buttonGroup.createButton({
-            icon: '💾',
+            icon: 'save',
             variant: 'ghost',
             size: 'sm',
             title: 'Save Project',
@@ -305,7 +305,7 @@ export class ToolbarComponent extends BaseComponent<HTMLDivElement> {
 
         // Load
         this.loadButton = this.buttonGroup.createButton({
-            icon: '📂',
+            icon: 'folder',
             variant: 'ghost',
             size: 'sm',
             title: 'Load Project',

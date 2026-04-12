@@ -133,16 +133,17 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   setWorkflow: (workflow) => set({ workflow }),
 
-  resetTask: () => set({
+  resetTask: () => set((state) => ({
     taskId: null,
     status: 'idle',
     nodes: [],
     edges: [],
-    workflow: null,
+    // Keep workflow to prevent user from losing their work
+    workflow: state.workflow,
     logs: [],
     solutionZip: null,
     zipUrl: null,
     tokensUsed: 0,
     startTime: null,
-  }),
+  })),
 }));

@@ -15,14 +15,14 @@ interface BossNodeData {
 function BossNodeComponent({ data }: NodeProps<{ data: BossNodeData }>) {
   const { role = 'CEO', status = 'pending', workerCount, techStack, isConnected = false } = data;
   const { t } = useI18n();
-  
+
   const statusIcons: Record<string, string> = {
-    pending: '⏳',
-    thinking: '💭',
-    working: '⚙️',
-    reviewing: '🔍',
-    done: '✅',
-    error: '❌',
+    pending: 'WAITING',
+    thinking: 'THINKING',
+    working: 'WORKING',
+    reviewing: 'REVIEWING',
+    done: 'DONE',
+    error: 'ERROR',
   };
 
   const statusColors: Record<string, string> = {
@@ -46,7 +46,7 @@ function BossNodeComponent({ data }: NodeProps<{ data: BossNodeData }>) {
           <img src={bossImage} alt="Boss" className="w-10 h-10 object-contain" />
           <span className="font-bold text-base">BOSS</span>
         </div>
-        <span className="text-xl">{statusIcons[status] || '⏳'}</span>
+        <span className="text-xl">{statusIcons[status] || 'WAITING'}</span>
       </div>
 
       {/* Body */}
@@ -60,7 +60,7 @@ function BossNodeComponent({ data }: NodeProps<{ data: BossNodeData }>) {
 
         {!isConnected && (
           <div className="text-xs text-orange-500 font-semibold">
-            ⚠️ {t('contextMenu.notConnected')}
+            {t('contextMenu.notConnected')}
           </div>
         )}
 

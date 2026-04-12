@@ -151,11 +151,11 @@ export async function sendTaskStatusUpdate(
   botToken: string
 ): Promise<boolean> {
   const message = `
-📋 <b>Task Status Update</b>
+<b>Task Status Update</b>
 
-🆔 Task: ${taskId}
-📊 Status: ${status}
-⏰ Time: ${new Date().toLocaleString()}
+Task: ${taskId}
+Status: ${status}
+Time: ${new Date().toLocaleString()}
   `.trim();
 
   return sendTelegramNotification(chatId, message, botToken);
@@ -178,7 +178,7 @@ export async function sendTaskToTelegram(
       zipData,
       `${taskId}-result.zip`
     );
-    formData.append('caption', `✅ Task completed: ${taskId}`);
+    formData.append('caption', `Task completed: ${taskId}`);
 
     const response = await fetch(
       `https://api.telegram.org/bot${botToken}/sendDocument`,

@@ -180,7 +180,7 @@ export class HeaderComponent extends BaseComponent<HTMLDivElement> {
         iconElement.style.background = 'var(--gradient-primary)';
         iconElement.style.borderRadius = 'var(--radius-md)';
         iconElement.style.fontSize = '18px';
-        iconElement.textContent = '🤖';
+        iconElement.textContent = 'AI';
 
         const textElement = document.createElement('span');
         textElement.textContent = 'CrewAI';

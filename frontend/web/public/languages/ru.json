@@ -78,6 +78,10 @@
     "themeToggle": "Переключить",
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
+    "hideServerStatus": "Скрыть статус сервера",
+    "hideServerStatusHint": "Скрывает строку состояния подключения к серверу",
+    "hideConsole": "Скрыть консоль",
+    "hideConsoleHint": "Скрывает панель консоли",
     "save": "Сохранить",
     "cancel": "Отмена"
   },
@@ -209,5 +213,12 @@
     "importBtn": "Импортировать",
     "chooseFile": "Выбрать файл",
     "invalidJson": "Неверный формат JSON"
+  },
+  "profile": {
+    "subscriptionEnd": "Действует до",
+    "noSubscription": "Нет активной подписки",
+    "userId": "ID пользователя",
+    "memberSince": "Участник с",
+    "logout": "Выйти"
   }
 }

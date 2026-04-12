@@ -174,7 +174,7 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
                     : 'border-[var(--border)] bg-[var(--background)] text-[var(--text-secondary)] hover:text-[var(--text)]'
                 }`}
               >
-                🎟️ Промокод
+                Промокод
               </button>
             </div>
 

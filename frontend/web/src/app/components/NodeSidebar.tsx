@@ -287,7 +287,7 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[var(--text)] truncate">{workflow.name}</div>
                           <div className="text-xs text-[var(--text-tertiary)] flex items-center gap-1">
-                            <span>⬇ {workflow.downloads}</span>
+                            <span>{workflow.downloads}</span>
                             {workflow.category && (
                               <>
                                 <span>•</span>
@@ -338,7 +338,7 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
             {/* Подсказка */}
             <div className="mt-6 p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]">
               <div className="text-xs text-[var(--text-muted)] space-y-2">
-                <p>💡 <strong>{t('sidebar.tip.title')}</strong></p>
+                <p><strong>{t('sidebar.tip.title')}</strong></p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>{t('sidebar.tip.items.0')}</li>
                   <li>{t('sidebar.tip.items.1')}</li>

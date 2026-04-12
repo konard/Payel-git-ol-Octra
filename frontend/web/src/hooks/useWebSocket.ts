@@ -395,13 +395,13 @@ export function useWebSocket(url: string) {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('[WS] ✅ Connected to', connectUrl);
+      console.log('[WS] Connected to', connectUrl);
       reconnectAttempts.current = 0;
       storeActions.setConnectionStatus(true);
 
       // On reconnect, send task_id to restore state from Redis
       if (isReconnect && activeTaskId.current) {
-        console.log('[WS] 🔄 Reconnecting to task:', activeTaskId.current);
+        console.log('[WS] Reconnecting to task:', activeTaskId.current);
         ws.send(JSON.stringify({ task_id: activeTaskId.current }));
         storeActions.addLog({
           message: t('console.reconnecting'),
@@ -411,7 +411,7 @@ export function useWebSocket(url: string) {
     };
 
     ws.onclose = (event) => {
-      console.log('[WS] ❌ Closed, code:', event.code, 'reason:', event.reason);
+      console.log('[WS] Closed, code:', event.code, 'reason:', event.reason);
       wsRef.current = null;
       storeActions.setConnectionStatus(false);
 

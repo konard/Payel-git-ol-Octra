@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTaskStore } from '../../stores/taskStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { ChevronDown, ChevronUp, Terminal, XCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { t } from '../../hooks/useI18n';
 
 export function ConsolePanel() {
   const logs = useTaskStore((state) => state.logs);
+  const hideConsole = useSettingsStore((state) => state.hideConsole);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -15,6 +17,8 @@ export function ConsolePanel() {
       logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [logs, isCollapsed]);
+
+  if (hideConsole) return null;
 
   // Get last log message for preview when collapsed
   const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;

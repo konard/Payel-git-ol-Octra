@@ -52,8 +52,9 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
     setFormData({
       title: '',
       description: '',
-      provider: 'openrouter',
-      model: 'qwen/qwen3-coder',
+      // Keep provider and model unchanged
+      provider: formData.provider,
+      model: formData.model,
       apiKey: '',
     });
     setShowModelSelector(false);

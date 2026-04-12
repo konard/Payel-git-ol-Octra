@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Wifi, WifiOff, Clock, Coins } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { t } from '../../hooks/useI18n';
 
 export function StatusBar() {
@@ -8,6 +9,7 @@ export function StatusBar() {
   const tokensUsed = useTaskStore((state) => state.tokensUsed);
   const status = useTaskStore((state) => state.status);
   const startTime = useTaskStore((state) => state.startTime);
+  const hideServerStatus = useSettingsStore((state) => state.hideServerStatus);
   const [elapsed, setElapsed] = useState('0m 0s');
 
   useEffect(() => {
@@ -25,6 +27,8 @@ export function StatusBar() {
 
     return () => clearInterval(interval);
   }, [startTime]);
+
+  if (hideServerStatus) return null;
 
   const statusLabels: Record<string, string> = {
     idle: t('statusbar.waiting'),
