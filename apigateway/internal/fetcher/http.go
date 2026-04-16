@@ -66,6 +66,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/task/create", rlTaskCreate, handleTaskCreateWS)
 	r.GET("/task/reconnect", rlTaskReconnect, handleTaskReconnectWS)
 	r.GET("/task/status", rlTaskStatus, handleTaskStatus)
+	r.POST("/task/:taskId/stop", rlTaskStatus, handleTaskStop)
 }
 
 func healthHandler(c *gin.Context) {
@@ -130,11 +131,11 @@ func handleTaskCreateWS(c *gin.Context) {
 	// Process task stream in background
 	go processTaskStreamWS(conn, taskReq)
 
-	// Keep reading to handle close/ping
+	// Keep reading to handle close/ping and messages
 	go func() {
 		defer conn.Close()
 		for {
-			msgType, _, err := conn.ReadMessage()
+			msgType, data, err := conn.ReadMessage()
 			if err != nil {
 				return
 			}
@@ -143,6 +144,13 @@ func handleTaskCreateWS(c *gin.Context) {
 			}
 			if msgType == websocket.PingMessage {
 				conn.WriteMessage(websocket.PongMessage, nil)
+			}
+			if msgType == websocket.TextMessage {
+				// Handle ping messages from frontend
+				message := string(data)
+				if message == `{"type":"ping"}` {
+					conn.WriteJSON(gin.H{"type": "pong"})
+				}
 			}
 		}
 	}()
@@ -256,6 +264,7 @@ func handleTaskReconnectWS(c *gin.Context) {
 
 	var req struct {
 		TaskID string `json:"task_id"`
+		UserID string `json:"user_id"`
 	}
 	if err := json.Unmarshal(data, &req); err != nil {
 		conn.WriteJSON(gin.H{"type": "error", "message": "Invalid JSON"})
@@ -283,6 +292,7 @@ func handleTaskReconnectWS(c *gin.Context) {
 			return
 		}
 
+		// Send current state
 		conn.WriteJSON(gin.H{
 			"type":      "reconnected",
 			"task_id":   state.TaskID,
@@ -292,15 +302,17 @@ func handleTaskReconnectWS(c *gin.Context) {
 			"timestamp": time.Now().Unix(),
 		})
 
+		// Send historical updates
 		updates, err := redisClient.GetStreamUpdates(ctx, req.TaskID)
 		if err == nil {
 			for _, update := range updates {
 				wsUpdate := gin.H{
-					"type":      update.Status,
-					"task_id":   update.TaskID,
-					"message":   update.Message,
-					"progress":  update.Progress,
-					"timestamp": update.Timestamp,
+					"type":       update.Status,
+					"task_id":    update.TaskID,
+					"message":    update.Message,
+					"progress":   update.Progress,
+					"timestamp":  update.Timestamp,
+					"is_history": true, // Mark as historical to avoid reprocessing
 				}
 				if update.Data != nil {
 					wsUpdate["data"] = update.Data
@@ -310,7 +322,8 @@ func handleTaskReconnectWS(c *gin.Context) {
 			log.Printf("📜 Sent %d historical updates", len(updates))
 		}
 
-		if pubSubManager != nil {
+		// If task is still running, subscribe to live updates via PubSub
+		if pubSubManager != nil && (state.Status == "processing" || state.Status == "boss_planning" || state.Status == "managers_assigned") {
 			subCh, err := pubSubManager.Subscribe(ctx, req.TaskID)
 			if err == nil && subCh != nil {
 				go func() {
@@ -331,6 +344,7 @@ func handleTaskReconnectWS(c *gin.Context) {
 						}
 					}
 				}()
+				log.Printf("✅ Subscribed to live updates for task %s", req.TaskID)
 			}
 		}
 
@@ -338,29 +352,69 @@ func handleTaskReconnectWS(c *gin.Context) {
 			return
 		}
 
-		log.Printf("✅ Reconnected to task %s (progress: %d%%)", req.TaskID, state.Progress)
+		log.Printf("✅ Reconnected to task %s (progress: %d%%, status: %s)", req.TaskID, state.Progress, state.Status)
 		return
 	}
 
-	// Fallback to Boss
+	// Fallback to Boss service - use ResumeTaskStream
 	if bossClient == nil {
 		conn.WriteJSON(gin.H{"type": "error", "message": "Task state not available"})
 		return
 	}
 
-	resp, err := bossClient.GetTaskStatus(context.Background(), req.TaskID)
+	log.Printf("🔄 Using Boss service ResumeTaskStream for task %s", req.TaskID)
+
+	grpcReq := &bosspb.ResumeTaskStreamRequest{
+		TaskId: req.TaskID,
+		UserId: req.UserID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	stream, err := bossClient.ResumeTaskStream(ctx, grpcReq)
 	if err != nil {
-		conn.WriteJSON(gin.H{"type": "error", "message": "Failed to get task status: " + err.Error()})
+		log.Printf("❌ Error calling ResumeTaskStream: %v", err)
+		conn.WriteJSON(gin.H{
+			"type":    "error",
+			"message": "Failed to resume task: " + err.Error(),
+		})
 		return
 	}
 
-	conn.WriteJSON(gin.H{
-		"type":      "reconnected",
-		"task_id":   resp.TaskId,
-		"progress":  resp.Progress,
-		"message":   "Restored from Boss service",
-		"timestamp": time.Now().Unix(),
-	})
+	// Stream updates from Boss service
+	for {
+		update, err := stream.Recv()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			log.Printf("❌ Stream error: %v", err)
+			conn.WriteJSON(gin.H{
+				"type":    "error",
+				"message": "Connection error: " + err.Error(),
+			})
+			return
+		}
+
+		wsUpdate := gin.H{
+			"type":      update.Status,
+			"task_id":   update.TaskId,
+			"message":   update.Message,
+			"progress":  update.Progress,
+			"timestamp": update.Timestamp,
+		}
+		if update.Data != nil {
+			wsUpdate["data"] = update.Data
+		}
+
+		wsWriteJSONWithRedis(conn, req.TaskID, wsUpdate)
+
+		if update.Status == "success" || update.Status == "error" {
+			wsHub.Broadcast(req.TaskID, wsUpdate)
+			return
+		}
+	}
 }
 
 // handleTaskStatus returns task status via HTTP
@@ -413,6 +467,41 @@ func handleTaskStatus(c *gin.Context) {
 		"status":   "success",
 		"task_id":  resp.TaskId,
 		"progress": resp.Progress,
+	})
+}
+
+// handleTaskStop stops a running task
+func handleTaskStop(c *gin.Context) {
+	taskID := c.Param("taskId")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error":  "task_id is required",
+		})
+		return
+	}
+
+	if bossClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "error",
+			"error":  "boss service unavailable",
+		})
+		return
+	}
+
+	resp, err := bossClient.StopTask(context.Background(), taskID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"task_id": resp.TaskId,
+		"message": "Task stopped successfully",
 	})
 }
 

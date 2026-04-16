@@ -2,10 +2,9 @@ go 1.25.4
 
 use (
 	./agents
+	./apigateway
 	./boss
 	./manager
 	./worker
-	./apigateway
-	./merger
 	auth
 )

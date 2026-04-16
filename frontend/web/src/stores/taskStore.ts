@@ -133,17 +133,32 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   setWorkflow: (workflow) => set({ workflow }),
 
-  resetTask: () => set((state) => ({
-    taskId: null,
-    status: 'idle',
-    nodes: [],
-    edges: [],
-    // Keep workflow to prevent user from losing their work
-    workflow: state.workflow,
-    logs: [],
-    solutionZip: null,
-    zipUrl: null,
-    tokensUsed: 0,
-    startTime: null,
-  })),
+  resetTask: () => set((state) => {
+    // Keep user-created nodes (not auto-generated ones like boss-1, manager-*, worker-*)
+    const userNodes = state.nodes.filter(node =>
+      !node.id.startsWith('boss-') &&
+      !node.id.startsWith('manager-') &&
+      !node.id.startsWith('worker-') &&
+      node.id !== 'zip-archive'
+    );
+
+    // Keep edges that connect user nodes
+    const userEdges = state.edges.filter(edge =>
+      userNodes.some(node => node.id === edge.source || node.id === edge.target)
+    );
+
+    return {
+      taskId: null,
+      status: 'idle',
+      nodes: userNodes,
+      edges: userEdges,
+      // Keep workflow to prevent user from losing their work
+      workflow: state.workflow,
+      logs: [],
+      solutionZip: null,
+      zipUrl: null,
+      tokensUsed: 0,
+      startTime: null,
+    };
+  }),
 }));

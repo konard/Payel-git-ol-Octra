@@ -79,7 +79,11 @@
     "hideTokenField": "Token kiritish maydonini yashirish",
     "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
     "save": "Saqlash",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -223,5 +227,36 @@
     "importBtn": "Import qilish",
     "chooseFile": "Faylni tanlash",
     "invalidJson": "JSON format noto'g'ri"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "loginTitle": "Kirish",
+    "registerTitle": "Ro'yxatdan o'tish",
+    "close": "Yopish",
+    "emailRequired": "Email majburiy",
+    "passwordRequired": "Parol majburiy",
+    "usernameRequired": "Foydalanuvchi nomi majburiy",
+    "invalidEmail": "Noto'g'ri email formati",
+    "passwordMinLength": "Parol kamida 6 ta belgi bo'lishi kerak",
+    "passwordsNotMatch": "Parollar mos kelmadi",
+    "password": "Parol",
+    "enterPassword": "Parolni kiriting",
+    "loggingIn": "Kirish...",
+    "username": "Foydalanuvchi nomi",
+    "yourName": "Ismingiz",
+    "min6Chars": "Min. 6 belgi",
+    "confirmPassword": "Parolni tasdiqlang",
+    "repeatPassword": "Parolni qaytaring",
+    "registering": "Ro'yxatdan o'tish...",
+    "noAccount": "Akkauntingiz yo'qmi?",
+    "hasAccount": "Allaqachon akkauntingiz bormi?"
   }
 }

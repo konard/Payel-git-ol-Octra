@@ -28,7 +28,7 @@ function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
   const statusColors: Record<string, string> = {
     pending: 'border-gray-500',
     thinking: 'border-blue-500',
-    working: 'border-blue-500 animate-pulse',
+    working: 'border-blue-500',
     reviewing: 'border-purple-500',
     done: 'border-green-500',
     error: 'border-red-500',
@@ -62,7 +62,7 @@ function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
         </div>
 
         {!isConnected && (
-          <div className="text-xs text-orange-500 font-semibold">
+          <div className="text-xs text-red-500 font-semibold">
             {t('contextMenu.notConnected')}
           </div>
         )}
@@ -81,7 +81,7 @@ function ManagerNodeComponent({ data }: NodeProps<{ data: ManagerNodeData }>) {
           </div>
         )}
       </div>
-      
+
       <Handle type="source" position={Position.Bottom} />
     </div>
   );

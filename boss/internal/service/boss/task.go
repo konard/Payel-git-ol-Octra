@@ -17,50 +17,170 @@ import (
 // CreateTaskStream — streaming version that sends real-time updates
 func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
 	ctx := stream.Context()
-	log.Printf("🎯 Received task from %s: %s", req.Username, req.Title)
-
 	taskID := uuid.New()
+	log.Printf("🎯 Received task from %s: %s (task_id=%s)", req.Username, req.Title, taskID.String())
 
-	// Send initial update
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "📝 Task received and processing started",
-		Progress:  5,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	return s.executeTaskFlow(ctx, stream, taskID.String(), req.UserId, req)
+}
 
-	// 1. Save task to DB
-	task := &models.Task{
-		ID:          taskID,
-		UserID:      req.UserId,
-		Username:    req.Username,
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      "boss_planning",
-	}
+// ResumeTaskStream — resumes streaming updates for an existing task
+func (s *BossService) ResumeTaskStream(req *bosspb.ResumeTaskStreamRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
+	log.Printf("🔄 Resuming task stream for task_id=%s", req.TaskId)
 
-	tokensJSON, _ := json.Marshal(req.Tokens)
-	metaJSON, _ := json.Marshal(req.Meta)
-	task.Tokens = string(tokensJSON)
-	task.Meta = string(metaJSON)
+	ctx := stream.Context()
 
-	if err := database.Db.Create(task).Error; err != nil {
+	// Check if task exists and is still running
+	var task models.Task
+	if err := database.Db.First(&task, "id = ?", req.TaskId).Error; err != nil {
 		return stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "❌ Database error: " + err.Error(),
+			TaskId:    req.TaskId,
+			Message:   "❌ Task not found: " + err.Error(),
 			Status:    "error",
 			Timestamp: time.Now().Unix(),
 		})
 	}
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "💾 Task saved to database",
-		Progress:  10,
-		Status:    "processing",
+	// If task is already completed, send final status
+	if task.Status == "done" || task.Status == "error" {
+		log.Printf("✅ Task %s already completed with status: %s", req.TaskId, task.Status)
+
+		// Send historical updates from Redis
+		s.sendHistoricalUpdates(stream, req.TaskId)
+
+		status := "success"
+		if task.Status == "error" {
+			status = "error"
+		}
+
+		return stream.Send(&bosspb.TaskUpdate{
+			TaskId:    req.TaskId,
+			Message:   "Task " + task.Title + " " + task.Status,
+			Progress:  100,
+			Status:    status,
+			Timestamp: time.Now().Unix(),
+		})
+	}
+
+	// If task is still running, resume streaming
+	if task.Status == "boss_planning" || task.Status == "managers_assigned" || task.Status == "processing" {
+		log.Printf("🔄 Task %s is still running (status: %s), resuming stream", req.TaskId, task.Status)
+
+		// Send historical updates first
+		s.sendHistoricalUpdates(stream, req.TaskId)
+
+		// Resume the task flow from the beginning
+		// The streamSender will persist progress to Redis, so we can continue
+		return s.executeTaskFlow(ctx, stream, req.TaskId, req.UserId, &bosspb.CreateTaskRequest{
+			UserId:        req.UserId,
+			Username:      task.Username,
+			Title:         task.Title,
+			Description:   task.Description,
+			Tokens:        parseJSONToMap(task.Tokens),
+			Meta:          parseJSONToMap(task.Meta),
+			UseAiPlanning: true, // Default to AI planning for resume
+		})
+	}
+
+	// Unknown status
+	return stream.Send(&bosspb.TaskUpdate{
+		TaskId:    req.TaskId,
+		Message:   "❌ Unknown task status: " + task.Status,
+		Status:    "error",
 		Timestamp: time.Now().Unix(),
 	})
+}
+
+// sendHistoricalUpdates sends all historical updates from Redis
+func (s *BossService) sendHistoricalUpdates(stream bosspb.BossService_CreateTaskStreamServer, taskID string) {
+	if s.redisClient == nil || !s.redisClient.IsEnabled() {
+		return
+	}
+
+	updates, err := s.redisClient.GetStreamUpdates(stream.Context(), taskID)
+	if err != nil {
+		log.Printf("Warning: failed to get historical updates for task %s: %v", taskID, err)
+		return
+	}
+
+	for _, update := range updates {
+		protoUpdate := &bosspb.TaskUpdate{
+			TaskId:    update.TaskID,
+			Message:   update.Message,
+			Progress:  update.Progress,
+			Status:    update.Status,
+			Timestamp: update.Timestamp,
+		}
+
+		// Convert data back
+		if update.Data != nil {
+			if dataMap, ok := update.Data.(map[string]any); ok {
+				protoUpdate.Data = make(map[string]string)
+				for k, v := range dataMap {
+					if str, ok := v.(string); ok {
+						protoUpdate.Data[k] = str
+					}
+				}
+			}
+		}
+
+		if err := stream.Send(protoUpdate); err != nil {
+			log.Printf("Warning: failed to send historical update: %v", err)
+			return
+		}
+	}
+
+	if len(updates) > 0 {
+		log.Printf("📜 Sent %d historical updates for task %s", len(updates), taskID)
+	}
+}
+
+// executeTaskFlow executes the full task flow with streaming updates
+func (s *BossService) executeTaskFlow(
+	ctx context.Context,
+	stream bosspb.BossService_CreateTaskStreamServer,
+	taskID string,
+	userID string,
+	req *bosspb.CreateTaskRequest,
+) error {
+	sender := newStreamSender(stream, taskID, userID, s.redisClient)
+
+	// Check if task already exists (for resume scenarios)
+	var task models.Task
+	existingTaskID := parseUUID(taskID)
+	if err := database.Db.First(&task, "id = ?", existingTaskID).Error; err == nil {
+		// Task exists, this is a resume - skip initial update and start from current progress
+		log.Printf("🔄 Resuming existing task %s (status: %s)", taskID, task.Status)
+		// For now, we'll restart from the beginning but with existing task
+		// In a full implementation, we'd need to track progress more granularly
+	} else {
+		// Send initial update
+		if err := sender.sendInitial("📝 Task received and processing started", 5); err != nil {
+			return err
+		}
+
+		// 1. Save task to DB
+		task = models.Task{
+			ID:          existingTaskID,
+			UserID:      req.UserId,
+			Username:    req.Username,
+			Title:       req.Title,
+			Description: req.Description,
+			Status:      "boss_planning",
+		}
+
+		tokensJSON, _ := json.Marshal(req.Tokens)
+		metaJSON, _ := json.Marshal(req.Meta)
+		task.Tokens = string(tokensJSON)
+		task.Meta = string(metaJSON)
+
+		if err := database.Db.Create(&task).Error; err != nil {
+			return sender.sendError("❌ Database error: " + err.Error())
+		}
+	}
+
+	if err := sender.sendInitial("💾 Task saved to database", 10); err != nil {
+		return err
+	}
 
 	// 2. Get model and provider
 	model := req.Meta["model"]
@@ -74,22 +194,14 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 
 	agentsClient, err := service.NewAgentClientWrapper()
 	if err != nil {
-		return stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "❌ Failed to initialize AI client: " + err.Error(),
-			Status:    "error",
-			Timestamp: time.Now().Unix(),
-		})
+		return sender.sendError("❌ Failed to initialize AI client: " + err.Error())
 	}
 	defer agentsClient.Close()
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "🤖 AI client initialized (" + provider + "/" + model + ")",
-		Progress:  15,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	msg := "🤖 AI client initialized (" + provider + "/" + model + ")"
+	if err := sender.sendInitial(msg, 15); err != nil {
+		return err
+	}
 
 	// 3. Check if we should use AI planning or predefined workflow
 	var decision *BossDecisionResult
@@ -97,29 +209,19 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 
 	useAI := req.UseAiPlanning || len(req.PredefinedManagers) == 0
 	if useAI {
-		// Use AI to plan architecture
-		_ = stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "🤖 AI is planning architecture...",
-			Progress:  15,
-			Status:    "processing",
-			Timestamp: time.Now().Unix(),
-		})
+		if err := sender.sendInitial("🤖 AI is planning architecture...", 15); err != nil {
+			return err
+		}
 
 		decision, planErr = s.thinkAboutTask(ctx, agentsClient, provider, model, req)
 		if planErr != nil {
 			task.Status = "error"
 			database.Db.Save(task)
-			return stream.Send(&bosspb.TaskUpdate{
-				TaskId:    taskID.String(),
-				Message:   "❌ AI planning failed: " + planErr.Error(),
-				Status:    "error",
-				Timestamp: time.Now().Unix(),
-			})
+			return sender.sendError("❌ AI planning failed: " + planErr.Error())
 		}
 
-		_ = stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
+		if err := sender.send(&bosspb.TaskUpdate{
+			TaskId:    taskID,
 			Message:   "✅ Architecture planned by AI",
 			Progress:  30,
 			Status:    "processing",
@@ -127,21 +229,18 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 			Data: map[string]string{
 				"managers": strconv.Itoa(int(decision.ManagersCount)),
 			},
-		})
+		}); err != nil {
+			return err
+		}
 	} else {
-		// Use predefined workflow from user
-		_ = stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "📋 Using predefined workflow (" + strconv.Itoa(len(req.PredefinedManagers)) + " managers)",
-			Progress:  15,
-			Status:    "processing",
-			Timestamp: time.Now().Unix(),
-		})
+		if err := sender.sendInitial("📋 Using predefined workflow ("+strconv.Itoa(len(req.PredefinedManagers))+" managers)", 15); err != nil {
+			return err
+		}
 
 		decision = s.buildDecisionFromPredefined(req)
 
-		_ = stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
+		if err := sender.send(&bosspb.TaskUpdate{
+			TaskId:    taskID,
 			Message:   "✅ Predefined workflow loaded",
 			Progress:  30,
 			Status:    "processing",
@@ -149,13 +248,15 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 			Data: map[string]string{
 				"managers": strconv.Itoa(int(decision.ManagersCount)),
 			},
-		})
+		}); err != nil {
+			return err
+		}
 	}
 
 	// 4. Save boss decision
 	bossDecision := &models.BossDecision{
 		ID:                   uuid.New(),
-		TaskID:               task.ID,
+		TaskID:               parseUUID(taskID),
 		Status:               "planning",
 		ManagersCount:        decision.ManagersCount,
 		TechnicalDescription: decision.TechnicalDescription,
@@ -168,52 +269,31 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 	bossDecision.TechStack = string(stackJSON)
 
 	if err := database.Db.Create(bossDecision).Error; err != nil {
-		return stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "❌ Failed to save decision: " + err.Error(),
-			Status:    "error",
-			Timestamp: time.Now().Unix(),
-		})
+		return sender.sendError("❌ Failed to save decision: " + err.Error())
 	}
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "🏗️ Creating " + strconv.Itoa(int(decision.ManagersCount)) + " managers in parallel",
-		Progress:  40,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	msg = "🏗️ Creating " + strconv.Itoa(int(decision.ManagersCount)) + " managers in parallel"
+	if err := sender.sendInitial(msg, 40); err != nil {
+		return err
+	}
 
 	// 5. Call managers in parallel with progress updates
-	managerResults, zipData, err := s.assignManagersParallelWithProgress(ctx, task.ID.String(), decision, req, stream)
+	managerResults, zipData, err := s.assignManagersParallelWithProgress(ctx, taskID, decision, req, stream)
 	if err != nil {
 		log.Printf("Error from managers: %v", err)
 		task.Status = "error"
 		database.Db.Save(task)
-		return stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "❌ Manager failed: " + err.Error(),
-			Status:    "error",
-			Timestamp: time.Now().Unix(),
-		})
+		return sender.sendError("❌ Manager failed: " + err.Error())
 	}
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "👷 All managers completed code generation",
-		Progress:  70,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	if err := sender.sendInitial("👷 All managers completed code generation", 70); err != nil {
+		return err
+	}
 
 	// 6. Boss validation
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "🔍 Boss validating solution...",
-		Progress:  80,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	if err := sender.sendInitial("🔍 Boss validating solution...", 80); err != nil {
+		return err
+	}
 
 	if len(managerResults) > 0 {
 		_, _ = s.validateSolution(ctx, agentsClient, provider, model, req.Tokens, decision, managerResults, zipData)
@@ -222,41 +302,44 @@ func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bos
 	if len(zipData) == 0 {
 		task.Status = "error"
 		database.Db.Save(task)
-		return stream.Send(&bosspb.TaskUpdate{
-			TaskId:    taskID.String(),
-			Message:   "❌ No solution generated",
-			Status:    "error",
-			Timestamp: time.Now().Unix(),
-		})
+		return sender.sendError("❌ No solution generated")
 	}
 
-	_ = stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "📦 Packaging project",
-		Progress:  90,
-		Status:    "processing",
-		Timestamp: time.Now().Unix(),
-	})
+	if err := sender.sendInitial("📦 Packaging project", 90); err != nil {
+		return err
+	}
 
 	// 7. Save ZIP solution
 	task.Solution = zipData
 	task.Status = "done"
 	database.Db.Save(task)
 
-	log.Printf("✅ Task completed! ZIP size: %d bytes", len(zipData))
+	log.Printf("✅ Task %s completed! ZIP size: %d bytes", taskID, len(zipData))
 
 	techStackBytes, _ := json.Marshal(decision.TechStack)
-	return stream.Send(&bosspb.TaskUpdate{
-		TaskId:    taskID.String(),
-		Message:   "🎉 Project ready! " + task.Title + " created successfully",
-		Progress:  100,
-		Status:    "success",
-		Timestamp: time.Now().Unix(),
-		Data: map[string]string{
-			"managers":  strconv.Itoa(int(decision.ManagersCount)),
-			"techStack": string(techStackBytes),
-		},
+	return sender.sendSuccess("🎉 Project ready! "+task.Title+" created successfully", 100, map[string]string{
+		"managers":  strconv.Itoa(int(decision.ManagersCount)),
+		"techStack": string(techStackBytes),
 	})
+}
+
+// parseUUID parses a string to UUID, returns nil on error
+func parseUUID(id string) uuid.UUID {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return uuid.New()
+	}
+	return uid
+}
+
+// parseJSONToMap parses JSON string to map
+func parseJSONToMap(jsonStr string) map[string]string {
+	result := make(map[string]string)
+	if jsonStr == "" {
+		return result
+	}
+	_ = json.Unmarshal([]byte(jsonStr), &result)
+	return result
 }
 
 // CreateTask accepts task, executes full cycle and returns ZIP

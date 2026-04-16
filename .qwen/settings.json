@@ -61,7 +61,10 @@
       "Bash(docker rmi *)",
       "WebFetch(pkg.go.dev)",
       "Bash(docker ps *)",
-      "Bash(@copy *)"
+      "Bash(@copy *)",
+      "Bash(@echo *)",
+      "Bash(fc *)",
+      "Bash(ren *)"
     ]
   },
   "$version": 3

@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"boss/internal/fetcher/grpc/bosspb"
+
 	"google.golang.org/grpc"
 )
 
@@ -29,8 +30,16 @@ func (s *Server) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.B
 	return s.service.CreateTaskStream(req, stream)
 }
 
+func (s *Server) ResumeTaskStream(req *bosspb.ResumeTaskStreamRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
+	return s.service.ResumeTaskStream(req, stream)
+}
+
 func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusRequest) (*bosspb.TaskStatusResponse, error) {
 	return s.service.GetTaskStatus(ctx, req)
+}
+
+func (s *Server) StopTask(ctx context.Context, req *bosspb.StopTaskRequest) (*bosspb.TaskStatusResponse, error) {
+	return s.service.StopTask(ctx, req)
 }
 
 func Start(port string, s *boss.BossService) error {

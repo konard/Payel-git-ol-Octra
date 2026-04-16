@@ -14,6 +14,11 @@ import (
 
 // processManager — основная логика одного менеджера
 func (s *ManagerService) processManager(ctx context.Context, req *managerpb.AssignManagerRequest) (*managerpb.ManagerResult, error) {
+	return s.processManagerWithProgress(ctx, req, nil)
+}
+
+// processManagerWithProgress — основная логика одного менеджера с progress callback
+func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *managerpb.AssignManagerRequest, progressCallback func(int, string)) (*managerpb.ManagerResult, error) {
 	taskID, err := uuid.Parse(req.TaskId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid task_id: %w", err)
@@ -34,6 +39,10 @@ func (s *ManagerService) processManager(ctx context.Context, req *managerpb.Assi
 	}
 	database.Db.Create(manager)
 
+	if progressCallback != nil {
+		progressCallback(5, fmt.Sprintf("Manager %s initialized", req.Role))
+	}
+
 	// Парсим метаданные
 	metadata := req.Metadata
 	tokens := make(map[string]string)
@@ -50,12 +59,20 @@ func (s *ManagerService) processManager(ctx context.Context, req *managerpb.Assi
 	}
 
 	// Менеджер думает каких воркеров нанять (через agents сервис)
+	if progressCallback != nil {
+		progressCallback(10, fmt.Sprintf("Manager %s thinking about workers...", req.Role))
+	}
+
 	workerRolesList, err := s.managerThink(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description)
 	if err != nil {
 		log.Printf("Manager think error: %v", err)
 		manager.Status = "error"
 		database.Db.Save(manager)
 		return nil, fmt.Errorf("manager think failed: %w", err)
+	}
+
+	if progressCallback != nil {
+		progressCallback(20, fmt.Sprintf("Manager %s decided to hire %d workers", req.Role, len(workerRolesList)))
 	}
 
 	// Преобразуем роли в proto формат
@@ -88,12 +105,53 @@ func (s *ManagerService) processManager(ctx context.Context, req *managerpb.Assi
 		OtherWorkersResults: otherResults,
 	}
 
-	workerResp, err := s.workerClient.AssignWorkersAndWait(ctx, workerReq)
+	if progressCallback != nil {
+		progressCallback(30, fmt.Sprintf("Manager %s starting workers...", req.Role))
+	}
+
+	// Use streaming version to get progress updates
+	stream, err := s.workerClient.AssignWorkersAndWaitStream(ctx, workerReq)
 	if err != nil {
-		log.Printf("Worker call error: %v", err)
+		log.Printf("Worker stream call error: %v", err)
 		manager.Status = "error"
 		database.Db.Save(manager)
-		return nil, fmt.Errorf("worker call failed: %w", err)
+		return nil, fmt.Errorf("worker stream call failed: %w", err)
+	}
+
+	for {
+		update, err := stream.Recv()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			log.Printf("Worker stream error: %v", err)
+			manager.Status = "error"
+			database.Db.Save(manager)
+			return nil, fmt.Errorf("worker stream failed: %w", err)
+		}
+
+		// Forward progress updates
+		if progressCallback != nil && update.Message != "" {
+			// Calculate progress based on worker completion
+			progress := 30 + int(update.Progress*70/100) // 30-100 range
+			progressCallback(progress, update.Message)
+		}
+
+		// If this is a completion update, collect results
+		if update.Status == "success" || update.Status == "error" {
+			// For now, we'll get final results via non-streaming call
+			// TODO: Modify worker to send results in stream
+			break
+		}
+	}
+
+	// Get final results
+	workerResp, err := s.workerClient.AssignWorkersAndWait(ctx, workerReq)
+	if err != nil {
+		log.Printf("Worker final call error: %v", err)
+		manager.Status = "error"
+		database.Db.Save(manager)
+		return nil, fmt.Errorf("worker final call failed: %w", err)
 	}
 
 	// Manager reviews each worker

@@ -48,6 +48,16 @@ func (c *Client) AssignManager(ctx context.Context, req *managerpb.AssignManager
 	return resp, nil
 }
 
+// AssignManagerStream вызывает ОДНОГО менеджера с progress updates
+func (c *Client) AssignManagerStream(ctx context.Context, req *managerpb.AssignManagerRequest) (managerpb.ManagerService_AssignManagerStreamClient, error) {
+	stream, err := c.client.AssignManagerStream(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("assign manager stream rpc failed: %w", err)
+	}
+
+	return stream, nil
+}
+
 // AssignManagersAndWait отправляет запрос и ждёт ZIP архив (legacy)
 func (c *Client) AssignManagersAndWait(ctx context.Context, taskID, techDesc string, roles []string, tokens map[string]string, model, provider string) ([]byte, error) {
 	tokensJSON, _ := json.Marshal(tokens)

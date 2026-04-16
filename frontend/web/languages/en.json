@@ -80,7 +80,11 @@
     "hideTokenField": "Hide token input field",
     "hideTokenFieldHint": "Hide API key field on main screen",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -224,5 +228,36 @@
     "importBtn": "Import",
     "chooseFile": "Choose file",
     "invalidJson": "Invalid JSON format"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "loginTitle": "Login",
+    "registerTitle": "Register",
+    "close": "Close",
+    "emailRequired": "Email is required",
+    "passwordRequired": "Password is required",
+    "usernameRequired": "Username is required",
+    "invalidEmail": "Invalid email format",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordsNotMatch": "Passwords do not match",
+    "password": "Password",
+    "enterPassword": "Enter password",
+    "loggingIn": "Logging in...",
+    "username": "Username",
+    "yourName": "Your name",
+    "min6Chars": "Min. 6 characters",
+    "confirmPassword": "Confirm password",
+    "repeatPassword": "Repeat password",
+    "registering": "Registering...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
   }
 }

@@ -28,7 +28,7 @@ function BossNodeComponent({ data }: NodeProps<{ data: BossNodeData }>) {
   const statusColors: Record<string, string> = {
     pending: 'border-gray-500',
     thinking: 'border-blue-500',
-    working: 'border-orange-500 animate-pulse',
+    working: 'border-orange-500',
     reviewing: 'border-purple-500',
     done: 'border-green-500',
     error: 'border-red-500',
@@ -76,7 +76,7 @@ function BossNodeComponent({ data }: NodeProps<{ data: BossNodeData }>) {
           </div>
         )}
       </div>
-      
+
       <Handle type="source" position={Position.Bottom} />
     </div>
   );

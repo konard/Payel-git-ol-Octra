@@ -4,6 +4,7 @@ import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
 	"boss/internal/fetcher/grpc/merger"
+	"boss/internal/redis"
 	"boss/pkg/database"
 	"boss/pkg/models"
 	"context"
@@ -16,6 +17,7 @@ type BossService struct {
 	bosspb.UnimplementedBossServiceServer
 	managerClient *manager.Client
 	mergerClient  *merger.Client
+	redisClient   *redis.Client
 }
 
 func NewBossService() *BossService {
@@ -29,9 +31,12 @@ func NewBossService() *BossService {
 		log.Printf("Warning: failed to connect to merger service: %v", err)
 	}
 
+	redisClient := redis.NewClient()
+
 	return &BossService{
 		managerClient: mgrClient,
 		mergerClient:  mrgClient,
+		redisClient:   redisClient,
 	}
 }
 
@@ -57,5 +62,27 @@ func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusR
 		TaskId:   task.ID.String(),
 		Status:   task.Status,
 		Progress: "50%",
+	}, nil
+}
+
+// StopTask stops a running task
+func (s *BossService) StopTask(ctx context.Context, req *bosspb.StopTaskRequest) (*bosspb.TaskStatusResponse, error) {
+	var task models.Task
+	if err := database.Db.First(&task, "id = ?", req.TaskId).Error; err != nil {
+		return nil, err
+	}
+
+	// Update task status to cancelled
+	task.Status = "cancelled"
+	if err := database.Db.Save(&task).Error; err != nil {
+		return nil, err
+	}
+
+	// TODO: Implement actual cancellation logic (context cancellation, goroutine cleanup)
+
+	return &bosspb.TaskStatusResponse{
+		TaskId:   task.ID.String(),
+		Status:   "cancelled",
+		Progress: "0%",
 	}, nil
 }

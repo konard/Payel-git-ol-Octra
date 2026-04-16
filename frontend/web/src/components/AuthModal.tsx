@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useI18n } from '../hooks/useI18n';
 
 type AuthView = 'login' | 'register';
 
@@ -14,6 +15,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
+  const { t } = useI18n();
   const [view, setView] = useState<AuthView>('login');
   
   // Login state
@@ -45,12 +47,12 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
     setFormError('');
 
     if (!loginEmail.trim()) {
-      setFormError('Email обязателен');
+      setFormError(t('auth.emailRequired'));
       return;
     }
 
     if (!loginPassword) {
-      setFormError('Пароль обязателен');
+      setFormError(t('auth.passwordRequired'));
       return;
     }
 
@@ -67,33 +69,33 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
     setFormError('');
 
     if (!regUsername.trim()) {
-      setFormError('Имя пользователя обязательно');
+      setFormError(t('auth.usernameRequired'));
       return;
     }
 
     if (!regEmail.trim()) {
-      setFormError('Email обязателен');
+      setFormError(t('auth.emailRequired'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(regEmail)) {
-      setFormError('Неверный формат email');
+      setFormError(t('auth.invalidEmail'));
       return;
     }
 
     if (!regPassword) {
-      setFormError('Пароль обязателен');
+      setFormError(t('auth.passwordRequired'));
       return;
     }
 
     if (regPassword.length < 6) {
-      setFormError('Пароль должен содержать минимум 6 символов');
+      setFormError(t('auth.passwordMinLength'));
       return;
     }
 
     if (regPassword !== regConfirmPassword) {
-      setFormError('Пароли не совпадают');
+      setFormError(t('auth.passwordsNotMatch'));
       return;
     }
 
@@ -129,12 +131,12 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <h2 className="text-xl font-semibold text-[var(--text)]">
-            {view === 'login' ? 'Войти' : 'Регистрация'}
+            {view === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}
           </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-[var(--background)] rounded-md transition-colors"
-            aria-label="Закрыть"
+            aria-label={t('auth.close')}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="1" y1="1" x2="13" y2="13" />
@@ -172,14 +174,14 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="login-password" className="text-sm font-medium text-[var(--text)]">
-                  Пароль
+                  {t('auth.password')}
                 </label>
                 <input
                   id="login-password"
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Введите пароль"
+                  placeholder={t('auth.enterPassword')}
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   disabled={isLoading}
                   required
@@ -192,21 +194,21 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
-                {isLoading ? 'Вход...' : 'Войти'}
+                {isLoading ? t('auth.loggingIn') : t('auth.login')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <label htmlFor="reg-username" className="text-sm font-medium text-[var(--text)]">
-                  Имя пользователя
+                  {t('auth.username')}
                 </label>
                 <input
                   id="reg-username"
                   type="text"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
-                  placeholder="Ваше имя"
+                  placeholder={t('auth.yourName')}
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   disabled={isLoading}
                   required
@@ -233,14 +235,14 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="reg-password" className="text-sm font-medium text-[var(--text)]">
-                  Пароль
+                  {t('auth.password')}
                 </label>
                 <input
                   id="reg-password"
                   type="password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Минимум 6 символов"
+                  placeholder={t('auth.min6Chars')}
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   disabled={isLoading}
                   required
@@ -250,14 +252,14 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="reg-confirm-password" className="text-sm font-medium text-[var(--text)]">
-                  Подтвердите пароль
+                  {t('auth.confirmPassword')}
                 </label>
                 <input
                   id="reg-confirm-password"
                   type="password"
                   value={regConfirmPassword}
                   onChange={(e) => setRegConfirmPassword(e.target.value)}
-                  placeholder="Повторите пароль"
+                  placeholder={t('auth.repeatPassword')}
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   disabled={isLoading}
                   required
@@ -270,7 +272,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
-                {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+                {isLoading ? t('auth.registering') : t('auth.register')}
               </button>
             </form>
           )}
@@ -281,24 +283,24 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
           <p className="text-sm text-[var(--text-secondary)]">
             {view === 'login' ? (
               <>
-                Нет аккаунта?{' '}
+                {t('auth.noAccount')}{' '}
                 <button
                   onClick={switchToRegister}
                   className="text-[var(--accent)] hover:text-[var(--accent)]/90 font-medium transition-colors"
                   disabled={isLoading}
                 >
-                  Зарегистрироваться
+                  {t('auth.register')}
                 </button>
               </>
             ) : (
               <>
-                Уже есть аккаунт?{' '}
+                {t('auth.hasAccount')}{' '}
                 <button
                   onClick={switchToLogin}
                   className="text-[var(--accent)] hover:text-[var(--accent)]/90 font-medium transition-colors"
                   disabled={isLoading}
                 >
-                  Войти
+                  {t('auth.login')}
                 </button>
               </>
             )}

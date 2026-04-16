@@ -27,7 +27,7 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
   const statusColors: Record<string, string> = {
     pending: 'border-gray-500',
     thinking: 'border-blue-500',
-    working: 'border-green-500 animate-pulse',
+    working: 'border-green-500',
     reviewing: 'border-purple-500',
     done: 'border-green-500',
     error: 'border-red-500',
@@ -69,8 +69,8 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
           </div>
         )}
       </div>
-      
-      <Handle type="source" position={Position.Bottom} id="source" />
+
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 }

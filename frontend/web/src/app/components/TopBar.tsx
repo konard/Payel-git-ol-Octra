@@ -141,9 +141,9 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             <button
               onClick={onShowAuth}
               className="px-3 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-md transition-colors"
-              title="Войти"
+              title={t('auth.login')}
             >
-              Войти
+              {t('auth.login')}
             </button>
           )}
           {isAuthenticated && !hasSubscription && (

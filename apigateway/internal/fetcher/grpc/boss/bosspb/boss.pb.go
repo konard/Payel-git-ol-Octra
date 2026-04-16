@@ -621,6 +621,104 @@ func (x *TaskStatusResponse) GetProgress() string {
 	return ""
 }
 
+// Resume task stream request
+type ResumeTaskStreamRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumeTaskStreamRequest) Reset() {
+	*x = ResumeTaskStreamRequest{}
+	mi := &file_boss_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumeTaskStreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumeTaskStreamRequest) ProtoMessage() {}
+
+func (x *ResumeTaskStreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumeTaskStreamRequest.ProtoReflect.Descriptor instead.
+func (*ResumeTaskStreamRequest) Descriptor() ([]byte, []int) {
+	return file_boss_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ResumeTaskStreamRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *ResumeTaskStreamRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// Stop task request
+type StopTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StopTaskRequest) Reset() {
+	*x = StopTaskRequest{}
+	mi := &file_boss_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StopTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopTaskRequest) ProtoMessage() {}
+
+func (x *StopTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopTaskRequest.ProtoReflect.Descriptor instead.
+func (*StopTaskRequest) Descriptor() ([]byte, []int) {
+	return file_boss_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StopTaskRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
 var File_boss_proto protoreflect.FileDescriptor
 
 const file_boss_proto_rawDesc = "" +
@@ -685,9 +783,16 @@ const file_boss_proto_rawDesc = "" +
 	"\x12TaskStatusResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1a\n" +
-	"\bprogress\x18\x03 \x01(\tR\bprogress2\xcd\x01\n" +
+	"\bprogress\x18\x03 \x01(\tR\bprogress\"K\n" +
+	"\x17ResumeTaskStreamRequest\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"*\n" +
+	"\x0fStopTaskRequest\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId2\xd1\x02\n" +
 	"\vBossService\x12?\n" +
-	"\x10CreateTaskStream\x12\x17.boss.CreateTaskRequest\x1a\x10.boss.TaskUpdate0\x01\x129\n" +
+	"\x10CreateTaskStream\x12\x17.boss.CreateTaskRequest\x1a\x10.boss.TaskUpdate0\x01\x12E\n" +
+	"\x10ResumeTaskStream\x12\x1d.boss.ResumeTaskStreamRequest\x1a\x10.boss.TaskUpdate0\x01\x12;\n" +
+	"\bStopTask\x12\x15.boss.StopTaskRequest\x1a\x18.boss.TaskStatusResponse\x129\n" +
 	"\n" +
 	"CreateTask\x12\x17.boss.CreateTaskRequest\x1a\x12.boss.BossDecision\x12B\n" +
 	"\rGetTaskStatus\x12\x17.boss.TaskStatusRequest\x1a\x18.boss.TaskStatusResponseB.Z,apigateway/internal/fetcher/grpc/boss/bosspbb\x06proto3"
@@ -704,35 +809,41 @@ func file_boss_proto_rawDescGZIP() []byte {
 	return file_boss_proto_rawDescData
 }
 
-var file_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_boss_proto_goTypes = []any{
-	(*TaskUpdate)(nil),         // 0: boss.TaskUpdate
-	(*WorkerRole)(nil),         // 1: boss.WorkerRole
-	(*ManagerConfig)(nil),      // 2: boss.ManagerConfig
-	(*CreateTaskRequest)(nil),  // 3: boss.CreateTaskRequest
-	(*ManagerRole)(nil),        // 4: boss.ManagerRole
-	(*BossDecision)(nil),       // 5: boss.BossDecision
-	(*TaskStatusRequest)(nil),  // 6: boss.TaskStatusRequest
-	(*TaskStatusResponse)(nil), // 7: boss.TaskStatusResponse
-	nil,                        // 8: boss.TaskUpdate.DataEntry
-	nil,                        // 9: boss.CreateTaskRequest.TokensEntry
-	nil,                        // 10: boss.CreateTaskRequest.MetaEntry
+	(*TaskUpdate)(nil),              // 0: boss.TaskUpdate
+	(*WorkerRole)(nil),              // 1: boss.WorkerRole
+	(*ManagerConfig)(nil),           // 2: boss.ManagerConfig
+	(*CreateTaskRequest)(nil),       // 3: boss.CreateTaskRequest
+	(*ManagerRole)(nil),             // 4: boss.ManagerRole
+	(*BossDecision)(nil),            // 5: boss.BossDecision
+	(*TaskStatusRequest)(nil),       // 6: boss.TaskStatusRequest
+	(*TaskStatusResponse)(nil),      // 7: boss.TaskStatusResponse
+	(*ResumeTaskStreamRequest)(nil), // 8: boss.ResumeTaskStreamRequest
+	(*StopTaskRequest)(nil),         // 9: boss.StopTaskRequest
+	nil,                             // 10: boss.TaskUpdate.DataEntry
+	nil,                             // 11: boss.CreateTaskRequest.TokensEntry
+	nil,                             // 12: boss.CreateTaskRequest.MetaEntry
 }
 var file_boss_proto_depIdxs = []int32{
-	8,  // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
+	10, // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
 	1,  // 1: boss.ManagerConfig.workers:type_name -> boss.WorkerRole
-	9,  // 2: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
-	10, // 3: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
+	11, // 2: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
+	12, // 3: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
 	2,  // 4: boss.CreateTaskRequest.predefined_managers:type_name -> boss.ManagerConfig
 	4,  // 5: boss.BossDecision.manager_roles:type_name -> boss.ManagerRole
 	3,  // 6: boss.BossService.CreateTaskStream:input_type -> boss.CreateTaskRequest
-	3,  // 7: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
-	6,  // 8: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
-	0,  // 9: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
-	5,  // 10: boss.BossService.CreateTask:output_type -> boss.BossDecision
-	7,  // 11: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
-	9,  // [9:12] is the sub-list for method output_type
-	6,  // [6:9] is the sub-list for method input_type
+	8,  // 7: boss.BossService.ResumeTaskStream:input_type -> boss.ResumeTaskStreamRequest
+	9,  // 8: boss.BossService.StopTask:input_type -> boss.StopTaskRequest
+	3,  // 9: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
+	6,  // 10: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
+	0,  // 11: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
+	0,  // 12: boss.BossService.ResumeTaskStream:output_type -> boss.TaskUpdate
+	7,  // 13: boss.BossService.StopTask:output_type -> boss.TaskStatusResponse
+	5,  // 14: boss.BossService.CreateTask:output_type -> boss.BossDecision
+	7,  // 15: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name
@@ -749,7 +860,7 @@ func file_boss_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_boss_proto_rawDesc), len(file_boss_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -76,3 +76,27 @@ func (c *Client) CreateTaskStream(ctx context.Context, req *bosspb.CreateTaskReq
 
 	return stream, nil
 }
+
+// ResumeTaskStream восстанавливает stream к существующей задаче
+func (c *Client) ResumeTaskStream(ctx context.Context, req *bosspb.ResumeTaskStreamRequest) (bosspb.BossService_CreateTaskStreamClient, error) {
+	stream, err := c.client.ResumeTaskStream(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("resume task stream rpc failed: %w", err)
+	}
+
+	return stream, nil
+}
+
+// StopTask останавливает выполняющуюся задачу
+func (c *Client) StopTask(ctx context.Context, taskID string) (*bosspb.TaskStatusResponse, error) {
+	req := &bosspb.StopTaskRequest{
+		TaskId: taskID,
+	}
+
+	resp, err := c.client.StopTask(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("stop task rpc failed: %w", err)
+	}
+
+	return resp, nil
+}

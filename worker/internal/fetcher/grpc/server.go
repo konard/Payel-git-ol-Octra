@@ -25,6 +25,10 @@ func (s *Server) AssignWorkersAndWait(ctx context.Context, req *workerpb.AssignW
 	return s.service.AssignWorkersAndWait(ctx, req)
 }
 
+func (s *Server) AssignWorkersAndWaitStream(req *workerpb.AssignWorkersRequest, stream workerpb.WorkerService_AssignWorkersAndWaitStreamServer) error {
+	return s.service.AssignWorkersAndWaitStream(req, stream)
+}
+
 func (s *Server) ReviewWorker(ctx context.Context, req *workerpb.ReviewRequest) (*workerpb.ReviewResponse, error) {
 	return s.service.ReviewWorker(ctx, req)
 }

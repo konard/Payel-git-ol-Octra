@@ -80,7 +80,11 @@
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
     "save": "Сохранить",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "hideServerStatus": "Скрыть статус сервера",
+    "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
+    "hideConsole": "Скрыть консоль",
+    "hideConsoleHint": "Скрыть панель консоли"
   },
   "languages": {
     "en": "English",
@@ -224,5 +228,36 @@
     "importBtn": "Импортировать",
     "chooseFile": "Выбрать файл",
     "invalidJson": "Неверный формат JSON"
+  },
+  "profile": {
+    "subscriptionEnd": "Действительно до",
+    "noSubscription": "Нет активной подписки",
+    "userId": "ID пользователя",
+    "memberSince": "Участник с",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "loginTitle": "Войти",
+    "registerTitle": "Регистрация",
+    "close": "Закрыть",
+    "emailRequired": "Email обязателен",
+    "passwordRequired": "Пароль обязателен",
+    "usernameRequired": "Имя пользователя обязательно",
+    "invalidEmail": "Неверный формат email",
+    "passwordMinLength": "Пароль должен содержать минимум 6 символов",
+    "passwordsNotMatch": "Пароли не совпадают",
+    "password": "Пароль",
+    "enterPassword": "Введите пароль",
+    "loggingIn": "Вход...",
+    "username": "Имя пользователя",
+    "yourName": "Ваше имя",
+    "min6Chars": "Мин. 6 символов",
+    "confirmPassword": "Подтвердите пароль",
+    "repeatPassword": "Повторите пароль",
+    "registering": "Регистрация...",
+    "noAccount": "Нет аккаунта?",
+    "hasAccount": "Уже есть аккаунт?"
   }
 }

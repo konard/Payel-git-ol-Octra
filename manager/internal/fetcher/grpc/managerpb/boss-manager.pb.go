@@ -276,6 +276,59 @@ func (x *WorkerResult) GetApproved() bool {
 	return false
 }
 
+// WorkerRoleConfig — конфигурация воркера (для predefined workflow)
+type WorkerRoleConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkerRoleConfig) Reset() {
+	*x = WorkerRoleConfig{}
+	mi := &file_boss_manager_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkerRoleConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkerRoleConfig) ProtoMessage() {}
+
+func (x *WorkerRoleConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_boss_manager_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkerRoleConfig.ProtoReflect.Descriptor instead.
+func (*WorkerRoleConfig) Descriptor() ([]byte, []int) {
+	return file_boss_manager_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *WorkerRoleConfig) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *WorkerRoleConfig) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 // Запрос от boss к manager — ОДИН менеджер на запрос
 type AssignManagerRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
@@ -287,13 +340,14 @@ type AssignManagerRequest struct {
 	Priority             int32                  `protobuf:"varint,6,opt,name=priority,proto3" json:"priority,omitempty"`                                                                          // приоритет
 	Metadata             map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // tokens, model, provider
 	OtherWorkersResults  []*WorkerResult        `protobuf:"bytes,8,rep,name=other_workers_results,json=otherWorkersResults,proto3" json:"other_workers_results,omitempty"`                        // результаты других воркеров для контекста
+	WorkerRoles          []*WorkerRoleConfig    `protobuf:"bytes,9,rep,name=worker_roles,json=workerRoles,proto3" json:"worker_roles,omitempty"`                                                  // predefined worker roles (empty = AI decides)
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *AssignManagerRequest) Reset() {
 	*x = AssignManagerRequest{}
-	mi := &file_boss_manager_proto_msgTypes[3]
+	mi := &file_boss_manager_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -305,7 +359,7 @@ func (x *AssignManagerRequest) String() string {
 func (*AssignManagerRequest) ProtoMessage() {}
 
 func (x *AssignManagerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_boss_manager_proto_msgTypes[3]
+	mi := &file_boss_manager_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -318,7 +372,7 @@ func (x *AssignManagerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignManagerRequest.ProtoReflect.Descriptor instead.
 func (*AssignManagerRequest) Descriptor() ([]byte, []int) {
-	return file_boss_manager_proto_rawDescGZIP(), []int{3}
+	return file_boss_manager_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AssignManagerRequest) GetTaskId() string {
@@ -377,6 +431,13 @@ func (x *AssignManagerRequest) GetOtherWorkersResults() []*WorkerResult {
 	return nil
 }
 
+func (x *AssignManagerRequest) GetWorkerRoles() []*WorkerRoleConfig {
+	if x != nil {
+		return x.WorkerRoles
+	}
+	return nil
+}
+
 // Результат работы одного менеджера
 type ManagerResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -393,7 +454,7 @@ type ManagerResult struct {
 
 func (x *ManagerResult) Reset() {
 	*x = ManagerResult{}
-	mi := &file_boss_manager_proto_msgTypes[4]
+	mi := &file_boss_manager_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +466,7 @@ func (x *ManagerResult) String() string {
 func (*ManagerResult) ProtoMessage() {}
 
 func (x *ManagerResult) ProtoReflect() protoreflect.Message {
-	mi := &file_boss_manager_proto_msgTypes[4]
+	mi := &file_boss_manager_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,7 +479,7 @@ func (x *ManagerResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagerResult.ProtoReflect.Descriptor instead.
 func (*ManagerResult) Descriptor() ([]byte, []int) {
-	return file_boss_manager_proto_rawDescGZIP(), []int{4}
+	return file_boss_manager_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ManagerResult) GetTaskId() string {
@@ -484,7 +545,7 @@ type AssignManagersResponse struct {
 
 func (x *AssignManagersResponse) Reset() {
 	*x = AssignManagersResponse{}
-	mi := &file_boss_manager_proto_msgTypes[5]
+	mi := &file_boss_manager_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -496,7 +557,7 @@ func (x *AssignManagersResponse) String() string {
 func (*AssignManagersResponse) ProtoMessage() {}
 
 func (x *AssignManagersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_boss_manager_proto_msgTypes[5]
+	mi := &file_boss_manager_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -509,7 +570,7 @@ func (x *AssignManagersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignManagersResponse.ProtoReflect.Descriptor instead.
 func (*AssignManagersResponse) Descriptor() ([]byte, []int) {
-	return file_boss_manager_proto_rawDescGZIP(), []int{5}
+	return file_boss_manager_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *AssignManagersResponse) GetTaskId() string {
@@ -560,7 +621,7 @@ type AssignManagersRequest struct {
 
 func (x *AssignManagersRequest) Reset() {
 	*x = AssignManagersRequest{}
-	mi := &file_boss_manager_proto_msgTypes[6]
+	mi := &file_boss_manager_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -572,7 +633,7 @@ func (x *AssignManagersRequest) String() string {
 func (*AssignManagersRequest) ProtoMessage() {}
 
 func (x *AssignManagersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_boss_manager_proto_msgTypes[6]
+	mi := &file_boss_manager_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -585,7 +646,7 @@ func (x *AssignManagersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignManagersRequest.ProtoReflect.Descriptor instead.
 func (*AssignManagersRequest) Descriptor() ([]byte, []int) {
-	return file_boss_manager_proto_rawDescGZIP(), []int{6}
+	return file_boss_manager_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AssignManagersRequest) GetTaskId() string {
@@ -651,7 +712,10 @@ const file_boss_manager_proto_rawDesc = "" +
 	"\n" +
 	"FilesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa6\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"H\n" +
+	"\x10WorkerRoleConfig\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xe4\x03\n" +
 	"\x14AssignManagerRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
@@ -661,7 +725,8 @@ const file_boss_manager_proto_rawDesc = "" +
 	"\x15technical_description\x18\x05 \x01(\tR\x14technicalDescription\x12\x1a\n" +
 	"\bpriority\x18\x06 \x01(\x05R\bpriority\x12G\n" +
 	"\bmetadata\x18\a \x03(\v2+.manager.AssignManagerRequest.MetadataEntryR\bmetadata\x12I\n" +
-	"\x15other_workers_results\x18\b \x03(\v2\x15.manager.WorkerResultR\x13otherWorkersResults\x1a;\n" +
+	"\x15other_workers_results\x18\b \x03(\v2\x15.manager.WorkerResultR\x13otherWorkersResults\x12<\n" +
+	"\fworker_roles\x18\t \x03(\v2\x19.manager.WorkerRoleConfigR\vworkerRoles\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x01\n" +
@@ -687,9 +752,10 @@ const file_boss_manager_proto_rawDesc = "" +
 	"\bmetadata\x18\x04 \x03(\v2,.manager.AssignManagersRequest.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x88\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xd5\x02\n" +
 	"\x0eManagerService\x12F\n" +
-	"\rAssignManager\x12\x1d.manager.AssignManagerRequest\x1a\x16.manager.ManagerResult\x12X\n" +
+	"\rAssignManager\x12\x1d.manager.AssignManagerRequest\x1a\x16.manager.ManagerResult\x12K\n" +
+	"\x13AssignManagerStream\x12\x1d.manager.AssignManagerRequest\x1a\x13.manager.TaskUpdate0\x01\x12X\n" +
 	"\x15AssignManagersAndWait\x12\x1e.manager.AssignManagersRequest\x1a\x1f.manager.AssignManagersResponse\x12T\n" +
 	"\x1bAssignManagersAndWaitStream\x12\x1e.manager.AssignManagersRequest\x1a\x13.manager.TaskUpdate0\x01B)Z'manager/internal/fetcher/grpc/managerpbb\x06proto3"
 
@@ -705,39 +771,43 @@ func file_boss_manager_proto_rawDescGZIP() []byte {
 	return file_boss_manager_proto_rawDescData
 }
 
-var file_boss_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_boss_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_boss_manager_proto_goTypes = []any{
 	(*TaskUpdate)(nil),             // 0: manager.TaskUpdate
 	(*ManagerConfig)(nil),          // 1: manager.ManagerConfig
 	(*WorkerResult)(nil),           // 2: manager.WorkerResult
-	(*AssignManagerRequest)(nil),   // 3: manager.AssignManagerRequest
-	(*ManagerResult)(nil),          // 4: manager.ManagerResult
-	(*AssignManagersResponse)(nil), // 5: manager.AssignManagersResponse
-	(*AssignManagersRequest)(nil),  // 6: manager.AssignManagersRequest
-	nil,                            // 7: manager.TaskUpdate.DataEntry
-	nil,                            // 8: manager.WorkerResult.FilesEntry
-	nil,                            // 9: manager.AssignManagerRequest.MetadataEntry
-	nil,                            // 10: manager.AssignManagersRequest.MetadataEntry
+	(*WorkerRoleConfig)(nil),       // 3: manager.WorkerRoleConfig
+	(*AssignManagerRequest)(nil),   // 4: manager.AssignManagerRequest
+	(*ManagerResult)(nil),          // 5: manager.ManagerResult
+	(*AssignManagersResponse)(nil), // 6: manager.AssignManagersResponse
+	(*AssignManagersRequest)(nil),  // 7: manager.AssignManagersRequest
+	nil,                            // 8: manager.TaskUpdate.DataEntry
+	nil,                            // 9: manager.WorkerResult.FilesEntry
+	nil,                            // 10: manager.AssignManagerRequest.MetadataEntry
+	nil,                            // 11: manager.AssignManagersRequest.MetadataEntry
 }
 var file_boss_manager_proto_depIdxs = []int32{
-	7,  // 0: manager.TaskUpdate.data:type_name -> manager.TaskUpdate.DataEntry
-	8,  // 1: manager.WorkerResult.files:type_name -> manager.WorkerResult.FilesEntry
-	9,  // 2: manager.AssignManagerRequest.metadata:type_name -> manager.AssignManagerRequest.MetadataEntry
+	8,  // 0: manager.TaskUpdate.data:type_name -> manager.TaskUpdate.DataEntry
+	9,  // 1: manager.WorkerResult.files:type_name -> manager.WorkerResult.FilesEntry
+	10, // 2: manager.AssignManagerRequest.metadata:type_name -> manager.AssignManagerRequest.MetadataEntry
 	2,  // 3: manager.AssignManagerRequest.other_workers_results:type_name -> manager.WorkerResult
-	2,  // 4: manager.ManagerResult.worker_results:type_name -> manager.WorkerResult
-	4,  // 5: manager.AssignManagersResponse.manager_results:type_name -> manager.ManagerResult
-	10, // 6: manager.AssignManagersRequest.metadata:type_name -> manager.AssignManagersRequest.MetadataEntry
-	3,  // 7: manager.ManagerService.AssignManager:input_type -> manager.AssignManagerRequest
-	6,  // 8: manager.ManagerService.AssignManagersAndWait:input_type -> manager.AssignManagersRequest
-	6,  // 9: manager.ManagerService.AssignManagersAndWaitStream:input_type -> manager.AssignManagersRequest
-	4,  // 10: manager.ManagerService.AssignManager:output_type -> manager.ManagerResult
-	5,  // 11: manager.ManagerService.AssignManagersAndWait:output_type -> manager.AssignManagersResponse
-	0,  // 12: manager.ManagerService.AssignManagersAndWaitStream:output_type -> manager.TaskUpdate
-	10, // [10:13] is the sub-list for method output_type
-	7,  // [7:10] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	3,  // 4: manager.AssignManagerRequest.worker_roles:type_name -> manager.WorkerRoleConfig
+	2,  // 5: manager.ManagerResult.worker_results:type_name -> manager.WorkerResult
+	5,  // 6: manager.AssignManagersResponse.manager_results:type_name -> manager.ManagerResult
+	11, // 7: manager.AssignManagersRequest.metadata:type_name -> manager.AssignManagersRequest.MetadataEntry
+	4,  // 8: manager.ManagerService.AssignManager:input_type -> manager.AssignManagerRequest
+	4,  // 9: manager.ManagerService.AssignManagerStream:input_type -> manager.AssignManagerRequest
+	7,  // 10: manager.ManagerService.AssignManagersAndWait:input_type -> manager.AssignManagersRequest
+	7,  // 11: manager.ManagerService.AssignManagersAndWaitStream:input_type -> manager.AssignManagersRequest
+	5,  // 12: manager.ManagerService.AssignManager:output_type -> manager.ManagerResult
+	0,  // 13: manager.ManagerService.AssignManagerStream:output_type -> manager.TaskUpdate
+	6,  // 14: manager.ManagerService.AssignManagersAndWait:output_type -> manager.AssignManagersResponse
+	0,  // 15: manager.ManagerService.AssignManagersAndWaitStream:output_type -> manager.TaskUpdate
+	12, // [12:16] is the sub-list for method output_type
+	8,  // [8:12] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_boss_manager_proto_init() }
@@ -751,7 +821,7 @@ func file_boss_manager_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_boss_manager_proto_rawDesc), len(file_boss_manager_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

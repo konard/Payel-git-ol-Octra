@@ -48,6 +48,16 @@ func (c *Client) AssignWorkersAndWait(ctx context.Context, req *workerpb.AssignW
 	return resp, nil
 }
 
+// AssignWorkersAndWaitStream отправляет запрос и получает streaming updates
+func (c *Client) AssignWorkersAndWaitStream(ctx context.Context, req *workerpb.AssignWorkersRequest) (workerpb.WorkerService_AssignWorkersAndWaitStreamClient, error) {
+	stream, err := c.client.AssignWorkersAndWaitStream(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("assign workers stream rpc failed: %w", err)
+	}
+
+	return stream, nil
+}
+
 // ReviewWorker отправляет замечания воркеру
 func (c *Client) ReviewWorker(ctx context.Context, req *workerpb.ReviewRequest) (*workerpb.ReviewResponse, error) {
 	resp, err := c.client.ReviewWorker(ctx, req)

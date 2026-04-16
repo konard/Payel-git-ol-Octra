@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"manager/internal/fetcher/grpc/managerpb"
+	"time"
 )
 
 // AssignManager — назначить ОДНОГО менеджера (вызывается Boss для каждого менеджера отдельно)
@@ -14,6 +15,65 @@ func (s *ManagerService) AssignManager(ctx context.Context, req *managerpb.Assig
 	log.Printf("=== Manager assigned: %s (%s), priority %d ===", req.ManagerId, req.Role, req.Priority)
 
 	return s.processManager(ctx, req)
+}
+
+// AssignManagerStream — streaming version that sends progress updates
+func (s *ManagerService) AssignManagerStream(req *managerpb.AssignManagerRequest, stream managerpb.ManagerService_AssignManagerStreamServer) error {
+	log.Printf("=== Manager stream assigned: %s (%s), priority %d ===", req.ManagerId, req.Role, req.Priority)
+
+	ctx := stream.Context()
+
+	// Send initial progress
+	stream.Send(&managerpb.TaskUpdate{
+		TaskId:    req.TaskId,
+		Message:   fmt.Sprintf("Manager %s assigned and starting work", req.Role),
+		Progress:  0,
+		Status:    "processing",
+		Timestamp: time.Now().Unix(),
+		Data: map[string]string{
+			"current_role": req.Role,
+		},
+	})
+
+	// Process manager with progress callback
+	_, err := s.processManagerWithProgress(ctx, req, func(progress int, message string) {
+		stream.Send(&managerpb.TaskUpdate{
+			TaskId:    req.TaskId,
+			Message:   message,
+			Progress:  int32(progress),
+			Status:    "processing",
+			Timestamp: time.Now().Unix(),
+			Data: map[string]string{
+				"current_role": req.Role,
+			},
+		})
+	})
+
+	if err != nil {
+		stream.Send(&managerpb.TaskUpdate{
+			TaskId:    req.TaskId,
+			Message:   fmt.Sprintf("Manager %s failed: %v", req.Role, err),
+			Progress:  0,
+			Status:    "error",
+			Timestamp: time.Now().Unix(),
+		})
+		return err
+	}
+
+	// Send final success update
+	stream.Send(&managerpb.TaskUpdate{
+		TaskId:    req.TaskId,
+		Message:   fmt.Sprintf("Manager %s completed successfully", req.Role),
+		Progress:  100,
+		Status:    "success",
+		Timestamp: time.Now().Unix(),
+		Data: map[string]string{
+			"current_role": req.Role,
+			"manager_id":   req.ManagerId,
+		},
+	})
+
+	return nil
 }
 
 // AssignManagersAndWait — legacy, назначает всех менеджеров последовательно

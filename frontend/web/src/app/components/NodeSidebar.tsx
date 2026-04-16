@@ -241,7 +241,7 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
                   e.stopPropagation();
                   toggleWorkflows();
                 }}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                className="w-full flex items-center justify-between px-4 py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <div className="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">

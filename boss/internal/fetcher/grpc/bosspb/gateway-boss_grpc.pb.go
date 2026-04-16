@@ -20,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	BossService_CreateTaskStream_FullMethodName = "/boss.BossService/CreateTaskStream"
+	BossService_ResumeTaskStream_FullMethodName = "/boss.BossService/ResumeTaskStream"
+	BossService_StopTask_FullMethodName         = "/boss.BossService/StopTask"
 	BossService_CreateTask_FullMethodName       = "/boss.BossService/CreateTask"
 	BossService_GetTaskStatus_FullMethodName    = "/boss.BossService/GetTaskStatus"
 )
@@ -30,6 +32,10 @@ const (
 type BossServiceClient interface {
 	// Streaming version - отправляет обновления по мере выполнения
 	CreateTaskStream(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
+	// Resume existing task stream - reconnects to running task
+	ResumeTaskStream(ctx context.Context, in *ResumeTaskStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
+	// Stop running task
+	StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
 	// Legacy unary version (для совместимости)
 	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error)
 	GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
@@ -62,6 +68,35 @@ func (c *bossServiceClient) CreateTaskStream(ctx context.Context, in *CreateTask
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BossService_CreateTaskStreamClient = grpc.ServerStreamingClient[TaskUpdate]
 
+func (c *bossServiceClient) ResumeTaskStream(ctx context.Context, in *ResumeTaskStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &BossService_ServiceDesc.Streams[1], BossService_ResumeTaskStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ResumeTaskStreamRequest, TaskUpdate]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BossService_ResumeTaskStreamClient = grpc.ServerStreamingClient[TaskUpdate]
+
+func (c *bossServiceClient) StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TaskStatusResponse)
+	err := c.cc.Invoke(ctx, BossService_StopTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *bossServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BossDecision)
@@ -88,6 +123,10 @@ func (c *bossServiceClient) GetTaskStatus(ctx context.Context, in *TaskStatusReq
 type BossServiceServer interface {
 	// Streaming version - отправляет обновления по мере выполнения
 	CreateTaskStream(*CreateTaskRequest, grpc.ServerStreamingServer[TaskUpdate]) error
+	// Resume existing task stream - reconnects to running task
+	ResumeTaskStream(*ResumeTaskStreamRequest, grpc.ServerStreamingServer[TaskUpdate]) error
+	// Stop running task
+	StopTask(context.Context, *StopTaskRequest) (*TaskStatusResponse, error)
 	// Legacy unary version (для совместимости)
 	CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error)
 	GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error)
@@ -103,6 +142,12 @@ type UnimplementedBossServiceServer struct{}
 
 func (UnimplementedBossServiceServer) CreateTaskStream(*CreateTaskRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
 	return status.Error(codes.Unimplemented, "method CreateTaskStream not implemented")
+}
+func (UnimplementedBossServiceServer) ResumeTaskStream(*ResumeTaskStreamRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
+	return status.Error(codes.Unimplemented, "method ResumeTaskStream not implemented")
+}
+func (UnimplementedBossServiceServer) StopTask(context.Context, *StopTaskRequest) (*TaskStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopTask not implemented")
 }
 func (UnimplementedBossServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTask not implemented")
@@ -141,6 +186,35 @@ func _BossService_CreateTaskStream_Handler(srv interface{}, stream grpc.ServerSt
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BossService_CreateTaskStreamServer = grpc.ServerStreamingServer[TaskUpdate]
+
+func _BossService_ResumeTaskStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ResumeTaskStreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BossServiceServer).ResumeTaskStream(m, &grpc.GenericServerStream[ResumeTaskStreamRequest, TaskUpdate]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BossService_ResumeTaskStreamServer = grpc.ServerStreamingServer[TaskUpdate]
+
+func _BossService_StopTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BossServiceServer).StopTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BossService_StopTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BossServiceServer).StopTask(ctx, req.(*StopTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _BossService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateTaskRequest)
@@ -186,6 +260,10 @@ var BossService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BossServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "StopTask",
+			Handler:    _BossService_StopTask_Handler,
+		},
+		{
 			MethodName: "CreateTask",
 			Handler:    _BossService_CreateTask_Handler,
 		},
@@ -198,6 +276,11 @@ var BossService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "CreateTaskStream",
 			Handler:       _BossService_CreateTaskStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ResumeTaskStream",
+			Handler:       _BossService_ResumeTaskStream_Handler,
 			ServerStreams: true,
 		},
 	},

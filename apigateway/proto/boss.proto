@@ -78,10 +78,27 @@ message TaskStatusResponse {
   string progress = 3;
 }
 
+// Resume task stream request
+message ResumeTaskStreamRequest {
+  string task_id = 1;
+  string user_id = 2;
+}
+
+// Stop task request
+message StopTaskRequest {
+  string task_id = 1;
+}
+
 service BossService {
   // Streaming version - отправляет обновления по мере выполнения
   rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
-  
+
+  // Resume existing task stream - reconnects to running task
+  rpc ResumeTaskStream(ResumeTaskStreamRequest) returns (stream TaskUpdate);
+
+  // Stop running task
+  rpc StopTask(StopTaskRequest) returns (TaskStatusResponse);
+
   // Legacy unary version (для совместимости)
   rpc CreateTask(CreateTaskRequest) returns (BossDecision);
   rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);

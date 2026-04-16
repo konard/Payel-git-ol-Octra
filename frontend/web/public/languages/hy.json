@@ -28,7 +28,8 @@
   "console": {
     "title": "Կոնսոլ",
     "empty": "Խնդիրը դեռ չի սկսվել: Ստեղծեք խնդիր՝ մուտքագրելու համար:",
-    "connectionLost": "Կապը կորել է, վերամիանում..."
+    "connectionLost": "Կապը կորել է, վերամիանում...",
+    "reconnecting": "Վերամիանում խնդրին..."
   },
   "bottomInput": {
     "provider": "Մատակարար",
@@ -79,48 +80,11 @@
     "hideTokenField": "Թաքցնել թոքենի դաշտը",
     "hideTokenFieldHint": "Թաքցնել API բանալի դաշտը գլխավոր էկրանից",
     "save": "Պահպանել",
-    "cancel": "Չեղարկել"
-  },
-  "integrations": {
-    "title": "Ինտեգրացիաներ",
-    "description": "Միացրեք արտաքին ծառայություններ ձեր workflow-ների ավտոմատացման համար",
-    "integrate": "Ինտեգրել",
-    "connected": "Միացված է",
-    "disconnect": "Անջատել",
-    "configure": "Կարգավորել",
-    "collapse": "Ծալել",
-    "expand": "Ընդարձակել",
-    "useDefaultKey": "Օգտագործել լռելյայն բանալին",
-    "useDefaultKeyHint": "Օգտագործել թոքենը ձեր կարգավորումներից",
-    "apiKey": "API բանալի",
-    "apiKeyPlaceholder": "Մուտքագրեք API բանալին...",
-    "selectWorkflow": "Ընտրեք Workflow",
-    "selectWorkflowPlaceholder": "Ընտրեք workflow...",
-    "noWorkflows": "Workflow-ներ չկան",
-    "saveIntegration": "Պահպանել ինտեգրացիան",
-    "cancelIntegration": "Չեղարկել",
-    "integrationSaved": "Ինտեգրացիան հաջողությամբ պահպանվել է",
-    "integrationError": "Ինտեգրացիայի պահպանման սխալ",
-    "telegramBotLink": "Միացնել Telegram բոտի միջոցով",
-    "telegramBotDescription": "Սեղմեք ներքևի կոճակը՝ Telegram բոտը բացելու և լիազորելու համար",
-    "openTelegramBot": "Բացել Telegram բոտը",
-    "telegramConnected": "Telegram-ը միացված է",
-    "connectTelegram": "Միացնել Telegram-ը",
-    "activityPubUrl": "ActivityPub URL",
-    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
-    "activityPubDescription": "Խնդիրների բաժանորդագրություն ActivityPub արձանագրությամբ Lefine.pro-ից",
-    "outboxEndpoint": "Outbox Endpoint",
-    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
-    "inboxEndpoint": "Inbox Endpoint",
-    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
-    "lefine": {
-      "name": "Lefine.pro",
-      "description": "ActivityPub ինտեգրացիա խնդիրների փոխանակման համար"
-    },
-    "telegram": {
-      "name": "Telegram",
-      "description": "Միացրեք Telegram բոտը ծանուցումների և խնդիրների կառավարման համար"
-    }
+    "cancel": "Չեղարկել",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -169,6 +133,61 @@
     "delete": "Ջնջել նոդը",
     "notConnected": "Միացված չէ"
   },
+  "integrations": {
+    "title": "Ինտեգրացիաներ",
+    "description": "Միացրեք արտաքին ծառայություններ ձեր workflow-ների ավտոմատացման համար",
+    "integrate": "Ինտեգրել",
+    "connected": "Միացված է",
+    "disconnect": "Անջատել",
+    "configure": "Կարգավորել",
+    "collapse": "Ծալել",
+    "expand": "Ընդարձակել",
+    "useDefaultKey": "Օգտագործել լռելյայն բանալին",
+    "useDefaultKeyHint": "Օգտագործել թոքենը ձեր կարգավորումներից",
+    "apiKey": "API բանալի",
+    "apiKeyPlaceholder": "Մուտքագրեք API բանալին...",
+    "selectWorkflow": "Ընտրեք Workflow",
+    "selectWorkflowPlaceholder": "Ընտրեք workflow...",
+    "noWorkflows": "Workflow-ներ չկան",
+    "saveIntegration": "Պահպանել ինտեգրացիան",
+    "cancelIntegration": "Չեղարկել",
+    "integrationSaved": "Ինտեգրացիան հաջողությամբ պահպանվել է",
+    "integrationError": "Ինտեգրացիայի պահպանման սխալ",
+    "telegramBotLink": "Միացնել Telegram բոտի միջոցով",
+    "telegramBotDescription": "Սեղմեք ներքևի կոճակը՝ Telegram բոտը բացելու և լիազորելու համար",
+    "openTelegramBot": "Բացել Telegram բոտը",
+    "telegramConnected": "Telegram-ը միացված է",
+    "connectTelegram": "Միացնել Telegram-ը",
+    "activityPubUrl": "ActivityPub URL",
+    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
+    "activityPubDescription": "Խնդիրների բաժանորդագրություն ActivityPub արձանագրությամբ Lefine.pro-ից",
+    "outboxEndpoint": "Outbox Endpoint",
+    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
+    "inboxEndpoint": "Inbox Endpoint",
+    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
+    "lefine": {
+      "name": "Lefine.pro",
+      "description": "ActivityPub ինտեգրացիա խնդիրների փոխանակման համար",
+      "instanceUrl": "Instance URL",
+      "instanceUrlPlaceholder": "https://lefine.pro",
+      "useDefault": "Օգտագործել լռելյայն",
+      "enterManually": "Մուտքագրել ձեռքով",
+      "workflow": "Workflow",
+      "selectWorkflow": "Ընտրեք workflow",
+      "outboxSubscribed": "Բաժանորդագրված /outbox",
+      "inboxSending": "Ուղարկում /inbox"
+    },
+    "telegram": {
+      "name": "Telegram",
+      "description": "Միացրեք Telegram բոտը ծանուցումների և խնդիրների կառավարման համար",
+      "botLink": "Բոտի հղում",
+      "botLinkPlaceholder": "https://t.me/your_bot",
+      "botToken": "Բոտի թոքեն",
+      "botTokenPlaceholder": "Մուտքագրեք բոտի թոքենը",
+      "openBot": "Բացել բոտը",
+      "connectionStatus": "Միացման կարգավիճակ"
+    }
+  },
   "workflowLibrary": {
     "title": "Workflow Գրադարան",
     "public": "Հանրային",
@@ -209,5 +228,36 @@
     "importBtn": "Ներմուծել",
     "chooseFile": "Ընտրել ֆայլ",
     "invalidJson": "Սխալ JSON ֆորմատ"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Մուտք",
+    "register": "Գրանցում",
+    "loginTitle": "Մուտք",
+    "registerTitle": "Գրանցում",
+    "close": "Փակել",
+    "emailRequired": "Email-ը պարտադիր է",
+    "passwordRequired": "Գաղտնաբառը պարտադիր է",
+    "usernameRequired": "Օգտվողի անունը պարտադիր է",
+    "invalidEmail": "Email-ի ֆորմատը սխալ է",
+    "passwordMinLength": "Գաղտնաբառը պետք է ունենա առնվազն 6 նիշ",
+    "passwordsNotMatch": "Գաղտնաբառերը չեն համընկնում",
+    "password": "Գաղտնաբառ",
+    "enterPassword": "Մուտքագրեք գաղտնաբառը",
+    "loggingIn": "Մուտք...",
+    "username": "Օգտվողի անուն",
+    "yourName": "Ձեր անունը",
+    "min6Chars": "Նվազ. 6 նիշ",
+    "confirmPassword": "Հաստատեք գաղտնաբառը",
+    "repeatPassword": "Կրկնեք գաղտնաբառը",
+    "registering": "Գրանցում...",
+    "noAccount": "Չունե՞ք հաշիվ",
+    "hasAccount": "Արդեն ունե՞ք հաշիվ"
   }
 }

@@ -17,6 +17,13 @@ export default defineConfig({
   base: './',
   build: {
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-${Date.now()}.[ext]`,
+      },
+    },
   },
   server: {
     proxy: {

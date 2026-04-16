@@ -28,7 +28,8 @@
   "console": {
     "title": "Консоль",
     "empty": "Тапсырма әлі басталмаған. Логтарды көру үшін тапсырма жасаңыз.",
-    "connectionLost": "Байланыс жоғалды, қайта қосылу..."
+    "connectionLost": "Байланыс жоғалды, қайта қосылу...",
+    "reconnecting": "Тапсырмаға қайта қосылу..."
   },
   "bottomInput": {
     "provider": "Провайдер",
@@ -79,48 +80,11 @@
     "hideTokenField": "Токен енгізу жолағын жасыру",
     "hideTokenFieldHint": "Негізгі экранда API кілт жолағын жасыру",
     "save": "Сақтау",
-    "cancel": "Болдырмау"
-  },
-  "integrations": {
-    "title": "Интеграциялар",
-    "description": "Workflow-ларыңызды автоматтандыру үшін сыртқы қызметтерді қосыңыз",
-    "integrate": "Интеграциялау",
-    "connected": "Қосылды",
-    "disconnect": "Ажырату",
-    "configure": "Баптау",
-    "collapse": "Жию",
-    "expand": "Жаю",
-    "useDefaultKey": "Әдепкі кілтті қолдану",
-    "useDefaultKeyHint": "Баптауларыңыздан токенді қолдану",
-    "apiKey": "API кілт",
-    "apiKeyPlaceholder": "API кілтті енгізіңіз...",
-    "selectWorkflow": "Workflow таңдаңыз",
-    "selectWorkflowPlaceholder": "Workflow таңдаңыз...",
-    "noWorkflows": "Қолжетімді workflow жоқ",
-    "saveIntegration": "Интеграцияны сақтау",
-    "cancelIntegration": "Болдырмау",
-    "integrationSaved": "Интеграция сәтті сақталды",
-    "integrationError": "Интеграцияны сақтау қатесі",
-    "telegramBotLink": "Telegram бот арқылы қосу",
-    "telegramBotDescription": "Telegram ботын ашу және авторизациядан өту үшін төмендегі түймені басыңыз",
-    "openTelegramBot": "Telegram ботын ашу",
-    "telegramConnected": "Telegram қосылды",
-    "connectTelegram": "Telegram-ды қосу",
-    "activityPubUrl": "ActivityPub URL",
-    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
-    "activityPubDescription": "Lefine.pro-дан ActivityPub хаттамасы арқылы тапсырмаларға жазылу",
-    "outboxEndpoint": "Outbox Endpoint",
-    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
-    "inboxEndpoint": "Inbox Endpoint",
-    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
-    "lefine": {
-      "name": "Lefine.pro",
-      "description": "Тапсырмалар алмасу үшін ActivityPub интеграциясы"
-    },
-    "telegram": {
-      "name": "Telegram",
-      "description": "Хабарламалар мен тапсырмаларды басқару үшін Telegram ботын қосыңыз"
-    }
+    "cancel": "Болдырмау",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -169,6 +133,61 @@
     "delete": "Түйінді жою",
     "notConnected": "Қосылмаған"
   },
+  "integrations": {
+    "title": "Интеграциялар",
+    "description": "Жұмыс процестеріңізді автоматтандыру үшін сыртқы қызметтерді қосыңыз",
+    "integrate": "Интеграциялау",
+    "connected": "Қосылған",
+    "disconnect": "Ажырату",
+    "configure": "Баптау",
+    "collapse": "Жию",
+    "expand": "Кеңейту",
+    "useDefaultKey": "Әдепкі кілтті пайдалану",
+    "useDefaultKeyHint": "Баптауларыңыздағы токенді пайдалану",
+    "apiKey": "API кілті",
+    "apiKeyPlaceholder": "API кілтін енгізіңіз...",
+    "selectWorkflow": "Workflow таңдаңыз",
+    "selectWorkflowPlaceholder": "Workflow таңдаңыз...",
+    "noWorkflows": "Workflow-тар жоқ",
+    "saveIntegration": "Интеграцияны сақтау",
+    "cancelIntegration": "Болдырмау",
+    "integrationSaved": "Интеграция сәтті сақталды",
+    "integrationError": "Интеграцияны сақтау қатесі",
+    "telegramBotLink": "Telegram бот арқылы қосу",
+    "telegramBotDescription": "Telegram ботын ашу және авторизациялау үшін төмендегі түймені басыңыз",
+    "openTelegramBot": "Telegram ботын ашу",
+    "telegramConnected": "Telegram қосылған",
+    "connectTelegram": "Telegram-ды қосу",
+    "activityPubUrl": "ActivityPub URL",
+    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
+    "activityPubDescription": "Lefine.pro-дан ActivityPub хаттамасы арқылы тапсырмаларға жазылу",
+    "outboxEndpoint": "Outbox Endpoint",
+    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
+    "inboxEndpoint": "Inbox Endpoint",
+    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
+    "lefine": {
+      "name": "Lefine.pro",
+      "description": "Тапсырмалар алмасу үшін ActivityPub интеграциясы",
+      "instanceUrl": "Instance URL",
+      "instanceUrlPlaceholder": "https://lefine.pro",
+      "useDefault": "Әдепкіні пайдалану",
+      "enterManually": "Қолмен енгізу",
+      "workflow": "Workflow",
+      "selectWorkflow": "Workflow таңдаңыз",
+      "outboxSubscribed": "/outbox жазылды",
+      "inboxSending": "/inbox жіберу"
+    },
+    "telegram": {
+      "name": "Telegram",
+      "description": "Хабарламалар мен тапсырмаларды басқару үшін Telegram ботын қосыңыз",
+      "botLink": "Бот сілтемесі",
+      "botLinkPlaceholder": "https://t.me/your_bot",
+      "botToken": "Бот токені",
+      "botTokenPlaceholder": "Бот токенін енгізіңіз",
+      "openBot": "Ботты ашу",
+      "connectionStatus": "Қосылу күйі"
+    }
+  },
   "workflowLibrary": {
     "title": "Workflow Кітапханасы",
     "public": "Жария",
@@ -209,5 +228,36 @@
     "importBtn": "Импорттау",
     "chooseFile": "Файлды таңдау",
     "invalidJson": "JSON пішімі жарамсыз"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Кіру",
+    "register": "Тіркелу",
+    "loginTitle": "Кіру",
+    "registerTitle": "Тіркелу",
+    "close": "Жабу",
+    "emailRequired": "Email міндетті",
+    "passwordRequired": "Құпиясөз міндетті",
+    "usernameRequired": "Пайдаланушы аты міндетті",
+    "invalidEmail": "Email пішімі қате",
+    "passwordMinLength": "Құпиясөз кемінде 6 таңба болуы керек",
+    "passwordsNotMatch": "Құпиясөздер сәйкес келмейді",
+    "password": "Құпиясөз",
+    "enterPassword": "Құпиясөзді енгізіңіз",
+    "loggingIn": "Кіру...",
+    "username": "Пайдаланушы аты",
+    "yourName": "Сіздің атыңыз",
+    "min6Chars": "Мин. 6 таңба",
+    "confirmPassword": "Құпиясөзді растаңыз",
+    "repeatPassword": "Құпиясөзді қайталаңыз",
+    "registering": "Тіркелу...",
+    "noAccount": "Аккаунт жоқ па?",
+    "hasAccount": "Аккаунт бар ма?"
   }
 }

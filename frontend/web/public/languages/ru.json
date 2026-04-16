@@ -28,7 +28,8 @@
   "console": {
     "title": "Консоль",
     "empty": "Задача ещё не запущена. Создайте задачу чтобы увидеть логи.",
-    "connectionLost": "Соединение потеряно, переподключение..."
+    "connectionLost": "Соединение потеряно, переподключение...",
+    "reconnecting": "Переподключение к задаче..."
   },
   "bottomInput": {
     "provider": "Провайдер",
@@ -39,6 +40,7 @@
     "settings": "Настройки",
     "send": "Отправить",
     "stop": "Стоп",
+    "resetTask": "Сбросить и попробовать снова",
     "reconnecting": "Переподключение к серверу...",
     "taskCreated": "Задача создана",
     "sendError": "Ошибка отправки задачи"
@@ -78,53 +80,12 @@
     "themeToggle": "Переключить",
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
-    "hideServerStatus": "Скрыть статус сервера",
-    "hideServerStatusHint": "Скрывает строку состояния подключения к серверу",
-    "hideConsole": "Скрыть консоль",
-    "hideConsoleHint": "Скрывает панель консоли",
     "save": "Сохранить",
-    "cancel": "Отмена"
-  },
-  "integrations": {
-    "title": "Интеграции",
-    "description": "Подключайте внешние сервисы для автоматизации ваших workflow",
-    "integrate": "Интегрировать",
-    "connected": "Подключено",
-    "disconnect": "Отключить",
-    "configure": "Настроить",
-    "collapse": "Свернуть",
-    "expand": "Развернуть",
-    "useDefaultKey": "Использовать ключ по умолчанию",
-    "useDefaultKeyHint": "Использовать токен из ваших настроек",
-    "apiKey": "API ключ",
-    "apiKeyPlaceholder": "Введите API ключ...",
-    "selectWorkflow": "Выберите Workflow",
-    "selectWorkflowPlaceholder": "Выберите workflow...",
-    "noWorkflows": "Нет доступных workflow",
-    "saveIntegration": "Сохранить интеграцию",
-    "cancelIntegration": "Отмена",
-    "integrationSaved": "Интеграция успешно сохранена",
-    "integrationError": "Ошибка сохранения интеграции",
-    "telegramBotLink": "Подключить через Telegram бот",
-    "telegramBotDescription": "Нажмите кнопку ниже, чтобы открыть Telegram бот и авторизоваться",
-    "openTelegramBot": "Открыть Telegram бот",
-    "telegramConnected": "Telegram подключен",
-    "connectTelegram": "Подключить Telegram",
-    "activityPubUrl": "ActivityPub URL",
-    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
-    "activityPubDescription": "Подписка на задачи через протокол ActivityPub из Lefine.pro",
-    "outboxEndpoint": "Outbox Endpoint",
-    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
-    "inboxEndpoint": "Inbox Endpoint",
-    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
-    "lefine": {
-      "name": "Lefine.pro",
-      "description": "ActivityPub интеграция для обмена задачами"
-    },
-    "telegram": {
-      "name": "Telegram",
-      "description": "Подключите Telegram бота для уведомлений и управления задачами"
-    }
+    "cancel": "Отмена",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -173,6 +134,61 @@
     "delete": "Удалить ноду",
     "notConnected": "Не подключён"
   },
+  "integrations": {
+    "title": "Интеграции",
+    "description": "Подключайте внешние сервисы для автоматизации ваших workflow",
+    "integrate": "Интегрировать",
+    "connected": "Подключено",
+    "disconnect": "Отключить",
+    "configure": "Настроить",
+    "collapse": "Свернуть",
+    "expand": "Развернуть",
+    "useDefaultKey": "Использовать ключ по умолчанию",
+    "useDefaultKeyHint": "Использовать токен из ваших настроек",
+    "apiKey": "API ключ",
+    "apiKeyPlaceholder": "Введите API ключ...",
+    "selectWorkflow": "Выберите Workflow",
+    "selectWorkflowPlaceholder": "Выберите workflow...",
+    "noWorkflows": "Нет доступных workflow",
+    "saveIntegration": "Сохранить интеграцию",
+    "cancelIntegration": "Отмена",
+    "integrationSaved": "Интеграция успешно сохранена",
+    "integrationError": "Ошибка сохранения интеграции",
+    "telegramBotLink": "Подключить через Telegram бот",
+    "telegramBotDescription": "Нажмите кнопку ниже, чтобы открыть Telegram бот и авторизоваться",
+    "openTelegramBot": "Открыть Telegram бот",
+    "telegramConnected": "Telegram подключен",
+    "connectTelegram": "Подключить Telegram",
+    "activityPubUrl": "ActivityPub URL",
+    "activityPubUrlPlaceholder": "https://exchange.lefine.pro",
+    "activityPubDescription": "Подписка на задачи через протокол ActivityPub из Lefine.pro",
+    "outboxEndpoint": "Outbox Endpoint",
+    "outboxEndpointPlaceholder": "https://exchange.lefine.pro/outbox",
+    "inboxEndpoint": "Inbox Endpoint",
+    "inboxEndpointPlaceholder": "https://exchange.lefine.pro/inbox",
+    "lefine": {
+      "name": "Lefine.pro",
+      "description": "ActivityPub интеграция для обмена задачами",
+      "instanceUrl": "URL инстанса",
+      "instanceUrlPlaceholder": "https://lefine.pro",
+      "useDefault": "Использовать по умолчанию",
+      "enterManually": "Ввести вручную",
+      "workflow": "Workflow",
+      "selectWorkflow": "Выберите workflow",
+      "outboxSubscribed": "Подписка на /outbox",
+      "inboxSending": "Отправка в /inbox"
+    },
+    "telegram": {
+      "name": "Telegram",
+      "description": "Подключите Telegram бота для уведомлений и управления задачами",
+      "botLink": "Ссылка на бота",
+      "botLinkPlaceholder": "https://t.me/your_bot",
+      "botToken": "Токен бота",
+      "botTokenPlaceholder": "Введите токен бота",
+      "openBot": "Открыть бота",
+      "connectionStatus": "Статус подключения"
+    }
+  },
   "workflowLibrary": {
     "title": "Библиотека Workflow",
     "public": "Публичные",
@@ -215,10 +231,34 @@
     "invalidJson": "Неверный формат JSON"
   },
   "profile": {
-    "subscriptionEnd": "Действует до",
-    "noSubscription": "Нет активной подписки",
-    "userId": "ID пользователя",
-    "memberSince": "Участник с",
-    "logout": "Выйти"
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "loginTitle": "Войти",
+    "registerTitle": "Регистрация",
+    "close": "Закрыть",
+    "emailRequired": "Email обязателен",
+    "passwordRequired": "Пароль обязателен",
+    "usernameRequired": "Имя пользователя обязательно",
+    "invalidEmail": "Неверный формат email",
+    "passwordMinLength": "Пароль должен содержать минимум 6 символов",
+    "passwordsNotMatch": "Пароли не совпадают",
+    "password": "Пароль",
+    "enterPassword": "Введите пароль",
+    "loggingIn": "Вход...",
+    "username": "Имя пользователя",
+    "yourName": "Ваше имя",
+    "min6Chars": "Мин. 6 символов",
+    "confirmPassword": "Подтвердите пароль",
+    "repeatPassword": "Повторите пароль",
+    "registering": "Регистрация...",
+    "noAccount": "Нет аккаунта?",
+    "hasAccount": "Уже есть аккаунт?"
   }
 }

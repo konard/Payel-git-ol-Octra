@@ -80,7 +80,11 @@
     "hideTokenField": "Токен енгізу жолағын жасыру",
     "hideTokenFieldHint": "Негізгі экранда API кілт жолағын жасыру",
     "save": "Сақтау",
-    "cancel": "Болдырмау"
+    "cancel": "Болдырмау",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -224,5 +228,36 @@
     "importBtn": "Импорттау",
     "chooseFile": "Файлды таңдау",
     "invalidJson": "JSON пішімі жарамсыз"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Кіру",
+    "register": "Тіркелу",
+    "loginTitle": "Кіру",
+    "registerTitle": "Тіркелу",
+    "close": "Жабу",
+    "emailRequired": "Email міндетті",
+    "passwordRequired": "Құпиясөз міндетті",
+    "usernameRequired": "Пайдаланушы аты міндетті",
+    "invalidEmail": "Email пішімі қате",
+    "passwordMinLength": "Құпиясөз кемінде 6 таңба болуы керек",
+    "passwordsNotMatch": "Құпиясөздер сәйкес келмейді",
+    "password": "Құпиясөз",
+    "enterPassword": "Құпиясөзді енгізіңіз",
+    "loggingIn": "Кіру...",
+    "username": "Пайдаланушы аты",
+    "yourName": "Сіздің атыңыз",
+    "min6Chars": "Мин. 6 таңба",
+    "confirmPassword": "Құпиясөзді растаңыз",
+    "repeatPassword": "Құпиясөзді қайталаңыз",
+    "registering": "Тіркелу...",
+    "noAccount": "Аккаунт жоқ па?",
+    "hasAccount": "Аккаунт бар ма?"
   }
 }

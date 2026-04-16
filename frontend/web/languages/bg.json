@@ -81,7 +81,7 @@
     "hideTokenFieldHint": "Скрий полето за API ключ на главния екран",
     "save": "Запази",
     "cancel": "Отказ",
-    "hideServerStatus": "Скрий състоянието на сървъра",
+    "hideServerStatus": "Скрий статус сървъра",
     "hideServerStatusHint": "Скрий лентата за състояние на сървъра",
     "hideConsole": "Скрий конзолата",
     "hideConsoleHint": "Скрий панела на конзолата"

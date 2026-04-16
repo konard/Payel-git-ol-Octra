@@ -7,6 +7,7 @@ import { t } from '../../hooks/useI18n';
 
 interface BottomInputProps {
   onSubmit: (data: TaskData) => void;
+  onStop?: () => void;
   isSubmitting: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -20,7 +21,7 @@ export interface TaskData {
   apiKey: string;
 }
 
-export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
+export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -238,11 +239,12 @@ export function BottomInput({ onSubmit, isSubmitting, isExpanded, onToggleExpand
           </div>
 
           <button
-            type="submit"
-            disabled={isSubmitting}
+            type={isSubmitting ? "button" : "submit"}
+            disabled={false}
+            onClick={isSubmitting ? onStop : undefined}
             className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors flex-shrink-0 ${
               isSubmitting
-                ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse cursor-not-allowed'
+                ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse cursor-pointer'
                 : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
             }`}
           >

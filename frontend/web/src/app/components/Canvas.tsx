@@ -1,3 +1,4 @@
+// Fixed contextMenu issue - version 2.0
 import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   ReactFlow,
@@ -19,6 +20,7 @@ import { useTaskStore, type AgentNodeType, type AgentNode } from '../../stores/t
 import { BossNode, ManagerNode, WorkerNode, ZIPArchiveNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
+
 import { WorkflowLibrary } from '../../components/WorkflowLibrary';
 import { WorkflowExport } from '../../components/WorkflowExport';
 import { useI18n } from '../../hooks/useI18n';
@@ -41,14 +43,36 @@ export function Canvas() {
   const edges = useTaskStore((state) => state.edges);
   const addEdgeToStore = useTaskStore((state) => state.addEdge);
   const addNodeToStore = useTaskStore((state) => state.addNode);
+  const updateNode = useTaskStore((state) => state.updateNode);
   const removeNode = useTaskStore((state) => state.removeNode);
   const { t } = useI18n();
 
-  const { screenToFlowPosition: rfScreenToFlow } = useReactFlow();
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+
+  // Преобразование nodes из Zustand формата в ReactFlow формат
+  const rfNodes = useMemo(() => {
+    return nodes.map((node) => ({
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      data: node,
+      selected: selectedNodeIds.has(node.id),
+    }));
+  }, [nodes, selectedNodeIds]);
+
+  // Преобразование edges из Zustand формата в ReactFlow формат
+  const rfEdges = useMemo(() => {
+    return edges.map((edge) => ({
+      id: `${edge.from}-${edge.to}`,
+      source: edge.from,
+      target: edge.to,
+      type: 'default',
+    }));
+  }, [edges]);
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [workflowLibraryOpen, setWorkflowLibraryOpen] = useState(false);
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -57,75 +81,39 @@ export function Canvas() {
     nodeRole: string;
   } | null>(null);
 
-  const rfNodes: Node[] = useMemo(() => {
-    // Определяем какие ноды подключены
-    const connectedNodeIds = new Set<string>();
-    edges.forEach((edge) => {
-      connectedNodeIds.add(edge.from);
-      connectedNodeIds.add(edge.to);
-    });
-
-    return nodes.map((node) => ({
-      id: node.id,
-      type: node.type,
-      position: node.position || { x: 0, y: 0 },
-      data: {
-        role: node.role,
-        status: node.status,
-        workerCount: node.workerCount,
-        filesCount: node.filesCount,
-        progress: node.progress,
-        techStack: node.techStack,
-        // ZIP Archive specific fields
-        fileName: node.fileName,
-        fileSize: node.fileSize,
-        // Статус подключённости
-        isConnected: connectedNodeIds.has(node.id),
-      },
-    }));
-  }, [nodes, edges]);
-
-  const rfEdges: Edge[] = useMemo(() =>
-    edges.map((edge, idx) => ({
-      id: `e-${edge.from}-${edge.to}-${idx}`,
-      source: edge.from,
-      target: edge.to,
-      animated: true,
-      style: { stroke: 'var(--edge-color)', strokeWidth: 2 },
-    })), [edges]);
-
-  const onConnect = useCallback(
-    (params: Connection) => {
-      if (params.source && params.target) {
-        addEdgeToStore({ from: params.source, to: params.target });
-      }
-    },
-    [addEdgeToStore]
-  );
-
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => {
-      changes.forEach((change) => {
-        if (change.type === 'position' && change.position) {
-          // Update node position in store
-          const nodeId = change.id;
-          useTaskStore.getState().updateNode(nodeId, { position: change.position });
+  // Обработчик изменений nodes в ReactFlow
+  const onNodesChange = useCallback((changes: OnNodesChange) => {
+    // Синхронизируем изменения с Zustand store
+    changes.forEach((change) => {
+      if (change.type === 'select') {
+        // Обработка выбора/снятия выбора ноды
+        if (change.selected) {
+          setSelectedNodeIds(prev => new Set([...prev, change.id]));
+        } else {
+          setSelectedNodeIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(change.id);
+            return newSet;
+          });
         }
-      });
-    },
-    []
-  );
+      } else if (change.type === 'position' && change.position) {
+        // Обработка перемещения ноды
+        updateNode(change.id, { position: change.position });
+      }
+    });
+  }, [updateNode]);
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    // Only intercept drops from sidebar nodes or workflows
-    const hasNodeType = event.dataTransfer.types.includes('application/reactflow/node-type');
-    const hasWorkflowData = event.dataTransfer.types.includes('application/reactflow/workflow-data');
-    if (hasNodeType || hasWorkflowData) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
+  // Обработчик соединений между нодами
+  const onConnect = useCallback((connection: Connection) => {
+    if (connection.source && connection.target) {
+      // Добавляем новое соединение в Zustand store
+      addEdgeToStore({
+        from: connection.source,
+        to: connection.target,
+      });
     }
-    // Let ReactFlow handle its own internal node dragging
-  }, []);
+  }, [addEdgeToStore]);
+
 
   // Импорт workflow из библиотеки на канвас
   const handleImportWorkflow = useCallback((workflowData: { nodes: any[]; edges: any[] }) => {
@@ -153,6 +141,11 @@ export function Canvas() {
     });
   }, [addNodeToStore, addEdgeToStore]);
 
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
   const onCanvasDrop = useCallback(
     (event: React.DragEvent) => {
       // Only handle drops from external sources (sidebar), not internal ReactFlow nodes
@@ -171,10 +164,7 @@ export function Canvas() {
       const type = event.dataTransfer.getData('application/reactflow/node-type') as 'boss' | 'manager' | 'worker';
       if (type) {
         event.preventDefault();
-        const position = rfScreenToFlow(
-          { x: event.clientX, y: event.clientY },
-          { snapToGrid: true }
-        );
+        const position = { x: event.clientX - 200, y: event.clientY - 100 };
         addNodeToStore({
           id: `node-${Date.now()}`,
           type,
@@ -185,7 +175,7 @@ export function Canvas() {
         });
       }
     },
-    [rfScreenToFlow, addNodeToStore, handleImportWorkflow]
+    [addNodeToStore, handleImportWorkflow]
   );
 
   // Импорт из JSON строки
@@ -230,8 +220,7 @@ export function Canvas() {
     });
   }, []);
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeIds(new Set());
+  const closeContextMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
 
@@ -244,6 +233,11 @@ export function Canvas() {
       nodeType: node.type as AgentNodeType,
       nodeRole: node.data?.role || 'Unknown',
     });
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeIds(new Set());
+    setContextMenu(null);
   }, []);
 
   // Экспорт workflow в store при изменении нод/соединений
@@ -320,6 +314,7 @@ export function Canvas() {
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}
+
           onPaneClick={onPaneClick}
           fitView
           className="bg-[var(--bg-canvas)]"
@@ -342,17 +337,7 @@ export function Canvas() {
         onOpenWorkflowLibrary={() => setWorkflowLibraryOpen(true)}
       />
 
-      {/* Контекстное меню */}
-      {contextMenu && (
-        <NodeContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          nodeId={contextMenu.nodeId}
-          nodeType={contextMenu.nodeType}
-          nodeRole={contextMenu.nodeRole}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
+
 
       {/* Библиотека Workflow */}
       {workflowLibraryOpen && (
@@ -364,6 +349,18 @@ export function Canvas() {
 
       {/* Экспорт/Импорт Workflow */}
       <WorkflowExport onImportJSON={handleImportJSON} />
+
+      {/* Контекстное меню */}
+      {contextMenu && (
+        <NodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
+          nodeRole={contextMenu.nodeRole}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 }

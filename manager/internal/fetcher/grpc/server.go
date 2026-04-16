@@ -30,6 +30,10 @@ func (s *Server) AssignManager(ctx context.Context, req *managerpb.AssignManager
 	return s.service.AssignManager(ctx, req)
 }
 
+func (s *Server) AssignManagerStream(req *managerpb.AssignManagerRequest, stream managerpb.ManagerService_AssignManagerStreamServer) error {
+	return s.service.AssignManagerStream(req, stream)
+}
+
 // Start запускает gRPC сервер
 func Start(port string, s *manager.ManagerService) error {
 	lis, err := net.Listen("tcp", ":"+port)

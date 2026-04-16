@@ -124,22 +124,6 @@ services:
       - crewai-network
     restart: unless-stopped
 
-  merger:
-    build:
-      context: .
-      dockerfile: ./merger/Dockerfile
-    container_name: crewai-merger
-    environment:
-      - MERGER_PORT=50054
-    ports:
-      - "50054:50054"
-    depends_on:
-      boss:
-        condition: service_started
-    networks:
-      - crewai-network
-    restart: unless-stopped
-
   apigateway:
     build:
       context: .

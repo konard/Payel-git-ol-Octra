@@ -79,7 +79,29 @@ export default function App() {
       : data.provider === 'zai' ? 'zai'
       : 'claude';
 
-    const workflow = useTaskStore.getState().getWorkflow();
+    // Get current workflow from canvas (user-created nodes and edges)
+    const { nodes, edges } = useTaskStore.getState();
+    const userNodes = nodes.filter(node =>
+      !node.id.startsWith('boss-') &&
+      !node.id.startsWith('manager-') &&
+      !node.id.startsWith('worker-') &&
+      node.id !== 'zip-archive'
+    );
+    const userEdges = edges.filter(edge =>
+      userNodes.some(node => node.id === edge.source || node.id === edge.target)
+    );
+
+    const workflow = userNodes.length > 0 ? {
+      useAiPlanning: false, // Use custom workflow
+      managers: userNodes.map(node => ({
+        role: node.role || 'Manager',
+        description: node.role || 'Custom manager',
+        priority: 1,
+        workers: [] // Workers will be created by AI based on manager role
+      })),
+      architecture: `Custom workflow with ${userNodes.length} managers`,
+      techStack: []
+    } : useTaskStore.getState().getWorkflow();
 
     send({
       username: 'user',
@@ -97,6 +119,39 @@ export default function App() {
 
     useTaskStore.getState().setStartTime(Date.now());
   };
+
+  const handleStopTask = async () => {
+    const taskId = useTaskStore.getState().taskId;
+    if (!taskId) return;
+
+    try {
+      // Отправляем HTTP запрос для остановки задачи
+      const response = await fetch(`/api/task/${taskId}/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        useTaskStore.getState().setTaskStatus('cancelled');
+        useTaskStore.getState().addLog({
+          message: 'Task cancelled by user',
+          type: 'warning',
+        });
+      } else {
+        throw new Error('Failed to stop task');
+      }
+    } catch (error) {
+      console.error('Error stopping task:', error);
+      useTaskStore.getState().addLog({
+        message: 'Failed to cancel task',
+        type: 'error',
+      });
+    }
+  };
+
+
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -121,6 +176,7 @@ export default function App() {
 
       <BottomInput
         onSubmit={handleCreateTask}
+        onStop={handleStopTask}
         isSubmitting={isSubmitting}
         isExpanded={isExpanded}
         onToggleExpand={toggleExpand}

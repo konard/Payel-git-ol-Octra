@@ -23,9 +23,15 @@ func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, ta
 	go func() {
 		defer close(doneCh)
 		for update := range sendCh {
-			if err := stream.Send(update); err != nil {
-				log.Printf("Boss stream send error: %v", err)
+			select {
+			case <-ctx.Done():
+				log.Printf("Context cancelled, stopping stream sender")
 				return
+			default:
+				if err := stream.Send(update); err != nil {
+					log.Printf("Boss stream send error: %v", err)
+					return
+				}
 			}
 		}
 	}()
@@ -129,10 +135,53 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				WorkerRoles:          workerRolesProto, // predefined worker roles
 			}
 
+			// Create timeout context for manager call (30 minutes per manager)
+			managerCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+			defer cancel()
+
 			log.Printf("Calling AssignManager #%d: %s", idx+1, role.Role)
-			result, err := s.managerClient.AssignManager(ctx, mgrReq)
+			stream, err := s.managerClient.AssignManagerStream(managerCtx, mgrReq)
 			if err != nil {
-				log.Printf("AssignManager %s error: %v", role.Role, err)
+				log.Printf("AssignManagerStream %s error: %v", role.Role, err)
+				mu.Lock()
+				if firstErr == nil {
+					firstErr = err
+				}
+				mu.Unlock()
+				return
+			}
+
+			// Process streaming updates from manager
+			for {
+				update, err := stream.Recv()
+				if err != nil {
+					if err.Error() == "EOF" {
+						break
+					}
+					log.Printf("Manager stream %s error: %v", role.Role, err)
+					mu.Lock()
+					if firstErr == nil {
+						firstErr = err
+					}
+					mu.Unlock()
+					return
+				}
+
+				// Forward progress updates
+				if update.Message != "" {
+					progressCallback(role.Role, 40+idx*10+int(update.Progress*50/100), update.Message)
+				}
+
+				// If manager completed, get final result
+				if update.Status == "success" {
+					break
+				}
+			}
+
+			// Get final result via non-streaming call (fallback)
+			result, err := s.managerClient.AssignManager(managerCtx, mgrReq)
+			if err != nil {
+				log.Printf("AssignManager final call %s error: %v", role.Role, err)
 				mu.Lock()
 				if firstErr == nil {
 					firstErr = err
@@ -163,7 +212,7 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 					if !wr.Success {
 						status = "❌"
 					}
-					progressCallback(wr.Role, 62+wi*2, fmt.Sprintf("%s %s completed: %s (%d files)", status, wr.Role, filesCount))
+					progressCallback(wr.Role, 62+wi*2, fmt.Sprintf("%s %s completed: %d files", status, wr.Role, filesCount))
 				}
 			}
 		}(i, role)

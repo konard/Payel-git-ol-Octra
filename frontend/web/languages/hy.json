@@ -80,7 +80,11 @@
     "hideTokenField": "Թաքցնել թոքենի դաշտը",
     "hideTokenFieldHint": "Թաքցնել API բանալի դաշտը գլխավոր էկրանից",
     "save": "Պահպանել",
-    "cancel": "Չեղարկել"
+    "cancel": "Չեղարկել",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel"
   },
   "languages": {
     "en": "English",
@@ -224,5 +228,36 @@
     "importBtn": "Ներմուծել",
     "chooseFile": "Ընտրել ֆայլ",
     "invalidJson": "Սխալ JSON ֆորմատ"
+  },
+  "profile": {
+    "subscriptionEnd": "Valid until",
+    "noSubscription": "No active subscription",
+    "userId": "User ID",
+    "memberSince": "Member since",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Մուտք",
+    "register": "Գրանցում",
+    "loginTitle": "Մուտք",
+    "registerTitle": "Գրանցում",
+    "close": "Փակել",
+    "emailRequired": "Email-ը պարտադիր է",
+    "passwordRequired": "Գաղտնաբառը պարտադիր է",
+    "usernameRequired": "Օգտվողի անունը պարտադիր է",
+    "invalidEmail": "Email-ի ֆորմատը սխալ է",
+    "passwordMinLength": "Գաղտնաբառը պետք է ունենա առնվազն 6 նիշ",
+    "passwordsNotMatch": "Գաղտնաբառերը չեն համընկնում",
+    "password": "Գաղտնաբառ",
+    "enterPassword": "Մուտքագրեք գաղտնաբառը",
+    "loggingIn": "Մուտք...",
+    "username": "Օգտվողի անուն",
+    "yourName": "Ձեր անունը",
+    "min6Chars": "Նվազ. 6 նիշ",
+    "confirmPassword": "Հաստատեք գաղտնաբառը",
+    "repeatPassword": "Կրկնեք գաղտնաբառը",
+    "registering": "Գրանցում...",
+    "noAccount": "Չունե՞ք հաշիվ",
+    "hasAccount": "Արդեն ունե՞ք հաշիվ"
   }
 }

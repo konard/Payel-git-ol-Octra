@@ -38,15 +38,18 @@ interface CreateTaskPayload {
 
 const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_DELAY = 15000;
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
 export function useWebSocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempts = useRef(0);
   const isMounted = useRef(false);
   const isManuallyClosed = useRef(false);
   const lastTaskPayload = useRef<CreateTaskPayload | null>(null);
   const activeTaskId = useRef<string | null>(null);
+  const taskStartTime = useRef<number>(0);
 
   // Track managers across messages
   const managerCounter = useRef(0);
@@ -75,6 +78,24 @@ export function useWebSocket(url: string) {
     }
   };
 
+  const clearHeartbeatTimer = () => {
+    if (heartbeatTimerRef.current) {
+      clearTimeout(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  };
+
+  const startHeartbeat = () => {
+    clearHeartbeatTimer();
+    heartbeatTimerRef.current = setTimeout(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // Send ping frame
+        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+        startHeartbeat(); // Schedule next heartbeat
+      }
+    }, HEARTBEAT_INTERVAL);
+  };
+
   const handleWebSocketMessage = (msg: WebSocketMessage) => {
     switch (msg.type) {
       case 'connected':
@@ -85,6 +106,7 @@ export function useWebSocket(url: string) {
         // Save the task_id for reconnection
         if (msg.task_id) {
           activeTaskId.current = msg.task_id;
+          taskStartTime.current = Date.now();
           console.log('[WS] Task ID saved:', msg.task_id);
         }
         break;
@@ -97,6 +119,10 @@ export function useWebSocket(url: string) {
         // Restore task status from backend
         if (msg.status) {
           storeActions.setTaskStatus(msg.status as any);
+          // If task is completed, clear active task ID to prevent auto-reconnect
+          if (msg.status === 'done' || msg.status === 'error' || msg.status === 'cancelled') {
+            activeTaskId.current = null;
+          }
         }
         if (msg.task_id) {
           storeActions.setTaskId(msg.task_id);
@@ -105,7 +131,10 @@ export function useWebSocket(url: string) {
 
       case 'progress':
       case 'processing':
-        handleProgressMessage(msg);
+        // Skip historical messages to avoid reprocessing
+        if (!msg.is_history) {
+          handleProgressMessage(msg);
+        }
         break;
 
       case 'success':
@@ -122,6 +151,7 @@ export function useWebSocket(url: string) {
         // Clear stored task payload — task is complete, no need to resend
         lastTaskPayload.current = null;
         activeTaskId.current = null;
+        taskStartTime.current = 0;
 
         // Update ZIP node with file info if available
         if (msg.data?.filesCount || msg.data?.zipSize) {
@@ -144,6 +174,10 @@ export function useWebSocket(url: string) {
         // Clear stored task payload — task failed, don't auto-resend
         lastTaskPayload.current = null;
         activeTaskId.current = null;
+
+        // Reset connection state to allow new tasks
+        isManuallyClosed.current = false;
+        reconnectAttempts.current = 0;
         break;
     }
   };
@@ -297,8 +331,8 @@ export function useWebSocket(url: string) {
         const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
 
         // Position: under the manager
-        const mgrPosition = managerIdx >= 0 ? 
-          (nodes.find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
+        const mgrPosition = managerIdx >= 0 ?
+          (storeActions.nodes.find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
         const workerX = mgrPosition + (wIdx - 1) * 120;
         const workerY = 370;
 
@@ -315,7 +349,7 @@ export function useWebSocket(url: string) {
           storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
         }
 
-        console.log('[WS] => Adding worker:', role, 'under manager:', managerRole);
+
       }
     }
 
@@ -332,7 +366,8 @@ export function useWebSocket(url: string) {
         if (wIdx >= 0) {
           const sanitizedManagerRole = managerRole.replace(/[^a-zA-Z0-9]/g, '');
           const workerId = `worker-${sanitizedManagerRole}-${wIdx}`;
-          storeActions.updateNode(workerId, { 
+
+          storeActions.updateNode(workerId, {
             status: 'done',
             filesCount,
           });
@@ -385,7 +420,14 @@ export function useWebSocket(url: string) {
     }
 
     // On reconnect, use /api/task/reconnect with task_id instead of creating a new task
-    const isReconnect = activeTaskId.current !== null;
+    // Only reconnect if we have an active task that's still running and not too old
+    const currentStatus = storeActions.nodes ? storeActions.nodes.find(n => n.type === 'boss')?.data?.status : '';
+    const taskAge = Date.now() - taskStartTime.current;
+    const maxTaskAge = 2 * 60 * 60 * 1000; // 2 hours
+    const isReconnect = activeTaskId.current !== null &&
+      currentStatus &&
+      ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus) &&
+      taskAge < maxTaskAge;
     const connectUrl = isReconnect
       ? url.replace('/task/create', '/task/reconnect')
       : url;
@@ -398,6 +440,7 @@ export function useWebSocket(url: string) {
       console.log('[WS] Connected to', connectUrl);
       reconnectAttempts.current = 0;
       storeActions.setConnectionStatus(true);
+      startHeartbeat(); // Start heartbeat when connected
 
       // On reconnect, send task_id to restore state from Redis
       if (isReconnect && activeTaskId.current) {
@@ -441,6 +484,13 @@ export function useWebSocket(url: string) {
       try {
         const msg: WebSocketMessage = JSON.parse(event.data);
         console.log('[WS] Parsed message type:', msg.type, 'message:', msg.message);
+
+        // Handle pong responses
+        if (msg.type === 'pong') {
+          console.log('[WS] ❤️ Pong received');
+          return;
+        }
+
         handleWebSocketMessage(msg);
       } catch (err) {
         console.error('[WS] Failed to parse message:', err, 'Raw data:', event.data);
@@ -449,6 +499,16 @@ export function useWebSocket(url: string) {
   }, [url, storeActions]);
 
   const send = useCallback((data: CreateTaskPayload) => {
+    // Don't send if we have an active task that's not completed
+    const currentStatus = storeActions.nodes ? storeActions.nodes.find(n => n.type === 'boss')?.data?.status : '';
+    if (currentStatus && !['done', 'error', 'cancelled'].includes(currentStatus) && activeTaskId.current) {
+      storeActions.addLog({
+        message: 'Task is already running, cannot create new task',
+        type: 'warning',
+      });
+      return;
+    }
+
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || wsRef.current.readyState === WebSocket.CLOSING) {
       storeActions.addLog({
         message: t('bottomInput.reconnecting'),
@@ -485,15 +545,22 @@ export function useWebSocket(url: string) {
     };
 
     waitForOpen().then(() => {
-      // Store the payload for potential reconnection
-      lastTaskPayload.current = data;
-      wsRef.current!.send(JSON.stringify(data));
-      storeActions.setTaskStatus('creating');
-      storeActions.setTaskId(`task-${Date.now()}`);
-      storeActions.addLog({
-        message: `${t('bottomInput.taskCreated')}: ${data.title}`,
-        type: 'success',
-      });
+      // Only send data if this is a new task creation, not a reconnect
+      const isReconnect = activeTaskId.current !== null &&
+        currentStatus &&
+        ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus);
+
+      if (!isReconnect) {
+        // Store the payload for potential reconnection
+        lastTaskPayload.current = data;
+        wsRef.current!.send(JSON.stringify(data));
+        storeActions.setTaskStatus('creating');
+        storeActions.setTaskId(`task-${Date.now()}`);
+        storeActions.addLog({
+          message: `${t('bottomInput.taskCreated')}: ${data.title}`,
+          type: 'success',
+        });
+      }
     }).catch((err) => {
       console.error('[WS] Send error:', err);
       storeActions.addLog({
@@ -506,8 +573,10 @@ export function useWebSocket(url: string) {
   const disconnect = useCallback(() => {
     isManuallyClosed.current = true;
     clearReconnectTimer();
+    clearHeartbeatTimer();
     lastTaskPayload.current = null;
     activeTaskId.current = null;
+    taskStartTime.current = 0;
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.close(1000);
@@ -523,6 +592,7 @@ export function useWebSocket(url: string) {
     return () => {
       isMounted.current = false;
       clearReconnectTimer();
+      clearHeartbeatTimer();
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();

@@ -16,6 +16,70 @@ import (
 
 // AssignWorkersAndWait accepts task, generates code via AI agents and returns ZIP
 func (s *WorkerService) AssignWorkersAndWait(ctx context.Context, req *workerpb.AssignWorkersRequest) (*workerpb.AssignWorkersResponse, error) {
+	return s.assignWorkersAndWaitWithProgress(ctx, req, nil)
+}
+
+// AssignWorkersAndWaitStream sends progress updates while processing workers
+func (s *WorkerService) AssignWorkersAndWaitStream(req *workerpb.AssignWorkersRequest, stream workerpb.WorkerService_AssignWorkersAndWaitStreamServer) error {
+	ctx := stream.Context()
+
+	// Send initial progress
+	stream.Send(&workerpb.TaskUpdate{
+		TaskId:    req.TaskId,
+		Message:   "Workers assigned and starting work",
+		Progress:  0,
+		Status:    "processing",
+		Timestamp: 0,
+		Data: map[string]string{
+			"manager_id":   req.ManagerId,
+			"manager_role": req.ManagerRole,
+		},
+	})
+
+	progressCallback := func(progress int, message string) {
+		stream.Send(&workerpb.TaskUpdate{
+			TaskId:    req.TaskId,
+			Message:   message,
+			Progress:  int32(progress),
+			Status:    "processing",
+			Timestamp: 0,
+			Data: map[string]string{
+				"manager_id":   req.ManagerId,
+				"manager_role": req.ManagerRole,
+			},
+		})
+	}
+
+	_, err := s.assignWorkersAndWaitWithProgress(ctx, req, progressCallback)
+	if err != nil {
+		stream.Send(&workerpb.TaskUpdate{
+			TaskId:    req.TaskId,
+			Message:   fmt.Sprintf("Workers failed: %v", err),
+			Progress:  0,
+			Status:    "error",
+			Timestamp: 0,
+		})
+		return err
+	}
+
+	// Send final success
+	stream.Send(&workerpb.TaskUpdate{
+		TaskId:    req.TaskId,
+		Message:   "All workers completed successfully",
+		Progress:  100,
+		Status:    "success",
+		Timestamp: 0,
+		Data: map[string]string{
+			"manager_id":   req.ManagerId,
+			"manager_role": req.ManagerRole,
+		},
+	})
+
+	return nil
+}
+
+// assignWorkersAndWaitWithProgress is the core implementation with optional progress callback
+func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, req *workerpb.AssignWorkersRequest, progressCallback func(int, string)) (*workerpb.AssignWorkersResponse, error) {
 	log.Printf("Received task from manager %s (%s): %s", req.ManagerId, req.ManagerRole, req.TaskId)
 	log.Printf("Worker roles: %v", req.WorkerRoles)
 
@@ -63,6 +127,11 @@ func (s *WorkerService) AssignWorkersAndWait(ctx context.Context, req *workerpb.
 	for i, wr := range req.WorkerRoles {
 		role := wr.Role
 		description := wr.Description
+
+		if progressCallback != nil {
+			progress := 10 + (i * 80 / len(req.WorkerRoles))
+			progressCallback(progress, fmt.Sprintf("Starting worker %d/%d: %s", i+1, len(req.WorkerRoles), role))
+		}
 
 		// Create worker in DB
 		workerID := uuid.New()
@@ -169,6 +238,11 @@ func (s *WorkerService) AssignWorkersAndWait(ctx context.Context, req *workerpb.
 		s.mu.Unlock()
 
 		log.Printf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), role, len(files))
+
+		if progressCallback != nil {
+			progress := 20 + ((i + 1) * 80 / len(req.WorkerRoles))
+			progressCallback(progress, fmt.Sprintf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), role, len(files)))
+		}
 	}
 
 	// Create ZIP archive
