@@ -51,14 +51,19 @@ export function Canvas() {
 
   // Преобразование nodes из Zustand формата в ReactFlow формат
   const rfNodes = useMemo(() => {
-    return nodes.map((node) => ({
-      id: node.id,
-      type: node.type,
-      position: node.position,
-      data: node,
-      selected: selectedNodeIds.has(node.id),
-    }));
-  }, [nodes, selectedNodeIds]);
+    return nodes.map((node) => {
+      // Определяем, подключена ли нода (есть ли входящие или исходящие соединения)
+      const isConnected = edges.some(edge => edge.from === node.id || edge.to === node.id);
+
+      return {
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: { ...node, isConnected },
+        selected: selectedNodeIds.has(node.id),
+      };
+    });
+  }, [nodes, edges, selectedNodeIds]);
 
   // Преобразование edges из Zustand формата в ReactFlow формат
   const rfEdges = useMemo(() => {

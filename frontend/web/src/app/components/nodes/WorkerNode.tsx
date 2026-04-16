@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
+import { Cpu } from 'lucide-react';
 import { useI18n } from '../../../hooks/useI18n';
-import workerImage from '../../../images/worker-image.png';
 
 interface WorkerNodeData {
   role?: string;
@@ -33,39 +33,54 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
     error: 'border-red-500',
   };
 
+  const getNodeClasses = () => {
+    let classes = `bg-[var(--bg-node)] text-[var(--text-node)] rounded-lg shadow-lg border-2 min-w-[180px] overflow-hidden backdrop-blur-sm`;
+
+    if (!isConnected) {
+      classes += ' border-gray-600 opacity-60';
+    } else {
+      classes += ` ${statusColors[status] || 'border-gray-500'}`;
+
+      // Добавляем анимации в зависимости от статуса
+      if (status === 'thinking') {
+        classes += ' crewai-node--sending';
+      } else if (status === 'working') {
+        classes += ' crewai-node--working';
+      }
+    }
+
+    return classes;
+  };
+
   return (
-    <div className={`bg-[var(--bg-node)] text-[var(--text-node)] rounded-lg shadow-lg border-2 ${
-      isConnected ? (statusColors[status] || 'border-gray-500') : 'border-gray-600 opacity-60'
-    } min-w-[180px] overflow-hidden`}>
+    <div className={getNodeClasses()}>
       <Handle type="target" position={Position.Top} />
 
-      {/* Header с изображением */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
+      {/* Header с иконкой */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-t-lg flex items-center">
         <div className="flex items-center gap-3">
-          <img src={workerImage} alt="Worker" className="w-10 h-10 object-contain" />
+          <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
+            <Cpu className="w-6 h-6 text-green-200" />
+          </div>
           <span className="font-bold text-base">WORKER</span>
         </div>
-        <span className="text-xl">{statusIcons[status] || 'WAITING'}</span>
       </div>
 
       {/* Body */}
-      <div className="p-3 space-y-2">
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Роль:</span> {role}
-        </div>
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Статус:</span> {status}
+      <div className="p-4 space-y-3">
+        <div className="text-sm">
+          <span className="text-[var(--text-muted)] font-medium">Роль:</span> <span className="text-[var(--text)]">{role}</span>
         </div>
 
         {!isConnected && (
-          <div className="text-xs text-orange-500 font-semibold">
+          <div className="text-xs text-red-500 font-semibold bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
             {t('contextMenu.notConnected')}
           </div>
         )}
 
         {filesCount !== undefined && (
           <div className="text-xs">
-            <span className="text-[var(--text-muted)]">Файлов:</span> {filesCount}
+            <span className="text-[var(--text-muted)] font-medium">Файлов:</span> <span className="text-[var(--text)] ml-1">{filesCount}</span>
           </div>
         )}
       </div>

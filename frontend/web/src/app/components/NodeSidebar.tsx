@@ -1,18 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Brain, Bot, Cpu } from 'lucide-react';
 import { useI18n } from '../../hooks/useI18n';
 import { useTaskStore, type AgentNode } from '../../stores/taskStore';
 import { getMyWorkflows, deleteWorkflow, type Workflow } from '../../services/workflowService';
-import bossImage from '../../images/boss-image.png';
-import managerImage from '../../images/manager-image.png';
-import workerImage from '../../images/worker-image.png';
 
 interface NodeTemplate {
   type: 'boss' | 'manager' | 'worker';
   label: string;
-  image: string;
   typeLabel: string;
   description: string;
   color: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 interface NodeSidebarProps {
@@ -58,26 +56,26 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
     {
       type: 'boss',
       label: t('sidebar.boss.label'),
-      image: bossImage,
       typeLabel: t('sidebar.boss.type'),
       description: t('sidebar.boss.description'),
       color: 'from-orange-500 to-orange-600',
+      icon: Brain,
     },
     {
       type: 'manager',
       label: t('sidebar.manager.label'),
-      image: managerImage,
       typeLabel: t('sidebar.manager.type'),
       description: t('sidebar.manager.description'),
       color: 'from-blue-500 to-blue-600',
+      icon: Bot,
     },
     {
       type: 'worker',
       label: t('sidebar.worker.label'),
-      image: workerImage,
       typeLabel: t('sidebar.worker.type'),
       description: t('sidebar.worker.description'),
       color: 'from-green-500 to-green-600',
+      icon: Cpu,
     },
   ];
 
@@ -181,7 +179,7 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
                   e.stopPropagation();
                   toggleCreate();
                 }}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] text-[var(--text-inverse)] font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <div className="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -210,21 +208,19 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
                       onClick={() => setCreateOpen(false)}
                       className="cursor-grab active:cursor-grabbing border-b border-[var(--border)] last:border-b-0 hover:opacity-90 transition-opacity"
                     >
-                      {/* Image header on top */}
-                      <div className={`bg-gradient-to-br ${template.color} p-3 flex items-center justify-center`}>
-                        <img
-                          src={template.image}
-                          alt={template.label}
-                          className="w-20 h-20 object-contain drop-shadow-lg"
-                        />
+                      {/* Icon header on top */}
+                      <div className={`bg-gradient-to-br ${template.color} p-4 flex items-center justify-center`}>
+                        <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+                          <template.icon className="w-12 h-12 text-white drop-shadow-lg" />
+                        </div>
                       </div>
                       {/* Info below */}
-                      <div className="p-3 flex items-center justify-between">
-                        <div>
+                      <div className="p-4 flex items-center justify-between">
+                        <div className="flex-1">
                           <div className="text-sm font-bold text-[var(--text)]">{template.label}</div>
-                          <div className="text-xs text-[var(--text-tertiary)]">{template.typeLabel}</div>
+                          <div className="text-xs text-[var(--text-tertiary)] mt-1">{template.description}</div>
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 14 14" fill="var(--text-tertiary)" className="flex-shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 14 14" fill="var(--text-tertiary)" className="flex-shrink-0 ml-3">
                           <path d="M1 7h12M7 1v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                         </svg>
                       </div>

@@ -50,6 +50,47 @@
         }
     }
 
+    /* === Анимации статуса === */
+    &--sending {
+        border-color: var(--color-success);
+        animation: turbo-flow-counterclockwise 2s linear infinite;
+        position: relative;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--color-success);
+            border-radius: var(--radius-lg);
+            animation: turbo-flow-counterclockwise 2s linear infinite;
+            pointer-events: none;
+        }
+    }
+
+    &--working {
+        border-color: var(--color-success);
+        animation: turbo-flow-clockwise 3s linear infinite;
+        position: relative;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--color-success);
+            border-radius: var(--radius-lg);
+            animation: turbo-flow-clockwise 3s linear infinite;
+            pointer-events: none;
+        }
+    }
+
     /* === Типы нод по категориям === */
     &--chief {
         border-top: 3px solid var(--color-chief);
@@ -341,6 +382,25 @@
     }
     to {
         stroke-dashoffset: 0;
+    }
+}
+
+/* === Turbo Flow анимации === */
+@keyframes turbo-flow-counterclockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(-360deg);
+    }
+}
+
+@keyframes turbo-flow-clockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
     }
 }
 
