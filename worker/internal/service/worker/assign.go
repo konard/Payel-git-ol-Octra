@@ -123,7 +123,27 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 	workerResults := make([]*workerpb.WorkerResult, 0)
 
 	projectName := sanitizeProjectName(req.ManagerRole)
-	basePath := fmt.Sprintf("project/%s", projectName)
+	basePath := req.ProjectPath
+	if basePath == "" {
+		basePath = fmt.Sprintf("/tmp/projects/%s", req.TaskId)
+		os.MkdirAll(basePath, 0755)
+	}
+
+	// Create .crewai/context.json
+	contextData := map[string]interface{}{
+		"task_id": req.TaskId,
+		"manager": map[string]string{
+			"id":   req.ManagerId,
+			"role": req.ManagerRole,
+		},
+		"workers": req.WorkerRoles,
+		"context": contextSummary,
+		"history": []map[string]interface{}{},
+	}
+	contextJSON, _ := json.MarshalIndent(contextData, "", "  ")
+	crewaiDir := filepath.Join(basePath, ".crewai")
+	os.MkdirAll(crewaiDir, 0755)
+	os.WriteFile(filepath.Join(crewaiDir, "context.json"), contextJSON, 0644)
 
 	// Process each worker role SEQUENTIALLY so they can see each other's results
 	for i, wr := range req.WorkerRoles {

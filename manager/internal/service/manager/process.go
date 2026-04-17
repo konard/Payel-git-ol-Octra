@@ -10,6 +10,8 @@ import (
 	"manager/internal/fetcher/grpc/workerpb"
 	"manager/pkg/database"
 	"manager/pkg/models"
+	"os"
+	"path/filepath"
 )
 
 // processManager — основная логика одного менеджера
@@ -88,6 +90,32 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 	workerRolesJSON, _ := json.Marshal(workerRolesList)
 	manager.WorkerRoles = string(workerRolesJSON)
 	database.Db.Save(manager)
+
+	// Update .crewai/context.json
+	projectPath := req.ProjectPath
+	if projectPath != "" {
+		crewaiDir := filepath.Join(projectPath, ".crewai")
+		contextPath := filepath.Join(crewaiDir, "context.json")
+		var contextData map[string]interface{}
+		if data, err := os.ReadFile(contextPath); err == nil {
+			json.Unmarshal(data, &contextData)
+		} else {
+			contextData = map[string]interface{}{
+				"task_id": req.TaskId,
+				"history": []map[string]interface{}{},
+			}
+		}
+		// Add manager decision
+		contextData["history"] = append(contextData["history"].([]map[string]interface{}), map[string]interface{}{
+			"type":      "manager_decision",
+			"manager":   req.Role,
+			"workers":   workerRolesList,
+			"timestamp": time.Now().Unix(),
+		})
+		contextJSON, _ := json.MarshalIndent(contextData, "", "  ")
+		os.MkdirAll(crewaiDir, 0755)
+		os.WriteFile(contextPath, contextJSON, 0644)
+	}
 
 	// Вызываем Worker сервис
 	log.Printf("Manager %s calling workers: %v", req.Role, workerRolesList)
