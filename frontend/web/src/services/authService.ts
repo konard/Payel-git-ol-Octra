@@ -44,6 +44,8 @@ export interface UserResponse {
     user_id: string;
     username: string;
     email: string;
+    has_subscription?: boolean;
+    subscription_end?: number;
   };
 }
 

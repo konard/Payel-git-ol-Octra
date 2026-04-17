@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Mail, Crown, Calendar, Edit2, X, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Mail, Crown, Calendar, Edit2, Check, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { t } from '../hooks/useI18n';
 
@@ -27,26 +27,75 @@ export function UserProfile({ onClose }: UserProfileProps) {
     });
   };
 
-  const isSubscriptionActive = hasSubscription && subscriptionEnd && subscriptionEnd > Date.now() / 1000;
+  const isSubscriptionActive = true; // TODO: user?.subscription_end && user.subscription_end > Date.now() / 1000;
 
-  // Generate avatar from username/email
-  const getInitials = () => {
-    const name = user?.username || user?.email || 'U';
-    const parts = name.split('@')[0].split(/[.\s_]/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+
+  useEffect(() => {
+    const generateAvatar = async () => {
+      const key = `avatar-canvas-${user?.id || 'default'}`;
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        setAvatarUrl(cached);
+        return;
+      }
+
+      const hash = user?.id || user?.email || 'default';
+      const fullHash = await sha256(hash);
+      const matrix = generateMatrix(fullHash);
+      const dataUrl = drawAvatar(matrix);
+      localStorage.setItem(key, dataUrl);
+      setAvatarUrl(dataUrl);
+    };
+
+    generateAvatar();
+  }, [user?.id, user?.email]);
+
+  const sha256 = async (message: string): Promise<string> => {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
   };
 
-  const getAvatarColor = () => {
-    const name = user?.username || user?.email || 'user';
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const generateMatrix = (hash: string): number[][] => {
+    const m = Array(5).fill(0).map(() => Array(5).fill(0));
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        const n = parseInt(hash.substr(i * 5 + j, 1), 16);
+        m[i][j] = n > 7 ? 0 : 1;
+      }
     }
-    const hue = hash % 360;
-    return `hsl(${hue}, 60%, 50%)`;
+    // make symmetric
+    for (let i = 0; i < 5; i++) {
+      for (let j = Math.floor(5 / 2), k = 2; j < 5; j++, k += 2) {
+        m[i][j] = m[i][j - k];
+      }
+    }
+    return m;
+  };
+
+  const drawAvatar = (m: number[][]): string => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#F8F8F8';
+    ctx.fillRect(0, 0, 100, 100);
+
+    const r = Math.floor(Math.random() * 128 + 128);
+    const g = Math.floor(Math.random() * 128 + 128);
+    const b = Math.floor(Math.random() * 128 + 128);
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
+
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if (m[i][j] === 1) {
+          ctx.fillRect(j * 20, i * 20, 20, 20);
+        }
+      }
+    }
+    return canvas.toDataURL();
   };
 
   return (
@@ -56,22 +105,21 @@ export function UserProfile({ onClose }: UserProfileProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-8">
+        <div className="relative bg-[var(--surface)] border-b border-[var(--border)] px-6 py-8">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-md transition-colors text-white"
+            className="absolute top-4 right-4 p-1.5 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
           >
             <X size={18} />
           </button>
-          
+
           {/* Avatar */}
           <div className="flex items-center gap-4">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg"
-              style={{ backgroundColor: getAvatarColor() }}
-            >
-              {getInitials()}
-            </div>
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-20 h-20 rounded-full shadow-lg border-2 border-[var(--border)]"
+            />
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 {isEditing ? (
@@ -80,13 +128,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       type="text"
                       value={editUsername}
                       onChange={(e) => setEditUsername(e.target.value)}
-                      className="flex-1 px-2 py-1 bg-white/20 border border-white/30 rounded-md text-white placeholder:text-white/60 text-sm focus:outline-none focus:border-white"
+                      className="flex-1 px-2 py-1 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-[var(--accent)]"
                       placeholder="Username"
                       autoFocus
                     />
                     <button
                       onClick={handleSaveUsername}
-                      className="p-1 hover:bg-white/20 rounded transition-colors text-white"
+                      className="p-1 hover:bg-[var(--background)] rounded transition-colors text-[var(--text)]"
                     >
                       <Check size={16} />
                     </button>
@@ -95,24 +143,24 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         setIsEditing(false);
                         setEditUsername(user?.username || '');
                       }}
-                      className="p-1 hover:bg-white/20 rounded transition-colors text-white"
+                      className="p-1 hover:bg-[var(--background)] rounded transition-colors text-[var(--text)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-xl font-bold text-white">{user?.username || 'User'}</h2>
+                    <h2 className="text-xl font-bold text-[var(--text)]">{user?.username || 'User'}</h2>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="p-1 hover:bg-white/20 rounded transition-colors text-white"
+                      className="p-1 hover:bg-[var(--background)] rounded transition-colors text-[var(--text)]"
                     >
                       <Edit2 size={14} />
                     </button>
                   </>
                 )}
               </div>
-              <p className="text-sm text-white/80 mt-1 flex items-center gap-1.5">
+              <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1.5">
                 <Mail size={12} />
                 {user?.email || 'No email'}
               </p>
@@ -123,15 +171,15 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {/* Content */}
         <div className="p-6 space-y-4">
           {/* Subscription Status */}
-          <div className={`p-4 rounded-lg border ${
-            isSubscriptionActive 
-              ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/30' 
+          <div class={`p-4 rounded-lg border ${
+            isSubscriptionActive
+              ? 'bg-gradient-to-r from-orange-500/10 to-orange-600/10 border-orange-500/30'
               : 'bg-[var(--background)] border-[var(--border)]'
           }`}>
             <div className="flex items-center gap-2 mb-2">
               <Crown 
                 size={18} 
-                className={isSubscriptionActive ? 'text-emerald-500' : 'text-gray-400'}
+                className={isSubscriptionActive ? 'text-orange-500' : 'text-gray-400'}
               />
               <span className="font-semibold text-[var(--text)]">
                 {isSubscriptionActive ? 'Pro Plan' : 'Free Plan'}

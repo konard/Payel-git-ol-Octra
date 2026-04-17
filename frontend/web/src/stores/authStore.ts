@@ -86,9 +86,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const userResponse = await getCurrentUser(response.data.access_token);
         set({
-          hasSubscription: (userResponse.data as any).has_subscription || false,
-          subscriptionEnd: (userResponse.data as any).subscription_end || null,
-          user: { ...response.data.user, subscription_end: (userResponse.data as any).subscription_end },
+          hasSubscription: userResponse.data.has_subscription || false,
+          subscriptionEnd: userResponse.data.subscription_end || null,
+          user: { ...response.data.user, subscription_end: userResponse.data.subscription_end },
         });
       } catch {
         // ignore
@@ -120,9 +120,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const userResponse = await getCurrentUser(response.data.access_token);
         set({
-          hasSubscription: (userResponse.data as any).has_subscription || false,
-          subscriptionEnd: (userResponse.data as any).subscription_end || null,
-          user: { ...response.data.user, subscription_end: (userResponse.data as any).subscription_end },
+          hasSubscription: userResponse.data.has_subscription || false,
+          subscriptionEnd: userResponse.data.subscription_end || null,
+          user: { ...response.data.user, subscription_end: userResponse.data.subscription_end },
         });
       } catch {
         // ignore - will check on next page load
@@ -180,10 +180,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
-              subscription_end: (userResponse.data as any).subscription_end,
+              subscription_end: userResponse.data.subscription_end,
             },
-            hasSubscription: (userResponse.data as any).has_subscription || false,
-            subscriptionEnd: (userResponse.data as any).subscription_end || null,
+            hasSubscription: userResponse.data.has_subscription || false,
+            subscriptionEnd: userResponse.data.subscription_end || null,
             isAuthenticated: true,
             error: null,
           });
@@ -214,11 +214,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: response.data.user_id,
           username: response.data.username,
           email: response.data.email,
-          subscription_end: (response.data as any).subscription_end,
+          subscription_end: response.data.subscription_end,
           created_at: (response.data as any).created_at,
         },
-        hasSubscription: (response.data as any).has_subscription || false,
-        subscriptionEnd: (response.data as any).subscription_end || null,
+        hasSubscription: response.data.has_subscription || false,
+        subscriptionEnd: response.data.subscription_end || null,
         isAuthenticated: true,
         error: null,
       });
@@ -238,10 +238,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
-              subscription_end: (userResponse.data as any).subscription_end,
+              subscription_end: userResponse.data.subscription_end,
             },
-            hasSubscription: (userResponse.data as any).has_subscription || false,
-            subscriptionEnd: (userResponse.data as any).subscription_end || null,
+            hasSubscription: userResponse.data.has_subscription || false,
+            subscriptionEnd: userResponse.data.subscription_end || null,
             isAuthenticated: true,
             error: null,
           });

@@ -203,7 +203,7 @@ export function useWebSocket(url: string) {
 
   // Helper: finalize all nodes (done/error)
   const finalizeAllNodes = (status: 'done' | 'error') => {
-    const nodes = storeActions.nodes;
+    const nodes = storeActions.nodes();
     nodes.forEach((node) => {
       storeActions.updateNode(node.id, { status });
     });
@@ -444,7 +444,7 @@ export function useWebSocket(url: string) {
 
     // On reconnect, use /api/task/reconnect with task_id instead of creating a new task
     // Only reconnect if we have an active task that's still running and not too old
-    const currentStatus = storeActions.nodes ? storeActions.nodes.find(n => n.type === 'boss')?.data?.status : '';
+    const currentStatus = storeActions.nodes ? storeActions.nodes().find(n => n.type === 'boss')?.data?.status : '';
     const taskAge = Date.now() - taskStartTime.current;
     const maxTaskAge = 2 * 60 * 60 * 1000; // 2 hours
     const isReconnect = activeTaskId.current !== null &&
@@ -523,7 +523,7 @@ export function useWebSocket(url: string) {
 
   const send = useCallback((data: CreateTaskPayload) => {
     // Don't send if we have an active task that's not completed
-    const currentStatus = storeActions.nodes ? storeActions.nodes.find(n => n.type === 'boss')?.data?.status : '';
+    const currentStatus = storeActions.nodes ? storeActions.nodes().find(n => n.type === 'boss')?.data?.status : '';
     if (currentStatus && !['done', 'error', 'cancelled'].includes(currentStatus) && activeTaskId.current) {
       storeActions.addLog({
         message: 'Task is already running, cannot create new task',
