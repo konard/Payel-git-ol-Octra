@@ -82,12 +82,22 @@ func (s *BossService) StopTask(ctx context.Context, req *bosspb.StopTaskRequest)
 	}, nil
 }
 
-// restoreProject restores project from Redis JSON
+// restoreProject restores project from DB or Redis JSON
 func (s *BossService) restoreProject(taskID string) (string, error) {
-	key := fmt.Sprintf("project:%s", taskID)
-	data, err := s.redisClient.GetRedisClient().Get(context.Background(), key).Result()
-	if err != nil {
-		return "", fmt.Errorf("failed to get project from Redis: %w", err)
+	var data string
+	var task models.Task
+
+	// First, try DB for faster lookup (one-to-one relation)
+	if err := database.Db.First(&task, "id = ?", taskID).Error; err == nil && task.ProjectJSON != "" {
+		data = task.ProjectJSON
+	} else {
+		// Fallback to Redis
+		key := fmt.Sprintf("project:%s", taskID)
+		var err error
+		data, err = s.redisClient.GetRedisClient().Get(context.Background(), key).Result()
+		if err != nil {
+			return "", fmt.Errorf("failed to get project from DB/Redis: %w", err)
+		}
 	}
 
 	var project struct {
@@ -122,6 +132,13 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 		if err := os.MkdirAll(fullPath, 0755); err != nil {
 			continue
 		}
+	}
+
+	// Save project JSON to DB for one-to-one relation and faster lookup
+	var dbTask models.Task
+	if err := database.Db.First(&dbTask, "id = ?", taskID).Error; err == nil {
+		dbTask.ProjectJSON = data
+		database.Db.Save(&dbTask)
 	}
 
 	return projectPath, nil

@@ -22,6 +22,7 @@ type Task struct {
 	// Результаты
 	Solution      []byte `gorm:"type:bytea"` // ZIP архив
 	ResultArchive string // Путь к архиву /tasks/{task_id}/solution.zip
+	ProjectJSON   string `gorm:"type:jsonb"` // JSON проекта для восстановления (one-to-one связь)
 }
 
 // BossDecision — решение босса
