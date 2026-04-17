@@ -68,7 +68,18 @@ export function useWebSocket(url: string) {
     addLog: useTaskStore((state) => state.addLog),
     setZipUrl: useTaskStore((state) => state.setZipUrl),
     setTokensUsed: useTaskStore((state) => state.setTokensUsed),
-    nodes: useTaskStore((state) => state.nodes),
+    nodes: () => useTaskStore.getState().nodes,
+  };
+
+  // Check if there are user-created nodes (not auto-generated)
+  const hasUserNodes = () => {
+    const nodes = storeActions.nodes();
+    return nodes.some(node =>
+      !node.id.startsWith('boss-') &&
+      !node.id.startsWith('manager-') &&
+      !node.id.startsWith('worker-') &&
+      node.id !== 'zip-archive'
+    );
   };
 
   const clearReconnectTimer = () => {
@@ -200,13 +211,14 @@ export function useWebSocket(url: string) {
 
   // Helper: add ZIP Archive node with edges from all workers
   const addZIPArchiveNode = () => {
-    if (zipNodeAdded.current) return;
+    if (zipNodeAdded.current || hasUserNodes()) return;
     zipNodeAdded.current = true;
 
     // Find all worker nodes
-    const workerNodes = storeActions.nodes.filter(n => n.type === 'worker');
-    const managerNodes = storeActions.nodes.filter(n => n.type === 'manager');
-    
+    const nodes = storeActions.nodes();
+    const workerNodes = nodes.filter(n => n.type === 'worker');
+    const managerNodes = nodes.filter(n => n.type === 'manager');
+
     // Calculate center position
     const allX = [...workerNodes, ...managerNodes].map(n => n.position?.x || 0);
     const centerX = allX.length > 0 ? Math.min(...allX) + (Math.max(...allX) - Math.min(...allX)) / 2 : 400;
@@ -249,14 +261,18 @@ export function useWebSocket(url: string) {
       zipNodeAdded.current = false;
       workerCounters.current = {};
       workersByManager.current = {};
-      storeActions.addNode({
-        id: 'boss-1',
-        type: 'boss',
-        role: 'CEO',
-        status: 'working',
-        techStack: msg.data?.techStack || [],
-        position: { x: 400, y: 50 },
-      });
+
+      // Only add auto-generated boss if no user nodes exist
+      if (!hasUserNodes()) {
+        storeActions.addNode({
+          id: 'boss-1',
+          type: 'boss',
+          role: 'CEO',
+          status: 'working',
+          techStack: msg.data?.techStack || [],
+          position: { x: 400, y: 50 },
+        });
+      }
     }
 
     // === MANAGERS — "Starting manager: Project Lead / Architect" ===
@@ -269,17 +285,21 @@ export function useWebSocket(url: string) {
         const managerId = `manager-${idx}`;
         console.log('[WS] => Adding manager:', role, 'at index', idx);
         storeActions.setTaskStatus('executing');
-        storeActions.addNode({
-          id: managerId,
-          type: 'manager',
-          role: capitalizeRole(role),
-          status: 'working',
-          position: {
-            x: 200 + (idx * 250),
-            y: 250,
-          },
-        });
-        storeActions.addEdge({ from: 'boss-1', to: managerId });
+
+        // Only add auto-generated manager if no user nodes exist
+        if (!hasUserNodes()) {
+          storeActions.addNode({
+            id: managerId,
+            type: 'manager',
+            role: capitalizeRole(role),
+            status: 'working',
+            position: {
+              x: 200 + (idx * 250),
+              y: 250,
+            },
+          });
+          storeActions.addEdge({ from: 'boss-1', to: managerId });
+        }
       } else {
         // Already added — just update status
         const idx = [...managersKnown.current].indexOf(role);
@@ -330,23 +350,26 @@ export function useWebSocket(url: string) {
         workersByManager.current[managerRole].push(role);
         const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
 
-        // Position: under the manager
-        const mgrPosition = managerIdx >= 0 ?
-          (storeActions.nodes.find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
-        const workerX = mgrPosition + (wIdx - 1) * 120;
-        const workerY = 370;
+        // Only add auto-generated worker if no user nodes exist
+        if (!hasUserNodes()) {
+          // Position: under the manager
+          const mgrPosition = managerIdx >= 0 ?
+            (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
+          const workerX = mgrPosition + (wIdx - 1) * 120;
+          const workerY = 370;
 
-        storeActions.addNode({
-          id: workerId,
-          type: 'worker',
-          role: capitalizeRole(role),
-          status: 'working',
-          position: { x: workerX, y: workerY },
-        });
+          storeActions.addNode({
+            id: workerId,
+            type: 'worker',
+            role: capitalizeRole(role),
+            status: 'working',
+            position: { x: workerX, y: workerY },
+          });
 
-        // Edge from manager to worker
-        if (managerIdx >= 0) {
-          storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+          // Edge from manager to worker
+          if (managerIdx >= 0) {
+            storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+          }
         }
 
 

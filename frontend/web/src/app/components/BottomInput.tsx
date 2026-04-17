@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS, getProviderById } from '../../config/providers';
@@ -22,19 +22,33 @@ export interface TaskData {
 }
 
 export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    provider: 'openrouter',
-    model: 'qwen/qwen3-coder',
-    apiKey: '',
-  });
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultToken = useSettingsStore((state) => state.defaultToken);
+  const defaultProvider = useSettingsStore((state) => state.defaultProvider);
+  const defaultModel = useSettingsStore((state) => state.defaultModel);
+  const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
+  const setDefaultModel = useSettingsStore((state) => state.setDefaultModel);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    provider: defaultProvider,
+    model: defaultModel,
+    apiKey: '',
+  });
+
+  // Sync formData with settings changes
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      provider: defaultProvider,
+      model: defaultModel,
+    }));
+  }, [defaultProvider, defaultModel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,13 +79,16 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
     const provider = getProviderById(providerId);
     if (provider) {
       setFormData((prev) => ({ ...prev, provider: providerId, model: provider.defaultModel }));
+      setDefaultProvider(providerId);
+      setDefaultModel(provider.defaultModel);
     }
     setShowProviderDropdown(false);
-  }, []);
+  }, [setDefaultProvider, setDefaultModel]);
 
   const handleModelSelect = useCallback((modelId: string) => {
     setFormData((prev) => ({ ...prev, model: modelId }));
-  }, []);
+    setDefaultModel(modelId);
+  }, [setDefaultModel]);
 
   const selectedProvider = getProviderById(formData.provider);
 

@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func (s *WorkerService) generateCode(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, error) {
+func (s *WorkerService) generateCode(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, []string, error) {
 	contextSection := ""
 	if context != "" {
 		contextSection = "\n\nCONTEXT FROM OTHER WORKERS:\n" + context
@@ -25,7 +25,7 @@ Return JSON ONLY:
 
 	planResp, err := s.agentsClient.Generate(ctx, provider, model, planPrompt, tokens, 1024, 0.3)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var plan struct {
@@ -66,6 +66,29 @@ Return the file content as PLAIN TEXT. NO JSON. NO markdown. Just the raw code.`
 		}
 	}
 
-	log.Printf("Generated %d files for role %s", len(files), role)
-	return files, nil
+	// Generate commands
+	commandsPrompt := fmt.Sprintf(`You are a %s developer. Role: %s
+
+TASK: %s%s
+
+Based on the files created, provide bash commands to execute in the project root (mkdir, echo, etc.).
+Return JSON ONLY: {"commands": ["cmd1", "cmd2"]}`,
+		role, description, taskMD, contextSection)
+
+	commandsResp, err := s.agentsClient.Generate(ctx, provider, model, commandsPrompt, tokens, 1024, 0.3)
+	if err != nil {
+		log.Printf("Error generating commands: %v", err)
+		return files, []string{}, nil
+	}
+
+	var commandsStruct struct {
+		Commands []string `json:"commands"`
+	}
+	if err := json.Unmarshal([]byte(repairJSON(extractJSONFromMarkdown(commandsResp))), &commandsStruct); err != nil {
+		log.Printf("Error parsing commands JSON: %v", err)
+		return files, []string{}, nil
+	}
+
+	log.Printf("Generated %d files and %d commands for role %s", len(files), len(commandsStruct.Commands), role)
+	return files, commandsStruct.Commands, nil
 }

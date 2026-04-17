@@ -132,7 +132,19 @@
     "changeRole": "Сменить роль:",
     "duplicate": "Дублировать ноду",
     "delete": "Удалить ноду",
-    "notConnected": "Не подключён"
+    "notConnected": "Не подключён",
+    "n8nAutomation": {
+      "title": "N8n автоматизация",
+      "workflow": "Workflow",
+      "selectWorkflow": "Выберите workflow...",
+      "loading": "Загрузка...",
+      "orWebhookUrl": "Или Webhook URL",
+      "triggerWhen": "Когда запускать:",
+      "atStart": "В начале задачи",
+      "atMiddle": "На 50% выполнения",
+      "atEnd": "В конце задачи",
+      "atCustom": "На {percentage}% выполнения"
+    }
   },
   "integrations": {
     "title": "Интеграции",

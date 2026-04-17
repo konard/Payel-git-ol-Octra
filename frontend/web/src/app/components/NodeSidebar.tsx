@@ -33,6 +33,14 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
   const [myWorkflows, setMyWorkflows] = useState<Workflow[]>([]);
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
 
+  // Закрытие dropdown при закрытии sidebar
+  useEffect(() => {
+    if (!isOpen) {
+      setCreateOpen(false);
+      setWorkflowsOpen(false);
+    }
+  }, [isOpen]);
+
   // Загрузка workflow при открытии dropdown
   useEffect(() => {
     if (workflowsOpen && myWorkflows.length === 0) {
@@ -120,10 +128,14 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
     }
   }, []);
 
-  // Close dropdowns on outside click
-  const handleClickOutside = useCallback(() => {
-    setCreateOpen(false);
-    setWorkflowsOpen(false);
+  // Close dropdown when clicking outside the sidebar
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    // Only close if clicking outside the entire sidebar
+    const sidebar = document.querySelector('[data-sidebar]');
+    if (sidebar && !sidebar.contains(e.target as Node)) {
+      setCreateOpen(false);
+      setWorkflowsOpen(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -153,6 +165,7 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
 
       {/* Панель */}
       <div
+        data-sidebar
         className={`fixed right-0 top-0 h-full w-72 bg-[var(--surface)] border-l border-[var(--border)] shadow-xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}

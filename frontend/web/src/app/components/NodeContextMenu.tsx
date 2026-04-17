@@ -172,20 +172,20 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
         <div className="p-2 border-b border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-2 px-2 flex items-center gap-1">
             <Zap className="w-3 h-3" />
-            N8n автоматизация
+            {t('contextMenu.n8nAutomation.title')}
           </div>
 
           {/* Выбор workflow или webhook */}
           <div className="px-2 mb-3">
-            <div className="text-xs font-medium text-[var(--text)] mb-1">Workflow</div>
+            <div className="text-xs font-medium text-[var(--text)] mb-1">{t('contextMenu.n8nAutomation.workflow')}</div>
             <select
               value={selectedWorkflowId}
               onChange={(e) => handleWorkflowSelect(e.target.value)}
               className="w-full px-2 py-1 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)]"
             >
-              <option value="">Выберите workflow...</option>
+              <option value="">{t('contextMenu.n8nAutomation.selectWorkflow')}</option>
               {loadingWorkflows ? (
-                <option disabled>Загрузка...</option>
+                <option disabled>{t('contextMenu.n8nAutomation.loading')}</option>
               ) : (
                 n8nWorkflows.map((workflow) => (
                   <option key={workflow.id} value={workflow.id}>
@@ -195,7 +195,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
               )}
             </select>
 
-            <div className="text-xs font-medium text-[var(--text)] mt-2 mb-1">Или Webhook URL</div>
+            <div className="text-xs font-medium text-[var(--text)] mt-2 mb-1">{t('contextMenu.n8nAutomation.orWebhookUrl')}</div>
             <input
               type="url"
               value={webhookUrl}
@@ -207,7 +207,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
 
           {/* Выбор триггера */}
           <div className="space-y-1">
-            <div className="text-xs font-medium text-[var(--text)] px-2 mb-1">Когда запускать:</div>
+            <div className="text-xs font-medium text-[var(--text)] px-2 mb-1">{t('contextMenu.n8nAutomation.triggerWhen')}</div>
             <button
               onClick={() => handleN8nTriggerChange('start')}
               className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
@@ -216,7 +216,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                   : 'hover:bg-[var(--background)] text-[var(--text)]'
               }`}
             >
-              В начале задачи
+              {t('contextMenu.n8nAutomation.atStart')}
             </button>
             <button
               onClick={() => handleN8nTriggerChange('middle')}
@@ -226,7 +226,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                   : 'hover:bg-[var(--background)] text-[var(--text)]'
               }`}
             >
-              На 50% выполнения
+              {t('contextMenu.n8nAutomation.atMiddle')}
             </button>
             <button
               onClick={() => handleN8nTriggerChange('end')}
@@ -236,7 +236,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                   : 'hover:bg-[var(--background)] text-[var(--text)]'
               }`}
             >
-              В конце задачи
+              {t('contextMenu.n8nAutomation.atEnd')}
             </button>
             <button
               onClick={() => handleN8nTriggerChange('custom')}
@@ -246,7 +246,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                   : 'hover:bg-[var(--background)] text-[var(--text)]'
               }`}
             >
-              На {customPercentage}% выполнения
+              {t('contextMenu.n8nAutomation.atCustom', { percentage: customPercentage })}
             </button>
             {n8nTrigger === 'custom' && (
               <div className="px-3 py-1">

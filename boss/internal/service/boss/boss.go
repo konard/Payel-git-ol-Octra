@@ -3,7 +3,6 @@ package boss
 import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
-	"boss/internal/fetcher/grpc/merger"
 	"boss/internal/redis"
 	"boss/pkg/database"
 	"boss/pkg/models"
@@ -16,7 +15,6 @@ import (
 type BossService struct {
 	bosspb.UnimplementedBossServiceServer
 	managerClient *manager.Client
-	mergerClient  *merger.Client
 	redisClient   *redis.Client
 }
 
@@ -26,16 +24,10 @@ func NewBossService() *BossService {
 		log.Printf("Warning: failed to connect to manager service: %v", err)
 	}
 
-	mrgClient, err := merger.NewClient(os.Getenv("MERGER_SERVICE_HOST"))
-	if err != nil {
-		log.Printf("Warning: failed to connect to merger service: %v", err)
-	}
-
 	redisClient := redis.NewClient()
 
 	return &BossService{
 		managerClient: mgrClient,
-		mergerClient:  mrgClient,
 		redisClient:   redisClient,
 	}
 }

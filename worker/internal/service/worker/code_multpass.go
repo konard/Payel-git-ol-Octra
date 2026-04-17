@@ -9,7 +9,7 @@ import (
 )
 
 // generateCodeMultiPass generates all files in a single LLM request (optimized, -45% tokens)
-func (s *WorkerService) generateCodeMultiPass(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, error) {
+func (s *WorkerService) generateCodeMultiPass(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, []string, error) {
 	contextSection := ""
 	if context != "" {
 		contextSection = "\n\nCONTEXT FROM OTHER WORKERS:\n" + context
@@ -22,6 +22,8 @@ TASK: %s%s
 
 Create 3-5 most important files for this project.
 
+AFTER files, provide COMMANDS to execute in the project (mkdir, echo, etc.).
+
 RETURN FORMAT (STRICT - follow exactly):
 === FILE: path/to/file1.ext ===
 <complete code for file1.ext - no placeholders, no TODOs>
@@ -29,6 +31,10 @@ RETURN FORMAT (STRICT - follow exactly):
 <complete code for file2.ext - no placeholders, no TODOs>
 === FILE: path/to/file3.ext ===
 <complete code for file3.ext - no placeholders, no TODOs>
+=== COMMANDS ===
+mkdir -p dir
+echo 'content' > file.txt
+# other bash commands
 
 RULES:
 1. Each file MUST start with "=== FILE: <path> ===" on its own line
@@ -37,16 +43,17 @@ RULES:
 4. Keep code compact but functional (300-500 lines max per file)
 5. Do NOT include markdown code fences around the entire response
 6. If you can't create a file, skip it and move to the next one
-7. Return ONLY the files, no explanations`,
+7. COMMANDS: List bash commands to run in project root, one per line
+8. Return ONLY the files and commands, no explanations`,
 		role, description, taskMD, contextSection)
 
 	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
 	if err != nil {
-		return nil, fmt.Errorf("multi-pass generation failed: %w", err)
+		return nil, nil, fmt.Errorf("multi-pass generation failed: %w", err)
 	}
 
 	// Parse multi-file response
-	files := parseMultiFileResponse(response)
+	files, commands := parseMultiFileResponse(response)
 
 	if len(files) == 0 {
 		// Fallback to N+1 approach if parsing failed
@@ -60,17 +67,20 @@ RULES:
 		finalFiles[fmt.Sprintf("%s/%s/%s", basePath, role, path)] = content
 	}
 
-	log.Printf("[Worker] Multi-pass generated %d files for role %s", len(finalFiles), role)
-	return finalFiles, nil
+	log.Printf("[Worker] Multi-pass generated %d files and %d commands for role %s", len(finalFiles), len(commands), role)
+	return finalFiles, commands, nil
 }
 
-// parseMultiFileResponse parses a multi-file response
+// parseMultiFileResponse parses a multi-file response and commands
 // Expected format:
 // === FILE: path/to/file.go ===
 // <code>
 // === FILE: path/to/file2.go ===
 // <code>
-func parseMultiFileResponse(content string) map[string]string {
+// === COMMANDS ===
+// command1
+// command2
+func parseMultiFileResponse(content string) (map[string]string, []string) {
 	files := make(map[string]string)
 
 	// Regex to match "=== FILE: <path> ==="
@@ -78,7 +88,7 @@ func parseMultiFileResponse(content string) map[string]string {
 	matches := re.FindAllStringSubmatchIndex(content, -1)
 
 	if len(matches) == 0 {
-		return files
+		return files, []string{}
 	}
 
 	for i, match := range matches {
@@ -106,5 +116,19 @@ func parseMultiFileResponse(content string) map[string]string {
 		files[path] = fileContent
 	}
 
-	return files
+	// Parse commands
+	commands := []string{}
+	commandsMarker := "=== COMMANDS ==="
+	if idx := strings.Index(content, commandsMarker); idx != -1 {
+		commandsText := content[idx+len(commandsMarker):]
+		commandsText = strings.TrimSpace(commandsText)
+		if commandsText != "" {
+			commands = strings.Split(commandsText, "\n")
+			for i, cmd := range commands {
+				commands[i] = strings.TrimSpace(cmd)
+			}
+		}
+	}
+
+	return files, commands
 }

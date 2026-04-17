@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 
 	"worker/internal/fetcher/grpc/workerpb"
 	"worker/pkg/database"
@@ -190,11 +192,12 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 		}
 
 		var files map[string]string
+		var commands []string
 		if workerMode == "multypass" {
-			files, err = s.generateCodeMultiPass(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+			files, commands, err = s.generateCodeMultiPass(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
 		} else {
 			// Fallback to legacy N+1 approach
-			files, err = s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+			files, commands, err = s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
 		}
 
 		if err != nil {
@@ -203,6 +206,29 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			database.Db.Save(worker)
 			continue
 		}
+
+		// Execute commands in project path
+		projectPath := req.ProjectPath
+		if projectPath == "" {
+			projectPath = "/tmp/projects/default"
+		}
+		for _, cmd := range commands {
+			if cmd == "" {
+				continue
+			}
+			parts := strings.Fields(cmd)
+			if len(parts) == 0 {
+				continue
+			}
+			exec.Command(parts[0], parts[1:]...).Dir(projectPath).Run() // ignore errors for now
+		}
+
+		// Git operations
+		branchName := fmt.Sprintf("worker-%s", workerID.String())
+		exec.Command("git", "checkout", "-b", branchName).Dir(projectPath).Run()
+		exec.Command("git", "add", ".").Dir(projectPath).Run()
+		exec.Command("git", "commit", "-m", fmt.Sprintf("Worker %s: %s", role, taskMD)).Dir(projectPath).Run()
+		exec.Command("git", "push", "origin", branchName).Dir(projectPath).Run()
 
 		// Collect files - add worker prefix to avoid collisions
 		for path, content := range files {
@@ -225,6 +251,7 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			Files:      filesJSON,
 			Success:    true,
 			Approved:   false,
+			Commands:   commands,
 		}
 
 		worker.SolutionMD = workerResult.SolutionMd

@@ -224,37 +224,9 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 		return nil, nil, firstErr
 	}
 
-	if progressCallback != nil {
-		progressCallback("merger", 68, "🔧 Merger combining all projects...")
-	}
-
-	// Use merger service to combine all manager outputs
-	projectsMap := make(map[string][]byte)
-	for i, result := range allResults {
-		roleName := result.Role
-		if roleName == "" {
-			roleName = fmt.Sprintf("project_%d", i)
-		}
-		if len(result.Solution) > 0 {
-			projectsMap[roleName] = result.Solution
-		}
-	}
-
+	// Combine manager outputs directly (merger removed)
 	var finalZip []byte
-	if s.mergerClient != nil && len(projectsMap) > 0 {
-		var err error
-		finalZip, err = s.mergerClient.MergeProjects(ctx, projectsMap)
-		if err != nil {
-			log.Printf("Merger service error: %v, falling back to simple merge", err)
-			finalZip, _ = mergeZipArchives(allZipData)
-		}
-	} else {
-		finalZip, _ = mergeZipArchives(allZipData)
-	}
-
-	if progressCallback != nil {
-		progressCallback("merger", 70, "✅ All projects merged successfully")
-	}
+	finalZip, _ = mergeZipArchives(allZipData)
 
 	return allResults, finalZip, nil
 }

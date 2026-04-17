@@ -132,7 +132,19 @@
     "changeRole": "Changer le rôle :",
     "duplicate": "Dupliquer le nœud",
     "delete": "Supprimer le nœud",
-    "notConnected": "Non connecté"
+    "notConnected": "Non connecté",
+    "n8nAutomation": {
+      "title": "Automatisation N8n",
+      "workflow": "Workflow",
+      "selectWorkflow": "Sélectionner un workflow...",
+      "loading": "Chargement...",
+      "orWebhookUrl": "Ou URL Webhook",
+      "triggerWhen": "Quand déclencher :",
+      "atStart": "Au début de la tâche",
+      "atMiddle": "À 50% d'achèvement",
+      "atEnd": "À la fin de la tâche",
+      "atCustom": "À {percentage}% d'achèvement"
+    }
   },
   "integrations": {
     "title": "Intégrations",
@@ -187,6 +199,14 @@
       "botTokenPlaceholder": "Entrez le token de votre bot",
       "openBot": "Ouvrir le Bot",
       "connectionStatus": "Statut de la connexion"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Intégrez les automatisations n8n avec vos agents de workflow",
+      "serverUrl": "URL du serveur",
+      "serverUrlPlaceholder": "https://votre-instance-n8n.com/mcp-server/http",
+      "accessToken": "Token d'accès",
+      "accessTokenPlaceholder": "token d'accès n8n"
     }
   },
   "workflowLibrary": {
