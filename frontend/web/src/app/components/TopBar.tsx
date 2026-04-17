@@ -11,6 +11,7 @@ import { IntegrationCard } from '../../components/IntegrationCard';
 import { UserProfile } from '../../components/UserProfile';
 import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
+import n8nIcon from '../../images/n8n-color.png';
 
 type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility' | 'integrations';
 
@@ -57,6 +58,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   // Integration state
   const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
   const telegramIntegration = useIntegrationStore((state) => state.integrations.telegram);
+  const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
   const setIntegrationConnected = useIntegrationStore((state) => state.setIntegrationConnected);
   const disconnectIntegration = useIntegrationStore((state) => state.disconnectIntegration);
 
@@ -267,7 +269,51 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                               <span className="text-sm font-medium">{langInfo?.nativeName || code}</span>
                               {isActive && (
                                 <span className="ml-auto text-xs">✓</span>
-                              )}
+                )}
+
+                {activeTab === 'integrations' && (
+                  <div className="space-y-4 max-w-lg">
+                    <div>
+                      <div className="text-sm font-medium text-[var(--text)] mb-1">{t('integrations.title')}</div>
+                      <div className="text-xs text-[var(--text-muted)] mb-4">
+                        {t('integrations.description')}
+                      </div>
+                    </div>
+
+                    <IntegrationCard
+                      type="lefine"
+                      name={t('integrations.lefine.name')}
+                      description={t('integrations.lefine.description')}
+                      icon={lefineIcon}
+                      connected={lefineIntegration.connected}
+                      config={lefineIntegration.config}
+                      onConnect={(config) => setIntegrationConnected('lefine', true, config)}
+                      onDisconnect={() => disconnectIntegration('lefine')}
+                    />
+
+                    <IntegrationCard
+                      type="telegram"
+                      name={t('integrations.telegram.name')}
+                      description={t('integrations.telegram.description')}
+                      icon={telegramIcon}
+                      connected={telegramIntegration.connected}
+                      config={telegramIntegration.config}
+                      onConnect={(config) => setIntegrationConnected('telegram', true, config)}
+                      onDisconnect={() => disconnectIntegration('telegram')}
+                    />
+
+                    <IntegrationCard
+                      type="n8n"
+                      name={t('integrations.n8n.name')}
+                      description={t('integrations.n8n.description')}
+                      icon={n8nIcon}
+                      connected={n8nIntegration.connected}
+                      config={n8nIntegration.config}
+                      onConnect={(config) => setIntegrationConnected('n8n', true, config)}
+                      onDisconnect={() => disconnectIntegration('n8n')}
+                    />
+                  </div>
+                )}
                             </button>
                           );
                         })}
@@ -319,52 +365,6 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                         />
                       </button>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text)]">
-                          {t('settings.hideServerStatus')}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {t('settings.hideServerStatusHint')}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setHideServerStatus(!hideServerStatus)}
-                        className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
-                          hideServerStatus ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
-                            hideServerStatus ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text)]">
-                          {t('settings.hideConsole')}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {t('settings.hideConsoleHint')}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setHideConsole(!hideConsole)}
-                        className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
-                          hideConsole ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
-                            hideConsole ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
                   </div>
                 )}
 
@@ -376,8 +376,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                         {t('integrations.description')}
                       </div>
                     </div>
-                    
-                    {/* Lefine.pro Integration */}
+
                     <IntegrationCard
                       type="lefine"
                       name={t('integrations.lefine.name')}
@@ -385,15 +384,10 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       icon={lefineIcon}
                       connected={lefineIntegration.connected}
                       config={lefineIntegration.config}
-                      onConnect={(config) => {
-                        setIntegrationConnected('lefine', true, config);
-                      }}
-                      onDisconnect={() => {
-                        disconnectIntegration('lefine');
-                      }}
+                      onConnect={(config) => setIntegrationConnected('lefine', true, config)}
+                      onDisconnect={() => disconnectIntegration('lefine')}
                     />
 
-                    {/* Telegram Integration */}
                     <IntegrationCard
                       type="telegram"
                       name={t('integrations.telegram.name')}
@@ -401,15 +395,24 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       icon={telegramIcon}
                       connected={telegramIntegration.connected}
                       config={telegramIntegration.config}
-                      onConnect={(config) => {
-                        setIntegrationConnected('telegram', true, config);
-                      }}
-                      onDisconnect={() => {
-                        disconnectIntegration('telegram');
-                      }}
+                      onConnect={(config) => setIntegrationConnected('telegram', true, config)}
+                      onDisconnect={() => disconnectIntegration('telegram')}
+                    />
+
+                    <IntegrationCard
+                      type="n8n"
+                      name={t('integrations.n8n.name')}
+                      description={t('integrations.n8n.description')}
+                      icon={n8nIcon}
+                      connected={n8nIntegration.connected}
+                      config={n8nIntegration.config}
+                      onConnect={(config) => setIntegrationConnected('n8n', true, config)}
+                      onDisconnect={() => disconnectIntegration('n8n')}
                     />
                   </div>
                 )}
+
+
               </div>
             </div>
           </div>

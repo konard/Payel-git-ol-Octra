@@ -12,9 +12,9 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion } from 'motion/react';
-import bossImage from '../../../images/boss-image.png';
-import managerImage from '../../../images/manager-image.png';
-import workerImage from '../../../images/worker-image.png';
+// import bossImage from '../../../images/boss-image.png';
+// import managerImage from '../../../images/manager-image.png';
+// import workerImage from '../../../images/worker-image.png';
 
 // Custom node components for landing
 function LandingBossNode({ data }: { data: any }) {
@@ -23,7 +23,7 @@ function LandingBossNode({ data }: { data: any }) {
       <Handle type="target" position={Position.Top} />
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={bossImage} alt="Boss" className="w-10 h-10 object-contain" />
+          <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center text-white font-bold">B</div>
           <span className="font-bold text-base">BOSS</span>
         </div>
         <span className="text-sm font-medium">COORDINATING</span>
@@ -47,7 +47,7 @@ function LandingManagerNode({ data }: { data: any }) {
       <Handle type="target" position={Position.Top} />
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={managerImage} alt="Manager" className="w-10 h-10 object-contain" />
+          <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center text-white font-bold">M</div>
           <span className="font-bold text-base">MANAGER</span>
         </div>
         <span className="text-sm font-medium">WORKING</span>
@@ -71,7 +71,7 @@ function LandingWorkerNode({ data }: { data: any }) {
       <Handle type="target" position={Position.Top} />
       <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={workerImage} alt="Worker" className="w-10 h-10 object-contain" />
+          <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center text-white font-bold">W</div>
           <span className="font-bold text-base">WORKER</span>
         </div>
         <span className="text-sm font-medium">DONE</span>

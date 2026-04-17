@@ -5,14 +5,14 @@ import {
   Controls,
   Background,
   useReactFlow,
-  useNodesState,
   addEdge,
-  applyNodeChanges,
   type Node,
   type Edge,
   type Connection,
   type OnNodesChange,
   type OnEdgesChange,
+  type ReactFlowInstance,
+  type ReactFlowInstance,
   type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -46,6 +46,7 @@ export function Canvas() {
   const updateNode = useTaskStore((state) => state.updateNode);
   const removeNode = useTaskStore((state) => state.removeNode);
   const { t } = useI18n();
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
 
@@ -88,7 +89,6 @@ export function Canvas() {
 
   // Обработчик изменений nodes в ReactFlow
   const onNodesChange = useCallback((changes: OnNodesChange) => {
-    // Синхронизируем изменения с Zustand store
     changes.forEach((change) => {
       if (change.type === 'select') {
         // Обработка выбора/снятия выбора ноды
@@ -102,11 +102,14 @@ export function Canvas() {
           });
         }
       } else if (change.type === 'position' && change.position) {
-        // Обработка перемещения ноды
+        // Перемещение ноды - обновляем позицию в store
         updateNode(change.id, { position: change.position });
+      } else if (change.type === 'remove') {
+        // Удаление ноды
+        removeNode(change.id);
       }
     });
-  }, [updateNode]);
+  }, [updateNode, removeNode]);
 
   // Обработчик соединений между нодами
   const onConnect = useCallback((connection: Connection) => {
@@ -167,9 +170,12 @@ export function Canvas() {
       }
 
       const type = event.dataTransfer.getData('application/reactflow/node-type') as 'boss' | 'manager' | 'worker';
-      if (type) {
+      if (type && reactFlowInstance) {
         event.preventDefault();
-        const position = { x: event.clientX - 200, y: event.clientY - 100 };
+        const position = reactFlowInstance.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
         addNodeToStore({
           id: `node-${Date.now()}`,
           type,
@@ -180,7 +186,7 @@ export function Canvas() {
         });
       }
     },
-    [addNodeToStore, handleImportWorkflow]
+    [addNodeToStore, handleImportWorkflow, reactFlowInstance]
   );
 
   // Импорт из JSON строки
@@ -319,11 +325,11 @@ export function Canvas() {
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}
-
           onPaneClick={onPaneClick}
           fitView
           className="bg-[var(--bg-canvas)]"
           proOptions={{ hideAttribution: true }}
+          onInit={(instance) => setReactFlowInstance(instance)}
         >
           <Controls />
           <Background

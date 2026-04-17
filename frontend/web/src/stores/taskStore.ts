@@ -17,6 +17,11 @@ export interface AgentNode {
   // ZIP Archive specific fields
   fileName?: string;
   fileSize?: string;
+  // N8n automation
+  n8nTrigger?: 'start' | 'end' | 'middle' | 'custom';
+  n8nPercentage?: number;
+  n8nWorkflowId?: string;
+  n8nWebhookUrl?: string;
 }
 
 export interface WorkflowConfig {

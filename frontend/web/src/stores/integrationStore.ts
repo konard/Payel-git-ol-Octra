@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type IntegrationType = 'lefine' | 'telegram';
+export type IntegrationType = 'lefine' | 'telegram' | 'n8n';
 
 export interface IntegrationConfig {
   useDefaultKey: boolean;
@@ -50,12 +50,23 @@ const DEFAULT_TELEGRAM_INTEGRATION: Integration = {
   },
 };
 
+const DEFAULT_N8N_INTEGRATION: Integration = {
+  type: 'n8n',
+  connected: false,
+  config: {
+    useDefaultKey: false,
+    apiKey: '',
+    workflowId: '',
+  },
+};
+
 export const useIntegrationStore = create<IntegrationState>()(
   persist(
     (set, get) => ({
       integrations: {
         lefine: DEFAULT_INTEGRATION,
         telegram: DEFAULT_TELEGRAM_INTEGRATION,
+        n8n: DEFAULT_N8N_INTEGRATION,
       },
 
       setIntegrationConnected: (type, connected, config = {}) => {

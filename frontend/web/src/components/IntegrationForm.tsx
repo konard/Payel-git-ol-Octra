@@ -52,13 +52,16 @@ export function IntegrationForm({
 
   const handleSave = () => {
     const config: IntegrationConfig = {
-      useDefaultKey,
-      apiKey: useDefaultKey ? defaultToken : apiKey,
-      workflowId,
+      useDefaultKey: type === 'n8n' ? false : useDefaultKey,
+      apiKey: type === 'n8n' ? apiKey : (useDefaultKey ? defaultToken : apiKey),
+      workflowId: type === 'n8n' ? '' : workflowId,
       ...(type === 'lefine' && {
         activityPubUrl,
         outboxEndpoint,
         inboxEndpoint,
+      }),
+      ...(type === 'n8n' && {
+        activityPubUrl, // Server URL for n8n
       }),
     };
     onSave(config);
@@ -131,6 +134,61 @@ export function IntegrationForm({
               </div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // N8n form
+  if (type === 'n8n') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-2">
+            {t('integrations.n8n.serverUrl')}
+          </label>
+          <input
+            type="url"
+            value={activityPubUrl}
+            onChange={(e) => setActivityPubUrl(e.target.value)}
+            placeholder={t('integrations.n8n.serverUrlPlaceholder')}
+            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-sm text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">
+            Адрес вашего n8n сервера с MCP endpoint
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-2">
+            {t('integrations.n8n.accessToken')}
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={t('integrations.n8n.accessTokenPlaceholder')}
+            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-sm text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">
+            Токен доступа для аутентификации в n8n
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            onClick={handleSave}
+            disabled={!activityPubUrl || !apiKey}
+            className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+          >
+            {t('integrations.saveIntegration')}
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-md transition-colors"
+          >
+            {t('integrations.cancelIntegration')}
+          </button>
         </div>
       </div>
     );
@@ -257,7 +315,7 @@ export function IntegrationForm({
       <div className="flex items-center gap-2 pt-2">
         <button
           onClick={handleSave}
-          disabled={!workflowId}
+          disabled={type === 'n8n' ? !apiKey : !workflowId}
           className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
         >
           {t('integrations.saveIntegration')}
