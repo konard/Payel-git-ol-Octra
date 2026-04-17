@@ -277,8 +277,15 @@ func (s *BossService) executeTaskFlow(
 		return err
 	}
 
+	// 4.5. Restore project if exists
+	projectPath, err := s.restoreProject(taskID)
+	if err != nil {
+		log.Printf("No project to restore for task %s: %v", taskID, err)
+		projectPath = "" // proceed without
+	}
+
 	// 5. Call managers in parallel with progress updates
-	managerResults, zipData, err := s.assignManagersParallelWithProgress(ctx, taskID, decision, req, stream)
+	managerResults, zipData, err := s.assignManagersParallelWithProgress(ctx, taskID, decision, req, stream, projectPath)
 	if err != nil {
 		log.Printf("Error from managers: %v", err)
 		task.Status = "error"

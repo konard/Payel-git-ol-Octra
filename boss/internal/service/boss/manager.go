@@ -14,7 +14,7 @@ import (
 )
 
 // assignManagersParallelWithProgress calls AssignManager for each manager IN PARALLEL with progress updates
-func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) ([]*managerpb.ManagerResult, []byte, error) {
+func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer, projectPath string) ([]*managerpb.ManagerResult, []byte, error) {
 	// Create a thread-safe progress sender
 	sendCh := make(chan *bosspb.TaskUpdate, 64)
 	doneCh := make(chan struct{})
@@ -52,14 +52,14 @@ func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, ta
 		}
 	}
 
-	results, zipData, err := s.assignManagersParallel(ctx, taskID, decision, req, callback)
+	results, zipData, err := s.assignManagersParallel(ctx, taskID, decision, req, callback, projectPath)
 	close(sendCh)
 	<-doneCh // Wait for all pending sends to complete
 	return results, zipData, err
 }
 
 // assignManagersParallel calls AssignManager for each manager IN PARALLEL
-func (s *BossService) assignManagersParallel(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, progressCallback func(string, int, string)) ([]*managerpb.ManagerResult, []byte, error) {
+func (s *BossService) assignManagersParallel(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, progressCallback func(string, int, string), projectPath string) ([]*managerpb.ManagerResult, []byte, error) {
 	metadata := map[string]string{
 		"tokens":   marshalString(req.Tokens),
 		"model":    req.Meta["model"],
@@ -133,6 +133,7 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				Metadata:             metadata,
 				OtherWorkersResults:  contextResults,
 				WorkerRoles:          workerRolesProto, // predefined worker roles
+				ProjectPath:          projectPath,
 			}
 
 			// Create timeout context for manager call (30 minutes per manager)

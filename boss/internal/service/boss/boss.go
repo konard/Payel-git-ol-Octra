@@ -7,8 +7,11 @@ import (
 	"boss/pkg/database"
 	"boss/pkg/models"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // BossService — boss service
@@ -77,4 +80,49 @@ func (s *BossService) StopTask(ctx context.Context, req *bosspb.StopTaskRequest)
 		Status:   "cancelled",
 		Progress: "0%",
 	}, nil
+}
+
+// restoreProject restores project from Redis JSON
+func (s *BossService) restoreProject(taskID string) (string, error) {
+	key := fmt.Sprintf("project:%s", taskID)
+	data, err := s.redisClient.GetRedisClient().Get(context.Background(), key).Result()
+	if err != nil {
+		return "", fmt.Errorf("failed to get project from Redis: %w", err)
+	}
+
+	var project struct {
+		NameProject string `json:"name_project"`
+		Project     struct {
+			Dir   map[string]string `json:"dir"`
+			Files map[string]string `json:"files"`
+		} `json:"project"`
+	}
+	if err := json.Unmarshal([]byte(data), &project); err != nil {
+		return "", fmt.Errorf("failed to unmarshal project JSON: %w", err)
+	}
+
+	projectPath := fmt.Sprintf("/tmp/projects/%s", taskID)
+	if err := os.MkdirAll(projectPath, 0755); err != nil {
+		return "", fmt.Errorf("failed to create project dir: %w", err)
+	}
+
+	for relPath, content := range project.Project.Files {
+		fullPath := filepath.Join(projectPath, relPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			continue
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			continue
+		}
+	}
+
+	// For dir, create empty files or dirs if needed
+	for relPath, _ := range project.Project.Dir {
+		fullPath := filepath.Join(projectPath, relPath)
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			continue
+		}
+	}
+
+	return projectPath, nil
 }

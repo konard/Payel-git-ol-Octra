@@ -51,6 +51,7 @@ message AssignManagerRequest {
   map<string, string> metadata = 7; // tokens, model, provider
   repeated WorkerResult other_workers_results = 8; // результаты других воркеров для контекста
   repeated WorkerRoleConfig worker_roles = 9;      // predefined worker roles (empty = AI decides)
+  string project_path = 10;         // путь к папке проекта
 }
 
 // Результат работы одного менеджера
