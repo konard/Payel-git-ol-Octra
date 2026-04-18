@@ -12,6 +12,7 @@ message TaskUpdate {
   string status = 4;
   int64 timestamp = 5;
   map<string, string> data = 6;
+  bool is_chat = 7;
 }
 
 // Worker configuration within a manager team

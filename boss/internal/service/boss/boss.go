@@ -134,7 +134,7 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal project JSON: %w", err)
 	}
 
-	projectPath := fmt.Sprintf("/tmp/projects/%s", taskID)
+	projectPath := filepath.Join(os.TempDir(), "crewai-projects", taskID)
 	if err := os.MkdirAll(projectPath, 0755); err != nil {
 		return "", fmt.Errorf("failed to create project dir: %w", err)
 	}

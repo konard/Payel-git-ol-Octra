@@ -59,6 +59,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
   const zipNodeAdded = useRef(false);
   const workerCounters = useRef<Record<string, number>>({});
   const workersByManager = useRef<Record<string, string[]>>({});
+  const currentManagerRole = useRef<string>('');
 
   const storeActions = {
     setConnectionStatus: useTaskStore((state) => state.setConnectionStatus),
@@ -327,6 +328,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const workingMatch = message.match(/Manager working:\s*(.+)/i);
     if (workingMatch) {
       const role = workingMatch[1].trim();
+      currentManagerRole.current = role; // Track current active manager
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
         storeActions.updateNode(`manager-${idx}`, { status: 'working' });
@@ -343,11 +345,11 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       }
     }
 
-    // === WORKER STARTING — "Starting worker: Network Protocol Engineer" ===
-    const workerStartMatch = message.match(/Starting worker:\s*(.+)/i);
+    // === WORKER STARTING — "Starting worker 1/7: Go Backend Developer (58%)" ===
+    const workerStartMatch = message.match(/Starting worker \d+\/\d+:\s*(.+?)\s*\(/i);
     if (workerStartMatch) {
       const role = workerStartMatch[1].trim();
-      const managerRole = msg.data?.current_role || '';
+      const managerRole = currentManagerRole.current;
       const managerIdx = [...managersKnown.current].indexOf(managerRole);
 
       // Initialize worker tracking for this manager
@@ -390,12 +392,12 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       }
     }
 
-    // === WORKER COMPLETED — "Worker completed: Network Protocol Engineer (5 files)" ===
-    const workerCompleteMatch = message.match(/Worker completed:\s*(.+?)(?:\s*\((\d+)\s*files?\))?$/i);
+    // === WORKER COMPLETED — "Worker 1/7 (Go Backend Developer) completed: 5 files (65%)" ===
+    const workerCompleteMatch = message.match(/Worker \d+\/\d+ \((.+?)\) completed:\s*(\d+)\s*files/i);
     if (workerCompleteMatch) {
       const role = workerCompleteMatch[1].trim();
-      const filesCount = workerCompleteMatch[2] ? parseInt(workerCompleteMatch[2], 10) : undefined;
-      const managerRole = msg.data?.current_role || '';
+      const filesCount = parseInt(workerCompleteMatch[2], 10);
+      const managerRole = currentManagerRole.current;
 
       // Find worker by role and manager
       if (workersByManager.current[managerRole]) {

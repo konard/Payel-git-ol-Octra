@@ -258,7 +258,7 @@ func (s *BossService) executeTaskFlow(
 	// 4. Save boss decision
 	bossDecision := &models.BossDecision{
 		ID:                   uuid.New(),
-		TaskID:               parseUUID(taskID),
+		TaskID:               task.ID,
 		Status:               "planning",
 		ManagersCount:        decision.ManagersCount,
 		TechnicalDescription: decision.TechnicalDescription,
@@ -427,7 +427,11 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	bossDecision.TechStack = string(stackJSON)
 
 	if err := database.Db.Create(bossDecision).Error; err != nil {
-		return nil, err
+		return &bosspb.BossDecision{
+			TaskId:       task.ID.String(),
+			Status:       "error",
+			ErrorMessage: "Failed to save decision: " + err.Error(),
+		}, nil
 	}
 
 	task.Status = "managers_assigned"

@@ -240,8 +240,14 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 			return
 		}
 
+		// Determine message type
+		messageType := update.Status
+		if update.IsChat {
+			messageType = "chat"
+		}
+
 		wsUpdate := gin.H{
-			"type":      update.Status,
+			"type":      messageType,
 			"task_id":   update.TaskId,
 			"message":   update.Message,
 			"progress":  update.Progress,
@@ -249,6 +255,11 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 		}
 		if update.Data != nil {
 			wsUpdate["data"] = update.Data
+		}
+
+		// Add sender for chat messages
+		if update.IsChat {
+			wsUpdate["sender"] = "boss"
 		}
 
 		wsWriteJSONWithRedis(conn, taskReq.UserID, wsUpdate)
