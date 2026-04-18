@@ -7,13 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Workflow — конфигурация workflow
-type Workflow struct {
-	UseAIPlanning bool     `json:"use_ai_planning"`
-	Architecture  string   `json:"architecture"`
-	TechStack     []string `json:"tech_stack"`
-}
-
 // Task — задача от пользователя
 type Task struct {
 	ID                    uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -23,10 +16,9 @@ type Task struct {
 	Status                string    `gorm:"default:'pending'" json:"status"`
 	Title                 string    `json:"title"`
 	Description           string    `json:"description"`
-	TechnicalDescription  string    `json:"technical_description"`
+	TechnicalDescription  string    `gorm:"type:text" json:"technical_description"`
 	Tokens                string    `gorm:"type:jsonb" json:"tokens"`
 	Meta                  string    `gorm:"type:jsonb" json:"meta"`
-	Workflow              Workflow  `gorm:"embedded;embeddedPrefix:workflow_" json:"workflow"`
 	Managers              []Manager `gorm:"foreignKey:TaskID;references:TaskID" json:"managers"`
 	AwaitingClarification bool      `gorm:"default:false" json:"awaiting_clarification"`
 	ClarificationQuestion string    `json:"clarification_question"`
