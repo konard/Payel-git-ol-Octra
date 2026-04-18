@@ -10,7 +10,6 @@ import (
 // Task — задача от пользователя
 type Task struct {
 	ID                    uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	TaskID                string    `gorm:"uniqueIndex;not null" json:"task_id"`
 	UserID                string    `gorm:"not null" json:"user_id"`
 	Username              string    `gorm:"not null" json:"username"`
 	Status                string    `gorm:"default:'pending'" json:"status"`
@@ -19,7 +18,7 @@ type Task struct {
 	TechnicalDescription  string    `gorm:"type:text" json:"technical_description"`
 	Tokens                string    `gorm:"type:jsonb" json:"tokens"`
 	Meta                  string    `gorm:"type:jsonb" json:"meta"`
-	Managers              []Manager `gorm:"foreignKey:TaskID;references:TaskID" json:"managers"`
+	Managers              []Manager `gorm:"foreignKey:TaskID;references:ID" json:"managers"`
 	AwaitingClarification bool      `gorm:"default:false" json:"awaiting_clarification"`
 	ClarificationQuestion string    `json:"clarification_question"`
 	ClarificationResponse string    `json:"clarification_response"`

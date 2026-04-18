@@ -9,6 +9,7 @@ import (
 // Task — задача от пользователя
 type Task struct {
 	gorm.Model
+	TaskID                string            `gorm:"not null;index" json:"task_id"`
 	UserID                string            `gorm:"not null" json:"user_id"`
 	Username              string            `gorm:"not null" json:"username"`
 	Title                 string            `json:"title"`

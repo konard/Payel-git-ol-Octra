@@ -355,9 +355,11 @@ func parseJSONToMap(jsonStr string) map[string]string {
 func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequest) (*bosspb.BossDecision, error) {
 	log.Printf("Received task from %s: %s", req.Username, req.Title)
 
+	taskID := uuid.New()
+
 	// 1. Save task to DB
 	task := &models.Task{
-		ID:          uuid.New(),
+		ID:          taskID,
 		UserID:      req.UserId,
 		Username:    req.Username,
 		Title:       req.Title,
