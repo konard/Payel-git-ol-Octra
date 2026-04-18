@@ -135,6 +135,7 @@
     "duplicate": "Дублировать ноду",
     "delete": "Удалить ноду",
     "notConnected": "Не подключён",
+    "customPrompt": "Пользовательский промпт",
     "n8nAutomation": {
       "title": "N8n автоматизация",
       "workflow": "Workflow",
