@@ -1,7 +1,9 @@
 {
   "app": {
     "title": "CrewAI",
-    "subtitle": "AI Agents Company"
+    "subtitle": "AI Agents Company",
+    "canvas": "Canvas",
+    "chat": "Chat"
   },
   "topbar": {
     "download": "Download",
@@ -40,6 +42,7 @@
     "settings": "Settings",
     "send": "Send",
     "stop": "Stop",
+    "resetTask": "Reset & Try Again",
     "reconnecting": "Reconnecting to server...",
     "taskCreated": "Task created",
     "sendError": "Task send error"
@@ -131,7 +134,20 @@
     "changeRole": "Change role:",
     "duplicate": "Duplicate node",
     "delete": "Delete node",
-    "notConnected": "Not connected"
+    "notConnected": "Not connected",
+    "customPrompt": "Custom Prompt",
+    "n8nAutomation": {
+      "title": "N8n Automation",
+      "workflow": "Workflow",
+      "selectWorkflow": "Select workflow...",
+      "loading": "Loading...",
+      "orWebhookUrl": "Or Webhook URL",
+      "triggerWhen": "When to trigger:",
+      "atStart": "At task start",
+      "atMiddle": "At 50% completion",
+      "atEnd": "At task end",
+      "atCustom": "At {percentage}% completion"
+    }
   },
   "integrations": {
     "title": "Integrations",
@@ -186,6 +202,14 @@
       "botTokenPlaceholder": "Enter your bot token",
       "openBot": "Open Bot",
       "connectionStatus": "Connection Status"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Integrate n8n automations with your workflow agents",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Access Token",
+      "accessTokenPlaceholder": "n8n access token"
     }
   },
   "workflowLibrary": {

@@ -158,7 +158,19 @@
     "changeRole": "更改角色：",
     "duplicate": "复制节点",
     "delete": "删除节点",
-    "notConnected": "未连接"
+    "notConnected": "未连接",
+    "n8nAutomation": {
+      "title": "N8n 自动化",
+      "workflow": "工作流",
+      "selectWorkflow": "选择工作流...",
+      "loading": "加载中...",
+      "orWebhookUrl": "或 Webhook URL",
+      "triggerWhen": "何时触发：",
+      "atStart": "任务开始时",
+      "atMiddle": "完成 50% 时",
+      "atEnd": "任务结束时",
+      "atCustom": "完成 {percentage}% 时"
+    }
   },
   "integrations": {
     "title": "集成",
@@ -213,6 +225,14 @@
       "botTokenPlaceholder": "输入您的机器人令牌",
       "openBot": "打开机器人",
       "connectionStatus": "连接状态"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "将n8n自动化与您的工作流代理集成",
+      "serverUrl": "服务器URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "访问令牌",
+      "accessTokenPlaceholder": "n8n访问令牌"
     }
   },
   "workflowLibrary": {

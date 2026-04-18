@@ -213,6 +213,14 @@
       "botTokenPlaceholder": "Увядзіце токен бота",
       "openBot": "Адкрыць бота",
       "connectionStatus": "Статус падключэння"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Integrate n8n automations with your workflow agents",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Access Token",
+      "accessTokenPlaceholder": "n8n access token"
     }
   },
   "workflowLibrary": {

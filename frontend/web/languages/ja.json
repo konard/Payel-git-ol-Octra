@@ -158,7 +158,19 @@
     "changeRole": "役割を変更：",
     "duplicate": "ノードを複製",
     "delete": "ノードを削除",
-    "notConnected": "未接続"
+    "notConnected": "未接続",
+    "n8nAutomation": {
+      "title": "N8n Automation",
+      "workflow": "Workflow",
+      "selectWorkflow": "Select workflow...",
+      "loading": "Loading...",
+      "orWebhookUrl": "Or Webhook URL",
+      "triggerWhen": "When to trigger:",
+      "atStart": "At task start",
+      "atMiddle": "At 50% completion",
+      "atEnd": "At task end",
+      "atCustom": "At {percentage}% completion"
+    }
   },
   "integrations": {
     "title": "統合",
@@ -213,6 +225,14 @@
       "botTokenPlaceholder": "ボットトークンを入力",
       "openBot": "ボットを開く",
       "connectionStatus": "接続ステータス"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Integrate n8n automations with your workflow agents",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Access Token",
+      "accessTokenPlaceholder": "n8n access token"
     }
   },
   "workflowLibrary": {

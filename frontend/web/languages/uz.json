@@ -130,7 +130,19 @@
     "changeRole": "Rolni o'zgartirish:",
     "duplicate": "Tugunni nusxalash",
     "delete": "Tugunni o'chirish",
-    "notConnected": "Ulanmagan"
+    "notConnected": "Ulanmagan",
+    "n8nAutomation": {
+      "title": "N8n avtomatizatsiya",
+      "workflow": "Workflow",
+      "selectWorkflow": "Workflowni tanlang...",
+      "loading": "Yuklanmo...",
+      "orWebhookUrl": "Yoki Webhook URL",
+      "triggerWhen": "Qachon ishga tushirish:",
+      "atStart": "Vazifa boshida",
+      "atMiddle": "50% bajarilganda",
+      "atEnd": "Vazifa oxirida",
+      "atCustom": "{percentage}% bajarilganda"
+    }
   },
   "integrations": {
     "title": "Integratsiyalar",
@@ -185,6 +197,14 @@
       "botTokenPlaceholder": "Bot tokenini kiriting",
       "openBot": "Botni ochish",
       "connectionStatus": "Ulanish holati"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "N8n avtomatizatsiyalarini workflow agentlaringiz bilan integratsiya qiling",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Kirish tokeni",
+      "accessTokenPlaceholder": "n8n kirish tokeni"
     }
   },
   "workflowLibrary": {
