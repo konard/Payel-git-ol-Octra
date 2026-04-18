@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import crewaiMascot from '../../images/crewai-mascot.png';
+import { ChatProgressBar } from './ChatProgressBar';
 
 interface ChatMessage {
   id: string;
@@ -38,8 +39,13 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
 
   return (
     <div className="flex flex-col h-full bg-[var(--background)]">
+      {/* Progress Bar */}
+      <div className="p-4 pb-2">
+        <ChatProgressBar />
+      </div>
+
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
