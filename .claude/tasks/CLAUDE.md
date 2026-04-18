@@ -1,0 +1,1 @@
+These folders contain tasks that need to be completed. When you complete a task in TASK.md, put ✅ at the beginning of the task.

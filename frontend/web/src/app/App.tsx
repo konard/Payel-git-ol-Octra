@@ -4,7 +4,9 @@ import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
 import { ConsolePanel } from './components/ConsolePanel';
 import { Canvas } from './components/Canvas';
+import { Chat } from './components/Chat';
 import { BottomInput } from './components/BottomInput';
+import { ChatInput } from './components/ChatInput';
 import type { TaskData } from './components/BottomInput';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTaskStore } from '../stores/taskStore';
@@ -19,6 +21,18 @@ export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [mode, setMode] = useState<'canvas' | 'chat'>('canvas');
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: string;
+    text: string;
+    sender: 'boss' | 'user';
+    timestamp: Date;
+    read?: boolean;
+  }>>([]);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
+
   const { language, changeLanguage } = useI18n();
   const { isAuthenticated, hasSubscription, checkAuth, setSubscription } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
@@ -31,9 +45,23 @@ export default function App() {
     return <LandingPage />;
   }
 
+  const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user') => {
+    const newMessage = {
+      id: Date.now().toString(),
+      text: message,
+      sender,
+      timestamp: new Date(),
+      read: sender === 'user', // User messages are automatically read
+    };
+    setChatMessages(prev => [...prev, newMessage]);
+    if (sender === 'boss') {
+      setHasUnreadMessages(true);
+    }
+  };
+
   // Иначе показываем приложение
   const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
-  const { connect, send } = useWebSocket(wsUrl);
+  const { connect, send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage);
 
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
@@ -120,6 +148,29 @@ export default function App() {
     useTaskStore.getState().setStartTime(Date.now());
   };
 
+  const handleSendChatMessage = (message: string) => {
+    const newMessage = {
+      id: Date.now().toString(),
+      text: message,
+      sender: 'user' as const,
+      timestamp: new Date(),
+    };
+    setChatMessages(prev => [...prev, newMessage]);
+
+    // Send chat message via WebSocket
+    sendChat(message, 'user');
+  };
+
+  const handleMarkChatMessageAsRead = (messageId: string) => {
+    setChatMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId ? { ...msg, read: true } : msg
+      )
+    );
+    // Check if there are any unread boss messages left
+    setHasUnreadMessages(chatMessages.some(msg => msg.sender === 'boss' && !msg.read && msg.id !== messageId));
+  };
+
   const handleStopTask = async () => {
     const taskId = useTaskStore.getState().taskId;
     if (!taskId) return;
@@ -164,23 +215,38 @@ export default function App() {
         hasSubscription={hasSubscription}
         onShowAuth={handleShowAuth}
         onShowSubscription={() => setShowSubscriptionModal(true)}
+        mode={mode}
+        onModeChange={setMode}
+        hasUnreadMessages={hasUnreadMessages}
       />
 
       <ReactFlowProvider>
-        <Canvas />
+        {mode === 'canvas' ? (
+          <Canvas mode={mode} onModeChange={setMode} hasUnreadMessages={hasUnreadMessages} />
+        ) : (
+          <Chat
+            messages={chatMessages}
+            onSendMessage={handleSendChatMessage}
+            onMarkAsRead={handleMarkChatMessageAsRead}
+          />
+        )}
       </ReactFlowProvider>
 
       <StatusBar />
 
       <ConsolePanel />
 
-      <BottomInput
-        onSubmit={handleCreateTask}
-        onStop={handleStopTask}
-        isSubmitting={isSubmitting}
-        isExpanded={isExpanded}
-        onToggleExpand={toggleExpand}
-      />
+      {mode === 'canvas' ? (
+        <BottomInput
+          onSubmit={handleCreateTask}
+          onStop={handleStopTask}
+          isSubmitting={isSubmitting}
+          isExpanded={isExpanded}
+          onToggleExpand={toggleExpand}
+        />
+      ) : (
+        <ChatInput onSendMessage={handleSendChatMessage} />
+      )}
 
       {showAuthModal && !isAuthenticated && (
         <AuthModal

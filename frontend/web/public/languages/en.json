@@ -1,7 +1,9 @@
 {
   "app": {
     "title": "CrewAI",
-    "subtitle": "AI Agents Company"
+    "subtitle": "AI Agents Company",
+    "canvas": "Canvas",
+    "chat": "Chat"
   },
   "topbar": {
     "download": "Download",

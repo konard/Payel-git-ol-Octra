@@ -1,7 +1,9 @@
 {
   "app": {
     "title": "CrewAI",
-    "subtitle": "Компания ИИ-агентов"
+    "subtitle": "Компания ИИ-агентов",
+    "canvas": "Канва",
+    "chat": "Чат"
   },
   "topbar": {
     "download": "Скачать",

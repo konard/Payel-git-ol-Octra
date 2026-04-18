@@ -34,9 +34,12 @@ interface TopBarProps {
   hasSubscription: boolean;
   onShowAuth: () => void;
   onShowSubscription: () => void;
+  mode: 'canvas' | 'chat';
+  onModeChange: (mode: 'canvas' | 'chat') => void;
+  hasUnreadMessages: boolean;
 }
 
-export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription }: TopBarProps) {
+export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const [showSettings, setShowSettings] = useState(false);
@@ -87,12 +90,38 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   return (
     <>
       <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
-        {/* Left: Logo */}
+        {/* Left: Logo + Mode Switch */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">C</span>
           </div>
           <h1 className="text-lg font-semibold text-[var(--text)]">CrewAI</h1>
+          {/* Переключатель режимов */}
+          <div className="border border-[var(--border)] rounded-lg overflow-hidden shadow-sm ml-4">
+            <button
+              onClick={() => onModeChange('canvas')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'canvas'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+              }`}
+            >
+              Canvas
+            </button>
+            <button
+              onClick={() => onModeChange('chat')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors relative ${
+                mode === 'chat'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+              }`}
+            >
+              Chat
+              {hasUnreadMessages && mode !== 'chat' && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full"></span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Center: Download button */}

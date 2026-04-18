@@ -4,12 +4,13 @@ import type { AgentNode } from '../stores/taskStore';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
-  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error';
+  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error' | 'chat';
   progress?: number;
   message?: string;
   data?: Record<string, any>;
   task_id?: string;
   status?: string;
+  sender?: 'boss' | 'user';
 }
 
 interface WorkflowConfig {
@@ -40,7 +41,7 @@ const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_DELAY = 15000;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
-export function useWebSocket(url: string) {
+export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user') => void) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartbeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,6 +190,12 @@ export function useWebSocket(url: string) {
         // Reset connection state to allow new tasks
         isManuallyClosed.current = false;
         reconnectAttempts.current = 0;
+        break;
+
+      case 'chat':
+        if (onChatMessage && msg.message && msg.sender) {
+          onChatMessage(msg.message, msg.sender);
+        }
         break;
     }
   };
@@ -624,5 +631,18 @@ export function useWebSocket(url: string) {
     };
   }, []);
 
-  return { connect, send, disconnect };
+  const sendChat = useCallback((message: string, sender: 'boss' | 'user' = 'user') => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('[WS] Cannot send chat message: WebSocket not connected');
+      return;
+    }
+
+    wsRef.current.send(JSON.stringify({
+      type: 'chat',
+      message,
+      sender,
+    }));
+  }, []);
+
+  return { connect, send, sendChat, disconnect };
 }

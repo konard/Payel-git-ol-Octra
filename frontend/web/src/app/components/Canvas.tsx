@@ -38,7 +38,13 @@ const nodeRoleDefaults: Record<string, string> = {
   worker: 'Developer',
 };
 
-export function Canvas() {
+interface CanvasProps {
+  mode: 'canvas' | 'chat';
+  onModeChange: (mode: 'canvas' | 'chat') => void;
+  hasUnreadMessages: boolean;
+}
+
+export function Canvas({ mode }: CanvasProps) {
   const nodes = useTaskStore((state) => state.nodes);
   const edges = useTaskStore((state) => state.edges);
   const addEdgeToStore = useTaskStore((state) => state.addEdge);
@@ -303,15 +309,17 @@ export function Canvas() {
 
   return (
     <div className="flex-1 bg-[var(--bg-canvas)] relative">
-      {/* Кнопка открытия панели */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className={`absolute right-4 top-4 z-10 bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 hover:bg-[var(--accent)] hover:text-white transition-colors shadow-lg ${
-          sidebarOpen ? 'hidden' : ''
-        }`}
-      >
-        + {t('sidebar.addAgent')}
-      </button>
+      {/* Кнопка открытия панели - только в режиме canvas */}
+      {mode === 'canvas' && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className={`absolute right-4 top-4 z-10 bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 hover:bg-[var(--accent)] hover:text-white transition-colors shadow-lg ${
+            sidebarOpen ? 'hidden' : ''
+          }`}
+        >
+          + {t('sidebar.addAgent')}
+        </button>
+      )}
 
       <div ref={reactFlowWrapper} className="w-full h-full"
         onDragOver={onDragOver}
