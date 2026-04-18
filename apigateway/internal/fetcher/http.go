@@ -120,13 +120,12 @@ func handleTaskCreateWS(c *gin.Context) {
 		return
 	}
 
-	if taskReq.Username == "" || taskReq.Title == "" {
-		conn.WriteJSON(gin.H{
-			"type":    "error",
-			"message": "Missing required fields: username, title",
-		})
-		conn.Close()
-		return
+	// Provide default values for missing fields
+	if taskReq.Username == "" {
+		taskReq.Username = "Anonymous User"
+	}
+	if taskReq.Title == "" {
+		taskReq.Title = "Untitled Task"
 	}
 
 	if taskReq.UserID == "" {
