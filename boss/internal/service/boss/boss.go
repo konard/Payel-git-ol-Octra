@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ type BossService struct {
 	bosspb.UnimplementedBossServiceServer
 	managerClient *manager.Client
 	redisClient   *redis.Client
+	db            *gorm.DB
 }
 
 func NewBossService() *BossService {
@@ -28,10 +30,12 @@ func NewBossService() *BossService {
 	}
 
 	redisClient := redis.NewClient()
+	db := database.GetDB()
 
 	return &BossService{
 		managerClient: mgrClient,
 		redisClient:   redisClient,
+		db:            db,
 	}
 }
 
@@ -49,7 +53,7 @@ type BossDecisionResult struct {
 // GetTaskStatus returns task status
 func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusRequest) (*bosspb.TaskStatusResponse, error) {
 	var task models.Task
-	if err := database.Db.First(&task, "id = ?", req.TaskId).Error; err != nil {
+	if err := s.db.First(&task, "id = ?", req.TaskId).Error; err != nil {
 		return nil, err
 	}
 
@@ -63,13 +67,13 @@ func (s *BossService) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusR
 // StopTask stops a running task
 func (s *BossService) StopTask(ctx context.Context, req *bosspb.StopTaskRequest) (*bosspb.TaskStatusResponse, error) {
 	var task models.Task
-	if err := database.Db.First(&task, "id = ?", req.TaskId).Error; err != nil {
+	if err := s.db.First(&task, "id = ?", req.TaskId).Error; err != nil {
 		return nil, err
 	}
 
 	// Update task status to cancelled
 	task.Status = "cancelled"
-	if err := database.Db.Save(&task).Error; err != nil {
+	if err := s.db.Save(&task).Error; err != nil {
 		return nil, err
 	}
 
@@ -88,7 +92,7 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 	var task models.Task
 
 	// First, try DB for faster lookup (one-to-one relation)
-	if err := database.Db.First(&task, "id = ?", taskID).Error; err == nil && task.ProjectJSON != "" {
+	if err := s.db.First(&task, "id = ?", taskID).Error; err == nil && task.ProjectJSON != "" {
 		data = task.ProjectJSON
 	} else {
 		// Fallback to Redis

@@ -1,28 +1,40 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// Workflow — конфигурация workflow
+type Workflow struct {
+	UseAIPlanning bool     `json:"use_ai_planning"`
+	Architecture  string   `json:"architecture"`
+	TechStack     []string `json:"tech_stack"`
+}
+
 // Task — задача от пользователя
 type Task struct {
-	gorm.Model
-	ID          uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID      string    `gorm:"not null;index"`
-	Username    string
-	Title       string `gorm:"not null"`
-	Description string `gorm:"type:text"`
-	Tokens      string `gorm:"type:jsonb"` // []string
-	Meta        string `gorm:"type:jsonb"` // map[string]string
-
-	// Статусы
-	Status string `gorm:"default:'pending'"` // pending, boss_planning, managers_assigned, workers_assigned, processing, reviewing, done, error
-
-	// Результаты
-	Solution      []byte `gorm:"type:bytea"` // ZIP архив
-	ResultArchive string // Путь к архиву /tasks/{task_id}/solution.zip
-	ProjectJSON   string `gorm:"type:jsonb"` // JSON проекта для восстановления (one-to-one связь)
+	ID                    uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	TaskID                string    `gorm:"uniqueIndex;not null" json:"task_id"`
+	UserID                string    `gorm:"not null" json:"user_id"`
+	Username              string    `gorm:"not null" json:"username"`
+	Status                string    `gorm:"default:'pending'" json:"status"`
+	Title                 string    `json:"title"`
+	Description           string    `json:"description"`
+	TechnicalDescription  string    `json:"technical_description"`
+	Tokens                string    `gorm:"type:jsonb" json:"tokens"`
+	Meta                  string    `gorm:"type:jsonb" json:"meta"`
+	Workflow              Workflow  `gorm:"embedded;embeddedPrefix:workflow_" json:"workflow"`
+	Managers              []Manager `gorm:"foreignKey:TaskID;references:TaskID" json:"managers"`
+	AwaitingClarification bool      `gorm:"default:false" json:"awaiting_clarification"`
+	ClarificationQuestion string    `json:"clarification_question"`
+	ClarificationResponse string    `json:"clarification_response"`
+	ProjectJSON           string    `gorm:"type:text" json:"project_json"`
+	Solution              []byte    `gorm:"type:bytea" json:"solution"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
 }
 
 // BossDecision — решение босса

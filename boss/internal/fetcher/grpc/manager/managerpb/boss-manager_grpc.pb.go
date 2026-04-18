@@ -23,6 +23,7 @@ const (
 	ManagerService_AssignManagerStream_FullMethodName         = "/manager.ManagerService/AssignManagerStream"
 	ManagerService_AssignManagersAndWait_FullMethodName       = "/manager.ManagerService/AssignManagersAndWait"
 	ManagerService_AssignManagersAndWaitStream_FullMethodName = "/manager.ManagerService/AssignManagersAndWaitStream"
+	ManagerService_AskUserClarification_FullMethodName        = "/manager.ManagerService/AskUserClarification"
 )
 
 // ManagerServiceClient is the client API for ManagerService service.
@@ -37,6 +38,8 @@ type ManagerServiceClient interface {
 	AssignManagersAndWait(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (*AssignManagersResponse, error)
 	// Streaming version - отправляет обновления по мере выполнения
 	AssignManagersAndWaitStream(ctx context.Context, in *AssignManagersRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
+	// Ask for clarification from user
+	AskUserClarification(ctx context.Context, in *AskClarificationRequest, opts ...grpc.CallOption) (*AskClarificationResponse, error)
 }
 
 type managerServiceClient struct {
@@ -105,6 +108,16 @@ func (c *managerServiceClient) AssignManagersAndWaitStream(ctx context.Context, 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ManagerService_AssignManagersAndWaitStreamClient = grpc.ServerStreamingClient[TaskUpdate]
 
+func (c *managerServiceClient) AskUserClarification(ctx context.Context, in *AskClarificationRequest, opts ...grpc.CallOption) (*AskClarificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AskClarificationResponse)
+	err := c.cc.Invoke(ctx, ManagerService_AskUserClarification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ManagerServiceServer is the server API for ManagerService service.
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility.
@@ -117,6 +130,8 @@ type ManagerServiceServer interface {
 	AssignManagersAndWait(context.Context, *AssignManagersRequest) (*AssignManagersResponse, error)
 	// Streaming version - отправляет обновления по мере выполнения
 	AssignManagersAndWaitStream(*AssignManagersRequest, grpc.ServerStreamingServer[TaskUpdate]) error
+	// Ask for clarification from user
+	AskUserClarification(context.Context, *AskClarificationRequest) (*AskClarificationResponse, error)
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -138,6 +153,9 @@ func (UnimplementedManagerServiceServer) AssignManagersAndWait(context.Context, 
 }
 func (UnimplementedManagerServiceServer) AssignManagersAndWaitStream(*AssignManagersRequest, grpc.ServerStreamingServer[TaskUpdate]) error {
 	return status.Error(codes.Unimplemented, "method AssignManagersAndWaitStream not implemented")
+}
+func (UnimplementedManagerServiceServer) AskUserClarification(context.Context, *AskClarificationRequest) (*AskClarificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AskUserClarification not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
 func (UnimplementedManagerServiceServer) testEmbeddedByValue()                        {}
@@ -218,6 +236,24 @@ func _ManagerService_AssignManagersAndWaitStream_Handler(srv interface{}, stream
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ManagerService_AssignManagersAndWaitStreamServer = grpc.ServerStreamingServer[TaskUpdate]
 
+func _ManagerService_AskUserClarification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AskClarificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).AskUserClarification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagerService_AskUserClarification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).AskUserClarification(ctx, req.(*AskClarificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ManagerService_ServiceDesc is the grpc.ServiceDesc for ManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -232,6 +268,10 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AssignManagersAndWait",
 			Handler:    _ManagerService_AssignManagersAndWait_Handler,
+		},
+		{
+			MethodName: "AskUserClarification",
+			Handler:    _ManagerService_AskUserClarification_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

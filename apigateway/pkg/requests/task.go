@@ -29,7 +29,7 @@ type CreateTaskRequest struct {
 	Description string            `json:"description"`
 	Tokens      map[string]string `json:"tokens"`
 	Meta        map[string]string `json:"meta"`
-	Workflow    *WorkflowConfig   `json:"workflow,omitempty"` // optional predefined workflow
+	Workflow    *WorkflowConfig   `json:"workflow,omitempty"`
 }
 
 type TaskStatusRequest struct {

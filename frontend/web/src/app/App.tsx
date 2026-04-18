@@ -30,6 +30,7 @@ export default function App() {
     sender: 'boss' | 'user';
     timestamp: Date;
     read?: boolean;
+    isClarification?: boolean;
   }>>([]);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
 
@@ -45,13 +46,14 @@ export default function App() {
     return <LandingPage />;
   }
 
-  const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user') => {
+  const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user', isClarification = false) => {
     const newMessage = {
       id: Date.now().toString(),
       text: message,
       sender,
       timestamp: new Date(),
       read: sender === 'user', // User messages are automatically read
+      isClarification,
     };
     setChatMessages(prev => [...prev, newMessage]);
     if (sender === 'boss') {
@@ -157,21 +159,8 @@ export default function App() {
     };
     setChatMessages(prev => [...prev, newMessage]);
 
-    // TODO: Send chat message via WebSocket when backend supports it
-    // sendChat(message, 'user');
-
-    // For now, simulate boss response
-    setTimeout(() => {
-      const bossResponse = {
-        id: (Date.now() + 1).toString(),
-        text: 'Спасибо за сообщение! Я вас понял.',
-        sender: 'boss' as const,
-        timestamp: new Date(),
-        read: false,
-      };
-      setChatMessages(prev => [...prev, bossResponse]);
-      setHasUnreadMessages(true);
-    }, 1000);
+    // Send chat message via WebSocket
+    sendChat(message, 'user');
   };
 
   const handleMarkChatMessageAsRead = (messageId: string) => {

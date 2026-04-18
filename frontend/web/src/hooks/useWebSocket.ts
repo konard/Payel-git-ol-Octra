@@ -4,13 +4,14 @@ import type { AgentNode } from '../stores/taskStore';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
-  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error' | 'chat';
+  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error' | 'chat' | 'clarification_request';
   progress?: number;
   message?: string;
   data?: Record<string, any>;
   task_id?: string;
   status?: string;
-  sender?: 'boss' | 'user';
+  question?: string;
+  is_clarification?: boolean;
 }
 
 interface WorkflowConfig {
@@ -194,7 +195,13 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
       case 'chat':
         if (onChatMessage && msg.message && msg.sender) {
-          onChatMessage(msg.message, msg.sender);
+          onChatMessage(msg.message, msg.sender as 'boss' | 'user', msg.is_clarification);
+        }
+        break;
+
+      case 'clarification_request':
+        if (onChatMessage && msg.question) {
+          onChatMessage(msg.question, 'boss', true);
         }
         break;
     }

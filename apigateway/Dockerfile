@@ -4,13 +4,13 @@ WORKDIR /workspace
 
 RUN apk add --no-cache git
 
-# Apigateway is self-contained (proto files are copied locally)
-COPY apigateway ./apigateway
+# Copy source code
+COPY . .
 
-RUN cd apigateway && go mod tidy
+RUN go mod tidy
 
 # Собираем binary
-RUN cd apigateway && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/main ./cmd/app
 
 FROM alpine:latest
 

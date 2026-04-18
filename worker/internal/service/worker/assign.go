@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"worker/internal/fetcher/grpc/workerpb"
@@ -122,7 +123,6 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 	allFiles := make(map[string]string)
 	workerResults := make([]*workerpb.WorkerResult, 0)
 
-	projectName := sanitizeProjectName(req.ManagerRole)
 	basePath := req.ProjectPath
 	if basePath == "" {
 		basePath = fmt.Sprintf("/tmp/projects/%s", req.TaskId)
@@ -240,15 +240,25 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			if len(parts) == 0 {
 				continue
 			}
-			exec.Command(parts[0], parts[1:]...).Dir(projectPath).Run() // ignore errors for now
+			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.Dir = projectPath
+			cmd.Run() // ignore errors for now
 		}
 
 		// Git operations
 		branchName := fmt.Sprintf("worker-%s", workerID.String())
-		exec.Command("git", "checkout", "-b", branchName).Dir(projectPath).Run()
-		exec.Command("git", "add", ".").Dir(projectPath).Run()
-		exec.Command("git", "commit", "-m", fmt.Sprintf("Worker %s: %s", role, taskMD)).Dir(projectPath).Run()
-		exec.Command("git", "push", "origin", branchName).Dir(projectPath).Run()
+		cmd := exec.Command("git", "checkout", "-b", branchName)
+		cmd.Dir = projectPath
+		cmd.Run()
+		cmd = exec.Command("git", "add", ".")
+		cmd.Dir = projectPath
+		cmd.Run()
+		cmd = exec.Command("git", "commit", "-m", fmt.Sprintf("Worker %s: %s", role, taskMD))
+		cmd.Dir = projectPath
+		cmd.Run()
+		cmd = exec.Command("git", "push", "origin", branchName)
+		cmd.Dir = projectPath
+		cmd.Run()
 
 		// Collect files - add worker prefix to avoid collisions
 		for path, content := range files {

@@ -9,6 +9,7 @@ interface ChatMessage {
   sender: 'boss' | 'user';
   timestamp: Date;
   read?: boolean;
+  isClarification?: boolean;
 }
 
 interface ChatProps {
@@ -30,11 +31,14 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
 
   useEffect(() => {
     // Mark messages as read when they come into view
-    messages.forEach(message => {
-      if (message.sender === 'boss' && !message.read) {
-        onMarkAsRead(message.id);
-      }
-    });
+    const timer = setTimeout(() => {
+      messages.forEach(message => {
+        if (message.sender === 'boss' && !message.read) {
+          onMarkAsRead(message.id);
+        }
+      });
+    }, 100); // Small delay to ensure DOM is updated
+    return () => clearTimeout(timer);
   }, [messages, onMarkAsRead]);
 
   return (
@@ -72,6 +76,8 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
                 className={`max-w-[70%] rounded-lg px-4 py-2 ${
                   message.sender === 'user'
                     ? 'bg-[var(--accent)] text-white'
+                    : message.isClarification
+                    ? 'bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 text-orange-900 dark:text-orange-100'
                     : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]'
                 }`}
               >

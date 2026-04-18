@@ -126,8 +126,8 @@ services:
 
   apigateway:
     build:
-      context: .
-      dockerfile: ./apigateway/Dockerfile
+      context: ./apigateway
+      dockerfile: Dockerfile
     container_name: crewai-apigateway
     environment:
       - BOSS_SERVICE_HOST=boss:50051

@@ -37,3 +37,7 @@ func InitDb() {
 
 	log.Println("✅ Database initialized")
 }
+
+func GetDB() *gorm.DB {
+	return Db
+}

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package manager;
 
-option go_package = "manager/internal/fetcher/grpc/managerpb";
+option go_package = "boss/internal/fetcher/grpc/manager/managerpb";
 
 // Task update message for streaming
 message TaskUpdate {
@@ -51,6 +51,7 @@ message AssignManagerRequest {
   map<string, string> metadata = 7; // tokens, model, provider
   repeated WorkerResult other_workers_results = 8; // результаты других воркеров для контекста
   repeated WorkerRoleConfig worker_roles = 9;      // predefined worker roles (empty = AI decides)
+  string project_path = 10;         // путь к папке проекта
 }
 
 // Результат работы одного менеджера
@@ -85,6 +86,9 @@ service ManagerService {
 
   // Streaming version - отправляет обновления по мере выполнения
   rpc AssignManagersAndWaitStream(AssignManagersRequest) returns (stream TaskUpdate);
+
+  // Ask for clarification from user
+  rpc AskUserClarification(AskClarificationRequest) returns (AskClarificationResponse);
 }
 
 // Legacy request for backward compatibility
@@ -93,4 +97,20 @@ message AssignManagersRequest {
   string technical_description = 2;
   repeated string roles = 3;
   map<string, string> metadata = 4;
+}
+
+// Clarification request message
+message AskClarificationRequest {
+  string task_id = 1;
+  string question = 2;
+  string manager_id = 3;
+  string worker_id = 4;
+}
+
+// Clarification response message
+message AskClarificationResponse {
+  string task_id = 1;
+  string response = 2;
+  bool success = 3;
+  string message = 4;
 }

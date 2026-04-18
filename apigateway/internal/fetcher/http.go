@@ -13,11 +13,15 @@ import (
 	"apigateway/internal/core/services"
 	"apigateway/internal/fetcher/grpc/boss"
 	"apigateway/internal/fetcher/grpc/boss/bosspb"
+	"apigateway/pkg/models"
 	"apigateway/pkg/requests"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"os"
 )
 
 var bossClient *boss.Client
@@ -25,6 +29,7 @@ var wsHub *services.Hub
 var redisClient *redis.Client
 var pubSubManager *redis.PubSubManager
 var rl *ratelimit.RateLimiter
+var db *gorm.DB
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -52,6 +57,14 @@ func init() {
 	go wsHub.Run()
 
 	rl = ratelimit.New()
+
+	// Initialize database
+	db, err = gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
+	if err != nil {
+		log.Printf("Warning: failed to connect to database: %v", err)
+	} else {
+		db.AutoMigrate(&models.Task{})
+	}
 }
 
 // RegisterRoutes registers all HTTP routes on the gin engine

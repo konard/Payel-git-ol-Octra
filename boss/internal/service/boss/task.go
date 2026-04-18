@@ -7,6 +7,7 @@ import (
 	"boss/pkg/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -432,7 +433,8 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	// 5. Call Manager service for EACH manager IN PARALLEL
 	log.Printf("Calling Manager service: %d managers in parallel", decision.ManagersCount)
 
-	managerResults, zipData, err := s.assignManagersParallel(ctx, task.ID.String(), decision, req, nil)
+	projectPath := fmt.Sprintf("/tmp/projects/%s", task.ID.String())
+	managerResults, zipData, err := s.assignManagersParallel(ctx, task.ID.String(), decision, req, nil, projectPath)
 	if err != nil {
 		log.Printf("Error from managers: %v", err)
 		task.Status = "error"

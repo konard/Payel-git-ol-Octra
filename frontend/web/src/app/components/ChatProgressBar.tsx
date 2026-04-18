@@ -1,10 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTaskStore } from '../../stores/taskStore';
 
 interface ChatProgressBarProps {
   progress?: number;
 }
 
-export function ChatProgressBar({ progress = 45 }: ChatProgressBarProps) {
+export function ChatProgressBar({ progress }: ChatProgressBarProps) {
+  const taskStatus = useTaskStore((state) => state.status);
+  const taskId = useTaskStore((state) => state.taskId);
+  const [currentProgress, setCurrentProgress] = useState(progress || 0);
+
+  // Get progress from task store nodes
+  const nodes = useTaskStore((state) => state.nodes);
+  const activeProgress = nodes.length > 0
+    ? nodes.reduce((acc, node) => acc + (node.progress || 0), 0) / nodes.length
+    : 0;
+
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setCurrentProgress(Math.round(activeProgress));
+    } else if (progress !== undefined) {
+      setCurrentProgress(progress);
+    }
+  }, [activeProgress, nodes.length, progress]);
+
+  // Show progress bar if there's an active task OR if there are chat messages with progress
+  const isTaskActive = taskId && ['creating', 'planning', 'executing'].includes(taskStatus);
+  const hasProgress = currentProgress > 0;
+
+  if (!isTaskActive && !hasProgress) {
+    return null;
+  }
   const bubbles = Array.from({ length: 15 }, (_, i) => ({
     id: i,
     delay: `${i * 0.6}s`,
@@ -21,74 +47,12 @@ export function ChatProgressBar({ progress = 45 }: ChatProgressBarProps) {
 
   return (
     <div className="w-full mb-4">
-      <style>{`
-        @keyframes bubble-flow {
-          0% {
-            transform: translateX(0);
-            opacity: 0;
-          }
-          20% {
-            opacity: 0.9;
-          }
-          80% {
-            opacity: 0.9;
-          }
-          100% {
-            transform: translateX(320px);
-            opacity: 0;
-          }
-        }
-
-        @keyframes tentacle-wave {
-          0%, 100% {
-            d: path('M 0,0 Q 2,3 4,6 T 8,12 T 12,18');
-          }
-          50% {
-            d: path('M 0,0 Q -2,3 -4,6 T 0,12 T 4,18');
-          }
-        }
-
-        @keyframes tentacle-wave {
-          0%, 100% {
-            transform: scaleY(1) translateX(0);
-          }
-          50% {
-            transform: scaleY(1.2) translateX(2px);
-          }
-        }
-
-        @keyframes tentacle-sway {
-          0%, 100% {
-            transform: translateX(0) rotate(0deg);
-          }
-          25% {
-            transform: translateX(-2px) rotate(-3deg);
-          }
-          75% {
-            transform: translateX(2px) rotate(3deg);
-          }
-        }
-
-        .bubble {
-          animation: bubble-flow var(--duration) ease-in-out infinite;
-          animation-delay: var(--delay);
-        }
-
-        .tentacle {
-          animation: tentacle-sway 2.5s ease-in-out infinite;
-          animation-delay: var(--delay);
-        }
-
-        .tentacle-wave {
-          animation: tentacle-wave 1.5s ease-in-out infinite;
-          animation-delay: var(--delay);
-        }
-      `}</style>
-
       <div className="mb-2">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-sm text-[var(--text-muted)]">Прогресс выполнения</span>
-          <span className="text-sm text-[var(--accent)]">{progress}%</span>
+          <span className="text-sm text-[var(--text-muted)]">
+            {isTaskActive ? 'Прогресс выполнения' : 'Прогресс чата'}
+          </span>
+          <span className="text-sm text-[var(--accent)]">{currentProgress}%</span>
         </div>
 
         {/* Progress Bar Container */}
@@ -96,7 +60,7 @@ export function ChatProgressBar({ progress = 45 }: ChatProgressBarProps) {
           {/* Progress Fill */}
           <div
             className="absolute top-0 left-0 h-full bg-[var(--accent)] rounded-lg transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${currentProgress}%` }}
           >
             {/* Tentacles */}
             {tentacles.map((t) => (
