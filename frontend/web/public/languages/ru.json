@@ -206,10 +206,10 @@
     "n8n": {
       "name": "N8n",
       "description": "Интегрируйте автоматизации n8n с вашими workflow агентами",
-      "serverUrl": "Server URL",
+      "serverUrl": "URL сервера",
       "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
-      "accessToken": "Access Token",
-      "accessTokenPlaceholder": "n8n access token"
+      "accessToken": "Токен доступа",
+      "accessTokenPlaceholder": "n8n токен доступа"
     }
   },
   "workflowLibrary": {

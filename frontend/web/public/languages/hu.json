@@ -213,6 +213,14 @@
       "botTokenPlaceholder": "Adja meg a bot token-jét",
       "openBot": "Bot Megnyitása",
       "connectionStatus": "Csatlakozás Állapota"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Integrate n8n automations with your workflow agents",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Access Token",
+      "accessTokenPlaceholder": "n8n access token"
     }
   },
   "workflowLibrary": {

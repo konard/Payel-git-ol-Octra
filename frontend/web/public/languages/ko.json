@@ -213,6 +213,14 @@
       "botTokenPlaceholder": "봇 토큰 입력",
       "openBot": "봇 열기",
       "connectionStatus": "연결 상태"
+    },
+    "n8n": {
+      "name": "N8n",
+      "description": "Integrate n8n automations with your workflow agents",
+      "serverUrl": "Server URL",
+      "serverUrlPlaceholder": "https://your-n8n-instance.com/mcp-server/http",
+      "accessToken": "Access Token",
+      "accessTokenPlaceholder": "n8n access token"
     }
   },
   "workflowLibrary": {
