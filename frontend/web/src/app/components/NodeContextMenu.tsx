@@ -4,6 +4,7 @@ import { useTaskStore, type AgentNodeType } from '../../stores/taskStore';
 import { useIntegrationStore } from '../../stores/integrationStore';
 import { n8nService, type N8nWorkflow } from '../../services/n8nService';
 import { useI18n } from '../../hooks/useI18n';
+import crewaiMascot from '../../images/crewai-mascot.png';
 
 
 const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string }>> = {

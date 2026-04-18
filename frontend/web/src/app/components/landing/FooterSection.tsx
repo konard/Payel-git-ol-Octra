@@ -1,3 +1,5 @@
+import crewaiMascot from '../../../images/crewai-mascot.png';
+
 export function FooterSection() {
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--background)]">
@@ -6,9 +8,11 @@ export function FooterSection() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
-              </div>
+              <img
+                src={crewaiMascot}
+                alt="CrewAI Mascot"
+                className="w-10 h-10 rounded-lg object-contain"
+              />
               <span className="text-lg font-semibold text-[var(--text)]">CrewAI</span>
             </div>
             <p className="text-sm text-[var(--text-muted)]">

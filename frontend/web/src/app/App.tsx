@@ -157,8 +157,21 @@ export default function App() {
     };
     setChatMessages(prev => [...prev, newMessage]);
 
-    // Send chat message via WebSocket
-    sendChat(message, 'user');
+    // TODO: Send chat message via WebSocket when backend supports it
+    // sendChat(message, 'user');
+
+    // For now, simulate boss response
+    setTimeout(() => {
+      const bossResponse = {
+        id: (Date.now() + 1).toString(),
+        text: 'Спасибо за сообщение! Я вас понял.',
+        sender: 'boss' as const,
+        timestamp: new Date(),
+        read: false,
+      };
+      setChatMessages(prev => [...prev, bossResponse]);
+      setHasUnreadMessages(true);
+    }, 1000);
   };
 
   const handleMarkChatMessageAsRead = (messageId: string) => {

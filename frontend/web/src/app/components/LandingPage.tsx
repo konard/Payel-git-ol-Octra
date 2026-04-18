@@ -8,6 +8,7 @@ import { AgentsSection } from './landing/AgentsSection';
 import { ModelsSection } from './landing/ModelsSection';
 import { SettingsSection } from './landing/SettingsSection';
 import { FooterSection } from './landing/FooterSection';
+import crewaiMascot from '../../images/crewai-mascot.png';
 
 export default function LandingPage() {
   const { isDark } = useThemeStore();
@@ -26,9 +27,11 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
-              </div>
+              <img
+                src={crewaiMascot}
+                alt="CrewAI Mascot"
+                className="w-10 h-10 rounded-lg object-contain"
+              />
               <span className="text-lg font-semibold text-[var(--text)]">CrewAI</span>
             </div>
 

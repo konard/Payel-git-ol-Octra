@@ -12,6 +12,7 @@ import { UserProfile } from '../../components/UserProfile';
 import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
 import n8nIcon from '../../images/n8n-color.png';
+import crewaiMascot from '../../images/crewai-mascot.png';
 
 type SettingsTab = 'api' | 'language' | 'appearance' | 'visibility' | 'integrations';
 
@@ -92,9 +93,11 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
       <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
         {/* Left: Logo + Mode Switch */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">C</span>
-          </div>
+          <img
+            src={crewaiMascot}
+            alt="CrewAI Mascot"
+            className="w-10 h-10 rounded-lg object-contain"
+          />
           <h1 className="text-lg font-semibold text-[var(--text)]">CrewAI</h1>
           {/* Переключатель режимов */}
           <div className="border border-[var(--border)] rounded-lg overflow-hidden shadow-sm ml-4">

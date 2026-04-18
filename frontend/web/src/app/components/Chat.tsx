@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
+import crewaiMascot from '../../images/crewai-mascot.png';
 
 interface ChatMessage {
   id: string;
@@ -40,11 +41,19 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="text-lg mb-2">💬</div>
-              <div>Чат с боссом</div>
-              <div className="text-sm">Здесь будут появляться сообщения от босса</div>
+              <img
+                src={crewaiMascot}
+                alt="CrewAI Mascot"
+                className="w-28 h-28 rounded-lg object-contain mx-auto mb-6"
+              />
+              <h1 className="text-2xl font-bold text-[var(--text)] mb-2">
+                Добро пожаловать в CrewAI!
+              </h1>
+              <p className="text-[var(--text-muted)]">
+                Начните общение с вашим ИИ-ассистентом
+              </p>
             </div>
           </div>
         ) : (
@@ -64,7 +73,7 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
                 <div className={`text-xs mt-1 ${
                   message.sender === 'user' ? 'text-white/70' : 'text-[var(--text-muted)]'
                 }`}>
-                  {message.timestamp.toLocaleTimeString()}
+                  {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                 </div>
               </div>
             </div>
