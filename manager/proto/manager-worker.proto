@@ -17,6 +17,7 @@ message TaskUpdate {
 message WorkerRole {
   string role = 1;
   string description = 2;
+  string custom_prompt = 3;
 }
 
 // WorkerResult — результат работы воркера

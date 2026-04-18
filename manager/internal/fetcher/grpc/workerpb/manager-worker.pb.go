@@ -110,6 +110,7 @@ type WorkerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	CustomPrompt  string                 `protobuf:"bytes,3,opt,name=custom_prompt,json=customPrompt,proto3" json:"custom_prompt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -154,6 +155,13 @@ func (x *WorkerRole) GetRole() string {
 func (x *WorkerRole) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *WorkerRole) GetCustomPrompt() string {
+	if x != nil {
+		return x.CustomPrompt
 	}
 	return ""
 }
@@ -619,11 +627,12 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\x04data\x18\x06 \x03(\v2\x1c.worker.TaskUpdate.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"g\n" +
 	"\n" +
 	"WorkerRole\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xbc\x02\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12#\n" +
+	"\rcustom_prompt\x18\x03 \x01(\tR\fcustomPrompt\"\xbc\x02\n" +
 	"\fWorkerResult\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12\x17\n" +
