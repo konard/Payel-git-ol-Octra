@@ -277,7 +277,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const progress = msg.progress || 0;
     const message = msg.message || '';
 
-    console.log('[WS] handleProgressMessage:', message);
+    console.log('[WS] handleProgressMessage:', message, 'progress:', progress);
 
     storeActions.addLog({
       message: `${message} (${progress}%)`,
@@ -384,6 +384,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
 
         // Only add auto-generated worker if no user nodes exist
+        console.log('[WS] => Adding worker:', role, 'for manager:', managerRole, 'hasUserNodes:', hasUserNodes());
         if (!hasUserNodes()) {
           // Position: under the manager
           const mgrPosition = managerIdx >= 0 ?
@@ -391,6 +392,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           const workerX = mgrPosition + (wIdx - 1) * 120;
           const workerY = 370;
 
+          console.log('[WS] => Worker node:', workerId, 'position:', workerX, workerY);
           storeActions.addNode({
             id: workerId,
             type: 'worker',
@@ -403,6 +405,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           if (managerIdx >= 0) {
             storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
           }
+        } else {
+          console.log('[WS] => Skipping worker add due to user nodes present');
         }
 
 
@@ -423,6 +427,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           const sanitizedManagerRole = managerRole.replace(/[^a-zA-Z0-9]/g, '');
           const workerId = `worker-${sanitizedManagerRole}-${wIdx}`;
 
+          console.log('[WS] => Worker completed:', workerId, 'files:', filesCount);
           storeActions.updateNode(workerId, {
             status: 'done',
             filesCount,
