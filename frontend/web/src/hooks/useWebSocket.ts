@@ -14,6 +14,11 @@ interface WebSocketMessage {
   is_clarification?: boolean;
 }
 
+interface WebSocketHookProps {
+  onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void;
+  onProgressUpdate?: (progress: number, message?: string) => void;
+}
+
 interface WorkflowConfig {
   useAiPlanning: boolean;
   managers: Array<{
@@ -42,7 +47,7 @@ const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_DELAY = 15000;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
-export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user') => void) {
+export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void, onProgressUpdate?: (progress: number, message?: string) => void) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartbeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -283,6 +288,15 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       message: `${message} (${progress}%)`,
       type: 'info',
     });
+
+    // Update progress in chat if this is a boss progress message
+    if (onProgressUpdate && (message.includes('AI is planning') ||
+                            message.includes('Creating') ||
+                            message.includes('completed') ||
+                            message.includes('packaging') ||
+                            message.includes('Boss validating'))) {
+      onProgressUpdate(progress, message);
+    }
 
     // === BOSS ===
     if (message.includes('Architecture planned')) {

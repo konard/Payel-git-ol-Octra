@@ -46,7 +46,7 @@ export default function App() {
     return <LandingPage />;
   }
 
-  const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user', isClarification = false) => {
+  const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user', isClarification = false, progress?: number, showProgress?: boolean) => {
     const newMessage = {
       id: Date.now().toString(),
       text: message,
@@ -54,6 +54,8 @@ export default function App() {
       timestamp: new Date(),
       read: sender === 'user', // User messages are automatically read
       isClarification,
+      progress,
+      showProgress,
     };
     setChatMessages(prev => [...prev, newMessage]);
     if (sender === 'boss') {
@@ -61,9 +63,38 @@ export default function App() {
     }
   };
 
+  const updateBossProgress = (progress: number, message?: string) => {
+    setChatMessages(prev => {
+      const lastBossIndex = prev.findLastIndex(m => m.sender === 'boss');
+      if (lastBossIndex >= 0) {
+        const updatedMessages = [...prev];
+        updatedMessages[lastBossIndex] = {
+          ...updatedMessages[lastBossIndex],
+          progress,
+          text: message || updatedMessages[lastBossIndex].text,
+          showProgress: true,
+        };
+        return updatedMessages;
+      } else {
+        // Create new boss message with progress
+        const newMessage = {
+          id: Date.now().toString(),
+          text: message || 'Processing your request...',
+          sender: 'boss' as const,
+          timestamp: new Date(),
+          read: false,
+          progress,
+          showProgress: true,
+        };
+        return [...prev, newMessage];
+      }
+    });
+    setHasUnreadMessages(true);
+  };
+
   // Иначе показываем приложение
   const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
-  const { connect, send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage);
+  const { connect, send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage, updateBossProgress);
 
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
