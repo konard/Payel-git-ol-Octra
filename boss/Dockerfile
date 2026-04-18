@@ -42,7 +42,12 @@ FROM alpine:latest
 
 WORKDIR /root/
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates git
+
+# Configure git for GitHub
+RUN git config --global user.email "${GIT_USER_EMAIL:-boss@crewai.local}" && \
+    git config --global user.name "${GIT_USER_NAME:-CrewAI Boss}" && \
+    git config --global credential.helper store
 
 COPY --from=builder /workspace/main .
 

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -475,6 +476,28 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	database.Db.Save(task)
 
 	log.Printf("Task completed! ZIP size: %d bytes", len(zipData))
+
+	// 8. Push to GitHub if token is available
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken != "" {
+		log.Printf("Pushing results to GitHub...")
+		githubClient := s.getGitHubClient()
+		if githubClient != nil {
+			repoURL, err := githubClient.CreateRepository(ctx, task)
+			if err != nil {
+				log.Printf("Failed to create GitHub repository: %v", err)
+			} else {
+				if err := githubClient.PushToRepository(ctx, task, zipData, repoURL); err != nil {
+					log.Printf("Failed to push to GitHub: %v", err)
+				} else {
+					log.Printf("Successfully pushed to GitHub: %s", repoURL)
+					// Update task with repo URL
+					task.ProjectJSON = repoURL
+					database.Db.Save(task)
+				}
+			}
+		}
+	}
 
 	// 8. Return result with ZIP
 	return &bosspb.BossDecision{

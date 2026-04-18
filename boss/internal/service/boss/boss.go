@@ -4,6 +4,7 @@ import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
 	"boss/internal/redis"
+	"boss/internal/service/github"
 	"boss/pkg/database"
 	"boss/pkg/models"
 	"context"
@@ -21,6 +22,7 @@ type BossService struct {
 	managerClient *manager.Client
 	redisClient   *redis.Client
 	db            *gorm.DB
+	githubClient  *github.Client
 }
 
 func NewBossService() *BossService {
@@ -32,11 +34,28 @@ func NewBossService() *BossService {
 	redisClient := redis.NewClient()
 	db := database.GetDB()
 
+	// Initialize GitHub client if token is available
+	var githubClient *github.Client
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken != "" {
+		githubClient = github.NewClient(
+			githubToken,
+			os.Getenv("GIT_USER_NAME"),
+			os.Getenv("GIT_USER_EMAIL"),
+		)
+		log.Printf("GitHub client initialized")
+	}
+
 	return &BossService{
 		managerClient: mgrClient,
 		redisClient:   redisClient,
 		db:            db,
+		githubClient:  githubClient,
 	}
+}
+
+func (s *BossService) getGitHubClient() *github.Client {
+	return s.githubClient
 }
 
 // BossDecisionResult — result of boss thinking
