@@ -345,6 +345,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const workingMatch = message.match(/Manager working:\s*(.+)/i);
     if (workingMatch) {
       const role = workingMatch[1].trim();
+      console.log('[WS] => Manager working:', role, 'setting currentManagerRole');
       currentManagerRole.current = role; // Track current active manager
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
@@ -364,6 +365,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
     // === WORKER STARTING — "Starting worker 1/7: Go Backend Developer (58%)" ===
     const workerStartMatch = message.match(/Starting worker \d+\/\d+:\s*(.+?)\s*\(/i);
+    console.log('[WS] => Worker start regex check:', message, 'match:', !!workerStartMatch);
     if (workerStartMatch) {
       const role = workerStartMatch[1].trim();
       const managerRole = currentManagerRole.current;
@@ -384,8 +386,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
 
         // Only add auto-generated worker if no user nodes exist
-        console.log('[WS] => Adding worker:', role, 'for manager:', managerRole, 'hasUserNodes:', hasUserNodes());
-        if (!hasUserNodes()) {
+        const userNodesCheck = hasUserNodes();
+        console.log('[WS] => Adding worker:', role, 'for manager:', managerRole, 'hasUserNodes:', userNodesCheck, 'currentManagerRole:', currentManagerRole.current);
+        if (!userNodesCheck) {
           // Position: under the manager
           const mgrPosition = managerIdx >= 0 ?
             (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
