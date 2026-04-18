@@ -52,6 +52,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
   const lastTaskPayload = useRef<CreateTaskPayload | null>(null);
   const activeTaskId = useRef<string | null>(null);
   const taskStartTime = useRef<number>(0);
+  const hasApiConfigError = useRef(false);
 
   // Track managers across messages
   const managerCounter = useRef(0);
@@ -178,13 +179,29 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         break;
 
       case 'error':
+        const errorMessage = msg.message || 'Error occurred';
         storeActions.setTaskStatus('error');
         storeActions.addLog({
-          message: msg.message || 'Error occurred',
+          message: errorMessage,
           type: 'error',
         });
         // Update all nodes to error
         finalizeAllNodes('error');
+
+        // Check if this is an API configuration error
+        const isApiError = errorMessage.includes('API key') ||
+                          errorMessage.includes('not found in tokens') ||
+                          errorMessage.includes('Payment Required') ||
+                          errorMessage.includes('credits');
+
+        if (isApiError) {
+          hasApiConfigError.current = true;
+          storeActions.addLog({
+            message: 'API configuration error - please check your API keys',
+            type: 'error',
+          });
+        }
+
         // Clear stored task payload — task failed, don't auto-resend
         lastTaskPayload.current = null;
         activeTaskId.current = null;
@@ -466,7 +483,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const isReconnect = activeTaskId.current !== null &&
       currentStatus &&
       ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus) &&
-      taskAge < maxTaskAge;
+      taskAge < maxTaskAge &&
+      !hasApiConfigError.current; // Don't reconnect if we had an API config error
     const connectUrl = isReconnect
       ? url.replace('/task/create', '/task/reconnect')
       : url;
@@ -590,6 +608,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus);
 
       if (!isReconnect) {
+        // Reset API config error flag for new tasks
+        hasApiConfigError.current = false;
         // Store the payload for potential reconnection
         lastTaskPayload.current = data;
         wsRef.current!.send(JSON.stringify(data));

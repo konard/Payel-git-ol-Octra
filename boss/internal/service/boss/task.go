@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -399,8 +400,8 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	}
 	defer agentsClient.Close()
 
-	// 3. Boss thinks about task
-	decision, err := s.thinkAboutTask(ctx, agentsClient, provider, model, req)
+	// 3. Boss thinks about task with fallback providers
+	decision, err := s.thinkAboutTaskWithFallback(ctx, agentsClient, provider, model, req)
 	if err != nil {
 		task.Status = "error"
 		database.Db.Save(task)
@@ -570,6 +571,54 @@ Always include only the technologies that are genuinely required.`
 
 	log.Printf("Boss made decision: %+v", decision)
 	return &decision, nil
+}
+
+// thinkAboutTaskWithFallback tries multiple AI providers if the first one fails
+func (s *BossService) thinkAboutTaskWithFallback(ctx context.Context, agentsClient *service.AgentClientWrapper, primaryProvider, model string, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
+	// Define fallback providers in order of preference
+	providers := []struct {
+		provider string
+		model    string
+	}{
+		{primaryProvider, model},
+		{"openai", "gpt-4o-mini"},
+		{"anthropic", "claude-3-haiku-20240307"},
+		{"google", "gemini-pro"},
+	}
+
+	var lastErr error
+	for _, p := range providers {
+		log.Printf("🤖 Trying AI provider: %s/%s", p.provider, p.model)
+		decision, err := s.thinkAboutTask(ctx, agentsClient, p.provider, p.model, req)
+		if err == nil {
+			return decision, nil
+		}
+
+		log.Printf("❌ AI provider %s/%s failed: %v", p.provider, p.model, err)
+		lastErr = err
+
+		// Check if this is a configuration error (API key missing)
+		errStr := err.Error()
+		if strings.Contains(errStr, "API key not found") ||
+			strings.Contains(errStr, "API key") ||
+			strings.Contains(errStr, "not found in tokens") {
+			// Don't try more providers if it's a configuration issue
+			break
+		}
+	}
+
+	// If we get here, all providers failed
+	if strings.Contains(lastErr.Error(), "API key not found") ||
+		strings.Contains(lastErr.Error(), "not found in tokens") {
+		return nil, fmt.Errorf("AI service configuration error: No valid API keys found for any provider. Please check your API key configuration")
+	}
+
+	if strings.Contains(lastErr.Error(), "Payment Required") ||
+		strings.Contains(lastErr.Error(), "credits") {
+		return nil, fmt.Errorf("AI service error: API credits exhausted. Please top up your account or use a different provider")
+	}
+
+	return nil, lastErr
 }
 
 // buildDecisionFromPredefined создаёт BossDecision из пользовательского workflow
