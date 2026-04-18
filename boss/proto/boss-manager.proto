@@ -38,6 +38,7 @@ message WorkerResult {
 message WorkerRoleConfig {
   string role = 1;
   string description = 2;
+  string custom_prompt = 3;  // кастомный промт для воркера
 }
 
 // Запрос от boss к manager — ОДИН менеджер на запрос
@@ -52,6 +53,7 @@ message AssignManagerRequest {
   repeated WorkerResult other_workers_results = 8; // результаты других воркеров для контекста
   repeated WorkerRoleConfig worker_roles = 9;      // predefined worker roles (empty = AI decides)
   string project_path = 10;         // путь к папке проекта
+  string custom_prompt = 11;        // кастомный промт для менеджера
 }
 
 // Результат работы одного менеджера

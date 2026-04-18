@@ -36,12 +36,15 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
   const removeNode = useTaskStore((state) => state.removeNode);
   const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
   const { t } = useI18n();
-  const [n8nTrigger, setN8nTrigger] = useState<'start' | 'end' | 'middle' | 'custom' | null>(node?.n8nTrigger || null);
-  const [customPercentage, setCustomPercentage] = useState(node?.n8nPercentage || 50);
+  const currentNode = useTaskStore((state) => state.nodes.find((n) => n.id === nodeId));
+  const [n8nTrigger, setN8nTrigger] = useState<'start' | 'end' | 'middle' | 'custom' | null>(currentNode?.n8nTrigger || null);
+  const [customPercentage, setCustomPercentage] = useState(currentNode?.n8nPercentage || 50);
   const [n8nWorkflows, setN8nWorkflows] = useState<N8nWorkflow[]>([]);
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>(node?.n8nWorkflowId || '');
-  const [webhookUrl, setWebhookUrl] = useState<string>(node?.n8nWebhookUrl || '');
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>(currentNode?.n8nWorkflowId || '');
+  const [webhookUrl, setWebhookUrl] = useState<string>(currentNode?.n8nWebhookUrl || '');
+  const [webhookUrlError, setWebhookUrlError] = useState<string>('');
+  const [customPrompt, setCustomPrompt] = useState<string>(currentNode?.customPrompt || '');
 
   // Закрытие при клике вне меню
   useEffect(() => {
@@ -119,9 +122,23 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     updateNode(nodeId, { n8nWorkflowId: workflowId });
   };
 
+  const validateUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleWebhookUrlChange = (url: string) => {
     setWebhookUrl(url);
-    updateNode(nodeId, { n8nWebhookUrl: url });
+    if (url && !validateUrl(url)) {
+      setWebhookUrlError('Invalid URL format');
+    } else {
+      setWebhookUrlError('');
+      updateNode(nodeId, { n8nWebhookUrl: url });
+    }
   };
 
   const handleCustomPercentageChange = (value: number) => {
@@ -129,6 +146,11 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     if (n8nTrigger === 'custom') {
       updateNode(nodeId, { n8nPercentage: value });
     }
+  };
+
+  const handleCustomPromptChange = (value: string) => {
+    setCustomPrompt(value);
+    updateNode(nodeId, { customPrompt: value });
   };
 
   return (
@@ -202,8 +224,13 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
               value={webhookUrl}
               onChange={(e) => handleWebhookUrlChange(e.target.value)}
               placeholder="https://your-n8n.com/webhook/..."
-              className="w-full px-2 py-1 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)] placeholder-[var(--text-muted)]"
+              className={`w-full px-2 py-1 text-sm bg-[var(--background)] border rounded text-[var(--text)] placeholder-[var(--text-muted)] ${
+                webhookUrlError ? 'border-red-500' : 'border-[var(--border)]'
+              }`}
             />
+            {webhookUrlError && (
+              <div className="text-xs text-red-500 mt-1">{webhookUrlError}</div>
+            )}
           </div>
 
           {/* Выбор триггера */}
@@ -264,6 +291,18 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
           </div>
         </div>
       )}
+
+      {/* Кастомный промт */}
+      <div className="p-2 border-b border-[var(--border)]">
+        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">{t('contextMenu.customPrompt')}</div>
+        <textarea
+          value={customPrompt}
+          onChange={(e) => handleCustomPromptChange(e.target.value)}
+          placeholder="Введите кастомный промт для этой ноды..."
+          className="w-full px-3 py-2 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)] placeholder-[var(--text-muted)] resize-none"
+          rows={4}
+        />
+      </div>
 
       {/* Действия */}
       <div className="p-2">

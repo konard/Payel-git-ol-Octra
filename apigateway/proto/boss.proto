@@ -18,6 +18,7 @@ message TaskUpdate {
 message WorkerRole {
   string role = 1;
   string description = 2;
+  string custom_prompt = 3;  // кастомный промт для воркера
 }
 
 // Manager configuration with workers (for predefined workflow)

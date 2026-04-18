@@ -135,6 +135,7 @@
     "duplicate": "Duplicate node",
     "delete": "Delete node",
     "notConnected": "Not connected",
+    "customPrompt": "Custom Prompt",
     "n8nAutomation": {
       "title": "N8n Automation",
       "workflow": "Workflow",

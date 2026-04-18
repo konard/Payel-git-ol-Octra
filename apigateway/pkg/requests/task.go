@@ -4,6 +4,7 @@ package requests
 type WorkerRole struct {
 	Role        string `json:"role"`
 	Description string `json:"description"`
+	CustomPrompt string `json:"customPrompt,omitempty"`
 }
 
 // ManagerWorkflow — конфигурация менеджера с воркерами
@@ -11,6 +12,7 @@ type ManagerWorkflow struct {
 	Role        string       `json:"role"`
 	Description string       `json:"description"`
 	Priority    int32        `json:"priority"`
+	CustomPrompt string       `json:"customPrompt,omitempty"`
 	Workers     []WorkerRole `json:"workers"`
 }
 

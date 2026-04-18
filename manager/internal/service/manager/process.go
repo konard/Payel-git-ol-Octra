@@ -34,11 +34,12 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 
 	// Создаём менеджера в БД
 	manager := &models.Manager{
-		ID:       managerID,
-		TaskID:   taskID,
-		Role:     req.Role,
-		Status:   "active",
-		TaskDesc: req.TechnicalDescription,
+		ID:           managerID,
+		TaskID:       taskID,
+		Role:         req.Role,
+		Status:       "active",
+		TaskDesc:     req.TechnicalDescription,
+		CustomPrompt: req.CustomPrompt,
 	}
 	database.Db.Create(manager)
 
@@ -82,8 +83,9 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 	workerRoles := make([]*workerpb.WorkerRole, 0, len(workerRolesList))
 	for _, role := range workerRolesList {
 		workerRoles = append(workerRoles, &workerpb.WorkerRole{
-			Role:        role.Role,
-			Description: role.Description,
+			Role:         role.Role,
+			Description:  role.Description,
+			CustomPrompt: role.CustomPrompt,
 		})
 	}
 

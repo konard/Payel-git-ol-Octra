@@ -127,6 +127,7 @@ export default function App() {
         role: node.role || 'Manager',
         description: node.role || 'Custom manager',
         priority: 1,
+        customPrompt: node.customPrompt || '', // Кастомный промт для менеджера
         workers: [] // Workers will be created by AI based on manager role
       })),
       architecture: `Custom workflow with ${userNodes.length} managers`,

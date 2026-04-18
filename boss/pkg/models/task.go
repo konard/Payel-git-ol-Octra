@@ -55,9 +55,10 @@ type BossDecision struct {
 
 // ManagerRole — роль менеджера
 type ManagerRole struct {
-	Role        string `json:"role"` // "frontend", "backend", "testing"
-	Description string `json:"description"`
-	Priority    int32  `json:"priority"`
+	Role         string `json:"role"` // "frontend", "backend", "testing"
+	Description  string `json:"description"`
+	Priority     int32  `json:"priority"`
+	CustomPrompt string `json:"customPrompt,omitempty"`
 }
 
 // Manager — менеджер назначенный на задачу
@@ -79,8 +80,9 @@ type Manager struct {
 
 // WorkerRole — роль воркера
 type WorkerRole struct {
-	Role        string `json:"role"` // "react-dev", "go-dev", "qa-automation"
-	Description string `json:"description"`
+	Role         string `json:"role"` // "react-dev", "go-dev", "qa-automation"
+	Description  string `json:"description"`
+	CustomPrompt string `json:"customPrompt,omitempty"`
 }
 
 // Worker — рабочий назначенный на задачу

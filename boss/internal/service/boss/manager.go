@@ -116,8 +116,9 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				if workers, ok := decision.ManagerWorkerRoles[role.Role]; ok {
 					for _, w := range workers {
 						workerRolesProto = append(workerRolesProto, &managerpb.WorkerRoleConfig{
-							Role:        w.Role,
-							Description: w.Description,
+							Role:         w.Role,
+							Description:  w.Description,
+							CustomPrompt: w.CustomPrompt,
 						})
 					}
 				}
@@ -134,6 +135,7 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 				OtherWorkersResults:  contextResults,
 				WorkerRoles:          workerRolesProto, // predefined worker roles
 				ProjectPath:          projectPath,
+				CustomPrompt:         role.CustomPrompt, // кастомный промт для менеджера
 			}
 
 			// Create timeout context for manager call (30 minutes per manager)

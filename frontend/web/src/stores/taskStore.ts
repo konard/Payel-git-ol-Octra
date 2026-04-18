@@ -22,6 +22,8 @@ export interface AgentNode {
   n8nPercentage?: number;
   n8nWorkflowId?: string;
   n8nWebhookUrl?: string;
+  // Custom prompt
+  customPrompt?: string;
 }
 
 export interface WorkflowConfig {
@@ -81,6 +83,23 @@ interface TaskState {
 
 let nodeIdCounter = 0;
 
+// Validation functions
+const validateNodeUpdate = (updates: Partial<AgentNode>): Partial<AgentNode> => {
+  const validatedUpdates = { ...updates };
+
+  // Validate n8nPercentage is within 0-100 range
+  if (updates.n8nPercentage !== undefined) {
+    validatedUpdates.n8nPercentage = Math.max(0, Math.min(100, updates.n8nPercentage));
+  }
+
+  // Validate n8nTrigger is one of the allowed values
+  if (updates.n8nTrigger !== undefined && !['start', 'end', 'middle', 'custom'].includes(updates.n8nTrigger)) {
+    delete validatedUpdates.n8nTrigger;
+  }
+
+  return validatedUpdates;
+};
+
 export const useTaskStore = create<TaskState>((set, get) => ({
   taskId: null,
   status: 'idle',
@@ -108,7 +127,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   }),
   
   updateNode: (id, updates) => set((state) => ({
-    nodes: state.nodes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
+    nodes: state.nodes.map((n) => (n.id === id ? { ...n, ...validateNodeUpdate(updates) } : n)),
   })),
   
   removeNode: (id) => set((state) => ({

@@ -14,6 +14,7 @@ type Manager struct {
 	AgentID  string    // ID ИИ агента
 	Status   string    `gorm:"default:'active'"` // active, completed, removed
 	TaskDesc string    `gorm:"type:text"`        // Техническое описание от boss
+	CustomPrompt string `gorm:"type:text"`      // Кастомный промт для менеджера
 
 	// Решение менеджера
 	WorkerRoles  string `gorm:"type:text"` // []WorkerRole (JSON)
@@ -24,4 +25,5 @@ type Manager struct {
 type WorkerRole struct {
 	Role        string `json:"role"`
 	Description string `json:"description"`
+	CustomPrompt string `json:"customPrompt,omitempty"`
 }
