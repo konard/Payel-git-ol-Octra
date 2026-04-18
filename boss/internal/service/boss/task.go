@@ -285,6 +285,14 @@ func (s *BossService) executeTaskFlow(
 	if err != nil {
 		log.Printf("No project to restore for task %s: %v", taskID, err)
 		projectPath = "" // proceed without
+	} else {
+		// Schedule project cleanup after task completion
+		defer func() {
+			if projectPath != "" {
+				log.Printf("🧹 Cleaning up project directory: %s", projectPath)
+				os.RemoveAll(projectPath)
+			}
+		}()
 	}
 
 	// 5. Call managers in parallel with progress updates

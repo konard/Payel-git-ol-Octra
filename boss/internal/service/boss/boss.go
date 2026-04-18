@@ -134,14 +134,14 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal project JSON: %w", err)
 	}
 
-	// Create projects in crewai/projects/users/[task-id] relative to project root
-	projectPath := filepath.Join("projects", "users", taskID)
+	// Create project in temp directory (will be cleaned up after GitHub push)
+	projectPath := filepath.Join(os.TempDir(), "crewai-projects", taskID)
 	if err := os.MkdirAll(projectPath, 0755); err != nil {
 		return "", fmt.Errorf("failed to create project dir: %w", err)
 	}
 
 	// Log the project path for debugging
-	log.Printf("📁 Creating project at: %s", projectPath)
+	log.Printf("📁 Creating temporary project at: %s", projectPath)
 
 	for relPath, content := range project.Project.Files {
 		fullPath := filepath.Join(projectPath, relPath)

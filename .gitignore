@@ -8,6 +8,3 @@ TASK_FRONTEND.md
 context
 .sixth
 .env.example
-
-# User projects - don't commit
-projects/
