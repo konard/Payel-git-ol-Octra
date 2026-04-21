@@ -81,10 +81,11 @@
     "hideTokenFieldHint": "إخفاء حقل مفتاح API على الشاشة الرئيسية",
     "save": "حفظ",
     "cancel": "إلغاء",
-    "hideServerStatus": "إخفاء حالة الخادم",
-    "hideServerStatusHint": "إخفاء شريط حالة اتصال الخادم",
-    "hideConsole": "إخفاء وحدة التحكم",
-    "hideConsoleHint": "إخفاء لوحة وحدة التحكم"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +295,26 @@
     "registering": "جار التسجيل...",
     "noAccount": "ليس لديك حساب؟",
     "hasAccount": "لديك حساب بالفعل؟"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

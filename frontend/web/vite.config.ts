@@ -14,18 +14,11 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
-  base: './',
-  build: {
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        entryFileNames: `assets/[name]-${Date.now()}.js`,
-        chunkFileNames: `assets/[name]-${Date.now()}.js`,
-        assetFileNames: `assets/[name]-${Date.now()}.[ext]`,
-      },
-    },
-  },
+  base: '/',
   server: {
+    fs: {
+      strict: false,
+    },
     proxy: {
       '/auth': {
         target: 'http://localhost:3112',
@@ -38,4 +31,15 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`,
+      },
+    },
+  },
+
 })

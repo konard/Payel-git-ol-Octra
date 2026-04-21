@@ -87,7 +87,8 @@
     "hideServerStatus": "Скрыть статус сервера",
     "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
     "hideConsole": "Скрыть консоль",
-    "hideConsoleHint": "Скрыть панель консоли"
+    "hideConsoleHint": "Скрыть панель консоли",
+    "customProviders": "Кастомные провайдеры"
   },
   "languages": {
     "en": "English",
@@ -283,5 +284,26 @@
     "registering": "Регистрация...",
     "noAccount": "Нет аккаунта?",
     "hasAccount": "Уже есть аккаунт?"
+  },
+  "providers": {
+    "title": "Кастомные провайдеры",
+    "description": "Добавляйте собственные AI провайдеры для использования в задачах",
+    "newProvider": "Новый провайдер",
+    "configured": "Настроен",
+    "addCustomProvider": "Добавить кастомный провайдер",
+    "addNew": "Добавить новый",
+    "collapse": "Свернуть",
+    "expand": "Развернуть",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "add": "Добавить",
+    "name": "Название",
+    "namePlaceholder": "Мой AI провайдер",
+    "baseUrl": "Базовый URL",
+    "baseUrlHint": "URL API сервера провайдера (например: https://api.example.com/v1)",
+    "apiKey": "API ключ",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Сохранить",
+    "cancel": "Отмена"
   }
 }

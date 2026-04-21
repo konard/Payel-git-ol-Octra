@@ -81,10 +81,11 @@
     "hideTokenFieldHint": "Nascondi campo chiave API nella schermata principale",
     "save": "Salva",
     "cancel": "Annulla",
-    "hideServerStatus": "Nascondi stato server",
-    "hideServerStatusHint": "Nascondi barra stato connessione server",
-    "hideConsole": "Nascondi console",
-    "hideConsoleHint": "Nascondi pannello console"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -306,5 +307,26 @@
     "registering": "Registrazione...",
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

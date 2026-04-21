@@ -81,10 +81,11 @@
     "hideTokenFieldHint": "在主屏幕上隐藏API密钥字段",
     "save": "保存",
     "cancel": "取消",
-    "hideServerStatus": "隐藏服务器状态",
-    "hideServerStatusHint": "隐藏服务器连接状态栏",
-    "hideConsole": "隐藏控制台",
-    "hideConsoleHint": "隐藏控制台面板"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -306,5 +307,26 @@
     "registering": "注册中...",
     "noAccount": "没有账号？",
     "hasAccount": "已有账号？"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

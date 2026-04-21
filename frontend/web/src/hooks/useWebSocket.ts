@@ -4,7 +4,7 @@ import type { AgentNode } from '../stores/taskStore';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
-  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error' | 'chat' | 'clarification_request';
+  type: 'connected' | 'reconnected' | 'progress' | 'processing' | 'success' | 'error' | 'chat' | 'clarification_request' | 'pong';
   progress?: number;
   message?: string;
   data?: Record<string, any>;
@@ -12,6 +12,8 @@ interface WebSocketMessage {
   status?: string;
   question?: string;
   is_clarification?: boolean;
+  is_history?: boolean;
+  sender?: 'boss' | 'user';
 }
 
 interface WebSocketHookProps {
@@ -46,6 +48,10 @@ interface CreateTaskPayload {
 const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_DELAY = 15000;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
+const isActiveTaskStatus = (status?: string | null) =>
+  !!status &&
+  ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(status);
 
 export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void, onProgressUpdate?: (progress: number, message?: string) => void) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -210,6 +216,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         // Clear stored task payload — task failed, don't auto-resend
         lastTaskPayload.current = null;
         activeTaskId.current = null;
+        taskStartTime.current = 0;
 
         // Reset connection state to allow new tasks
         isManuallyClosed.current = false;
@@ -377,8 +384,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       }
     }
 
-    // === WORKER STARTING — "Starting worker 1/7: Go Backend Developer (58%)" ===
-    const workerStartMatch = message.match(/Starting worker \d+\/\d+:\s*(.+?)\s*\(/i);
+    // === WORKER STARTING — "Starting worker 1/7: Go Backend Developer" ===
+    const workerStartMatch = message.match(/Starting worker \d+\/\d+:\s*(.+)$/i);
     console.log('[WS] => Worker start regex check:', message, 'match:', !!workerStartMatch);
     if (workerStartMatch) {
       const role = workerStartMatch[1].trim();
@@ -499,12 +506,11 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
     // On reconnect, use /api/task/reconnect with task_id instead of creating a new task
     // Only reconnect if we have an active task that's still running and not too old
-    const currentStatus = storeActions.nodes ? storeActions.nodes().find(n => n.type === 'boss')?.data?.status : '';
+    const currentStatus = useTaskStore.getState().status;
     const taskAge = Date.now() - taskStartTime.current;
     const maxTaskAge = 2 * 60 * 60 * 1000; // 2 hours
     const isReconnect = activeTaskId.current !== null &&
-      currentStatus &&
-      ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus) &&
+      isActiveTaskStatus(currentStatus) &&
       taskAge < maxTaskAge &&
       !hasApiConfigError.current; // Don't reconnect if we had an API config error
     const connectUrl = isReconnect
@@ -537,21 +543,30 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       wsRef.current = null;
       storeActions.setConnectionStatus(false);
 
-      if (event.code === 1000 || isManuallyClosed.current) {
-        // Normal close — no user-facing log needed
-      } else {
-        storeActions.addLog({
-          message: t('console.connectionLost'),
-          type: 'warning',
-        });
-        if (!isMounted.current || isManuallyClosed.current) return;
-        clearReconnectTimer();
-        const delay = Math.min(RECONNECT_INTERVAL * Math.pow(1.5, reconnectAttempts.current), MAX_RECONNECT_DELAY);
-        reconnectAttempts.current++;
-        reconnectTimerRef.current = setTimeout(() => {
-          connect();
-        }, delay);
+      const currentStatus = useTaskStore.getState().status;
+      const shouldReconnect =
+        event.code !== 1000 &&
+        !isManuallyClosed.current &&
+        isMounted.current &&
+        activeTaskId.current !== null &&
+        isActiveTaskStatus(currentStatus) &&
+        !hasApiConfigError.current;
+
+      if (!shouldReconnect) {
+        return;
       }
+
+      storeActions.addLog({
+        message: t('console.connectionLost'),
+        type: 'warning',
+      });
+
+      clearReconnectTimer();
+      const delay = Math.min(RECONNECT_INTERVAL * Math.pow(1.5, reconnectAttempts.current), MAX_RECONNECT_DELAY);
+      reconnectAttempts.current++;
+      reconnectTimerRef.current = setTimeout(() => {
+        connect();
+      }, delay);
     };
 
     ws.onerror = () => {
@@ -579,7 +594,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
   const send = useCallback((data: CreateTaskPayload) => {
     // Don't send if we have an active task that's not completed
-    const currentStatus = storeActions.nodes ? storeActions.nodes().find(n => n.type === 'boss')?.data?.status : '';
+    const currentStatus = useTaskStore.getState().status;
     if (currentStatus && !['done', 'error', 'cancelled'].includes(currentStatus) && activeTaskId.current) {
       storeActions.addLog({
         message: 'Task is already running, cannot create new task',
@@ -625,9 +640,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
     waitForOpen().then(() => {
       // Only send data if this is a new task creation, not a reconnect
-      const isReconnect = activeTaskId.current !== null &&
-        currentStatus &&
-        ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(currentStatus);
+      const isReconnect = activeTaskId.current !== null && isActiveTaskStatus(currentStatus);
 
       if (!isReconnect) {
         // Reset API config error flag for new tasks

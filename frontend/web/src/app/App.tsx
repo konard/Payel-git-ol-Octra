@@ -17,6 +17,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import LandingPage from './components/LandingPage';
 
+const SHOW_STATUS_BAR = false;
+
 export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -94,7 +96,7 @@ export default function App() {
 
   // Иначе показываем приложение
   const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
-  const { connect, send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage, updateBossProgress);
+  const { send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage, updateBossProgress);
 
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
@@ -111,12 +113,6 @@ export default function App() {
     checkAuth();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      connect();
-    }
-  }, [isAuthenticated]);
-
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     setShowSubscriptionModal(true);
@@ -132,38 +128,22 @@ export default function App() {
       return;
     }
 
-    useTaskStore.getState().resetTask();
+    const store = useTaskStore.getState();
+    const hasUserDefinedWorkflow = store.nodes.some(node =>
+      !node.id.startsWith('boss-') &&
+      !node.id.startsWith('manager-') &&
+      !node.id.startsWith('worker-') &&
+      node.id !== 'zip-archive'
+    );
+    const workflow = hasUserDefinedWorkflow ? store.getWorkflow() : null;
+
+    store.resetTask();
 
     const tokenKey = data.provider === 'openrouter' ? 'openrouter'
       : data.provider === 'gemini' ? 'gemini'
       : data.provider === 'openai' ? 'openai'
       : data.provider === 'zai' ? 'zai'
       : 'claude';
-
-    // Get current workflow from canvas (user-created nodes and edges)
-    const { nodes, edges } = useTaskStore.getState();
-    const userNodes = nodes.filter(node =>
-      !node.id.startsWith('boss-') &&
-      !node.id.startsWith('manager-') &&
-      !node.id.startsWith('worker-') &&
-      node.id !== 'zip-archive'
-    );
-    const userEdges = edges.filter(edge =>
-      userNodes.some(node => node.id === edge.source || node.id === edge.target)
-    );
-
-    const workflow = userNodes.length > 0 ? {
-      useAiPlanning: false, // Use custom workflow
-      managers: userNodes.map(node => ({
-        role: node.role || 'Manager',
-        description: node.role || 'Custom manager',
-        priority: 1,
-        customPrompt: node.customPrompt || '', // Кастомный промт для менеджера
-        workers: [] // Workers will be created by AI based on manager role
-      })),
-      architecture: `Custom workflow with ${userNodes.length} managers`,
-      techStack: []
-    } : useTaskStore.getState().getWorkflow();
 
     send({
       username: 'user',
@@ -266,7 +246,7 @@ export default function App() {
         )}
       </ReactFlowProvider>
 
-      <StatusBar />
+      {SHOW_STATUS_BAR && <StatusBar />}
 
       <ConsolePanel />
 

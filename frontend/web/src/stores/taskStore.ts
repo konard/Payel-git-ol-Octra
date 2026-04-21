@@ -165,10 +165,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       !node.id.startsWith('worker-') &&
       node.id !== 'zip-archive'
     );
+    const userNodeIds = new Set(userNodes.map(node => node.id));
 
-    // Keep edges that connect user nodes
+    // Keep only edges fully inside the preserved user workflow
     const userEdges = state.edges.filter(edge =>
-      userNodes.some(node => node.id === edge.source || node.id === edge.target)
+      userNodeIds.has(edge.from) && userNodeIds.has(edge.to)
     );
 
     return {

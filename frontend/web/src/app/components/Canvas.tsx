@@ -12,7 +12,6 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type ReactFlowInstance,
-  type ReactFlowInstance,
   type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';

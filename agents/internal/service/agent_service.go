@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"agents/internal/fetcher/providers/claude"
+	"agents/internal/fetcher/providers/custom"
 	"agents/internal/fetcher/providers/deepseek"
 	"agents/internal/fetcher/providers/gemini"
 	"agents/internal/fetcher/providers/grok"
@@ -31,6 +32,26 @@ func NewAgentService() *AgentService {
 func (s *AgentService) RegisterProvider(name string, provider models.AIProvider) {
 	s.providers[name] = provider
 	log.Printf("✅ Registered AI provider: %s", name)
+}
+
+// RegisterCustomProvider registers a custom provider for a specific user
+func (s *AgentService) RegisterCustomProvider(userId, providerName string, config *models.ProviderConfig) error {
+	// Set base URL in tokens for custom provider
+	if config.Tokens == nil {
+		config.Tokens = make(map[string]interface{})
+	}
+	// Note: base_url should be set when creating the config
+
+	provider, err := custom.New(config)
+	if err != nil {
+		return fmt.Errorf("failed to create custom provider: %w", err)
+	}
+
+	// Use user-specific provider name to avoid conflicts
+	fullProviderName := fmt.Sprintf("custom-%s-%s", userId, providerName)
+	s.RegisterProvider(fullProviderName, provider)
+
+	return nil
 }
 
 // InitializeAllProviders initializes all providers from environment/config

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Star, Check } from 'lucide-react';
-import { PROVIDERS, ALL_MODELS, type ProviderModel } from '../../config/providers';
+import { X, Star, Check, Loader2 } from 'lucide-react';
+import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel } from '../../config/providers';
 import { t } from '../../hooks/useI18n';
 
 interface ModelSelectorProps {
@@ -21,13 +21,35 @@ export function ModelSelector({
   anchorRef,
 }: ModelSelectorProps) {
   const [search, setSearch] = useState('');
+  const [openRouterModels, setOpenRouterModels] = useState<ProviderModel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // OpenRouter — ВСЕ модели, остальные — только свои
+  // Загружаем модели OpenRouter при открытии селектора
+  useEffect(() => {
+    if (isOpen && selectedProvider === 'openrouter' && openRouterModels.length === 0) {
+      setLoading(true);
+      setError(null);
+
+      fetchOpenRouterModels()
+        .then((models) => {
+          setOpenRouterModels(models);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error('Failed to load OpenRouter models:', err);
+          setError('Failed to load models');
+          setLoading(false);
+        });
+    }
+  }, [isOpen, selectedProvider, openRouterModels.length]);
+
+  // OpenRouter — загруженные модели, остальные — только свои
   const provider = PROVIDERS.find((p) => p.id === selectedProvider);
   const displayModels = selectedProvider === 'openrouter'
-    ? ALL_MODELS.map((m) => ({ ...m, providerName: PROVIDERS.find((p) => p.id === m.providerId)?.name || '', providerColor: PROVIDERS.find((p) => p.id === m.providerId)?.color || '' }))
+    ? openRouterModels.map((m) => ({ ...m, providerName: PROVIDERS.find((p) => p.id === m.providerId)?.name || '', providerColor: PROVIDERS.find((p) => p.id === m.providerId)?.color || '' }))
     : provider
       ? provider.models.map((m) => ({ ...m, providerName: provider.name, providerColor: provider.color }))
       : [];
@@ -103,7 +125,14 @@ export function ModelSelector({
 
       {/* Models list */}
       <div ref={listRef} className="overflow-y-auto max-h-72 px-2 pb-2">
-        {filtered.length === 0 ? (
+        {selectedProvider === 'openrouter' && loading ? (
+          <div className="flex items-center justify-center py-6 text-[var(--text-muted)] text-sm">
+            <Loader2 size={16} className="animate-spin mr-2" />
+            Loading models...
+          </div>
+        ) : error ? (
+          <div className="text-center py-6 text-red-500 text-sm">{error}</div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-6 text-[var(--text-muted)] text-sm">{t('modelSelector.noResults')}</div>
         ) : (
           <div className="space-y-0.5">
@@ -137,6 +166,9 @@ export function ModelSelector({
                       <span className="text-sm text-[var(--text)] truncate">{model.name}</span>
                       {model.recommended && (
                         <Star size={12} className="text-[var(--accent)] flex-shrink-0" fill="currentColor" />
+                      )}
+                      {model.free && (
+                        <span className="text-xs bg-green-500/20 text-green-600 px-1.5 py-0.5 rounded-full">Free</span>
                       )}
                     </div>
                   </div>

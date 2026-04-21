@@ -4,10 +4,32 @@ const publicLangsDir = 'public/languages';
 
 const extraKeys = {
   settings: {
+    customProviders: 'Custom Providers',
     hideServerStatus: 'Hide server status',
     hideServerStatusHint: 'Hide the server connection status bar',
     hideConsole: 'Hide console',
     hideConsoleHint: 'Hide the console panel'
+  },
+  providers: {
+    title: 'Custom Providers',
+    description: 'Add your own AI providers to use in tasks',
+    newProvider: 'New Provider',
+    configured: 'Configured',
+    addCustomProvider: 'Add custom provider',
+    addNew: 'Add New',
+    collapse: 'Collapse',
+    expand: 'Expand',
+    edit: 'Edit',
+    delete: 'Delete',
+    add: 'Add',
+    name: 'Name',
+    namePlaceholder: 'My AI provider',
+    baseUrl: 'Base URL',
+    baseUrlHint: 'Provider API server URL (e.g.: https://api.example.com/v1)',
+    apiKey: 'API Key',
+    apiKeyPlaceholder: 'sk-...',
+    save: 'Save',
+    cancel: 'Cancel'
   },
   profile: {
     subscriptionEnd: 'Valid until',
@@ -44,12 +66,14 @@ const extraKeys = {
 
 const translations = {
   ru: {
-    settings: { hideServerStatus: 'Скрыть статус сервера', hideServerStatusHint: 'Скрыть строку состояния подключения сервера', hideConsole: 'Скрыть консоль', hideConsoleHint: 'Скрыть панель консоли' },
+    settings: { customProviders: 'Кастомные провайдеры', hideServerStatus: 'Скрыть статус сервера', hideServerStatusHint: 'Скрыть строку состояния подключения сервера', hideConsole: 'Скрыть консоль', hideConsoleHint: 'Скрыть панель консоли' },
+    providers: { title: 'Кастомные провайдеры', description: 'Добавляйте собственные AI провайдеры для использования в задачах', newProvider: 'Новый провайдер', configured: 'Настроен', addCustomProvider: 'Добавить кастомный провайдер', addNew: 'Добавить новый', collapse: 'Свернуть', expand: 'Развернуть', edit: 'Редактировать', delete: 'Удалить', add: 'Добавить', name: 'Название', namePlaceholder: 'Мой AI провайдер', baseUrl: 'Базовый URL', baseUrlHint: 'URL API сервера провайдера (например: https://api.example.com/v1)', apiKey: 'API ключ', apiKeyPlaceholder: 'sk-...', save: 'Сохранить', cancel: 'Отмена' },
     profile: { subscriptionEnd: 'Действительно до', noSubscription: 'Нет активной подписки', userId: 'ID пользователя', memberSince: 'Участник с', logout: 'Выйти' },
     auth: { login: 'Войти', register: 'Регистрация', loginTitle: 'Войти', registerTitle: 'Регистрация', close: 'Закрыть', emailRequired: 'Email обязателен', passwordRequired: 'Пароль обязателен', usernameRequired: 'Имя пользователя обязательно', invalidEmail: 'Неверный формат email', passwordMinLength: 'Пароль должен содержать минимум 6 символов', passwordsNotMatch: 'Пароли не совпадают', password: 'Пароль', enterPassword: 'Введите пароль', loggingIn: 'Вход...', username: 'Имя пользователя', yourName: 'Ваше имя', min6Chars: 'Мин. 6 символов', confirmPassword: 'Подтвердите пароль', repeatPassword: 'Повторите пароль', registering: 'Регистрация...', noAccount: 'Нет аккаунта?', hasAccount: 'Уже есть аккаунт?' }
   },
   ko: {
     settings: { hideServerStatus: '서버 상태 숨기기', hideServerStatusHint: '서버 연결 상태 표시줄 숨기기', hideConsole: '콘솔 숨기기', hideConsoleHint: '콘솔 패널 숨기기' },
+    providers: { newProvider: '새로운 제공자', configured: '구성됨', addCustomProvider: '사용자 정의 제공자 추가', collapse: '접기', expand: '펼치기', edit: '편집', delete: '삭제', add: '추가', name: '이름', namePlaceholder: '내 AI 제공자', baseUrl: '기본 URL', baseUrlHint: '제공자 API 서버 URL (예: https://api.example.com/v1)', apiKey: 'API 키', apiKeyPlaceholder: 'sk-...', save: '저장', cancel: '취소' },
     profile: { subscriptionEnd: '유효 기간', noSubscription: '활성 구독 없음', userId: '사용자 ID', memberSince: '등록일', logout: '로그아웃' },
     auth: { login: '로그인', register: '회원가입', loginTitle: '로그인', registerTitle: '회원가입', close: '닫기', emailRequired: '이메일은 필수입니다', passwordRequired: '비밀번호는 필수입니다', usernameRequired: '사용자 이름은 필수입니다', invalidEmail: '이메일 형식이 잘못되었습니다', passwordMinLength: '비밀번호는 최소 6자 이상이어야 합니다', passwordsNotMatch: '비밀번호가 일치하지 않습니다', password: '비밀번호', enterPassword: '비밀번호 입력', loggingIn: '로그인 중...', username: '사용자 이름', yourName: '이름', min6Chars: '최소 6자', confirmPassword: '비밀번호 확인', repeatPassword: '비밀번호 재입력', registering: '가입 중...', noAccount: '계정이 없으신가요?', hasAccount: '이미 계정이 있으신가요?' }
   },
@@ -98,12 +122,24 @@ files.forEach(f => {
   const destPath = langsDir + '/' + f;
   const data = JSON.parse(fs.readFileSync(srcPath, 'utf8'));
   
+  // Ensure settings has all required keys from extraKeys first
+  Object.assign(data.settings, extraKeys.settings);
+
   // Apply language-specific overrides
   const lang = f.replace('.json', '');
   if (translations[lang]) {
     Object.assign(data.settings, translations[lang].settings);
+    if (translations[lang].providers) {
+      if (!data.providers) data.providers = {};
+      Object.assign(data.providers, translations[lang].providers);
+    }
     Object.assign(data.profile, translations[lang].profile);
     data.auth = translations[lang].auth;
+  }
+
+  // Ensure providers section exists with defaults
+  if (!data.providers) {
+    data.providers = { ...extraKeys.providers };
   }
   
   fs.writeFileSync(destPath, JSON.stringify(data, null, 2), 'utf8');

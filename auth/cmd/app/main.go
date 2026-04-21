@@ -62,8 +62,12 @@ func AuthMiddleware() gin.HandlerFunc {
 
 func main() {
 	database.InitDb()
-	database.Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{}, &models.Workflow{})
+	database.Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{}, &models.Workflow{}, &models.CustomProvider{})
 	services.InitDefaultPromoCodes()
+
+	// Initialize services
+	customProviderService := services.NewCustomProviderService(database.Db)
+
 	r := gin.Default()
 
 	// CORS Middleware
@@ -610,6 +614,126 @@ func main() {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Workflow deleted successfully",
+		})
+	})
+
+	// ==================== CUSTOM PROVIDERS ENDPOINTS ====================
+
+	// GET /custom-providers - Get user's custom providers
+	r.GET("/custom-providers", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+
+		providers, err := customProviderService.GetUserCustomProviders(userID)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"data":   providers,
+		})
+	})
+
+	// POST /custom-providers - Create a new custom provider
+	r.POST("/custom-providers", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+
+		var req requests.CreateCustomProviderRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body: " + err.Error(),
+			})
+			return
+		}
+
+		provider, err := customProviderService.CreateCustomProvider(userID, req)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(201, gin.H{
+			"status": "ok",
+			"data":   provider,
+		})
+	})
+
+	// PUT /custom-providers/:id - Update a custom provider
+	r.PUT("/custom-providers/:id", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+		providerID, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid provider ID",
+			})
+			return
+		}
+
+		var req requests.UpdateCustomProviderRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body: " + err.Error(),
+			})
+			return
+		}
+
+		provider, err := customProviderService.UpdateCustomProvider(userID, providerID, req)
+		if err != nil {
+			status := 500
+			if err.Error() == "custom provider not found" {
+				status = 404
+			}
+			c.JSON(status, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"data":   provider,
+		})
+	})
+
+	// DELETE /custom-providers/:id - Delete a custom provider
+	r.DELETE("/custom-providers/:id", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+		providerID, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid provider ID",
+			})
+			return
+		}
+
+		err = customProviderService.DeleteCustomProvider(userID, providerID)
+		if err != nil {
+			status := 500
+			if err.Error() == "custom provider not found" {
+				status = 404
+			}
+			c.JSON(status, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "Custom provider deleted successfully",
 		})
 	})
 
