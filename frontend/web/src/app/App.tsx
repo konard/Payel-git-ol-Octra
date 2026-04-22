@@ -15,6 +15,7 @@ import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
+import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import LandingPage from './components/LandingPage';
 
 const SHOW_STATUS_BAR = false;
@@ -139,26 +140,43 @@ export default function App() {
 
     store.resetTask();
 
-    const tokenKey = data.provider === 'openrouter' ? 'openrouter'
-      : data.provider === 'gemini' ? 'gemini'
-      : data.provider === 'openai' ? 'openai'
-      : data.provider === 'zai' ? 'zai'
-      : 'claude';
+    // Check if this is a custom provider
+    const customProviders = useCustomProvidersStore.getState().providers;
+    const customProvider = customProviders.find(p => p.id === data.provider);
 
-    send({
+    let taskPayload: any = {
       username: 'user',
       title: data.title,
       description: data.description,
-      tokens: {
-        [tokenKey]: data.apiKey,
-      },
       meta: {
-        provider: data.provider,
         model: data.model,
       },
       ...(workflow && { workflow }),
-    });
+    };
 
+    if (customProvider) {
+      // For custom providers, send base_url in tokens for the custom provider
+      taskPayload.meta.provider = 'ollama';
+      taskPayload.tokens = {
+        ollama: data.apiKey,
+        base_url: customProvider.base_url,
+      };
+    } else {
+      // For standard providers, use existing logic
+      const tokenKey = data.provider === 'openrouter' ? 'openrouter'
+        : data.provider === 'gemini' ? 'gemini'
+        : data.provider === 'openai' ? 'openai'
+        : data.provider === 'zai' ? 'zai'
+        : 'claude';
+
+      taskPayload.tokens = {
+        [tokenKey]: data.apiKey,
+      };
+      taskPayload.meta.provider = data.provider;
+    }
+
+    console.log('Sending task payload:', JSON.stringify(taskPayload, null, 2));
+    send(taskPayload);
     useTaskStore.getState().setStartTime(Date.now());
   };
 

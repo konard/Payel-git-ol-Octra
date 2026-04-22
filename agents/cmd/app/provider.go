@@ -2,6 +2,7 @@ package main
 
 import (
 	"agents/internal/fetcher/providers/claude"
+	"agents/internal/fetcher/providers/custom"
 	"agents/internal/fetcher/providers/deepseek"
 	"agents/internal/fetcher/providers/gemini"
 	"agents/internal/fetcher/providers/grok"
@@ -11,6 +12,7 @@ import (
 	"agents/internal/fetcher/providers/zai"
 	"agents/internal/service"
 	"agents/pkg/models"
+	"log"
 )
 
 func InitProvider(providers map[string]*models.ProviderConfig, agentService *service.AgentService) {
@@ -37,5 +39,10 @@ func InitProvider(providers map[string]*models.ProviderConfig, agentService *ser
 	}
 	if p, err := zai.New(providers["zai"]); err == nil {
 		agentService.RegisterProvider("zai", p)
+	}
+	if p, err := custom.New(providers["ollama"]); err == nil {
+		agentService.RegisterProvider("ollama", p)
+	} else {
+		log.Printf("❌ Failed to initialize ollama provider: %v", err)
 	}
 }

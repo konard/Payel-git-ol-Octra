@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"agents/pkg/models"
@@ -32,6 +33,9 @@ func New(config *models.ProviderConfig) (*CustomProvider, error) {
 
 // Generate generates content using custom provider
 func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map[string]interface{}) (string, error) {
+	log.Printf("Custom provider Generate called with tokens: %+v", tokens)
+	log.Printf("Tokens type: %T", tokens)
+
 	// Extract API key from tokens
 	apiKey := extractAPIKey(tokens)
 	if apiKey == "" && p.config.APIKey != "" {
@@ -42,14 +46,21 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 	}
 
 	// Prepare request body (OpenAI-compatible format)
-	// Model, max_tokens and temperature will be provided by the main application
+	// Get model from tokens or use default
+	model := "llama3.2"
+	if m, ok := tokens["model"].(string); ok && m != "" {
+		model = m
+	}
+
 	requestBody := map[string]interface{}{
+		"model": model,
 		"messages": []map[string]interface{}{
 			{
 				"role":    "user",
 				"content": prompt,
 			},
 		},
+		"stream": false,
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -57,18 +68,34 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Get base URL from config Tokens
+	// Get base URL from tokens (passed from frontend)
 	baseURL := ""
-	if p.config.Tokens != nil {
+	if urlVal, ok := tokens["base_url"].(string); ok {
+		baseURL = urlVal
+		log.Printf("Using base_url from tokens: %s", baseURL)
+	} else if p.config.Tokens != nil {
 		if urlVal, ok := p.config.Tokens["base_url"].(string); ok {
 			baseURL = urlVal
+			log.Printf("Using base_url from config: %s", baseURL)
+		}
+	}
+
+	// Replace localhost/127.0.0.1 with host.docker.internal for Docker containers
+	if baseURL != "" {
+		if strings.Contains(baseURL, "127.0.0.1") || strings.Contains(baseURL, "localhost") {
+			oldURL := baseURL
+			baseURL = strings.ReplaceAll(baseURL, "127.0.0.1", "host.docker.internal")
+			baseURL = strings.ReplaceAll(baseURL, "localhost", "host.docker.internal")
+			log.Printf("Replaced base_url for Docker: %s -> %s", oldURL, baseURL)
 		}
 	}
 	if baseURL == "" {
+		log.Printf("Available tokens: %+v", tokens)
+		log.Printf("Config tokens: %+v", p.config.Tokens)
 		return "", fmt.Errorf("Custom provider base URL not configured")
 	}
 
-	url := fmt.Sprintf("%s/chat/completions", baseURL)
+	url := fmt.Sprintf("%s/v1/chat/completions", baseURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -128,16 +155,16 @@ func (p *CustomProvider) IsConfigured() bool {
 
 func extractAPIKey(tokens map[string]interface{}) string {
 	// Try common key names
-	for _, key := range []string{"api_key", "apiKey", "token", "key"} {
+	for _, key := range []string{"api_key", "apiKey", "token", "key", "ollama"} {
 		if v, ok := tokens[key]; ok {
-			if s, ok := v.(string); ok && len(s) > 10 {
+			if s, ok := v.(string); ok && len(s) > 0 {
 				return s
 			}
 		}
 	}
-	// Fallback: first string value that looks like a key
+	// Fallback: first string value
 	for _, v := range tokens {
-		if s, ok := v.(string); ok && len(s) > 10 {
+		if s, ok := v.(string); ok && len(s) > 0 {
 			return s
 		}
 	}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2 } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
@@ -17,7 +17,87 @@ import telegramIcon from '../../images/Telegram.webp';
 import n8nIcon from '../../images/n8n-color.png';
 import crewaiMascot from '../../images/crewai-mascot.png';
 
-type SettingsTab = 'api' | 'custom-providers' | 'language' | 'appearance' | 'visibility' | 'integrations';
+type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations';
+
+// Add Model Form Component
+function AddModelForm({ onSave, onCancel, providers }: {
+  onSave: (model: { name: string; provider_id?: string }) => void;
+  onCancel: () => void;
+  providers: CustomProvider[];
+}) {
+  const { t } = useI18n();
+  const [formData, setFormData] = useState({
+    name: '',
+    providerId: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+
+    onSave({
+      name: formData.name.trim(),
+      provider_id: formData.providerId || undefined,
+    });
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-[var(--text)] mb-2">
+          {t('models.name')}
+        </label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => handleInputChange('name', e.target.value)}
+          className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+          placeholder={t('models.namePlaceholder') || 'Например: gpt-4, minimax-m2.7:cloud'}
+          autoFocus
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-[var(--text)] mb-2">
+          {t('models.provider')} ({t('common.optional')})
+        </label>
+        <select
+          value={formData.providerId}
+          onChange={(e) => handleInputChange('providerId', e.target.value)}
+          className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+        >
+          <option value="">{t('models.noProvider')}</option>
+          {providers.map((provider) => (
+            <option key={provider.id} value={provider.id}>
+              {provider.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        <button
+          type="submit"
+          disabled={!formData.name.trim()}
+          className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+        >
+          {t('models.save')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-md transition-colors"
+        >
+          {t('models.cancel')}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 interface SettingsSection {
   id: SettingsTab;
@@ -28,6 +108,7 @@ interface SettingsSection {
 const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'api', labelKey: 'settings.apiTokens', icon: Key },
   { id: 'custom-providers', labelKey: 'settings.customProviders', icon: Puzzle },
+  { id: 'custom-models', labelKey: 'settings.customModels', icon: Puzzle },
   { id: 'language', labelKey: 'settings.language', icon: Languages },
   { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   { id: 'visibility', labelKey: 'settings.interface', icon: Eye },
@@ -63,8 +144,9 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
    const [showProfileMenu, setShowProfileMenu] = useState(false);
    const [showUserProfile, setShowUserProfile] = useState(false);
 
-   // Custom providers state
-   const { providers: customProviders, addProvider, updateProvider, deleteProvider } = useCustomProvidersStore();
+    // Custom providers state
+    const { providers: customProviders, models: customModels, addProvider, updateProvider, deleteProvider, addModel, updateModel, deleteModel } = useCustomProvidersStore();
+    const [showAddModel, setShowAddModel] = useState(false);
    const [showAddProvider, setShowAddProvider] = useState(false);
    const [editingProvider, setEditingProvider] = useState<string | null>(null);
   
@@ -81,24 +163,43 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
     }
   }, [showSettings]);
 
-  // Load custom providers on mount
+  // Load custom providers and models on mount
   useEffect(() => {
-    const loadCustomProviders = async () => {
-      if (!isAuthenticated) return;
+    console.log('TopBar useEffect - isAuthenticated:', isAuthenticated);
+    const loadCustomData = async () => {
+      if (!isAuthenticated) {
+        console.log('User not authenticated, skipping API calls');
+        return;
+      }
 
       try {
-        const providers = await customProviderService.getUserCustomProviders();
-        // Clear existing providers and add loaded ones
-        // Note: In a real app, you'd want to sync this properly
-        // For now, we'll just log them
-        console.log('Loaded custom providers:', providers);
+        const [providers, models] = await Promise.all([
+          customProviderService.getUserCustomProviders(),
+          customProviderService.getUserCustomModels()
+        ]);
+
+        console.log('API returned providers:', providers.length, 'models:', models.length);
+
+        // Sync providers to store
+        providers.forEach(provider => {
+          if (!customProviders.find(p => p.id === provider.id)) {
+            addProvider(provider);
+          }
+        });
+
+        // Sync models to store
+        models.forEach(model => {
+          if (!customModels.find(m => m.id === model.id)) {
+            addModel(model);
+          }
+        });
       } catch (error) {
-        console.error('Failed to load custom providers:', error);
+        console.warn('API not available, using local store only:', error.message);
       }
     };
 
-    loadCustomProviders();
-  }, [isAuthenticated]);
+    loadCustomData();
+  }, [isAuthenticated]); // Remove customProviders and customModels from dependencies to prevent infinite loop
 
   const handleOpenSettings = () => {
     setActiveTab('api');
@@ -302,20 +403,25 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                        </div>
                      </div>
 
-                     {/* Existing providers */}
-                     {customProviders.map((provider) => (
-                       <CustomProviderCard
-                         key={provider.id}
-                         provider={provider}
-                         onSave={(updates) => {
-                           updateProvider(provider.id, updates);
-                           setEditingProvider(null);
-                         }}
-                         onCancel={() => setEditingProvider(null)}
-                         onEdit={() => setEditingProvider(provider.id)}
-                         onDelete={() => deleteProvider(provider.id)}
-                       />
-                     ))}
+                      {/* Existing providers */}
+                      {customProviders.map((provider) => (
+                        <CustomProviderCard
+                          key={provider.id}
+                          provider={provider}
+                          isEditing={editingProvider === provider.id}
+                          onSave={(updates) => {
+                            updateProvider(provider.id, updates);
+                            setEditingProvider(null);
+                          }}
+                          onCancel={() => setEditingProvider(null)}
+                          onEdit={() => {
+                            console.log('Edit clicked for provider:', provider.id);
+                            setEditingProvider(provider.id);
+                            console.log('editingProvider set to:', provider.id);
+                          }}
+                          onDelete={() => deleteProvider(provider.id)}
+                        />
+                      ))}
 
                      {/* Add new provider */}
                      {showAddProvider && (
@@ -339,10 +445,84 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                          {t('providers.addNew')}
                        </button>
                      )}
-                   </div>
-                 )}
+                    </div>
+                  )}
 
-                 {activeTab === 'language' && (
+                  {activeTab === 'custom-models' && (
+                    <div className="space-y-4 max-w-lg">
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text)] mb-1">{t('models.title')}</div>
+                        <div className="text-xs text-[var(--text-muted)] mb-4">
+                          {t('models.description')}
+                        </div>
+                      </div>
+
+                       {/* Existing models */}
+                       {customModels.map((model) => (
+                         <div key={model.id} className="flex items-center gap-3 p-3 bg-[var(--background)] border border-[var(--border)] rounded-lg">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--text)]">{model.name}</div>
+                            {model.provider_id && (
+                              <div className="text-xs text-[var(--text-muted)]">
+                                Provider: {customProviders.find(p => p.id === model.provider_id)?.name || 'Unknown'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const newName = prompt('Enter new model name:', model.name);
+                                if (newName && newName.trim() && newName.trim() !== model.name) {
+                                  updateModel(model.id, { name: newName.trim() });
+                                  // Try to update on API if authenticated
+                                  if (isAuthenticated) {
+                                    customProviderService.updateCustomModel(model.id, { name: newName.trim() })
+                                      .catch(error => console.warn('API update failed:', error));
+                                  }
+                                }
+                              }}
+                              className="p-1 hover:bg-[var(--surface)] rounded-md transition-colors text-[var(--text-muted)]"
+                              title="Edit"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                // Always update local store first
+                                deleteModel(model.id);
+
+                                // Then try to delete from API if authenticated
+                                if (isAuthenticated) {
+                                  try {
+                                    await customProviderService.deleteCustomModel(model.id);
+                                  } catch (error) {
+                                    console.warn('API not available, deleted locally only');
+                                  }
+                                } else {
+                                  console.log('User not authenticated, deleted locally only');
+                                }
+                              }}
+                              className="p-1 hover:bg-red-500/20 rounded-md transition-colors text-red-500"
+                              title={t('models.delete')}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add new model */}
+                      <button
+                        onClick={() => setShowAddModel(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                      >
+                        <Plus size={16} />
+                        {t('models.addNew')}
+                      </button>
+                    </div>
+                  )}
+
+                  {activeTab === 'language' && (
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm font-medium text-[var(--text)] mb-1">{t('settings.interfaceLanguage')}</div>
@@ -500,6 +680,60 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Model Modal */}
+      {showAddModel && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowAddModel(false)}
+        >
+          <div
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl w-[400px] max-w-[95vw] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[var(--text)]">{t('models.addNew')}</h3>
+              <button
+                onClick={() => setShowAddModel(false)}
+                className="p-1 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text-muted)]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <AddModelForm
+              onSave={async (modelData) => {
+                console.log('Saving model to API:', modelData, 'isAuthenticated:', isAuthenticated);
+                // Save locally first
+                addModel(modelData);
+
+                // Only try API if user is authenticated
+                if (isAuthenticated) {
+                  // Convert provider_id to proper format for API
+                  const apiData = {
+                    name: modelData.name,
+                    provider_id: modelData.provider_id ? modelData.provider_id : null
+                  };
+
+                  // Then try to save to API
+                  try {
+                    const result = await customProviderService.createCustomModel(apiData);
+                    console.log('API response:', result);
+                  } catch (error) {
+                    console.warn('API not available, saved locally only:', error);
+                  }
+                } else {
+                  console.log('User not authenticated, saved locally only');
+                }
+
+                setShowAddModel(false);
+              }}
+              onCancel={() => setShowAddModel(false)}
+              providers={customProviders}
+            />
           </div>
         </div>
       )}

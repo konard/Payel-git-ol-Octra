@@ -23,6 +23,7 @@ func main() {
 		"openrouter": {Model: "qwen/qwen3-coder"},
 		"qwen":       {Model: "qwen-turbo"},
 		"zai":        {Model: "glm-4.5-air"},
+		"ollama":     {Model: "llama3.2"}, // Default model, will be overridden
 	}
 
 	// Initialize and register each provider

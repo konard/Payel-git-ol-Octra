@@ -5,6 +5,7 @@ import (
 	"auth/pkg/database"
 	"auth/pkg/models"
 	"auth/pkg/requests"
+	"fmt"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -62,7 +63,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 func main() {
 	database.InitDb()
-	database.Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{}, &models.Workflow{}, &models.CustomProvider{})
+	database.Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{}, &models.Workflow{}, &models.CustomProvider{}, &models.CustomModel{})
 	services.InitDefaultPromoCodes()
 
 	// Initialize services
@@ -103,11 +104,6 @@ func main() {
 		}
 
 		c.Next()
-	})
-
-	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
 	})
 
 	// POST /register - Register new user
@@ -268,19 +264,134 @@ func main() {
 	r.POST("/logout", func(c *gin.Context) {
 		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 		c.SetCookie("access_token", "", -1, "/", "", false, true)
+		c.JSON(200, gin.H{"status": "ok", "message": "Logged out successfully"})
+	})
+
+	// Custom Models routes
+	// GET /custom-models - Get user's custom models
+	r.GET("/custom-models", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+
+		models, err := customProviderService.GetUserCustomModels(userID)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
 
 		c.JSON(200, gin.H{
-			"status":  "ok",
-			"message": "Logged out successfully",
+			"status": "success",
+			"data":   models,
 		})
 	})
 
-	// GET /plans - Get subscription plans
-	r.GET("/plans", func(c *gin.Context) {
-		plans := services.GetSubscriptionPlans()
+	// POST /custom-models - Create a new custom model
+	r.POST("/custom-models", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+
+		var req requests.CreateCustomModelRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body: " + err.Error(),
+			})
+			return
+		}
+
+		// Debug log
+		fmt.Printf("CreateCustomModel request: %+v\n", req)
+
+		model, err := customProviderService.CreateCustomModel(userID, req)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(201, gin.H{
+			"status": "success",
+			"data":   model,
+		})
+	})
+
+	// PUT /custom-models/:id - Update a custom model
+	r.PUT("/custom-models/:id", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+		modelID, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid model ID",
+			})
+			return
+		}
+
+		var req requests.UpdateCustomModelRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid request body",
+			})
+			return
+		}
+
+		model, err := customProviderService.UpdateCustomModel(userID, modelID, req)
+		if err != nil {
+			status := 500
+			if err.Error() == "custom model not found" {
+				status = 404
+			}
+			c.JSON(status, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "success",
+			"data":   model,
+		})
+	})
+
+	// DELETE /custom-models/:id - Delete a custom model
+	r.DELETE("/custom-models/:id", AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(uuid.UUID)
+		modelID, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status": "error",
+				"error":  "Invalid model ID",
+			})
+			return
+		}
+
+		err = customProviderService.DeleteCustomModel(userID, modelID)
+		if err != nil {
+			status := 500
+			if err.Error() == "custom model not found" {
+				status = 404
+			}
+			c.JSON(status, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "success",
+		})
+	})
+
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "ok",
-			"data":   plans,
 		})
 	})
 

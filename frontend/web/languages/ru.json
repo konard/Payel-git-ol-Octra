@@ -303,7 +303,27 @@
     "baseUrlHint": "URL API сервера провайдера (например: https://api.example.com/v1)",
     "apiKey": "API ключ",
     "apiKeyPlaceholder": "sk-...",
-    "save": "Сохранить",
-    "cancel": "Отмена"
-  }
+     "save": "Сохранить",
+     "cancel": "Отмена",
+     "requiresApiKey": "API ключ не нужен",
+     "requiresApiKeyHint": "Отключите если провайдер не требует API ключа (например, локальный Ollama)",
+     "noApiKeyRequired": "API ключ не требуется",
+     "localNote": "Локальный сервис - API ключ не требуется"
+   },
+   "models": {
+     "title": "Кастомные модели",
+     "description": "Добавляйте и управляйте своими AI моделями",
+     "addNew": "Добавить модель",
+     "name": "Название модели",
+     "namePlaceholder": "Например: gpt-4, minimax-m2.7:cloud",
+     "provider": "Провайдер",
+     "noProvider": "Без провайдера",
+     "save": "Сохранить",
+     "cancel": "Отмена",
+     "delete": "Удалить",
+     "confirmDelete": "Вы уверены, что хотите удалить эту модель?"
+   },
+   "common": {
+     "optional": "необязательно"
+   }
 }

@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS, getProviderById } from '../../config/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useCustomProvidersStore } from '../../stores/customProvidersStore';
 import { t } from '../../hooks/useI18n';
 
 interface BottomInputProps {
@@ -32,6 +33,41 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   const defaultModel = useSettingsStore((state) => state.defaultModel);
   const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
   const setDefaultModel = useSettingsStore((state) => state.setDefaultModel);
+
+  // Custom providers
+  const { providers: customProviders, models: customModels } = useCustomProvidersStore();
+
+  // Combined providers list (static + custom)
+  const allProviders = useMemo(() => {
+    const combined = [...PROVIDERS];
+
+    // Add custom providers with their models
+    customProviders.forEach(customProvider => {
+      const customProviderWithModels = {
+        id: customProvider.id,
+        name: customProvider.name,
+        color: '#8b5cf6', // Purple color for custom providers
+        bgColor: 'rgba(139, 92, 246, 0.15)',
+        icon: '', // Custom providers don't have specific icons
+        description: `Custom provider: ${customProvider.base_url}`,
+        defaultModel: customModels.find(m => m.provider_id === customProvider.id)?.name || '',
+        pricing: 'Custom',
+        models: customModels
+          .filter(model => model.provider_id === customProvider.id)
+          .map(model => ({
+            id: model.name, // Use model name as ID since custom models don't have standard IDs
+            name: model.name,
+            icon: '', // Custom models don't have specific icons
+            free: false,
+            recommended: false,
+            providerId: customProvider.id,
+          }))
+      };
+      combined.push(customProviderWithModels);
+    });
+
+    return combined;
+  }, [customProviders, customModels]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -76,7 +112,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   };
 
   const handleProviderSelect = useCallback((providerId: string) => {
-    const provider = getProviderById(providerId);
+    const provider = allProviders.find(p => p.id === providerId);
     if (provider) {
       setFormData((prev) => ({ ...prev, provider: providerId, model: provider.defaultModel }));
       setDefaultProvider(providerId);
@@ -90,7 +126,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
     setDefaultModel(modelId);
   }, [setDefaultModel]);
 
-  const selectedProvider = getProviderById(formData.provider);
+  const selectedProvider = allProviders.find(p => p.id === formData.provider);
 
   return (
     <div className="bg-[var(--surface)] border-t border-[var(--border)]">
@@ -135,7 +171,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
               {showProviderDropdown && (
                 <div className="absolute bottom-full left-0 right-0 mb-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden z-20">
                   <div className="p-2 max-h-64 overflow-y-auto">
-                    {PROVIDERS.map((provider) => (
+                     {allProviders.map((provider) => (
                       <button
                         key={provider.id}
                         type="button"
@@ -183,6 +219,8 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
               <ModelSelector
                 selectedProvider={formData.provider}
                 selectedModel={formData.model}
+                providers={allProviders}
+                customModels={customModels}
                 onSelect={handleModelSelect}
                 isOpen={showModelSelector}
                 onClose={() => setShowModelSelector(false)}

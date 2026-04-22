@@ -172,13 +172,26 @@ func handleTaskCreateWS(c *gin.Context) {
 func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskRequest) {
 	defer conn.Close()
 
+	// Convert Meta from map[string]interface{} to map[string]string
+	meta := make(map[string]string)
+	for k, v := range taskReq.Meta {
+		if s, ok := v.(string); ok {
+			meta[k] = s
+		} else {
+			// Convert to JSON string for complex values
+			if jsonBytes, err := json.Marshal(v); err == nil {
+				meta[k] = string(jsonBytes)
+			}
+		}
+	}
+
 	grpcReq := &bosspb.CreateTaskRequest{
 		UserId:      taskReq.UserID,
 		Username:    taskReq.Username,
 		Title:       taskReq.Title,
 		Description: taskReq.Description,
 		Tokens:      taskReq.Tokens,
-		Meta:        taskReq.Meta,
+		Meta:        meta,
 	}
 
 	// Add predefined workflow if provided

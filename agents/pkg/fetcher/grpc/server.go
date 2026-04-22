@@ -27,11 +27,13 @@ func NewServer(s *service.AgentService) *Server {
 
 // Generate implements the Generate RPC
 func (s *Server) Generate(ctx context.Context, req *pb.GenerateRequest) (*pb.GenerateResponse, error) {
+	log.Printf("Generate RPC called: provider=%s, model=%s, tokens=%+v", req.Provider, req.Model, req.Tokens)
 	// Convert gRPC request to internal format
 	tokens := make(map[string]interface{})
 	for k, v := range req.Tokens {
 		tokens[k] = v
 	}
+	log.Printf("Converted tokens: %+v", tokens)
 
 	// Call agent service
 	resp, err := s.service.Generate(ctx, &models.AgentRequest{

@@ -561,7 +561,13 @@ If it's a proxy/API: Go, gorilla/mux, etc.
 Always include only the technologies that are genuinely required.`
 
 	log.Printf("Sending request to AI...")
-	resp, err := agentsClient.GenerateFromTask(ctx, provider, model, prompt, req.Tokens)
+	// Add model to tokens for custom providers
+	taskTokens := req.Tokens
+	if taskTokens == nil {
+		taskTokens = make(map[string]string)
+	}
+	taskTokens["model"] = model
+	resp, err := agentsClient.GenerateFromTask(ctx, provider, model, prompt, taskTokens)
 	if err != nil {
 		log.Printf("AI error: %v", err)
 		return nil, err

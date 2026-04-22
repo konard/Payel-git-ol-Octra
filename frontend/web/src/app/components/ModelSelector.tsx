@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Star, Check, Loader2 } from 'lucide-react';
-import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel } from '../../config/providers';
+import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel, type ProviderConfig } from '../../config/providers';
+import { useCustomProvidersStore, type CustomModel } from '../../stores/customProvidersStore';
 import { t } from '../../hooks/useI18n';
 
 interface ModelSelectorProps {
   selectedProvider: string;
   selectedModel: string;
+  providers: ProviderConfig[];
+  customModels?: CustomModel[];
   onSelect: (modelId: string) => void;
   isOpen: boolean;
   onClose: () => void;
@@ -15,6 +18,8 @@ interface ModelSelectorProps {
 export function ModelSelector({
   selectedProvider,
   selectedModel,
+  providers,
+  customModels = [],
   onSelect,
   isOpen,
   onClose,
@@ -46,15 +51,35 @@ export function ModelSelector({
     }
   }, [isOpen, selectedProvider, openRouterModels.length]);
 
-  // OpenRouter — загруженные модели, остальные — только свои
-  const provider = PROVIDERS.find((p) => p.id === selectedProvider);
-  const displayModels = selectedProvider === 'openrouter'
-    ? openRouterModels.map((m) => ({ ...m, providerName: PROVIDERS.find((p) => p.id === m.providerId)?.name || '', providerColor: PROVIDERS.find((p) => p.id === m.providerId)?.color || '' }))
-    : provider
-      ? provider.models.map((m) => ({ ...m, providerName: provider.name, providerColor: provider.color }))
-      : [];
+  // OpenRouter — загруженные модели, остальные — только свои + custom models
+  const provider = providers.find((p) => p.id === selectedProvider);
+  let displayModels: any[] = [];
+
+  if (selectedProvider === 'openrouter') {
+    displayModels = openRouterModels.map((m) => ({ ...m, providerName: PROVIDERS.find((p) => p.id === m.providerId)?.name || '', providerColor: PROVIDERS.find((p) => p.id === m.providerId)?.color || '' }));
+  } else if (provider) {
+    displayModels = provider.models.map((m) => ({ ...m, providerName: provider.name, providerColor: provider.color }));
+  }
+
+  // Add all custom models (they can be used with any provider)
+  const customModelsForProvider = customModels
+    .filter(model => model && model.name && model.id) // Filter out invalid models
+    .map(model => ({
+      id: model.name,
+      name: model.name,
+      icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0VjE2QzE0IDE3LjEgMTMuMSAxOCA5IDE4QzQuOSAxOCA0IDE3LjEgNCAxNlY0QzQgMi45IDQuOSAyIDYgMkg5QzEwLjEgMiAxMSAyLjkgMTEgNFYxNkMxMSAxNi4yNyAxMS4wMiAxNi41MyAxMC45IDE2LDEwLjUgMTYuNUMxMC4yMyAxNi41IDEwIDE2LjI3IDEwIDE2VjRDMTAgMy43MyAxMC4yNyAzLjUgMTAuNSAzLjVDMTAuNzMgMy41IDExIDMuNzMgMTEgNFYxNkMxMSAxNy4xIDEwLjEgMTggOSAxOEM3LjkgMTggNyAxNy4xIDcgMTZWMUM3IDAuNzMgNy4yNyAwLjUgNy41IDAuNUM3LjczIDAuNSA4IDAuNzMgOCAxbjAuMjcgMC41IDAuNSAwLjc1IDAuNzUgMC43NWMwLjI3IDAgMC41LTAuMjMgMC43NS0wLjVDMC43My0wLjUgMS0wLjczIDEtMUMxLTAuNzMgMS4yNy0wLjUgMS41LTAuNUMxLjczLTAuNSAyLTAuNzMgMi0xVjE2QzIgMTcuMSAyLjkgMTggNCAxOEg5QzEwLjEgMTggMTEgMTcuMSAxMSAxNlY0QzExIDIuOSAxMS4xIDIgMTIgMlpNMTIgMTJDMTIgMTMuMSAxMS4xIDE0IDEwIDE0QzguOSAxNCA4IDEzLjEgOCA5QzggNy45IDguOSAxMCAxMCAxMEMxMS4xIDEwIDEyIDEwLjkgMTIgMTJaIiBmaWxsPSIjNjM2NmYxIi8+Cjwvc3ZnPgo=', // Custom model icon (purple puzzle piece)
+      free: false,
+      recommended: false,
+      providerId: model.provider_id || 'custom',
+      providerName: model.provider_id ? (providers.find(p => p.id === model.provider_id)?.name || 'Custom Provider') : 'Custom Model',
+      providerColor: '#6366f1', // Default custom color
+    }));
+
+  displayModels = [...displayModels, ...customModelsForProvider];
 
   const filtered = displayModels.filter((m) => {
+    // Skip models without name or id
+    if (!m || !m.name || !m.id) return false;
     if (!search) return true;
     const s = search.toLowerCase();
     return m.name.toLowerCase().includes(s) || m.id.toLowerCase().includes(s);
