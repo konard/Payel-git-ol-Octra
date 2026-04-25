@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI Agents Bedrijf"
   },
+  "common": {
+    "close": "Sluiten"
+  },
   "topbar": {
     "download": "Downloaden",
     "settings": "Instellingen",
@@ -295,6 +298,15 @@
     "registering": "Registreren...",
     "noAccount": "Geen account?",
     "hasAccount": "Al een account?"
+  },
+  "chatSidebar": {
+    "history": "Geschiedenis",
+    "newChat": "Nieuwe chat",
+    "noChats": "Geen chats",
+    "rename": "Naam wijzigen",
+    "delete": "Verwijderen",
+    "thisMonth": "Deze maand",
+    "lastMonth": "Vorige maand"
   },
   "providers": {
     "title": "Custom Providers",

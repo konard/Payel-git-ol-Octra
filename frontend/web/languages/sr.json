@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Компанија ВИ Агената"
   },
+  "common": {
+    "close": "Затвори"
+  },
   "topbar": {
     "download": "Преузми",
     "settings": "Подешавања",
@@ -295,6 +298,15 @@
     "registering": "Регистрација...",
     "noAccount": "Немате налог?",
     "hasAccount": "Већ имате налог?"
+  },
+  "chatSidebar": {
+    "history": "Историја",
+    "newChat": "Нови ћаскање",
+    "noChats": "Нема ћаскања",
+    "rename": "Преименуј",
+    "delete": "Обриши",
+    "thisMonth": "Овај месец",
+    "lastMonth": "Прошли месец"
   },
   "providers": {
     "title": "Custom Providers",

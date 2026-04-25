@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Εταιρεία Πρακτόρων ΤΝ"
   },
+  "common": {
+    "close": "Κλείσιμο"
+  },
   "topbar": {
     "download": "Λήψη",
     "settings": "Ρυθμίσεις",
@@ -295,6 +298,15 @@
     "registering": "Εγγραφή...",
     "noAccount": "Δεν έχετε λογαριασμό;",
     "hasAccount": "Έχετε ήδη λογαριασμό;"
+  },
+  "chatSidebar": {
+    "history": "Ιστορία",
+    "newChat": "Νέα συνομιλία",
+    "noChats": "Δεν υπάρχουν συνομιλίες",
+    "rename": "Μετονομασία",
+    "delete": "Διαγραφή",
+    "thisMonth": "Αυτός ο μήνας",
+    "lastMonth": "Προηγούμενος μήνας"
   },
   "providers": {
     "title": "Custom Providers",

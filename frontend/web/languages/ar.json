@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "شركة وكلاء الذكاء الاصطناعي"
   },
+  "common": {
+    "close": "إغلاق"
+  },
   "topbar": {
     "download": "تحميل",
     "settings": "الإعدادات",
@@ -295,6 +298,15 @@
     "registering": "جار التسجيل...",
     "noAccount": "ليس لديك حساب؟",
     "hasAccount": "لديك حساب بالفعل؟"
+  },
+  "chatSidebar": {
+    "history": "السجل",
+    "newChat": "محادثة جديدة",
+    "noChats": "لا توجد محادثات بعد",
+    "rename": "إعادة تسمية",
+    "delete": "حذف",
+    "thisMonth": "هذا الشهر",
+    "lastMonth": "الشهر الماضي"
   },
   "providers": {
     "title": "Custom Providers",

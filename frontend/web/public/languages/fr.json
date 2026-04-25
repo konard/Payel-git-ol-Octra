@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Entreprise d'Agents IA"
   },
+  "common": {
+    "close": "Fermer"
+  },
   "topbar": {
     "download": "Télécharger",
     "settings": "Paramètres",
@@ -84,7 +87,8 @@
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel"
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -280,5 +284,35 @@
     "registering": "Inscription...",
     "noAccount": "Pas de compte?",
     "hasAccount": "Déjà un compte?"
+  },
+  "chatSidebar": {
+    "history": "Historique",
+    "newChat": "Nouveau chat",
+    "noChats": "Pas de chats",
+    "rename": "Renommer",
+    "delete": "Supprimer",
+    "thisMonth": "Ce mois-ci",
+    "lastMonth": "Mois dernier"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

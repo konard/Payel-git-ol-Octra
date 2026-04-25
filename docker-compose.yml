@@ -137,7 +137,7 @@ services:
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
-      - AUTH_SERVICE_HOST=auth:3112
+      - AUTH_SERVICE_HOST=user:3112
       # Rate Limiting
       - RATE_LIMIT_ENABLED=true
       - RATE_LIMIT_TASK_CREATE=${RATE_LIMIT_TASK_CREATE:-10/60}
@@ -157,16 +157,18 @@ services:
       - crewai-network
     restart: unless-stopped
 
-  auth:
+  user:
     build:
       context: .
-      dockerfile: ./auth/Dockerfile
-    container_name: crewai-auth
+      dockerfile: ./user/Dockerfile
+    container_name: crewai-user
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-refresh-in-production}
       - AUTH_PORT=3112
+      - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID:-1339826}
+      - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY:-test_StL4_VJfVFbOJ7_BbolU2VhoR1zjIQ7Qf2gcwN3Gngw}
     ports:
       - "3112:3112"
     depends_on:
@@ -186,7 +188,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      auth:
+      user:
         condition: service_started
       apigateway:
         condition: service_started
@@ -202,10 +204,10 @@ services:
     env_file:
       - ./tgbot/.env
     environment:
-      - AUTH_API_URL=http://auth:3112
+      - AUTH_API_URL=http://user:3112
       - API_GATEWAY_URL=ws://apigateway:3111
     depends_on:
-      auth:
+      user:
         condition: service_started
       apigateway:
         condition: service_started

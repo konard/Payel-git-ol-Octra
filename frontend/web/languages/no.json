@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI-byrå"
   },
+  "common": {
+    "close": "Lukk"
+  },
   "topbar": {
     "download": "Last ned",
     "settings": "Innstillinger",
@@ -295,6 +298,15 @@
     "registering": "Registrerer...",
     "noAccount": "Har du ingen konto?",
     "hasAccount": "Har du allerede en konto?"
+  },
+  "chatSidebar": {
+    "history": "Historikk",
+    "newChat": "Ny chat",
+    "noChats": "Ingen chatter",
+    "rename": "Gi nytt navn",
+    "delete": "Slett",
+    "thisMonth": "Denne måneden",
+    "lastMonth": "Forrige måned"
   },
   "providers": {
     "title": "Custom Providers",

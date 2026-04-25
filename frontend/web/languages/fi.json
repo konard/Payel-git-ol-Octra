@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Tekoälyagenttiyhtiö"
   },
+  "common": {
+    "close": "Sulje"
+  },
   "topbar": {
     "download": "Lataa",
     "settings": "Asetukset",
@@ -295,6 +298,15 @@
     "registering": "Rekisteröidytään...",
     "noAccount": "Eikö sinulla ole tiliä?",
     "hasAccount": "Onko sinulla jo tili?"
+  },
+  "chatSidebar": {
+    "history": "Historia",
+    "newChat": "Uusi keskustelu",
+    "noChats": "Ei keskusteluja",
+    "rename": "Nimeä uudelleen",
+    "delete": "Poista",
+    "thisMonth": "Tämä kuukausi",
+    "lastMonth": "Viime kuukausi"
   },
   "providers": {
     "title": "Custom Providers",

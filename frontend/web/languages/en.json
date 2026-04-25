@@ -5,6 +5,9 @@
     "canvas": "Canvas",
     "chat": "Chat"
   },
+  "common": {
+    "close": "Close"
+  },
   "topbar": {
     "download": "Download",
     "settings": "Settings",
@@ -303,10 +306,19 @@
     "confirmPassword": "Confirm password",
     "repeatPassword": "Repeat password",
     "registering": "Registering...",
-     "noAccount": "Don't have an account?",
-     "hasAccount": "Already have an account?"
-   },
-   "providers": {
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "sidebar": {
+    "history": "History",
+    "newChat": "New chat",
+    "noChats": "No chats yet",
+    "rename": "Rename",
+    "delete": "Delete",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month"
+  },
+  "providers": {
      "title": "Custom Providers",
      "description": "Add your own AI providers for use in tasks",
      "newProvider": "New Provider",

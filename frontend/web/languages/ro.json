@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Companie de Agenți IA"
   },
+  "common": {
+    "close": "Închide"
+  },
   "topbar": {
     "download": "Descarcă",
     "settings": "Setări",
@@ -295,6 +298,15 @@
     "registering": "Înregistrare...",
     "noAccount": "Nu aveți cont?",
     "hasAccount": "Aveți deja cont?"
+  },
+  "chatSidebar": {
+    "history": "Istoric",
+    "newChat": "Chat nou",
+    "noChats": "Fără chat-uri",
+    "rename": "Redenumește",
+    "delete": "Șterge",
+    "thisMonth": "Această lună",
+    "lastMonth": "Luna trecută"
   },
   "providers": {
     "title": "Custom Providers",

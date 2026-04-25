@@ -5,6 +5,9 @@
     "canvas": "Canvas",
     "chat": "Chat"
   },
+  "common": {
+    "close": "Close"
+  },
   "topbar": {
     "download": "Download",
     "settings": "Settings",
@@ -305,5 +308,55 @@
     "registering": "Registering...",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?"
-  }
+  },
+  "chatSidebar": {
+    "history": "History",
+    "newChat": "New chat",
+    "noChats": "No chats yet",
+    "rename": "Rename",
+    "delete": "Delete",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month"
+  },
+  "providers": {
+     "title": "Custom Providers",
+     "description": "Add your own AI providers for use in tasks",
+     "newProvider": "New Provider",
+     "configured": "Configured",
+     "addCustomProvider": "Add Custom Provider",
+     "addNew": "Add New",
+     "collapse": "Collapse",
+     "expand": "Expand",
+     "edit": "Edit",
+     "delete": "Delete",
+     "add": "Add",
+     "name": "Name",
+     "namePlaceholder": "My AI Provider",
+     "baseUrl": "Base URL",
+     "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+     "apiKey": "API Key",
+     "apiKeyPlaceholder": "sk-...",
+     "save": "Save",
+     "cancel": "Cancel",
+     "requiresApiKey": "API Key not required",
+     "requiresApiKeyHint": "Disable if provider doesn't require API key (e.g., local Ollama)",
+     "noApiKeyRequired": "API key not required",
+     "localNote": "Local service - API key not required"
+   },
+   "models": {
+     "title": "Custom Models",
+     "description": "Add and manage your AI models",
+     "addNew": "Add Model",
+     "name": "Model Name",
+     "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+     "provider": "Provider",
+     "noProvider": "No Provider",
+     "save": "Save",
+     "cancel": "Cancel",
+     "delete": "Delete",
+     "confirmDelete": "Are you sure you want to delete this model?"
+   },
+   "common": {
+     "optional": "optional"
+   }
 }

@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "MI Ügynökség"
   },
+  "common": {
+    "close": "Bezárás"
+  },
   "topbar": {
     "download": "Letöltés",
     "settings": "Beállítások",
@@ -295,6 +298,15 @@
     "registering": "Regisztráció...",
     "noAccount": "Nincs fiókja?",
     "hasAccount": "Már van fiókja?"
+  },
+  "chatSidebar": {
+    "history": "Előzmények",
+    "newChat": "Új beszélgetés",
+    "noChats": "Nincs beszélgetés",
+    "rename": "Átnevezés",
+    "delete": "Törlés",
+    "thisMonth": "Ebben a hónapban",
+    "lastMonth": "Előző hónap"
   },
   "providers": {
     "title": "Custom Providers",

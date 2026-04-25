@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "ЖИ агенттер компаниясы"
   },
+  "common": {
+    "close": "Жабу"
+  },
   "topbar": {
     "download": "Жүктеу",
     "settings": "Параметрлер",
@@ -268,6 +271,15 @@
     "registering": "Тіркелу...",
     "noAccount": "Аккаунт жоқ па?",
     "hasAccount": "Аккаунт бар ма?"
+  },
+  "chatSidebar": {
+    "history": "Тарих",
+    "newChat": "Жаңа сөйлесу",
+    "noChats": "Сөйлесулер жоқ",
+    "rename": "Атауын өзгерту",
+    "delete": "Жою",
+    "thisMonth": "Осы ай",
+    "lastMonth": "Өткен ай"
   },
   "providers": {
     "title": "Custom Providers",

@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Tvrtka AI Agenata"
   },
+  "common": {
+    "close": "Zatvori"
+  },
   "topbar": {
     "download": "Preuzmi",
     "settings": "Postavke",
@@ -295,6 +298,15 @@
     "registering": "Registracija...",
     "noAccount": "Nemate račun?",
     "hasAccount": "Već imate račun?"
+  },
+  "chatSidebar": {
+    "history": "Povijest",
+    "newChat": "Novi razgovor",
+    "noChats": "Nema razgovora",
+    "rename": "Preimenuj",
+    "delete": "Izbriši",
+    "thisMonth": "Ovaj mjesec",
+    "lastMonth": "Prošli mjesec"
   },
   "providers": {
     "title": "Custom Providers",

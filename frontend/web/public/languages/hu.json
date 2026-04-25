@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "MI Ügynökség"
   },
+  "common": {
+    "close": "Bezárás"
+  },
   "topbar": {
     "download": "Letöltés",
     "settings": "Beállítások",
@@ -81,10 +84,11 @@
     "hideTokenFieldHint": "API kulcs mező elrejtése a főképernyőn",
     "save": "Mentés",
     "cancel": "Mégse",
-    "hideServerStatus": "Szerver állapot elrejtése",
-    "hideServerStatusHint": "Szerver kapcsolat állapot sor elrejtése",
-    "hideConsole": "Konzol elrejtése",
-    "hideConsoleHint": "Konzol panel elrejtése"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Regisztráció...",
     "noAccount": "Nincs fiókja?",
     "hasAccount": "Már van fiókja?"
+  },
+  "chatSidebar": {
+    "history": "Előzmények",
+    "newChat": "Új beszélgetés",
+    "noChats": "Nincs beszélgetés",
+    "rename": "Átnevezés",
+    "delete": "Törlés",
+    "thisMonth": "Ebben a hónapban",
+    "lastMonth": "Előző hónap"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

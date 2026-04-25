@@ -9,6 +9,8 @@ import {
   getSubscriptionPlans,
   subscribeUser,
   activatePromoCode,
+  createPaymentSession,
+  simulatePaymentSuccess,
   type SubscriptionPlan,
 } from '../services/subscriptionService';
 import { useAuthStore } from '../stores/authStore';
@@ -68,10 +70,10 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
     } catch {
       // Use defaults
       setPlans([
-        { id: 'monthly', name: '1 месяц', duration: 30, price: '990' },
-        { id: 'quarterly', name: '3 месяца', duration: 90, price: '2490' },
-        { id: 'semi_annually', name: '6 месяцев', duration: 180, price: '4490' },
-        { id: 'annually', name: '1 год', duration: 365, price: '7990' },
+        { id: 'monthly', name: '1 месяц', duration: 30, price: '100000' },
+        { id: 'quarterly', name: '3 месяца', duration: 90, price: '250000' },
+        { id: 'semi_annually', name: '6 месяцев', duration: 180, price: '500000' },
+        { id: 'annually', name: '1 год', duration: 365, price: '1000000' },
       ]);
     }
   };
@@ -86,10 +88,29 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
     setIsLoading(true);
     setError('');
     try {
-      await subscribeUser(user.id, selectedPlan);
-      onSubscribe();
+      const returnUrl = window.location.origin + '/dashboard';
+      const paymentSession = await createPaymentSession(selectedPlan, returnUrl);
+
+      // Redirect to YooKassa payment page
+      window.location.href = paymentSession.confirmation_url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка при оформлении подписки');
+      setError(err instanceof Error ? err.message : 'Ошибка при создании платежа');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestPayment = async () => {
+    if (!selectedPlan || !user) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      await simulatePaymentSuccess(user.id, selectedPlan);
+      onSubscribe();
+      // Close modal after successful test payment
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка при тестовой оплате');
     } finally {
       setIsLoading(false);
     }
@@ -150,7 +171,7 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
               <p className="text-base font-medium text-[var(--text)] mt-0.5">{getPlanName(selectedPlan || '')}</p>
               <div className="w-full h-px bg-[var(--border)] my-3" />
               <div className="flex items-end gap-1.5">
-                <span className="text-2xl font-medium text-[var(--text)]">{getPlanPrice(selectedPlan || '')}₽</span>
+                <span className="text-2xl font-medium text-[var(--text)]">₽{Math.round(parseInt(getPlanPrice(selectedPlan || '')) / 100)}</span>
               </div>
             </div>
 
@@ -179,13 +200,22 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
             </div>
 
             {paymentMethod === 'card' ? (
-              <button
-                onClick={handleSubscribe}
-                disabled={isLoading}
-                className="w-full py-2.5 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-lg transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Оформление...' : `Оплатить ${getPlanPrice(selectedPlan || '')}₽`}
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={handleSubscribe}
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-lg transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Создание платежа...' : `Оплатить ₽${Math.round(parseInt(getPlanPrice(selectedPlan || '')) / 100)}`}
+                </button>
+                <button
+                  onClick={handleTestPayment}
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Активация...' : 'Тестовая оплата (для разработки)'}
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 <input
@@ -274,7 +304,7 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
                   {/* Price */}
                   <div className="mb-3">
                     <div className="flex items-end gap-1.5">
-                      <span className="text-2xl font-medium text-[var(--text)]">{plan.price}₽</span>
+                      <span className="text-2xl font-medium text-[var(--text)]">₽{Math.round(parseInt(plan.price) / 100)}</span>
                     </div>
                     <span className="text-xs text-[var(--text-muted)]">
                       {plan.duration} дней

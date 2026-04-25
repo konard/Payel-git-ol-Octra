@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Sun'iy intellekt agentlari kompaniyasi"
   },
+  "common": {
+    "close": "Yopish"
+  },
   "topbar": {
     "download": "Yuklab olish",
     "settings": "Sozlamalar",
@@ -279,6 +282,15 @@
     "registering": "Ro'yxatdan o'tish...",
     "noAccount": "Akkauntingiz yo'qmi?",
     "hasAccount": "Allaqachon akkauntingiz bormi?"
+  },
+  "chatSidebar": {
+    "history": "Tarix",
+    "newChat": "Yangi suhbat",
+    "noChats": "Suhbatlar yo'q",
+    "rename": "Qayta nomlash",
+    "delete": "O'chirish",
+    "thisMonth": "Bu oy",
+    "lastMonth": "O'tgan oy"
   },
   "providers": {
     "title": "Custom Providers",

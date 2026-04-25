@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI 에이전트 컴퍼니"
   },
+  "common": {
+    "close": "닫기"
+  },
   "topbar": {
     "download": "다운로드",
     "settings": "설정",
@@ -84,7 +87,8 @@
     "hideServerStatus": "서버 상태 숨기기",
     "hideServerStatusHint": "서버 연결 상태 표시줄 숨기기",
     "hideConsole": "콘솔 숨기기",
-    "hideConsoleHint": "콘솔 패널 숨기기"
+    "hideConsoleHint": "콘솔 패널 숨기기",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,32 @@
     "registering": "가입 중...",
     "noAccount": "계정이 없으신가요?",
     "hasAccount": "이미 계정이 있으신가요?"
+  },
+  "chatSidebar": {
+    "history": "기록",
+    "newChat": "새 채팅",
+    "noChats": "채팅 없음",
+    "rename": "이름 변경",
+    "delete": "삭제",
+    "thisMonth": "이번 달",
+    "lastMonth": "지난 달"
+  },
+  "providers": {
+    "newProvider": "새로운 제공자",
+    "configured": "구성됨",
+    "addCustomProvider": "사용자 정의 제공자 추가",
+    "collapse": "접기",
+    "expand": "펼치기",
+    "edit": "편집",
+    "delete": "삭제",
+    "add": "추가",
+    "name": "이름",
+    "namePlaceholder": "내 AI 제공자",
+    "baseUrl": "기본 URL",
+    "baseUrlHint": "제공자 API 서버 URL (예: https://api.example.com/v1)",
+    "apiKey": "API 키",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "저장",
+    "cancel": "취소"
   }
 }

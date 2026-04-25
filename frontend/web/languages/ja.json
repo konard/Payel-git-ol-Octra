@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AIエージェントカンパニー"
   },
+  "common": {
+    "close": "閉じる"
+  },
   "topbar": {
     "download": "ダウンロード",
     "settings": "設定",
@@ -307,6 +310,15 @@
     "registering": "登録中...",
     "noAccount": "アカウントをお持ちでないですか？",
     "hasAccount": "すでにアカウントをお持ちですか？"
+  },
+  "chatSidebar": {
+    "history": "履歴",
+    "newChat": "新しいチャット",
+    "noChats": "チャットなし",
+    "rename": "名前変更",
+    "delete": "削除",
+    "thisMonth": "今月",
+    "lastMonth": "先去"
   },
   "providers": {
     "title": "Custom Providers",

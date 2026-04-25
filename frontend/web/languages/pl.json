@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Firma Agentów AI"
   },
+  "common": {
+    "close": "Zamknij"
+  },
   "topbar": {
     "download": "Pobierz",
     "settings": "Ustawienia",
@@ -271,6 +274,15 @@
     "userId": "ID użytkownika",
     "memberSince": "Użytkownik od",
     "logout": "Wyloguj"
+  },
+  "chatSidebar": {
+    "history": "Historia",
+    "newChat": "Nowy czat",
+    "noChats": "Brak czatów",
+    "rename": "Zmień nazwę",
+    "delete": "Usuń",
+    "thisMonth": "Ten miesiąc",
+    "lastMonth": "Poprzedni miesiąc"
   },
   "providers": {
     "title": "Custom Providers",

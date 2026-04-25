@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Компания ИИ Агенти"
   },
+  "common": {
+    "close": "Затвори"
+  },
   "topbar": {
     "download": "Изтегли",
     "settings": "Настройки",
@@ -295,6 +298,15 @@
     "registering": "Регистрация...",
     "noAccount": "Нямате акаунт?",
     "hasAccount": "Вече имате акаунт?"
+  },
+  "chatSidebar": {
+    "history": "История",
+    "newChat": "Нов чат",
+    "noChats": "Няма чатове",
+    "rename": "Преименувай",
+    "delete": "Изтрий",
+    "thisMonth": "Този месец",
+    "lastMonth": "Минал месец"
   },
   "providers": {
     "title": "Custom Providers",

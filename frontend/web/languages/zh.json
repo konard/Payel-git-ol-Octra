@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI智能代理公司"
   },
+  "common": {
+    "close": "关闭"
+  },
   "topbar": {
     "download": "下载",
     "settings": "设置",
@@ -307,6 +310,15 @@
     "registering": "注册中...",
     "noAccount": "没有账号？",
     "hasAccount": "已有账号？"
+  },
+  "chatSidebar": {
+    "history": "历史记录",
+    "newChat": "新对话",
+    "noChats": "暂无对话",
+    "rename": "重命名",
+    "delete": "删除",
+    "thisMonth": "本月",
+    "lastMonth": "上个月"
   },
   "providers": {
     "title": "Custom Providers",

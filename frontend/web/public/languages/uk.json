@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Компанія ШІ-агентів"
   },
+  "common": {
+    "close": "Закрити"
+  },
   "topbar": {
     "download": "Завантажити",
     "settings": "Налаштування",
@@ -81,10 +84,11 @@
     "hideTokenFieldHint": "Приховати поле API ключа на головному екрані",
     "save": "Зберегти",
     "cancel": "Скасувати",
-    "hideServerStatus": "Сховати статус сервера",
-    "hideServerStatusHint": "Сховати рядок стану підключення сервера",
-    "hideConsole": "Сховати консоль",
-    "hideConsoleHint": "Сховати панель консолі"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Реєстрація...",
     "noAccount": "Немає аккаунта?",
     "hasAccount": "Вже є аккаунт?"
+  },
+  "chatSidebar": {
+    "history": "Історія",
+    "newChat": "Новий чат",
+    "noChats": "Немає чатів",
+    "rename": "Перейменувати",
+    "delete": "Видалити",
+    "thisMonth": "Цей місяць",
+    "lastMonth": "Минулий місяць"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

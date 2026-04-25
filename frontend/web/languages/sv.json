@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI-agentföretag"
   },
+  "common": {
+    "close": "Stäng"
+  },
   "topbar": {
     "download": "Ladda ner",
     "settings": "Inställningar",
@@ -295,6 +298,15 @@
     "registering": "Registrerar...",
     "noAccount": "Har du inget konto?",
     "hasAccount": "Har du redan ett konto?"
+  },
+  "chatSidebar": {
+    "history": "Historik",
+    "newChat": "Ny chatt",
+    "noChats": "Inga chattar",
+    "rename": "Döpa om",
+    "delete": "Ta bort",
+    "thisMonth": "Den här månaden",
+    "lastMonth": "Förra månaden"
   },
   "providers": {
     "title": "Custom Providers",

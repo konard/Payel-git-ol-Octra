@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Společnost AI Agentů"
   },
+  "common": {
+    "close": "Zavřít"
+  },
   "topbar": {
     "download": "Stáhnout",
     "settings": "Nastavení",
@@ -295,6 +298,15 @@
     "registering": "Registrace...",
     "noAccount": "Nemáte účet?",
     "hasAccount": "Už máte účet?"
+  },
+  "chatSidebar": {
+    "history": "Historie",
+    "newChat": "Nový chat",
+    "noChats": "Žádné chaty",
+    "rename": "Přejmenovat",
+    "delete": "Smazat",
+    "thisMonth": "Tento měsíc",
+    "lastMonth": "Minulý měsíc"
   },
   "providers": {
     "title": "Custom Providers",

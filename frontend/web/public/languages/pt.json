@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Empresa de Agentes IA"
   },
+  "common": {
+    "close": "Fechar"
+  },
   "topbar": {
     "download": "Baixar",
     "settings": "Configurações",
@@ -81,10 +84,11 @@
     "hideTokenFieldHint": "Ocultar campo de chave API na tela principal",
     "save": "Salvar",
     "cancel": "Cancelar",
-    "hideServerStatus": "Ocultar status do servidor",
-    "hideServerStatusHint": "Ocultar barra de status da conexão do servidor",
-    "hideConsole": "Ocultar console",
-    "hideConsoleHint": "Ocultar painel do console"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Cadastrando...",
     "noAccount": "Não tem conta?",
     "hasAccount": "Já tem conta?"
+  },
+  "chatSidebar": {
+    "history": "Histórico",
+    "newChat": "Novo chat",
+    "noChats": "Sem chats",
+    "rename": "Renomear",
+    "delete": "Excluir",
+    "thisMonth": "Este mês",
+    "lastMonth": "Mês passado"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

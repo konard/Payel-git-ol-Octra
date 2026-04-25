@@ -13,6 +13,8 @@ import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
+import { PaymentSuccess } from '../components/PaymentSuccess';
+import { Sidebar } from '../components/Sidebar';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
@@ -24,7 +26,9 @@ export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<'canvas' | 'chat'>('canvas');
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<Array<{
@@ -43,10 +47,16 @@ export default function App() {
 
   // Определяем, показывать лендинг или приложение
   const isLandingPage = window.location.pathname === '/' && !isAuthenticated;
+  const isPaymentSuccess = window.location.pathname === '/payment-success';
 
   // Если мы на главной и не авторизован - показываем лендинг
   if (isLandingPage) {
     return <LandingPage />;
+  }
+
+  // Если успешная оплата - показываем страницу успеха
+  if (isPaymentSuccess) {
+    return <PaymentSuccess />;
   }
 
   const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user', isClarification = false, progress?: number, showProgress?: boolean) => {
@@ -240,8 +250,25 @@ export default function App() {
     setIsExpanded(!isExpanded);
   };
 
+  const handleNewChat = () => {
+    setCurrentChatId(null);
+    setChatMessages([]);
+    setMode('chat');
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    setCurrentChatId(chatId);
+    // TODO: Load messages from API
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
+      <Sidebar
+        isOpen={showSidebar}
+        onClose={() => setShowSidebar(false)}
+        onSelectChat={handleSelectChat}
+        onNewChat={handleNewChat}
+      />
       <TopBar
         isAuthenticated={isAuthenticated}
         hasSubscription={hasSubscription}
@@ -250,6 +277,7 @@ export default function App() {
         mode={mode}
         onModeChange={setMode}
         hasUnreadMessages={hasUnreadMessages}
+        onToggleSidebar={() => setShowSidebar(true)}
       />
 
       <ReactFlowProvider>
@@ -287,12 +315,14 @@ export default function App() {
         />
       )}
 
-      {showSubscriptionModal && isAuthenticated && (
+      {showSubscriptionModal && isAuthenticated && !hasSubscription && false && (
         <SubscriptionModal
           onClose={() => setShowSubscriptionModal(false)}
-          onSubscribe={() => {
+          onSubscribe={async () => {
             setSubscription(true);
             setShowSubscriptionModal(false);
+            // Refresh auth status from server to get updated subscription info
+            await checkAuth();
           }}
         />
       )}

@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Компания ИИ Агенти"
   },
+  "common": {
+    "close": "Затвори"
+  },
   "topbar": {
     "download": "Изтегли",
     "settings": "Настройки",
@@ -81,10 +84,11 @@
     "hideTokenFieldHint": "Скрий полето за API ключ на главния екран",
     "save": "Запази",
     "cancel": "Отказ",
-    "hideServerStatus": "Скрий състоянието на сървъра",
+    "hideServerStatus": "Скрий статус сървъра",
     "hideServerStatusHint": "Скрий лентата за състояние на сървъра",
     "hideConsole": "Скрий конзолата",
-    "hideConsoleHint": "Скрий панела на конзолата"
+    "hideConsoleHint": "Скрий панела на конзолата",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Регистрация...",
     "noAccount": "Нямате акаунт?",
     "hasAccount": "Вече имате акаунт?"
+  },
+  "chatSidebar": {
+    "history": "История",
+    "newChat": "Нов чат",
+    "noChats": "Няма чатове",
+    "rename": "Преименувай",
+    "delete": "Изтрий",
+    "thisMonth": "Този месец",
+    "lastMonth": "Минал месец"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

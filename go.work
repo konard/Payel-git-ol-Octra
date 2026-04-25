@@ -6,5 +6,5 @@ use (
 	./boss
 	./manager
 	./worker
-	auth
+	user
 )

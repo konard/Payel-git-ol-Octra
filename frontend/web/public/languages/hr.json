@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Tvrtka AI Agenata"
   },
+  "common": {
+    "close": "Zatvori"
+  },
   "topbar": {
     "download": "Preuzmi",
     "settings": "Postavke",
@@ -84,7 +87,8 @@
     "hideServerStatus": "Sakrij status poslužitelja",
     "hideServerStatusHint": "Sakrij traku statusa veze poslužitelja",
     "hideConsole": "Sakrij konzolu",
-    "hideConsoleHint": "Sakrij ploču konzole"
+    "hideConsoleHint": "Sakrij ploču konzole",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Registracija...",
     "noAccount": "Nemate račun?",
     "hasAccount": "Već imate račun?"
+  },
+  "chatSidebar": {
+    "history": "Povijest",
+    "newChat": "Novi razgovor",
+    "noChats": "Nema razgovora",
+    "rename": "Preimenuj",
+    "delete": "Izbriši",
+    "thisMonth": "Ovaj mjesec",
+    "lastMonth": "Prošli mjesec"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

@@ -5,6 +5,9 @@
     "canvas": "Канва",
     "chat": "Чат"
   },
+  "common": {
+    "close": "Закрыть"
+  },
   "topbar": {
     "download": "Скачать",
     "settings": "Настройки",
@@ -282,10 +285,19 @@
     "confirmPassword": "Подтвердите пароль",
     "repeatPassword": "Повторите пароль",
     "registering": "Регистрация...",
-    "noAccount": "Нет аккаунта?",
-    "hasAccount": "Уже есть аккаунт?"
+"noAccount": "Нет аккаунта?",
+   "hasAccount": "Уже есть аккаунт?"
+ },
+"chatSidebar": {
+    "history": "История",
+    "newChat": "Новый чат",
+    "noChats": "Чатов пока нет",
+    "rename": "Переименовать",
+    "delete": "Удалить",
+    "thisMonth": "Этот месяц",
+    "lastMonth": "Прошлый месяц"
   },
-  "providers": {
+ "providers": {
     "title": "Кастомные провайдеры",
     "description": "Добавляйте собственные AI провайдеры для использования в задачах",
     "newProvider": "Новый провайдер",

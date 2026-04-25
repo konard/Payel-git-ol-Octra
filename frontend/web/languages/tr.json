@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Yapay Zeka Ajanları Şirketi"
   },
+  "common": {
+    "close": "Kapat"
+  },
   "topbar": {
     "download": "İndir",
     "settings": "Ayarlar",
@@ -295,6 +298,15 @@
     "registering": "Kayıt yapılıyor...",
     "noAccount": "Hesabınız yok mu?",
     "hasAccount": "Zaten hesabınız var mı?"
+  },
+  "chatSidebar": {
+    "history": "Geçmiş",
+    "newChat": "Yeni sohbet",
+    "noChats": "Sohbet yok",
+    "rename": "Yeniden adlandır",
+    "delete": "Sil",
+    "thisMonth": "Bu ay",
+    "lastMonth": "Geçen ay"
   },
   "providers": {
     "title": "Custom Providers",

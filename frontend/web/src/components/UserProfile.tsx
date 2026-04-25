@@ -27,7 +27,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
     });
   };
 
-  const isSubscriptionActive = true; // TODO: user?.subscription_end && user.subscription_end > Date.now() / 1000;
+  const isSubscriptionActive = hasSubscription;
 
   const [avatarUrl, setAvatarUrl] = useState<string>('');
 

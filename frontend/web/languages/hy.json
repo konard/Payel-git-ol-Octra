@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Բանավոր ընկերություն"
   },
+  "common": {
+    "close": "Փակել"
+  },
   "topbar": {
     "download": "Ներբեռնել",
     "settings": "Կարգավորումներ",
@@ -268,6 +271,15 @@
     "registering": "Գրանցում...",
     "noAccount": "Չունե՞ք հաշիվ",
     "hasAccount": "Արդեն ունե՞ք հաշիվ"
+  },
+  "chatSidebar": {
+    "history": "Պատմություն",
+    "newChat": "Նոր զրույց",
+    "noChats": "Զրույցներ չկան",
+    "rename": "Վերանվանել",
+    "delete": "Ջնջել",
+    "thisMonth": "Այս ամիս",
+    "lastMonth": "Անցյալ ամիս"
   },
   "providers": {
     "title": "Custom Providers",

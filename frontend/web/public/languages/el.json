@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Εταιρεία Πρακτόρων ΤΝ"
   },
+  "common": {
+    "close": "Κλείσιμο"
+  },
   "topbar": {
     "download": "Λήψη",
     "settings": "Ρυθμίσεις",
@@ -81,10 +84,11 @@
     "hideTokenFieldHint": "Απόκρυψη πεδίου κλειδιού API στην κύρια οθόνη",
     "save": "Αποθήκευση",
     "cancel": "Ακύρωση",
-    "hideServerStatus": "Απόκρυψη κατάστασης διακομιστή",
-    "hideServerStatusHint": "Απόκρυψη γραμμής κατάστασης σύνδεσης διακομιστή",
-    "hideConsole": "Απόκρυψη κονσόλας",
-    "hideConsoleHint": "Απόκρυψη πίνακα κονσόλας"
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "customProviders": "Custom Providers"
   },
   "languages": {
     "en": "English",
@@ -294,5 +298,35 @@
     "registering": "Εγγραφή...",
     "noAccount": "Δεν έχετε λογαριασμό;",
     "hasAccount": "Έχετε ήδη λογαριασμό;"
+  },
+  "chatSidebar": {
+    "history": "Ιστορία",
+    "newChat": "Νέα συνομιλία",
+    "noChats": "Δεν υπάρχουν συνομιλίες",
+    "rename": "Μετονομασία",
+    "delete": "Διαγραφή",
+    "thisMonth": "Αυτός ο μήνας",
+    "lastMonth": "Προηγούμενος μήνας"
+  },
+  "providers": {
+    "title": "Custom Providers",
+    "description": "Add your own AI providers to use in tasks",
+    "newProvider": "New Provider",
+    "configured": "Configured",
+    "addCustomProvider": "Add custom provider",
+    "addNew": "Add New",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "name": "Name",
+    "namePlaceholder": "My AI provider",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "Provider API server URL (e.g.: https://api.example.com/v1)",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

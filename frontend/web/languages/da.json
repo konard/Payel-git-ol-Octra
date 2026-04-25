@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "AI Agent Firma"
   },
+  "common": {
+    "close": "Luk"
+  },
   "topbar": {
     "download": "Download",
     "settings": "Indstillinger",
@@ -295,6 +298,15 @@
     "registering": "Opretter...",
     "noAccount": "Har du ingen konto?",
     "hasAccount": "Har du allerede en konto?"
+  },
+  "chatSidebar": {
+    "history": "Historik",
+    "newChat": "Ny chat",
+    "noChats": "Ingen chats",
+    "rename": "Omdøb",
+    "delete": "Slet",
+    "thisMonth": "Denne måned",
+    "lastMonth": "Sidste måned"
   },
   "providers": {
     "title": "Custom Providers",

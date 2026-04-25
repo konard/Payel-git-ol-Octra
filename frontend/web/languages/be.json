@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Кампанія ШІ-агентаў"
   },
+  "common": {
+    "close": "Закрыць"
+  },
   "topbar": {
     "download": "Спампаваць",
     "settings": "Налады",
@@ -295,6 +298,15 @@
     "registering": "Рэгістрацыя...",
     "noAccount": "Няма аккаўнта?",
     "hasAccount": "Ужо ёсць акаўнт?"
+  },
+  "chatSidebar": {
+    "history": "Гісторыя",
+    "newChat": "Новы чат",
+    "noChats": "Няма чатоў",
+    "rename": "Пераназваць",
+    "delete": "Выдаліць",
+    "thisMonth": "Гэты месяц",
+    "lastMonth": "Мінулы месяц"
   },
   "providers": {
     "title": "Custom Providers",

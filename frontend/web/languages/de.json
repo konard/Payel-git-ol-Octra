@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "KI-Agenten Unternehmen"
   },
+  "common": {
+    "close": "Schließen"
+  },
   "topbar": {
     "download": "Herunterladen",
     "settings": "Einstellungen",
@@ -281,6 +284,15 @@
     "registering": "Registrierung...",
     "noAccount": "Kein Konto?",
     "hasAccount": "Schon ein Konto?"
+  },
+  "chatSidebar": {
+    "history": "Verlauf",
+    "newChat": "Neuer Chat",
+    "noChats": "Keine Chats",
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "thisMonth": "Dieser Monat",
+    "lastMonth": "Letzter Monat"
   },
   "providers": {
     "title": "Custom Providers",

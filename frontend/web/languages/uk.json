@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Компанія ШІ-агентів"
   },
+  "common": {
+    "close": "Закрити"
+  },
   "topbar": {
     "download": "Завантажити",
     "settings": "Налаштування",
@@ -295,6 +298,15 @@
     "registering": "Реєстрація...",
     "noAccount": "Немає аккаунта?",
     "hasAccount": "Вже є аккаунт?"
+  },
+  "chatSidebar": {
+    "history": "Історія",
+    "newChat": "Новий чат",
+    "noChats": "Немає чатів",
+    "rename": "Перейменувати",
+    "delete": "Видалити",
+    "thisMonth": "Цей місяць",
+    "lastMonth": "Минулий місяць"
   },
   "providers": {
     "title": "Custom Providers",

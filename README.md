@@ -1,226 +1,145 @@
-# CrewAI — Компания из ИИ-агентов
+# CrewAI — Многоагентная система генерации кода
 
-Многоагентная система, которая работает как реальная IT-компания с иерархией:
-**User → Apigateway → Boss → Manager(s) → Worker(s) → ZIP-архив**
+Современная веб-платформа для автоматической генерации программного кода с использованием ИИ-агентов. Работает как полноценная IT-компания с иерархией ролей.
 
 ## 🏗 Архитектура
 
 ```
 ┌─────────────┐      HTTP/WS     ┌─────────────┐      gRPC       ┌─────────────┐
-│   User UI   │ ───────────────► │  Apigateway │ ──────────────► │    Boss     │
-│  (frontend) │     :3111        │   (proxy)   │                 │  (port 50051)│
-└─────────────┘                  └─────────────┘                 └──────┬──────┘
-                                                                        │
-                                                         gRPC (ПАРАЛЛЕЛЬНО)
-                                                        ┌───────┴───────┐
-                                                        ▼               ▼
-                                               ┌─────────────┐  ┌─────────────┐
-                                               │  Manager #1 │  │  Manager #2 │  ...
-                                               │  (port 50052)│  │  (port 50052)│
-                                               └──────┬──────┘  └──────┬──────┘
-                                                      │                 │
-                                               gRPC (последовательно)   │
-                                                      ▼                 ▼
-                                               ┌─────────────┐  ┌─────────────┐
-                                               │   Worker(s) │  │   Worker(s) │
-                                               │  (port 50053)│  │  (port 50053)│
-                                               └──────┬──────┘  └──────┬──────┘
-                                                      │                 │
-                                                      ▼                 ▼
-                                               ┌─────────────┐  ┌─────────────┐
-                                               │   Agents    │  │   Agents    │
-                                               │  (port 50053)│  │  (port 50053)│
-                                               └─────────────┘  └─────────────┘
-                                                        │
-                                              LLM API (OpenRouter, Gemini,
-                                              OpenAI, Claude, DeepSeek, Grok)
+│   Frontend  │ ───────────────► │  Apigateway │ ──────────────► │    Boss     │
+│   (React)   │     :80          │   (proxy)   │   :3111         │  (port 50051)│
+└──────┬──────┘                  └──────┬──────┘                 └──────┬──────┘
+       │                                 │                               │
+       │                                 │                gRPC (ПАРАЛЛЕЛЬНО)
+       │                                 │               ┌───────┴───────┐
+       │                                 ▼               ▼               ▼
+       │                        ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+       │                        │ User Service│  │  Manager #1 │  │  Manager #2 │
+       │                        │  (auth)     │  │  (port 50052)│  │  (port 50052)│
+       │                        │   :3112     │  └──────┬──────┘  └──────┬──────┘
+       │                        └─────────────┘         │                 │
+       │                                                 │                 │
+       │                                       gRPC (последовательно)     │
+       │                                                 ▼                 ▼
+       │                                  ┌─────────────┐  ┌─────────────┐
+       │                                  │   Worker(s) │  │   Worker(s) │
+       │                                  │  (port 50053)│  │  (port 50053)│
+       │                                  └──────┬──────┘  └──────┬──────┘
+       │                                         │                 │
+       │                                         ▼                 ▼
+       │                                  ┌─────────────┐  ┌─────────────┐
+       │                                  │   Agents    │  │   Agents    │
+       │                                  │  (port 50053)│  │  (port 50053)│
+       └─────────────────────────────────────────────────┼─────────────────┘
+                                                         │
+                                               LLM API (OpenRouter, Gemini,
+                                               OpenAI, Claude, DeepSeek, Grok)
 ```
 
-## 📋 Компоненты
+## 💡 Что такое CrewAI?
 
-### Agents Service (gRPC :50053)
-Централизованный сервис для работы с LLM-провайдерами:
-- **7 провайдеров**: OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok, **CLIProxyAPI (Qwen Code)**
-- **Per-request токены** — API-ключ передаётся в каждом запросе, не хранится на сервере
-- **Streaming** (`GenerateStream`) — потоковая генерация ответа
-- **Retry-логика** — 3 попытки при transient-ошибках (EOF, timeout, connection reset)
-- Все остальные сервисы обращаются к LLM **только через Agents**
+CrewAI — это веб-платформа, которая позволяет пользователям описывать программные проекты на естественном языке, а система автоматически генерирует полный рабочий код.
 
-### CLIProxyAPI (:8317) — Опционально
-Локальный прокси-сервер для использования Qwen Code CLI через OAuth (бесплатно):
-- **Бесплатный доступ** к Qwen Code без API-ключей через OAuth авторизацию
-- **OpenAI-совместимый API** — интегрируется как провайдер `cliproxy` в Agents Service
-- **Локальный запуск** — работает на твоей машине, нет rate limits
-- Запуск: `.\start-cliproxy.ps1` (PowerShell)
-- Настройка: `cliproxy/config.yaml` + OAuth авторизация через Management API
+### Как это работает:
+1. **Пользователь** описывает задачу: "Создай REST API на Go с аутентификацией"
+2. **Boss агент** анализирует задачу и планирует архитектуру
+3. **Manager агенты** распределяют работу между разработчиками
+4. **Worker агенты** пишут код для каждого компонента
+5. **Система** собирает всё в готовый проект и возвращает ZIP-архив
 
-### Apigateway (:3111)
-- HTTP/WebSocket шлюз для клиентских запросов
-- Проксирует задачи в Boss сервис через gRPC
-- **WebSocket стриминг** — real-time обновления прогресса
-- Эндпоинты:
-  - `GET /task/create` — WebSocket для создания задачи
-  - `GET /task/status?task_id=...` — статус задачи
-  - `GET /health` — проверка здоровья
+## ✨ Возможности
 
-### Boss Service (gRPC :50051)
-- Принимает задачи от apigateway
-- **ИИ-планирование**: через Agents анализирует задачу, определяет стек и архитектуру
-- Назначает **N менеджеров** (обычно 1-3) с ролями и приоритетами
-- **Параллельный вызов** `AssignManager` для каждого менеджера
-- **Финальная валидация** — Boss проверяет итоговый ZIP через AI перед отправкой
-- Сохраняет решение в PostgreSQL
-
-### Manager Service (gRPC :50052)
-- `AssignManager` — назначить **одного** менеджера (вызывается Boss для каждого отдельно)
-- **ИИ-распределение**: через Agents решает, каких воркеров нанять для своей команды
-- **Review-цикл**: проверяет работу каждого воркера через AI
-  - Если код не прошёл → отправляет `ReviewWorker` с замечаниями
-  - Воркер исправляет → повторная проверка
-- Собирает файлы всех воркеров в единую структуру
-- Возвращает ZIP + результаты воркеров
-
-### Worker Service (gRPC :50053)
-- Получает задачу от менеджера с ролью и описанием
-- **Использует Agents сервис** для генерации (не ходит в LLM напрямую)
-- **N+1 подход**:
-  1. Запрос к AI: «Какие файлы создать?» → список файлов
-  2. Для каждого файла — отдельный запрос: «Напиши содержимое»
-- **Координация**: каждый воркер видит результаты предыдущих (контекст)
-- **Plain text** — файлы генерируются как raw code, без JSON-обёрток
-- Поддержка `ReviewWorker` — исправление кода по замечаниям менеджера
+- 🎯 **Интеллектуальное планирование** — ИИ анализирует требования и выбирает оптимальную архитектуру
+- 👥 **Командная работа** — несколько агентов работают параллельно над разными частями проекта
+- 🔄 **Итеративная разработка** — автоматические review и исправления кода
+- 💳 **Подписка Pro** — расширенные возможности для активных пользователей
+- 🌐 **Веб-интерфейс** — удобный интерфейс с real-time обновлениями
+- 📱 **Чат и канвас** — два режима работы: чат и визуальный редактор
 
 ## 🚀 Быстрый старт
 
-### 1. Клонирование
+### 1. Клонирование и настройка
 ```bash
 git clone <repository>
 cd crewai
-```
-
-### 2. Настройка переменных окружения
-```bash
 cp .env.example .env
-# Укажите API-ключи провайдеров
+# Настройте переменные окружения (API ключи провайдеров)
 ```
 
-### 3. Запуск через Docker Compose
+### 2. Запуск через Docker Compose
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-Сервисы запустятся:
-- Apigateway: http://localhost:3111
-- Boss: localhost:50051
-- Manager: localhost:50052
-- Worker: localhost:50053
-- Agents: localhost:50053
-- PostgreSQL: localhost:5432
+### 3. Доступ к приложению
+- **Веб-интерфейс**: http://localhost
+- **API Gateway**: http://localhost:3111
+- **User Service**: http://localhost:3112
 
-### 4. Тестирование
+### 4. Первое использование
+1. Откройте http://localhost
+2. Зарегистрируйтесь или войдите в аккаунт
+3. Оформите подписку Pro (тестовая оплата доступна для разработки)
+4. Создайте задачу в режиме Canvas или Chat
+5. Скачайте готовый проект в ZIP архиве
 
-Создать задачу (через WebSocket):
-```json
-{
-  "userId": "user-123",
-  "username": "pavel",
-  "title": "Мини прокси",
-  "description": "Простой HTTP прокси на Go. Один файл main.go. Базовая маршрутизация.",
-  "tokens": {
-    "openrouter": "sk-or-v1-...",
-    "gemini": "AIzaSy..."
-  },
-  "meta": {
-    "provider": "openrouter",
-    "model": "qwen/qwen3-coder"
-  }
-}
-```
+## 💳 Подписка Pro
 
-Проверить статус:
-```bash
-curl http://localhost:3111/task/status?task_id=<task_id>
-```
+CrewAI работает по модели подписки для обеспечения качества и доступности сервиса.
 
-## 🤖 Поддерживаемые LLM-провайдеры
+### Тарифы:
+- **1 месяц** — $10
+- **3 месяца** — $25 (экономия 17%)
+- **6 месяцев** — $50 (экономия 17%)
+- **1 год** — $100 (экономия 17%)
 
-| Провайдер | Ключ в `tokens` | Модель по умолчанию | Бесплатно? |
-|-----------|-----------------|---------------------|------------|
-| **CLIProxyAPI** | не требуется | `qwen-code` | ✅ **Да, через OAuth** |
-| **OpenRouter** | `"openrouter": "sk-or-v1-..."` | `qwen/qwen3.6-plus:free` | ✅ Да |
-| **Gemini** | `"gemini": "AIzaSy..."` | `gemini-2.5-flash` | ✅ 20 запросов/мин |
-| **OpenAI** | `"openai": "sk-..."` | `gpt-4o` | ❌ |
-| **Claude** | `"claude": "sk-ant-..."` | `claude-opus-4-6` | ❌ |
-| **DeepSeek** | `"deepseek": "sk-..."` | `deepseek-chat` | ❌ (дешёвый) |
-| **Grok** | `"grok": "xai-..."` | `grok-3` | ❌ |
+### Что дает подписка Pro:
+- ✅ Доступ ко всем LLM провайдерам (OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok)
+- ✅ Неограниченное количество задач
+- ✅ Приоритетная обработка
+- ✅ Расширенные возможности генерации кода
+- ✅ Кастомные провайдеры и модели
+- ✅ Техническая поддержка
 
-### 🎯 Рекомендуемые бесплатные модели:
-- `qwen-code` (через CLIProxyAPI) — **лучший вариант для тестов**, полностью бесплатный ⭐
-- `qwen/qwen3.6-plus:free` — OpenRouter, хорошая для кода
-- `meta-llama/llama-3-8b-instruct:free` — OpenRouter, быстрая
-- `gemini-2.5-flash` — Gemini, 20 запросов/мин
+### Платежи:
+- 💳 Банковские карты через YooKassa
+- 🔄 Автоматическое продление подписки
+- 🛡️ Безопасная обработка платежей
+- 📧 Квитанции и история платежей
 
-### Рекомендуемые платные модели (дешёвые):
-- `qwen/qwen3-coder` — OpenRouter, ~$0.02/1M tokens ⭐ лучшая для кода
-- `openai/gpt-4o-mini` — ~$0.15/1M tokens
+### Для разработки:
+- 🧪 Тестовая оплата доступна для проверки функционала
+- 🔧 Настройка платежей через переменные окружения
 
 ## 📁 Структура проекта
 
 ```
 crewai/
-├── agents/             # Agents сервис (LLM-маршрутизатор)
-│   ├── cmd/app/
-│   ├── internal/fetcher/providers/
-│   │   ├── openrouter/
-│   │   ├── gemini/
-│   │   ├── openai/
-│   │   ├── claude/
-│   │   ├── deepseek/
-│   │   └── grok/
-│   ├── pkg/fetcher/grpc/
-│   ├── pkg/models/
-│   └── proto/
-├── apigateway/         # HTTP/WebSocket шлюз
-│   ├── cmd/app/
-│   ├── internal/fetcher/
-│   └── pkg/requests/
-├── boss/               # Boss сервис (CEO)
+├── frontend/web/        # React веб-приложение
+│   ├── src/
+│   │   ├── app/         # Основное приложение
+│   │   ├── components/  # UI компоненты
+│   │   ├── services/    # API сервисы
+│   │   ├── stores/      # Zustand стейт менеджмент
+│   │   └── hooks/       # React хуки
+│   ├── nginx.conf       # Nginx конфигурация
+│   └── Dockerfile
+├── user/                # User сервис (аутентификация, подписки)
+│   ├── cmd/app/         # Основное приложение
+│   ├── internal/core/   # Бизнес логика
+│   ├── pkg/             # Вспомогательные пакеты
+│   └── Dockerfile
+├── apigateway/          # API Gateway
 │   ├── cmd/app/
 │   ├── internal/
-│   │   ├── fetcher/grpc/
-│   │   │   ├── boss/
-│   │   │   └── manager/
-│   │   └── service/
-│   ├── pkg/
-│   │   ├── database/
-│   │   └── models/
-│   └── proto/
-├── manager/            # Manager сервис
-│   ├── cmd/app/
-│   ├── internal/
-│   │   ├── fetcher/grpc/
-│   │   │   ├── managerpb/
-│   │   │   └── worker/
-│   │   └── service/
-│   ├── pkg/
-│   │   ├── database/
-│   │   └── models/
-│   └── proto/
-├── worker/             # Worker сервис
-│   ├── cmd/app/
-│   ├── internal/
-│   │   ├── fetcher/grpc/
-│   │   │   └── workerpb/
-│   │   └── service/
-│   ├── pkg/
-│   │   ├── database/
-│   │   └── models/
-│   └── proto/
-├── frontend/           # Тестовый клиент (Node.js)
-│   └── npm_client_test/
-├── docker-compose.yml
-├── go.work
-└── .env.example
+│   └── pkg/
+├── boss/                # Boss агент (координатор)
+├── manager/             # Manager агенты
+├── worker/              # Worker агенты
+├── agents/              # LLM провайдеры
+├── docker-compose.yml   # Docker конфигурация
+├── go.work             # Go workspace
+└── .env.example        # Пример переменных окружения
 ```
 
 ## 🔄 Поток выполнения задачи
@@ -266,204 +185,113 @@ crewai/
 
 ## 🔧 Разработка
 
-### Генерация proto кода
-```powershell
-# PowerShell — генерация для всех сервисов
-.\generate-proto.ps1
+### Требования
+- Docker & Docker Compose
+- Go 1.25+
+- Node.js 18+ (для frontend)
+- PostgreSQL 15+
+- Redis 7+
+
+### Запуск в режиме разработки
+```bash
+# Клонирование
+git clone <repository>
+cd crewai
+
+# Настройка переменных окружения
+cp .env.example .env
+# Отредактируйте .env файл
+
+# Запуск всех сервисов
+docker compose up -d
+
+# Или только необходимые для разработки
+docker compose up -d postgres redis user frontend
 ```
 
-Или вручную:
+### Frontend разработка
 ```bash
-cd agents && protoc --go_out=. --go_opt=paths=source_relative \
-  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-  --proto_path=proto proto/agents.proto
-
-cd boss && protoc ... proto/boss-manager.proto
-cd manager && protoc ... proto/boss-manager.proto proto/manager-worker.proto
-cd worker && protoc ... proto/manager-worker.proto
+cd frontend/web
+npm install
+npm run dev  # Запуск на http://localhost:5173
 ```
 
-### Локальный запуск без Docker
+### Backend разработка
 ```bash
-# Terminal 1 — PostgreSQL
-docker run -d --name crewai-postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=crewai \
-  -p 5432:5432 postgres:15-alpine
-
-# Terminal 2 — Agents
-cd agents && go run cmd/app/main.go
-
-# Terminal 3 — Boss
-cd boss && go run cmd/app/main.go
-
-# Terminal 4 — Manager
-cd manager && go run cmd/app/main.go
-
-# Terminal 5 — Worker
-cd worker && go run cmd/app/main.go
-
-# Terminal 6 — Apigateway
+# Локальный запуск сервисов (после запуска БД)
+cd user && go run cmd/app/main.go
 cd apigateway && go run cmd/app/main.go
+# ... другие сервисы
+```
+
+### Работа с protobuf
+```bash
+# Генерация Go кода из proto файлов
+# Используйте скрипт генерации или protoc вручную
+protoc --go_out=. --go_opt=paths=source_relative \
+  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  proto/*.proto
 ```
 
 ## ⚠️ Важные замечания
 
-1. **API-ключи или CLIProxyAPI** — нужен хотя бы один провайдер (рекомендуется CLIProxyAPI для тестов)
-2. **PostgreSQL общий** для всех сервисов
-3. **gRPC порты** не должны конфликтовать
-4. **Миграции БД** запускаются автоматически при старте
-5. **Бесплатные модели медленные** — `:free` модели на OpenRouter могут отвечать 1-5 минут. Весь пайплайн с 15+ воркерами займёт 30+ минут
-6. **Для тестов** используйте простые задачи: «Маленький скрипт на go», «Один файл main.go»
-7. **Платные модели дешёвые** — `qwen/qwen3-coder` обойдётся в ~5-10 центов за весь пайплайн
+1. **Подписка обязательна** — для использования сервиса требуется активная подписка Pro
+2. **API ключи провайдеров** — настройте хотя бы один LLM провайдер в переменных окружения
+3. **PostgreSQL и Redis** — используются для хранения данных и кэширования
+4. **Docker Compose** — рекомендуемый способ запуска для разработки и продакшена
+5. **Тестовая оплата** — доступна для проверки платежного функционала без реальных денег
+6. **Производительность** — время генерации зависит от сложности задачи и выбранной модели
+7. **Безопасность** — API ключи хранятся securely и не передаются в логи
 
 ---
 
-## 🆓 Бесплатный ИИ через CLIProxyAPI + Qwen Code
+## ⚙️ Переменные окружения
 
-### Что такое CLIProxyAPI?
-
-[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) — это прокси-сервер, который оборачивает CLI-инструменты (включая **Qwen Code CLI**) в OpenAI-совместимый API. Это позволяет использовать Qwen Code **бесплатно** через OAuth авторизацию, без API-ключей.
-
-### Преимущества
-
-✅ **Полностью бесплатно** — Qwen Code работает через OAuth, без API-ключей  
-✅ **Локальный запуск** — работает на твоей машине, нет rate limits  
-✅ **OpenAI-совместимый API** — интегрируется как провайдер `cliproxy`  
-✅ **Идеально для тестов** — не нужно тратить деньги на API-ключи  
-
-### Быстрый старт с CLIProxyAPI
-
-#### 1. Установка Qwen Code CLI
+Создайте файл `.env` на основе `.env.example`:
 
 ```bash
-# Установка Qwen Code CLI (требуется Node.js 18+)
-npm install -g @qwen/code
+cp .env.example .env
 ```
 
-#### 2. Авторизация Qwen Code
+### Обязательные переменные:
 
 ```bash
-# Вход через OAuth (откроется браузер)
-qwen login
+# JWT токены (сгенерируйте случайные строки)
+JWT_SECRET="your-jwt-secret-here"
+JWT_REFRESH_SECRET="your-refresh-secret-here"
+
+# YooKassa платежи (тестовые данные)
+YOOKASSA_SHOP_ID="1339826"
+YOOKASSA_SECRET_KEY="test_StL4_VJfVFbOJ7_BbolU2VhoR1zjIQ7Qf2gcwN3Gngw"
+
+# API ключи провайдеров (минимум один)
+OPENROUTER_API_KEY="sk-or-v1-..."
+GEMINI_API_KEY="AIzaSy..."
+# Другие провайдеры опциональны
 ```
 
-#### 3. Запуск CLIProxyAPI через Docker Compose
-
-CLIProxyAPI уже настроен в твоём `docker-compose.yml`:
+### Опциональные переменные:
 
 ```bash
-# Запустить все сервисы включая CLIProxyAPI
-docker-compose up -d --build
+# Порты сервисов (по умолчанию)
+AUTH_PORT=3112
+API_GATEWAY_PORT=3111
+
+# Rate limiting
+RATE_LIMIT_TASK_CREATE=10/60
+RATE_LIMIT_TASK_STATUS=60/60
+
+# Redis (для кэширования)
+REDIS_URL=redis://redis:6379/0
 ```
 
-CLIProxyAPI запустится на порту **8317** и будет доступен для Agents Service.
+## 📞 Поддержка
 
-#### 4. Проверка работоспособности
-
-```bash
-# Проверить что CLIProxyAPI работает
-curl http://localhost:8317/v1/models
-
-# Должен вернуть список моделей включая qwen-code
-```
-
-#### 5. Использование в запросах
-
-Теперь можно использовать провайдер `cliproxy` без API-ключей:
-
-```json
-{
-  "userId": "user-123",
-  "username": "pavel",
-  "title": "Тестовая задача",
-  "description": "Напиши простой HTTP сервер на Go",
-  "tokens": {},  // ключи НЕ нужны!
-  "meta": {
-    "provider": "cliproxy",
-    "model": "qwen-code"
-  }
-}
-```
-
-### Ручной запуск CLIProxyAPI (без Docker)
-
-Если хочешь запустить CLIProxyAPI отдельно:
-
-```bash
-# Клонировать репозиторий (уже сделано в cliproxy-temp/)
-cd cliproxy-temp
-
-# Собрать из исходников
-go build -o cliproxy
-
-# Запустить с конфигом
-./cliproxy --config ../cliproxy/config.yaml
-```
-
-### Конфигурация CLIProxyAPI
-
-Файл `cliproxy/config.yaml` уже настроен:
-
-```yaml
-port: 8317
-api-keys:
-  - "cliproxy-dev-key-change-me"
-
-oauth-model-alias:
-  qwen:
-    - name: "qwen3-coder-plus"
-      alias: "qwen-code"
-```
-
-### Первичная настройка OAuth
-
-При первом запуске CLIProxyAPI потребуется авторизация:
-
-```bash
-# Вариант 1: Через Docker
-docker exec -it crewai-cliproxy /bin/sh
-# Внутри контейнера:
-qwen login
-
-# Вариант 2: Локально (если CLIProxyAPI запущен без Docker)
-qwen login
-```
-
-После авторизации OAuth токены сохранятся в volume `cliproxy_auth` и будут переиспользоваться.
-
-### Troubleshooting
-
-**CLIProxyAPI не запускается:**
-```bash
-# Проверить логи
-docker logs crewai-cliproxy
-
-# Проверить что порт свободен
-netstat -an | findstr 8317
-```
-
-**OAuth ошибка:**
-```bash
-# Переавторизоваться
-docker exec -it crewai-cliproxy qwen login
-
-# Или удалить volume и начать заново
-docker-compose down -v
-docker-compose up -d cliproxy
-docker exec -it crewai-cliproxy qwen login
-```
-
-**Agents Service не видит CLIProxyAPI:**
-```bash
-# Проверить переменную окружения
-docker exec crewai-agents env | grep CLIPROXY
-
-# Должно быть: CLIPROXY_API_URL=http://cliproxy:8317/v1
-```
-
----
+- 📧 Email: support@crewai.com
+- 💬 Discord: [Присоединяйтесь к сообществу](https://discord.gg/crewai)
+- 📚 Документация: [docs.crewai.com](https://docs.crewai.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/crewai/crewai/issues)
 
 ## 📄 Лицензия
 
-MIT
+MIT License - см. [LICENSE](LICENSE) файл для деталей.

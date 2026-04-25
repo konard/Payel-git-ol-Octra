@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Azienda di Agenti IA"
   },
+  "common": {
+    "close": "Chiudi"
+  },
   "topbar": {
     "download": "Scarica",
     "settings": "Impostazioni",
@@ -307,6 +310,15 @@
     "registering": "Registrazione...",
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?"
+  },
+  "chatSidebar": {
+    "history": "Cronologia",
+    "newChat": "Nuova chat",
+    "noChats": "Nessuna chat",
+    "rename": "Rinomina",
+    "delete": "Elimina",
+    "thisMonth": "Questo mese",
+    "lastMonth": "Mese scorso"
   },
   "providers": {
     "title": "Custom Providers",

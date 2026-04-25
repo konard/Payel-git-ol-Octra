@@ -3,6 +3,9 @@
     "title": "CrewAI",
     "subtitle": "Podjetje AI Agentov"
   },
+  "common": {
+    "close": "Zapri"
+  },
   "topbar": {
     "download": "Prenesi",
     "settings": "Nastavitve",
@@ -295,6 +298,15 @@
     "registering": "Registracija...",
     "noAccount": "Nimate računa?",
     "hasAccount": "Že imate račun?"
+  },
+  "chatSidebar": {
+    "history": "Zgodovina",
+    "newChat": "Nova klepetalnica",
+    "noChats": "Brez klepetalnic",
+    "rename": "Preimenuj",
+    "delete": "Izbriši",
+    "thisMonth": "Ta mesec",
+    "lastMonth": "Prejšnji mesec"
   },
   "providers": {
     "title": "Custom Providers",
