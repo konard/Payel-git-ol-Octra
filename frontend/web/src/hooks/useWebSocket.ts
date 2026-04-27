@@ -365,9 +365,14 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     // === MANAGER WORKING — "Manager working: Project Lead / Architect" ===
     const workingMatch = message.match(/Manager working:\s*(.+)/i);
     if (workingMatch) {
-      const role = workingMatch[1].trim();
+      if (msg.data?.current_role) {
+        // Use current_role from message data if available
+        currentManagerRole.current = msg.data.current_role;
+      } else {
+        currentManagerRole.current = workingMatch[1].trim();
+      }
+      const role = currentManagerRole.current;
       console.log('[WS] => Manager working:', role, 'setting currentManagerRole');
-      currentManagerRole.current = role; // Track current active manager
       const idx = [...managersKnown.current].indexOf(role);
       if (idx >= 0) {
         storeActions.updateNode(`manager-${idx}`, { status: 'working' });
@@ -389,7 +394,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     console.log('[WS] => Worker start regex check:', message, 'match:', !!workerStartMatch);
     if (workerStartMatch) {
       const role = workerStartMatch[1].trim();
-      const managerRole = currentManagerRole.current;
+      // Use current_role from message data if available (more reliable than currentManagerRole)
+      const managerRole = msg.data?.current_role || currentManagerRole.current;
       const managerIdx = [...managersKnown.current].indexOf(managerRole);
 
       // Initialize worker tracking for this manager
@@ -442,7 +448,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     if (workerCompleteMatch) {
       const role = workerCompleteMatch[1].trim();
       const filesCount = parseInt(workerCompleteMatch[2], 10);
-      const managerRole = currentManagerRole.current;
+      // Use current_role from message data if available
+      const managerRole = msg.data?.current_role || currentManagerRole.current;
 
       // Find worker by role and manager
       if (workersByManager.current[managerRole]) {

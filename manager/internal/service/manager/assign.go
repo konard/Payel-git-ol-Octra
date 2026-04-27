@@ -60,12 +60,12 @@ func (s *ManagerService) AssignManagerStream(req *managerpb.AssignManagerRequest
 		return err
 	}
 
-	// Send final success update
+	// Send final completion update
 	stream.Send(&managerpb.TaskUpdate{
 		TaskId:    req.TaskId,
-		Message:   fmt.Sprintf("Manager %s completed successfully", req.Role),
+		Message:   fmt.Sprintf("Manager %s task finalized", req.Role),
 		Progress:  100,
-		Status:    "success",
+		Status:    "completed",
 		Timestamp: time.Now().Unix(),
 		Data: map[string]string{
 			"current_role": req.Role,

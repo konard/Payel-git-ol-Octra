@@ -332,13 +332,41 @@ func (s *BossService) executeTaskFlow(
 	task.Status = "done"
 	database.Db.Save(task)
 
+	// 8. Push to GitHub if token is available
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	var repoURL string
+	if githubToken != "" {
+		log.Printf("Pushing results to GitHub...")
+		githubClient := s.getGitHubClient()
+		if githubClient != nil {
+			var err error
+			repoURL, err = githubClient.CreateRepository(ctx, &task)
+			if err != nil {
+				log.Printf("Failed to create GitHub repository: %v", err)
+			} else {
+				if err := githubClient.PushToRepository(ctx, &task, zipData, repoURL); err != nil {
+					log.Printf("Failed to push to GitHub: %v", err)
+				} else {
+					log.Printf("Successfully pushed to GitHub: %s", repoURL)
+					// Update task with repo URL
+					task.ProjectJSON = repoURL
+					database.Db.Save(&task)
+				}
+			}
+		}
+	}
+
 	log.Printf("✅ Task %s completed! ZIP size: %d bytes", taskID, len(zipData))
 
 	techStackBytes, _ := json.Marshal(decision.TechStack)
-	return sender.sendSuccess("🎉 Project ready! "+task.Title+" created successfully", 100, map[string]string{
+	data := map[string]string{
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"techStack": string(techStackBytes),
-	})
+	}
+	if repoURL != "" {
+		data["repo_url"] = repoURL
+	}
+	return sender.sendSuccess("🎉 Project ready! "+task.Title+" created successfully", 100, data)
 }
 
 // parseUUID parses a string to UUID, returns nil on error

@@ -13,6 +13,7 @@ import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
+import { getChat, updateChatWorkflow } from '../services/chatHistoryService';
 import { PaymentSuccess } from '../components/PaymentSuccess';
 import { Sidebar } from '../components/Sidebar';
 import { useAuthStore } from '../stores/authStore';
@@ -111,6 +112,29 @@ export default function App() {
 
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
+
+  // Сохранять workflow в чат при завершении таски
+  useEffect(() => {
+    if (status === 'done' && currentChatId) {
+      const nodes = useTaskStore.getState().nodes;
+      const edges = useTaskStore.getState().edges;
+      if (nodes.length > 0) {
+        const workflowData = JSON.stringify({
+          nodes: nodes.map(n => ({
+            id: n.id,
+            type: n.type,
+            role: n.role,
+            status: n.status,
+            position: n.position,
+            filesCount: n.filesCount,
+            workerCount: n.workerCount,
+          })),
+          edges: edges.map(e => ({ from: e.from, to: e.to })),
+        });
+        updateChatWorkflow(currentChatId, workflowData).catch(console.error);
+      }
+    }
+  }, [status, currentChatId]);
 
   useEffect(() => {
     if (isDark) {
@@ -256,9 +280,31 @@ export default function App() {
     setMode('chat');
   };
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = async (chatId: string) => {
     setCurrentChatId(chatId);
-    // TODO: Load messages from API
+    try {
+      const chat = await getChat(chatId);
+      if (chat.workflow) {
+        const workflowData = JSON.parse(chat.workflow);
+        if (workflowData.nodes?.length || workflowData.edges?.length) {
+          useTaskStore.getState().resetTask();
+          workflowData.nodes?.forEach((node: any) => {
+            useTaskStore.getState().addNode({
+              id: node.id,
+              type: node.type,
+              role: node.role,
+              status: node.status || 'done',
+              position: node.position,
+            });
+          });
+          workflowData.edges?.forEach((edge: any) => {
+            useTaskStore.getState().addEdge(edge);
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load chat workflow:', err);
+    }
   };
 
   return (

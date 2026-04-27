@@ -187,6 +187,9 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 
 	// Manager reviews each worker
 	log.Printf("Manager %s reviewing workers...", req.Role)
+	if progressCallback != nil {
+		progressCallback(95, fmt.Sprintf("Manager %s reviewing workers...", req.Role))
+	}
 	reviewSummary := ""
 	for _, wr := range workerResp.WorkerResults {
 		// Manager reviews worker via AI
@@ -246,6 +249,10 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 	database.Db.Save(manager)
 
 	log.Printf("Manager %s completed: %d workers, review: %s", req.Role, len(workerResp.WorkerResults), reviewSummary)
+
+	if progressCallback != nil {
+		progressCallback(100, fmt.Sprintf("Manager %s completed successfully", req.Role))
+	}
 
 	return &managerpb.ManagerResult{
 		TaskId:        req.TaskId,
