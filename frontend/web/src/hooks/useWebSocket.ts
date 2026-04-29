@@ -169,7 +169,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           message: msg.message || 'Project ready!',
           type: 'success',
         });
-        if (msg.data?.zipUrl) {
+        if (msg.data?.repoUrl) {
+          storeActions.setZipUrl(msg.data.repoUrl);
+        } else if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
         }
         // Update all nodes to done including ZIP

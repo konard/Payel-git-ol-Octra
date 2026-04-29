@@ -110,7 +110,6 @@ type WorkerRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	CustomPrompt  string                 `protobuf:"bytes,3,opt,name=custom_prompt,json=customPrompt,proto3" json:"custom_prompt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -159,13 +158,6 @@ func (x *WorkerRole) GetDescription() string {
 	return ""
 }
 
-func (x *WorkerRole) GetCustomPrompt() string {
-	if x != nil {
-		return x.CustomPrompt
-	}
-	return ""
-}
-
 // WorkerResult — результат работы воркера
 type WorkerResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -177,6 +169,7 @@ type WorkerResult struct {
 	Success       bool                   `protobuf:"varint,6,opt,name=success,proto3" json:"success,omitempty"`
 	Feedback      string                 `protobuf:"bytes,7,opt,name=feedback,proto3" json:"feedback,omitempty"`
 	Approved      bool                   `protobuf:"varint,8,opt,name=approved,proto3" json:"approved,omitempty"`
+	Commands      []string               `protobuf:"bytes,9,rep,name=commands,proto3" json:"commands,omitempty"` // команды для выполнения в проекте
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -267,6 +260,13 @@ func (x *WorkerResult) GetApproved() bool {
 	return false
 }
 
+func (x *WorkerResult) GetCommands() []string {
+	if x != nil {
+		return x.Commands
+	}
+	return nil
+}
+
 type AssignWorkersRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	TaskId              string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
@@ -276,6 +276,7 @@ type AssignWorkersRequest struct {
 	TaskMd              string                 `protobuf:"bytes,5,opt,name=task_md,json=taskMd,proto3" json:"task_md,omitempty"`
 	Metadata            map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	OtherWorkersResults []*WorkerResult        `protobuf:"bytes,7,rep,name=other_workers_results,json=otherWorkersResults,proto3" json:"other_workers_results,omitempty"` // результаты других воркеров
+	ProjectPath         string                 `protobuf:"bytes,8,opt,name=project_path,json=projectPath,proto3" json:"project_path,omitempty"`                           // путь к папке проекта для Git
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -359,12 +360,18 @@ func (x *AssignWorkersRequest) GetOtherWorkersResults() []*WorkerResult {
 	return nil
 }
 
+func (x *AssignWorkersRequest) GetProjectPath() string {
+	if x != nil {
+		return x.ProjectPath
+	}
+	return ""
+}
+
 type AssignWorkersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	Solution      []byte                 `protobuf:"bytes,3,opt,name=solution,proto3" json:"solution,omitempty"`                                // ZIP архив с кодом
-	WorkerResults []*WorkerResult        `protobuf:"bytes,4,rep,name=worker_results,json=workerResults,proto3" json:"worker_results,omitempty"` // результаты всех воркеров
+	WorkerResults []*WorkerResult        `protobuf:"bytes,3,rep,name=worker_results,json=workerResults,proto3" json:"worker_results,omitempty"` // результаты всех воркеров
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -411,13 +418,6 @@ func (x *AssignWorkersResponse) GetStatus() string {
 		return x.Status
 	}
 	return ""
-}
-
-func (x *AssignWorkersResponse) GetSolution() []byte {
-	if x != nil {
-		return x.Solution
-	}
-	return nil
 }
 
 func (x *AssignWorkersResponse) GetWorkerResults() []*WorkerResult {
@@ -627,12 +627,11 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\x04data\x18\x06 \x03(\v2\x1c.worker.TaskUpdate.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"g\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\n" +
 	"WorkerRole\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12#\n" +
-	"\rcustom_prompt\x18\x03 \x01(\tR\fcustomPrompt\"\xbc\x02\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xd8\x02\n" +
 	"\fWorkerResult\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12\x17\n" +
@@ -642,11 +641,12 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\x05files\x18\x05 \x03(\v2\x1f.worker.WorkerResult.FilesEntryR\x05files\x12\x18\n" +
 	"\asuccess\x18\x06 \x01(\bR\asuccess\x12\x1a\n" +
 	"\bfeedback\x18\a \x01(\tR\bfeedback\x12\x1a\n" +
-	"\bapproved\x18\b \x01(\bR\bapproved\x1a8\n" +
+	"\bapproved\x18\b \x01(\bR\bapproved\x12\x1a\n" +
+	"\bcommands\x18\t \x03(\tR\bcommands\x1a8\n" +
 	"\n" +
 	"FilesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb3\x03\n" +
 	"\x14AssignWorkersRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
@@ -655,15 +655,15 @@ const file_manager_worker_proto_rawDesc = "" +
 	"\fworker_roles\x18\x04 \x03(\v2\x12.worker.WorkerRoleR\vworkerRoles\x12\x17\n" +
 	"\atask_md\x18\x05 \x01(\tR\x06taskMd\x12F\n" +
 	"\bmetadata\x18\x06 \x03(\v2*.worker.AssignWorkersRequest.MetadataEntryR\bmetadata\x12H\n" +
-	"\x15other_workers_results\x18\a \x03(\v2\x14.worker.WorkerResultR\x13otherWorkersResults\x1a;\n" +
+	"\x15other_workers_results\x18\a \x03(\v2\x14.worker.WorkerResultR\x13otherWorkersResults\x12!\n" +
+	"\fproject_path\x18\b \x01(\tR\vprojectPath\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x85\x01\n" +
 	"\x15AssignWorkersResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1a\n" +
-	"\bsolution\x18\x03 \x01(\fR\bsolution\x12;\n" +
-	"\x0eworker_results\x18\x04 \x03(\v2\x14.worker.WorkerResultR\rworkerResults\"\xe4\x03\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12;\n" +
+	"\x0eworker_results\x18\x03 \x03(\v2\x14.worker.WorkerResultR\rworkerResults\"\xe4\x03\n" +
 	"\rReviewRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +

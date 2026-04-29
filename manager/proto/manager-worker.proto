@@ -40,6 +40,7 @@ message AssignWorkersRequest {
   string task_md = 5;
   map<string, string> metadata = 6;
   repeated WorkerResult other_workers_results = 7; // результаты других воркеров
+  string project_path = 8; // путь к папке проекта для Git
 }
 
 message AssignWorkersResponse {

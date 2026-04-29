@@ -1,0 +1,1 @@
+### These folders contain the previous chat context

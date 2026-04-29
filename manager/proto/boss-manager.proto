@@ -62,18 +62,16 @@ message ManagerResult {
   string manager_id = 2;
   string role = 3;
   string status = 4;                 // success, error
-  bytes solution = 5;               // ZIP архив от менеджера
-  repeated WorkerResult worker_results = 6; // результаты всех воркеров
-  string review_summary = 7;        // резюме проверки менеджера
+  repeated WorkerResult worker_results = 5; // результаты всех воркеров
+  string review_summary = 6;        // резюме проверки менеджера
 }
 
-// Ответ manager с ZIP архивом
+// Ответ manager
 message AssignManagersResponse {
   string task_id = 1;
   string status = 2;
   string message = 3;
-  bytes solution = 4;  // ZIP архив со всем проектом
-  repeated ManagerResult manager_results = 5; // результаты всех менеджеров
+  repeated ManagerResult manager_results = 4; // результаты всех менеджеров
 }
 
 service ManagerService {

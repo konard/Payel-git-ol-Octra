@@ -37,6 +37,24 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+	EnableCompression: true,
+}
+
+// PingWriter periodically sends pings to keep connection alive
+func PingWriter(conn *websocket.Conn, done <-chan struct{}) {
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(5*time.Second)); err != nil {
+				log.Printf("❌ Ping write error: %v", err)
+				return
+			}
+		case <-done:
+			return
+		}
+	}
 }
 
 func init() {
@@ -143,6 +161,11 @@ func handleTaskCreateWS(c *gin.Context) {
 	// Process task stream in background
 	go processTaskStreamWS(conn, taskReq)
 
+	// Keep connection alive with periodic pings
+	done := make(chan struct{})
+	go PingWriter(conn, done)
+	defer close(done)
+	
 	// Keep reading to handle close/ping and messages
 	go func() {
 		defer conn.Close()

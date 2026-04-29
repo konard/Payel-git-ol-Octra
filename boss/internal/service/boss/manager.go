@@ -14,7 +14,7 @@ import (
 )
 
 // assignManagersParallelWithProgress calls AssignManager for each manager IN PARALLEL with progress updates
-func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer, projectPath string) ([]*managerpb.ManagerResult, []byte, error) {
+func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer, projectPath string) ([]*managerpb.ManagerResult, error) {
 	// Create a thread-safe progress sender
 	sendCh := make(chan *bosspb.TaskUpdate, 64)
 	doneCh := make(chan struct{})
@@ -52,18 +52,19 @@ func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, ta
 		}
 	}
 
-	results, zipData, err := s.assignManagersParallel(ctx, taskID, decision, req, callback, projectPath)
+	results, err := s.assignManagersParallel(ctx, taskID, decision, req, callback, projectPath)
 	close(sendCh)
 	<-doneCh // Wait for all pending sends to complete
-	return results, zipData, err
+	return results, err
 }
 
 // assignManagersParallel calls AssignManager for each manager IN PARALLEL
-func (s *BossService) assignManagersParallel(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, progressCallback func(string, int, string), projectPath string) ([]*managerpb.ManagerResult, []byte, error) {
+func (s *BossService) assignManagersParallel(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, progressCallback func(string, int, string), projectPath string) ([]*managerpb.ManagerResult, error) {
 	metadata := map[string]string{
 		"tokens":   marshalString(req.Tokens),
 		"model":    req.Meta["model"],
 		"provider": req.Meta["provider"],
+		"title":   req.Title,
 	}
 	for k, v := range req.Tokens {
 		metadata[k] = v
@@ -72,7 +73,6 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 	var (
 		mu         sync.Mutex
 		allResults []*managerpb.ManagerResult
-		allZipData [][]byte
 		firstErr   error
 	)
 
@@ -195,9 +195,6 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 
 			mu.Lock()
 			allResults = append(allResults, result)
-			if len(result.Solution) > 0 {
-				allZipData = append(allZipData, result.Solution)
-			}
 			mu.Unlock()
 
 			if progressCallback != nil {
@@ -224,14 +221,10 @@ func (s *BossService) assignManagersParallel(ctx context.Context, taskID string,
 	wg.Wait()
 
 	if firstErr != nil && len(allResults) == 0 {
-		return nil, nil, firstErr
+		return nil, firstErr
 	}
 
-	// Combine manager outputs directly (merger removed)
-	var finalZip []byte
-	finalZip, _ = mergeZipArchives(allZipData)
-
-	return allResults, finalZip, nil
+	return allResults, nil
 }
 
 func (r *BossDecisionResult) ManagerRolesProto() []*bosspb.ManagerRole {

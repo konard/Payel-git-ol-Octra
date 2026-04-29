@@ -46,8 +46,7 @@ message AssignWorkersRequest {
 message AssignWorkersResponse {
   string task_id = 1;
   string status = 2;
-  bytes solution = 3;  // ZIP архив с кодом
-  repeated WorkerResult worker_results = 4; // результаты всех воркеров
+  repeated WorkerResult worker_results = 3; // результаты всех воркеров
 }
 
 // ReviewRequest — запрос на исправление от менеджера

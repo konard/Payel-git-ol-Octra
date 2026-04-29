@@ -1,7 +1,6 @@
 package github
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -9,9 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -87,47 +84,20 @@ func (c *Client) CreateRepository(ctx context.Context, task *models.Task) (strin
 	return repoResp.HTMLURL, nil
 }
 
-func (c *Client) PushToRepository(ctx context.Context, task *models.Task, zipData []byte, repoURL string) error {
-	// Create temporary directory for the project
-	tempDir, err := os.MkdirTemp("", "crewai-push-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp dir: %w", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Extract ZIP data to temp directory
-	if err := c.extractZip(zipData, tempDir); err != nil {
-		return fmt.Errorf("failed to extract zip: %w", err)
-	}
-
-	// Initialize git repository
-	if err := c.initGitRepo(tempDir); err != nil {
-		return fmt.Errorf("failed to init git repo: %w", err)
-	}
-
-	// Configure git user
-	if err := c.configureGit(tempDir); err != nil {
-		return fmt.Errorf("failed to configure git: %w", err)
+// PushToRepository pushes an existing git repository to GitHub
+func (c *Client) PushToRepository(ctx context.Context, task *models.Task, repoPath string, repoURL string) error {
+	// Configure git user (in case not set)
+	if err := c.configureGit(repoPath); err != nil {
+		log.Printf("Warning: failed to configure git: %v", err)
 	}
 
 	// Add remote origin
-	if err := c.addRemote(tempDir, repoURL); err != nil {
+	if err := c.addRemote(repoPath, repoURL); err != nil {
 		return fmt.Errorf("failed to add remote: %w", err)
 	}
 
-	// Add all files
-	if err := c.gitAdd(tempDir); err != nil {
-		return fmt.Errorf("failed to add files: %w", err)
-	}
-
-	// Commit changes
-	commitMsg := fmt.Sprintf("CrewAI Task: %s\n\n%s", task.Title, task.Description)
-	if err := c.gitCommit(tempDir, commitMsg); err != nil {
-		return fmt.Errorf("failed to commit: %w", err)
-	}
-
 	// Push to GitHub
-	if err := c.gitPush(tempDir); err != nil {
+	if err := c.gitPush(repoPath); err != nil {
 		return fmt.Errorf("failed to push: %w", err)
 	}
 
@@ -135,45 +105,6 @@ func (c *Client) PushToRepository(ctx context.Context, task *models.Task, zipDat
 	return nil
 }
 
-func (c *Client) extractZip(zipData []byte, destDir string) error {
-	zipReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
-	if err != nil {
-		return err
-	}
-
-	for _, file := range zipReader.File {
-		filePath := filepath.Join(destDir, file.Name)
-
-		if file.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return err
-		}
-
-		destFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return err
-		}
-
-		srcFile, err := file.Open()
-		if err != nil {
-			destFile.Close()
-			return err
-		}
-
-		_, err = io.Copy(destFile, srcFile)
-		srcFile.Close()
-		destFile.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 func (c *Client) initGitRepo(dir string) error {
 	cmd := exec.Command("git", "init")
@@ -215,7 +146,10 @@ func (c *Client) addRemote(dir, repoURL string) error {
 func (c *Client) gitAdd(dir string) error {
 	cmd := exec.Command("git", "add", ".")
 	cmd.Dir = dir
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git add failed: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) gitCommit(dir, message string) error {

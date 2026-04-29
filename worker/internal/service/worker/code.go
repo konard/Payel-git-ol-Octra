@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 )
 
 func (s *WorkerService) generateCode(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, []string, error) {
@@ -61,9 +62,17 @@ Return the file content as PLAIN TEXT. NO JSON. NO markdown. Just the raw code.`
 		// Strip markdown code blocks if present
 		content = stripMarkdownCodeBlock(content)
 
-		if content != "" {
-			files[fmt.Sprintf("%s/%s/%s", basePath, role, file)] = content
+		if content == "" {
+			continue
 		}
+		normalizedPath := strings.TrimSpace(strings.ReplaceAll(file, "\\", "/"))
+		for strings.HasPrefix(normalizedPath, "./") {
+			normalizedPath = strings.TrimPrefix(normalizedPath, "./")
+		}
+		if normalizedPath == "" || strings.HasPrefix(normalizedPath, "/") || strings.Contains(normalizedPath, "..") {
+			continue
+		}
+		files[normalizedPath] = content
 	}
 
 	// Generate commands

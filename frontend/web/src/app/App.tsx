@@ -178,8 +178,11 @@ export default function App() {
     const customProviders = useCustomProvidersStore.getState().providers;
     const customProvider = customProviders.find(p => p.id === data.provider);
 
+    const authUser = useAuthStore.getState().user;
+
     let taskPayload: any = {
-      username: 'user',
+      username: authUser?.username || 'user',
+      user_id: authUser?.id || 'local',
       title: data.title,
       description: data.description,
       meta: {

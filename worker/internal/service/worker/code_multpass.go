@@ -38,13 +38,14 @@ echo 'content' > file.txt
 
 RULES:
 1. Each file MUST start with "=== FILE: <path> ===" on its own line
-2. File content MUST be complete code - no placeholders, no TODOs, no "implement later"
-3. Use proper imports and exports
-4. Keep code compact but functional (300-500 lines max per file)
-5. Do NOT include markdown code fences around the entire response
-6. If you can't create a file, skip it and move to the next one
-7. COMMANDS: List bash commands to run in project root, one per line
-8. Return ONLY the files and commands, no explanations`,
+2. File paths should be relative to project root (e.g., main.go, cmd/server/main.go) - DO NOT include project name in path
+3. File content MUST be complete code - no placeholders, no TODOs, no "implement later"
+4. Use proper imports and exports
+5. Keep code compact but functional (300-500 lines max per file)
+6. Do NOT include markdown code fences around the entire response
+7. If you can't create a file, skip it and move to the next one
+8. COMMANDS: List bash commands to run in project root, one per line
+9. Return ONLY the files and commands, no explanations`,
 		role, description, taskMD, contextSection)
 
 	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
@@ -61,10 +62,20 @@ RULES:
 		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, context)
 	}
 
-	// Prepend basePath to all files
-	finalFiles := make(map[string]string)
+	// Keep relative paths from model output; caller writes them under project root.
+	finalFiles := make(map[string]string, len(files))
 	for path, content := range files {
-		finalFiles[fmt.Sprintf("%s/%s/%s", basePath, role, path)] = content
+		normalizedPath := strings.TrimSpace(strings.ReplaceAll(path, "\\", "/"))
+		if normalizedPath == "" {
+			continue
+		}
+		for strings.HasPrefix(normalizedPath, "./") {
+			normalizedPath = strings.TrimPrefix(normalizedPath, "./")
+		}
+		if normalizedPath == "" || strings.HasPrefix(normalizedPath, "/") || strings.Contains(normalizedPath, "..") {
+			continue
+		}
+		finalFiles[normalizedPath] = content
 	}
 
 	log.Printf("[Worker] Multi-pass generated %d files and %d commands for role %s", len(finalFiles), len(commands), role)

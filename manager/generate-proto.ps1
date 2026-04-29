@@ -4,5 +4,6 @@ $env:Path = "C:\Users\pasaz\AppData\Local\Microsoft\WinGet\Packages\Google.Proto
 cd C:\Users\pasaz\GolandProjects\crewai\manager
 protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=proto proto/boss-manager.proto
 protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=proto proto/manager-worker.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=C:/Users/pasaz/GolandProjects/crewai/worker/proto C:/Users/pasaz/GolandProjects/crewai/worker/proto/manager-worker.proto
 
 Write-Host "Proto сгенерирован!"

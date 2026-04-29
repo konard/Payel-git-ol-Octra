@@ -276,6 +276,7 @@ type AssignWorkersRequest struct {
 	TaskMd              string                 `protobuf:"bytes,5,opt,name=task_md,json=taskMd,proto3" json:"task_md,omitempty"`
 	Metadata            map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	OtherWorkersResults []*WorkerResult        `protobuf:"bytes,7,rep,name=other_workers_results,json=otherWorkersResults,proto3" json:"other_workers_results,omitempty"` // результаты других воркеров
+	ProjectPath         string                 `protobuf:"bytes,8,opt,name=project_path,json=projectPath,proto3" json:"project_path,omitempty"`                           // путь к папке проекта для Git
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -357,6 +358,13 @@ func (x *AssignWorkersRequest) GetOtherWorkersResults() []*WorkerResult {
 		return x.OtherWorkersResults
 	}
 	return nil
+}
+
+func (x *AssignWorkersRequest) GetProjectPath() string {
+	if x != nil {
+		return x.ProjectPath
+	}
+	return ""
 }
 
 type AssignWorkersResponse struct {

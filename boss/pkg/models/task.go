@@ -23,6 +23,7 @@ type Task struct {
 	ClarificationQuestion string    `json:"clarification_question"`
 	ClarificationResponse string    `json:"clarification_response"`
 	ProjectJSON           string    `gorm:"type:text" json:"project_json"`
+	GitData              string    `gorm:"type:text" json:"git_data"` // .git folder contents (base64 or json)
 	Solution              []byte    `gorm:"type:bytea" json:"solution"`
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`

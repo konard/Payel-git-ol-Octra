@@ -1,18 +1,19 @@
 package manager
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/google/uuid"
-	"log"
-	"manager/internal/fetcher/grpc/managerpb"
-	"manager/internal/fetcher/grpc/workerpb"
-	"manager/pkg/database"
-	"manager/pkg/models"
-	"os"
-	"path/filepath"
-	"time"
+  "context"
+  "encoding/json"
+  "fmt"
+  "github.com/google/uuid"
+  "log"
+  "manager/internal/fetcher/grpc/managerpb"
+  "manager/internal/fetcher/grpc/workerpb"
+  "manager/internal/service/git"
+  "manager/pkg/database"
+  "manager/pkg/models"
+  "os"
+  "path/filepath"
+  "time"
 )
 
 // processManager — основная логика одного менеджера
@@ -32,7 +33,7 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 		managerID = uuid.New()
 	}
 
-	// Создаём менеджера в БД
+	// Создаём менеджера в БД (или обновляем если уже существует)
 	manager := &models.Manager{
 		ID:           managerID,
 		TaskID:       taskID,
@@ -41,11 +42,22 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 		TaskDesc:     req.TechnicalDescription,
 		CustomPrompt: req.CustomPrompt,
 	}
-	database.Db.Create(manager)
-
-	if progressCallback != nil {
-		progressCallback(5, fmt.Sprintf("Manager %s initialized", req.Role))
+	result := database.Db.Create(manager)
+	if result.Error != nil {
+		log.Printf("Warning: manager create failed, trying update: %v", result.Error)
+		database.Db.Save(manager)
 	}
+
+  // Create/switch to manager branch
+  if req.ProjectPath != "" {
+    if err := s.switchToManagerBranch(req.ProjectPath, req.Role); err != nil {
+      log.Printf("Warning: failed to create manager branch: %v", err)
+    }
+  }
+
+  if progressCallback != nil {
+    progressCallback(5, fmt.Sprintf("Manager %s initialized", req.Role))
+  }
 
 	// Парсим метаданные
 	metadata := req.Metadata
@@ -109,12 +121,17 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 			}
 		}
 		// Add manager decision
-		contextData["history"] = append(contextData["history"].([]map[string]interface{}), map[string]interface{}{
+		history, ok := contextData["history"].([]map[string]interface{})
+		if !ok {
+			history = []map[string]interface{}{}
+		}
+		history = append(history, map[string]interface{}{
 			"type":      "manager_decision",
 			"manager":   req.Role,
 			"workers":   workerRolesList,
 			"timestamp": time.Now().Unix(),
 		})
+		contextData["history"] = history
 		contextJSON, _ := json.MarshalIndent(contextData, "", "  ")
 		os.MkdirAll(crewaiDir, 0755)
 		os.WriteFile(contextPath, contextJSON, 0644)
@@ -124,17 +141,31 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 	log.Printf("Manager %s calling workers: %v", req.Role, workerRolesList)
 
 	// Конвертируем results других воркеров для worker сервиса
-	otherResults := workerResultsFromManagerpb(req.OtherWorkersResults)
+otherResults := workerResultsFromManagerpb(req.OtherWorkersResults)
 
-	workerReq := &workerpb.AssignWorkersRequest{
-		TaskId:              req.TaskId,
-		ManagerId:           req.ManagerId,
-		ManagerRole:         req.Role,
-		WorkerRoles:         workerRoles,
-		TaskMd:              req.TechnicalDescription,
-		Metadata:            metadata,
-		OtherWorkersResults: otherResults,
-	}
+  // Add repo path to metadata for Git operations
+  workerMetadata := make(map[string]string)
+  for k, v := range metadata {
+workerMetadata[k] = v
+  }
+   
+  // Use project path as-is (Boss already added title subfolder)
+  workerProjectPath := req.ProjectPath
+   
+  if workerProjectPath != "" {
+    workerMetadata["repo_path"] = workerProjectPath
+  }
+  
+  workerReq := &workerpb.AssignWorkersRequest{
+    TaskId:              req.TaskId,
+    ManagerId:           req.ManagerId,
+    ManagerRole:         req.Role,
+    WorkerRoles:         workerRoles,
+    TaskMd:              req.TechnicalDescription,
+    Metadata:            workerMetadata,
+    OtherWorkersResults: otherResults,
+    ProjectPath:        req.ProjectPath,
+  }
 
 	if progressCallback != nil {
 		progressCallback(30, fmt.Sprintf("Manager %s starting workers...", req.Role))
@@ -183,6 +214,20 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 		manager.Status = "error"
 		database.Db.Save(manager)
 		return nil, fmt.Errorf("worker final call failed: %w", err)
+	}
+
+	// Merge all worker branches into manager branch before review
+	if req.ProjectPath != "" {
+		log.Printf("Merging worker branches into manager branch...")
+		for _, wr := range workerResp.WorkerResults {
+			branchName := fmt.Sprintf("worker-%s", wr.Role)
+			mergeMessage := fmt.Sprintf("Merge worker %s branch", wr.Role)
+			if err := git.MergeBranch(req.ProjectPath, branchName, mergeMessage); err != nil {
+				log.Printf("Failed to merge worker branch %s: %v", branchName, err)
+			} else {
+				log.Printf("Merged worker branch: %s", branchName)
+			}
+		}
 	}
 
 	// Manager reviews each worker
@@ -236,15 +281,6 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 	}
 
 	// Build final ZIP from reviewed worker results
-	allFiles := make(map[string]string)
-	for _, wr := range workerResp.WorkerResults {
-		for path, content := range wr.Files {
-			allFiles[path] = content
-		}
-	}
-
-	finalZip, _ := createZipArchive(allFiles)
-
 	manager.Status = "done"
 	database.Db.Save(manager)
 
@@ -254,13 +290,25 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 		progressCallback(100, fmt.Sprintf("Manager %s completed successfully", req.Role))
 	}
 
-	return &managerpb.ManagerResult{
-		TaskId:        req.TaskId,
-		ManagerId:     req.ManagerId,
-		Role:          req.Role,
-		Status:        "success",
-		Solution:      finalZip,
-		WorkerResults: workerResultsToManagerpb(workerResp.WorkerResults),
-		ReviewSummary: reviewSummary,
-	}, nil
+  return &managerpb.ManagerResult{
+    TaskId:        req.TaskId,
+    ManagerId:     req.ManagerId,
+    Role:          req.Role,
+    Status:        "success",
+    WorkerResults: workerResultsToManagerpb(workerResp.WorkerResults),
+    ReviewSummary: reviewSummary,
+  }, nil
+}
+
+// switchToManagerBranch creates and switches to a branch for the manager
+func (s *ManagerService) switchToManagerBranch(repoPath, role string) error {
+  branchName := fmt.Sprintf("manager-%s", role)
+
+  // Create and switch to branch
+  if err := git.CreateBranch(repoPath, branchName); err != nil {
+    return err
+  }
+
+  log.Printf("✅ Switched to branch: %s", branchName)
+  return nil
 }

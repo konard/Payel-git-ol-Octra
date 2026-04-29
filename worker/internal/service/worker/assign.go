@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"worker/internal/fetcher/grpc/workerpb"
+	"worker/internal/service/git"
 	"worker/pkg/database"
 	"worker/pkg/models"
 
@@ -39,17 +41,28 @@ func (s *WorkerService) AssignWorkersAndWaitStream(req *workerpb.AssignWorkersRe
 		},
 	})
 
-	progressCallback := func(progress int, message string) {
+	progressCallback := func(progress int, message string, files map[string]string) {
+		data := map[string]string{
+			"manager_id":   req.ManagerId,
+			"manager_role": req.ManagerRole,
+			"status":       "processing",
+		}
+		// Add file list (not contents - too large for streaming)
+		if len(files) > 0 {
+			fileList := []string{}
+			for k := range files {
+				fileList = append(fileList, k)
+			}
+			data["files"] = strings.Join(fileList, ",")
+			data["files_count"] = strconv.Itoa(len(files))
+		}
 		stream.Send(&workerpb.TaskUpdate{
 			TaskId:    req.TaskId,
 			Message:   message,
 			Progress:  int32(progress),
 			Status:    "processing",
 			Timestamp: 0,
-			Data: map[string]string{
-				"manager_id":   req.ManagerId,
-				"manager_role": req.ManagerRole,
-			},
+			Data:      data,
 		})
 	}
 
@@ -82,7 +95,7 @@ func (s *WorkerService) AssignWorkersAndWaitStream(req *workerpb.AssignWorkersRe
 }
 
 // assignWorkersAndWaitWithProgress is the core implementation with optional progress callback
-func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, req *workerpb.AssignWorkersRequest, progressCallback func(int, string)) (*workerpb.AssignWorkersResponse, error) {
+func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, req *workerpb.AssignWorkersRequest, progressCallback func(int, string, map[string]string)) (*workerpb.AssignWorkersResponse, error) {
 	log.Printf("Received task from manager %s (%s): %s", req.ManagerId, req.ManagerRole, req.TaskId)
 	log.Printf("Worker roles: %v", req.WorkerRoles)
 
@@ -125,8 +138,25 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 
 	basePath := req.ProjectPath
 	if basePath == "" {
-		basePath = fmt.Sprintf("/tmp/projects/%s", req.TaskId)
-		os.MkdirAll(basePath, 0755)
+		// Check metadata for repo_path (set by manager)
+		if repoPath, ok := req.Metadata["repo_path"]; ok && repoPath != "" {
+			basePath = repoPath
+		} else {
+			projectsDir := os.Getenv("PROJECTS_DIR")
+			if projectsDir == "" {
+				projectsDir = "/workspace/projects"
+			}
+			// If we only have projects dir, append taskID to get project-specific path
+			if filepath.Base(projectsDir) == "projects" || projectsDir == "/workspace/projects" {
+				basePath = filepath.Join(projectsDir, req.TaskId)
+			} else {
+				basePath = projectsDir
+			}
+		}
+	}
+
+	if err := os.MkdirAll(basePath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create project directory %s: %w", basePath, err)
 	}
 
 	// Create .crewai/context.json
@@ -152,7 +182,7 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 
 		if progressCallback != nil {
 			progress := 10 + (i * 80 / len(req.WorkerRoles))
-			progressCallback(progress, fmt.Sprintf("Starting worker %d/%d: %s", i+1, len(req.WorkerRoles), role))
+			progressCallback(progress, fmt.Sprintf("Starting worker %d/%d: %s", i+1, len(req.WorkerRoles), role), nil)
 		}
 
 		// Create worker in DB
@@ -169,6 +199,16 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 		if err := database.Db.Create(worker).Error; err != nil {
 			log.Printf("Error creating worker: %v", err)
 			continue
+		}
+
+		// Create worker branch if repo path is provided
+		if req.ProjectPath != "" {
+			branchName := fmt.Sprintf("worker-%s", role)
+			if err := git.CreateBranch(req.ProjectPath, branchName); err != nil {
+				log.Printf("Failed to create worker branch %s: %v", branchName, err)
+			} else {
+				log.Printf("Created worker branch: %s", branchName)
+			}
 		}
 
 		// Build accumulated context from previous workers in THIS team
@@ -228,9 +268,9 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 		}
 
 		// Execute commands in project path
-		projectPath := req.ProjectPath
-		if projectPath == "" {
-			projectPath = "/tmp/projects/default"
+		projectPath := basePath
+		if err := os.MkdirAll(projectPath, 0755); err != nil {
+			log.Printf("Warning: failed to ensure project path %s: %v", projectPath, err)
 		}
 		for _, cmd := range commands {
 			if cmd == "" {
@@ -245,20 +285,27 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			cmd.Run() // ignore errors for now
 		}
 
-		// Git operations
-		branchName := fmt.Sprintf("worker-%s", workerID.String())
-		cmd := exec.Command("git", "checkout", "-b", branchName)
-		cmd.Dir = projectPath
-		cmd.Run()
-		cmd = exec.Command("git", "add", ".")
-		cmd.Dir = projectPath
-		cmd.Run()
-		cmd = exec.Command("git", "commit", "-m", fmt.Sprintf("Worker %s: %s", role, taskMD))
-		cmd.Dir = projectPath
-		cmd.Run()
-		cmd = exec.Command("git", "push", "origin", branchName)
-		cmd.Dir = projectPath
-		cmd.Run()
+		// Write generated files to disk
+		for path, content := range files {
+			fullPath := filepath.Join(projectPath, path)
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				log.Printf("Warning: failed to create dir for %s: %v", path, err)
+				continue
+			}
+			if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				log.Printf("Warning: failed to write file %s: %v", path, err)
+			}
+		}
+		log.Printf("Worker wrote %d files to %s", len(files), projectPath)
+
+		// Git operations - commit to current branch
+		commitMessage := fmt.Sprintf("Worker %s: %s", role, taskMD)
+		if err := git.Add(projectPath); err != nil {
+			log.Printf("Git add failed: %v", err)
+		}
+		if err := git.Commit(projectPath, commitMessage); err != nil {
+			log.Printf("Git commit failed: %v", err)
+		}
 
 		// Collect files - add worker prefix to avoid collisions
 		for path, content := range files {
@@ -298,23 +345,13 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 
 		if progressCallback != nil {
 			progress := 20 + ((i + 1) * 80 / len(req.WorkerRoles))
-			progressCallback(progress, fmt.Sprintf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), role, len(files)))
+			progressCallback(progress, fmt.Sprintf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), role, len(files)), files)
 		}
 	}
-
-	// Create ZIP archive
-	zipData, err := createZipArchive(allFiles)
-	if err != nil {
-		log.Printf("Error creating ZIP: %v", err)
-		zipData = []byte{}
-	}
-
-	log.Printf("Created ZIP archive: %d bytes", len(zipData))
 
 	return &workerpb.AssignWorkersResponse{
 		TaskId:        req.TaskId,
 		Status:        "success",
-		Solution:      zipData,
 		WorkerResults: workerResults,
 	}, nil
 }

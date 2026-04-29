@@ -16,7 +16,7 @@ type ValidationResult struct {
 }
 
 // validateSolution — Boss validates итоговое решение через AI
-func (s *BossService) validateSolution(ctx context.Context, agentsClient *service.AgentClientWrapper, provider, model string, tokens map[string]string, decision *BossDecisionResult, managerResults []*managerpb.ManagerResult, zipData []byte) (*ValidationResult, error) {
+func (s *BossService) validateSolution(ctx context.Context, agentsClient *service.AgentClientWrapper, provider, model string, tokens map[string]string, decision *BossDecisionResult, managerResults []*managerpb.ManagerResult) (*ValidationResult, error) {
 	// Build summary of all managers work
 	summary := ""
 	for _, mr := range managerResults {
@@ -55,8 +55,6 @@ MANAGERS RESULTS:
 
 GENERATED FILES (` + strconv.Itoa(fileCount) + ` total):
 ` + fileList + `
-
-ZIP size: ` + strconv.Itoa(len(zipData)) + ` bytes
 
 Review:
 1. Does the solution meet the requirements?

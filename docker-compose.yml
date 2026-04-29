@@ -55,6 +55,8 @@ services:
       - GITHUB_TOKEN=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
     ports:
       - "50051:50051"
+    volumes:
+      - ./projects:/workspace/projects
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,6 +79,8 @@ services:
       - WORKER_SERVICE_HOST=worker:50053
     ports:
       - "50052:50052"
+    volumes:
+      - ./projects:/workspace/projects
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,6 +103,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
       - WORKER_MODE=multypass
+      - PROJECTS_DIR=/workspace/projects
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,6 +113,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+    volumes:
+      - ./projects:/workspace/projects
     networks:
       - crewai-network
     restart: unless-stopped

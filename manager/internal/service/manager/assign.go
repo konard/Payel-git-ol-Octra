@@ -94,8 +94,7 @@ func (s *ManagerService) AssignManagersAndWait(ctx context.Context, req *manager
 		model = "gpt-4o-mini"
 	}
 
-	// Collect ZIP archives from all managers
-	var allZipArchives [][]byte
+	// Collect manager results
 	managerResults := make([]*managerpb.ManagerResult, 0)
 
 	for i, role := range req.Roles {
@@ -125,18 +124,12 @@ func (s *ManagerService) AssignManagersAndWait(ctx context.Context, req *manager
 		}
 
 		managerResults = append(managerResults, result)
-		if len(result.Solution) > 0 {
-			allZipArchives = append(allZipArchives, result.Solution)
-		}
 	}
-
-	finalZip, _ := mergeZipArchives(allZipArchives)
 
 	return &managerpb.AssignManagersResponse{
 		TaskId:         req.TaskId,
 		Status:         "success",
 		Message:        "Project generated",
-		Solution:       finalZip,
 		ManagerResults: managerResults,
 	}, nil
 }

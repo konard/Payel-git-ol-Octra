@@ -469,9 +469,8 @@ type ManagerResult struct {
 	ManagerId     string                 `protobuf:"bytes,2,opt,name=manager_id,json=managerId,proto3" json:"manager_id,omitempty"`
 	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
 	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`                                    // success, error
-	Solution      []byte                 `protobuf:"bytes,5,opt,name=solution,proto3" json:"solution,omitempty"`                                // ZIP архив от менеджера
-	WorkerResults []*WorkerResult        `protobuf:"bytes,6,rep,name=worker_results,json=workerResults,proto3" json:"worker_results,omitempty"` // результаты всех воркеров
-	ReviewSummary string                 `protobuf:"bytes,7,opt,name=review_summary,json=reviewSummary,proto3" json:"review_summary,omitempty"` // резюме проверки менеджера
+	WorkerResults []*WorkerResult        `protobuf:"bytes,5,rep,name=worker_results,json=workerResults,proto3" json:"worker_results,omitempty"` // результаты всех воркеров
+	ReviewSummary string                 `protobuf:"bytes,6,opt,name=review_summary,json=reviewSummary,proto3" json:"review_summary,omitempty"` // резюме проверки менеджера
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -534,13 +533,6 @@ func (x *ManagerResult) GetStatus() string {
 	return ""
 }
 
-func (x *ManagerResult) GetSolution() []byte {
-	if x != nil {
-		return x.Solution
-	}
-	return nil
-}
-
 func (x *ManagerResult) GetWorkerResults() []*WorkerResult {
 	if x != nil {
 		return x.WorkerResults
@@ -555,14 +547,13 @@ func (x *ManagerResult) GetReviewSummary() string {
 	return ""
 }
 
-// Ответ manager с ZIP архивом
+// Ответ manager
 type AssignManagersResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	TaskId         string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Status         string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	Message        string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	Solution       []byte                 `protobuf:"bytes,4,opt,name=solution,proto3" json:"solution,omitempty"`                                   // ZIP архив со всем проектом
-	ManagerResults []*ManagerResult       `protobuf:"bytes,5,rep,name=manager_results,json=managerResults,proto3" json:"manager_results,omitempty"` // результаты всех менеджеров
+	ManagerResults []*ManagerResult       `protobuf:"bytes,4,rep,name=manager_results,json=managerResults,proto3" json:"manager_results,omitempty"` // результаты всех менеджеров
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -616,13 +607,6 @@ func (x *AssignManagersResponse) GetMessage() string {
 		return x.Message
 	}
 	return ""
-}
-
-func (x *AssignManagersResponse) GetSolution() []byte {
-	if x != nil {
-		return x.Solution
-	}
-	return nil
 }
 
 func (x *AssignManagersResponse) GetManagerResults() []*ManagerResult {
@@ -757,22 +741,20 @@ const file_boss_manager_proto_rawDesc = "" +
 	"\rcustom_prompt\x18\v \x01(\tR\fcustomPrompt\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd8\x01\n" +
 	"\rManagerResult\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
 	"manager_id\x18\x02 \x01(\tR\tmanagerId\x12\x12\n" +
 	"\x04role\x18\x03 \x01(\tR\x04role\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1a\n" +
-	"\bsolution\x18\x05 \x01(\fR\bsolution\x12<\n" +
-	"\x0eworker_results\x18\x06 \x03(\v2\x15.manager.WorkerResultR\rworkerResults\x12%\n" +
-	"\x0ereview_summary\x18\a \x01(\tR\rreviewSummary\"\xc0\x01\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12<\n" +
+	"\x0eworker_results\x18\x05 \x03(\v2\x15.manager.WorkerResultR\rworkerResults\x12%\n" +
+	"\x0ereview_summary\x18\x06 \x01(\tR\rreviewSummary\"\xa4\x01\n" +
 	"\x16AssignManagersResponse\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\x12\x1a\n" +
-	"\bsolution\x18\x04 \x01(\fR\bsolution\x12?\n" +
-	"\x0fmanager_results\x18\x05 \x03(\v2\x16.manager.ManagerResultR\x0emanagerResults\"\x82\x02\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x12?\n" +
+	"\x0fmanager_results\x18\x04 \x03(\v2\x16.manager.ManagerResultR\x0emanagerResults\"\x82\x02\n" +
 	"\x15AssignManagersRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x123\n" +
 	"\x15technical_description\x18\x02 \x01(\tR\x14technicalDescription\x12\x14\n" +

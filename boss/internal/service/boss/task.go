@@ -3,6 +3,7 @@ package boss
 import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/service"
+	"boss/internal/service/git"
 	"boss/pkg/database"
 	"boss/pkg/models"
 	"context"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -280,23 +282,61 @@ func (s *BossService) executeTaskFlow(
 		return err
 	}
 
-	// 4.5. Restore project if exists
-	projectPath, err := s.restoreProject(taskID)
-	if err != nil {
-		log.Printf("No project to restore for task %s: %v", taskID, err)
-		projectPath = "" // proceed without
+	var projectPath string
+
+	// Determine projects directory
+	projectsDir := os.Getenv("PROJECTS_DIR")
+	if projectsDir == "" {
+		// Inside container use /workspace/projects, on host ./projects
+		projectsDir = "/workspace/projects"
+	}
+	
+	// Ensure projects directory exists
+	if info, err := os.Stat(projectsDir); err == nil {
+		if !info.IsDir() {
+			return sender.sendError("❌ Projects dir exists but is a file: " + projectsDir)
+		}
+	} else if !os.IsNotExist(err) {
+		return sender.sendError("❌ Failed to check projects dir: " + err.Error())
 	} else {
-		// Schedule project cleanup after task completion
-		defer func() {
-			if projectPath != "" {
-				log.Printf("🧹 Cleaning up project directory: %s", projectPath)
-				os.RemoveAll(projectPath)
-			}
-		}()
+		// Directory doesn't exist - create it
+		if err := os.MkdirAll(projectsDir, 0755); err != nil {
+			return sender.sendError("❌ Failed to create projects dir: " + err.Error())
+		}
+	}
+	
+	// 4.5. Create Git repository for the project
+	// Add title subfolder to project path
+	projectPath = filepath.Join(projectsDir, taskID)
+	if req.Title != "" {
+		sanitized := strings.ToLower(req.Title)
+		sanitized = strings.ReplaceAll(sanitized, " ", "-")
+		sanitized = strings.ReplaceAll(sanitized, "_", "-")
+		// Remove special chars
+		for _, c := range []string{"/", "\\", ":", "*", "?", "<", ">", "|"} {
+			sanitized = strings.ReplaceAll(sanitized, c, "")
+		}
+		projectPath = filepath.Join(projectPath, sanitized)
+	}
+	if err := os.MkdirAll(projectPath, 0755); err != nil {
+		return sender.sendError("❌ Failed to create project directory: " + err.Error())
 	}
 
+  // Initialize Git repository
+  if err := s.initializeGitRepo(projectPath); err != nil {
+    return sender.sendError("❌ Failed to initialize Git repo: " + err.Error())
+  }
+
+  // Schedule project cleanup after task completion
+  defer func() {
+    if projectPath != "" {
+      log.Printf("🧹 Cleaning up project directory: %s", projectPath)
+      os.RemoveAll(projectPath)
+    }
+  }()
+
 	// 5. Call managers in parallel with progress updates
-	managerResults, zipData, err := s.assignManagersParallelWithProgress(ctx, taskID, decision, req, stream, projectPath)
+	managerResults, err := s.assignManagersParallelWithProgress(ctx, taskID, decision, req, stream, projectPath)
 	if err != nil {
 		log.Printf("Error from managers: %v", err)
 		task.Status = "error"
@@ -314,10 +354,10 @@ func (s *BossService) executeTaskFlow(
 	}
 
 	if len(managerResults) > 0 {
-		_, _ = s.validateSolution(ctx, agentsClient, provider, model, req.Tokens, decision, managerResults, zipData)
+		_, _ = s.validateSolution(ctx, agentsClient, provider, model, req.Tokens, decision, managerResults)
 	}
 
-	if len(zipData) == 0 {
+	if len(managerResults) == 0 {
 		task.Status = "error"
 		database.Db.Save(task)
 		return sender.sendError("❌ No solution generated")
@@ -327,44 +367,19 @@ func (s *BossService) executeTaskFlow(
 		return err
 	}
 
-	// 7. Save ZIP solution
-	task.Solution = zipData
+	// 7. Mark as done
 	task.Status = "done"
-	database.Db.Save(task)
+database.Db.Save(task)
 
-	// 8. Push to GitHub if token is available
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	var repoURL string
-	if githubToken != "" {
-		log.Printf("Pushing results to GitHub...")
-		githubClient := s.getGitHubClient()
-		if githubClient != nil {
-			var err error
-			repoURL, err = githubClient.CreateRepository(ctx, &task)
-			if err != nil {
-				log.Printf("Failed to create GitHub repository: %v", err)
-			} else {
-				if err := githubClient.PushToRepository(ctx, &task, zipData, repoURL); err != nil {
-					log.Printf("Failed to push to GitHub: %v", err)
-				} else {
-					log.Printf("Successfully pushed to GitHub: %s", repoURL)
-					// Update task with repo URL
-					task.ProjectJSON = repoURL
-					database.Db.Save(&task)
-				}
-			}
-		}
-	}
-
-	log.Printf("✅ Task %s completed! ZIP size: %d bytes", taskID, len(zipData))
+	log.Printf("✅ Task %s completed!", taskID)
 
 	techStackBytes, _ := json.Marshal(decision.TechStack)
 	data := map[string]string{
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"techStack": string(techStackBytes),
 	}
-	if repoURL != "" {
-		data["repo_url"] = repoURL
+	if task.ProjectJSON != "" && strings.HasPrefix(task.ProjectJSON, "https://") {
+		data["repoUrl"] = task.ProjectJSON
 	}
 	return sender.sendSuccess("🎉 Project ready! "+task.Title+" created successfully", 100, data)
 }
@@ -380,12 +395,63 @@ func parseUUID(id string) uuid.UUID {
 
 // parseJSONToMap parses JSON string to map
 func parseJSONToMap(jsonStr string) map[string]string {
-	result := make(map[string]string)
-	if jsonStr == "" {
-		return result
-	}
-	_ = json.Unmarshal([]byte(jsonStr), &result)
-	return result
+  result := make(map[string]string)
+  if jsonStr == "" {
+    return result
+  }
+  _ = json.Unmarshal([]byte(jsonStr), &result)
+  return result
+}
+
+// initializeGitRepo initializes a new Git repository
+func (s *BossService) initializeGitRepo(repoPath string) error {
+  // Initialize Git repo
+  if err := git.InitRepo(repoPath); err != nil {
+    return err
+  }
+
+  // Set user name and email
+  userName := os.Getenv("GIT_USER_NAME")
+  if userName == "" {
+    userName = "CrewAI Bot"
+  }
+  userEmail := os.Getenv("GIT_USER_EMAIL")
+  if userEmail == "" {
+    userEmail = "bot@crewai.local"
+  }
+
+  if err := git.SetUser(repoPath, userName, userEmail); err != nil {
+    return err
+  }
+
+  // Create initial commit
+  if err := git.InitialCommit(repoPath, "Initial commit"); err != nil {
+    return err
+  }
+
+  log.Printf("✅ Git repository initialized at: %s", repoPath)
+  return nil
+}
+
+// mergeManagerBranches merges all manager branches into main
+func (s *BossService) mergeManagerBranches(repoPath string, managerRoles []models.ManagerRole) error {
+  // Switch to main branch
+  if err := git.CheckoutBranch(repoPath, "main"); err != nil {
+    return err
+  }
+
+  // Merge each manager branch
+  for _, role := range managerRoles {
+    branchName := fmt.Sprintf("manager-%s", role.Role)
+    mergeMessage := fmt.Sprintf("Merge %s manager branch", role.Role)
+    if err := git.MergeBranch(repoPath, branchName, mergeMessage); err != nil {
+      log.Printf("Warning: failed to merge branch %s: %v", branchName, err)
+      // Continue with other branches
+    }
+  }
+
+  log.Printf("✅ Merged all manager branches into main")
+  return nil
 }
 
 // CreateTask accepts task, executes full cycle and returns ZIP
@@ -478,7 +544,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	log.Printf("Calling Manager service: %d managers in parallel", decision.ManagersCount)
 
 	projectPath := fmt.Sprintf("/tmp/projects/%s", task.ID.String())
-	managerResults, zipData, err := s.assignManagersParallel(ctx, task.ID.String(), decision, req, nil, projectPath)
+	managerResults, err := s.assignManagersParallel(ctx, task.ID.String(), decision, req, nil, projectPath)
 	if err != nil {
 		log.Printf("Error from managers: %v", err)
 		task.Status = "error"
@@ -490,19 +556,9 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		}, nil
 	}
 
-	if len(zipData) == 0 {
-		task.Status = "error"
-		database.Db.Save(task)
-		return &bosspb.BossDecision{
-			TaskId:       task.ID.String(),
-			Status:       "error",
-			ErrorMessage: "No solution generated",
-		}, nil
-	}
-
 	// 6. Boss validates the final result
 	log.Printf("Boss validating solution...")
-	validationResult, err := s.validateSolution(ctx, agentsClient, provider, model, req.Tokens, decision, managerResults, zipData)
+	validationResult, err := s.validateSolution(ctx, agentsClient, provider, model, req.Tokens, decision, managerResults)
 	if err != nil {
 		log.Printf("Validation error: %v", err)
 		// Don't fail on validation error, just log it
@@ -513,12 +569,22 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 		// For now, accept it but log the feedback
 	}
 
-	// 7. Save ZIP solution
-	task.Solution = zipData
+	// 7. Mark as done
 	task.Status = "done"
 	database.Db.Save(task)
 
-	log.Printf("Task completed! ZIP size: %d bytes", len(zipData))
+	log.Printf("Task completed!")
+
+	// 7. Save Git data to DB for future restore
+	log.Printf("💾 Saving Git data to DB...")
+	gitData, err := git.SaveGitDataToJSON(projectPath)
+	if err != nil {
+		log.Printf("Warning: failed to save git data: %v", err)
+	} else {
+		task.GitData = gitData
+		database.Db.Save(task)
+		log.Printf("✅ Git data saved to DB")
+	}
 
 	// 8. Push to GitHub if token is available
 	githubToken := os.Getenv("GITHUB_TOKEN")
@@ -530,7 +596,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 			if err != nil {
 				log.Printf("Failed to create GitHub repository: %v", err)
 			} else {
-				if err := githubClient.PushToRepository(ctx, task, zipData, repoURL); err != nil {
+				if err := githubClient.PushToRepository(ctx, task, projectPath, repoURL); err != nil {
 					log.Printf("Failed to push to GitHub: %v", err)
 				} else {
 					log.Printf("Successfully pushed to GitHub: %s", repoURL)
@@ -545,13 +611,11 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	// 8. Return result with ZIP
 	return &bosspb.BossDecision{
 		TaskId:               task.ID.String(),
-		Status:               "done",
-		ManagersCount:        decision.ManagersCount,
+		Status:               "success",
 		ManagerRoles:         decision.ManagerRolesProto(),
 		TechnicalDescription: decision.TechnicalDescription,
 		TechStack:            decision.TechStack,
 		ArchitectureNotes:    decision.ArchitectureNotes,
-		Solution:             zipData,
 	}, nil
 }
 

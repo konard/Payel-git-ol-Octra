@@ -4,6 +4,7 @@ import (
 	"boss/internal/fetcher/grpc/bosspb"
 	"boss/internal/fetcher/grpc/manager"
 	"boss/internal/redis"
+	"boss/internal/service/git"
 	"boss/internal/service/github"
 	"boss/pkg/database"
 	"boss/pkg/models"
@@ -134,14 +135,20 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal project JSON: %w", err)
 	}
 
-	// Create project in temp directory (will be cleaned up after GitHub push)
-	projectPath := filepath.Join(os.TempDir(), "crewai-projects", taskID)
+	// Determine projects directory
+	projectsDir := os.Getenv("PROJECTS_DIR")
+	if projectsDir == "" {
+		projectsDir = "/workspace/projects"
+	}
+
+	// Create project in projects directory
+	projectPath := filepath.Join(projectsDir, taskID)
 	if err := os.MkdirAll(projectPath, 0755); err != nil {
 		return "", fmt.Errorf("failed to create project dir: %w", err)
 	}
 
 	// Log the project path for debugging
-	log.Printf("📁 Creating temporary project at: %s", projectPath)
+	log.Printf("📁 Restoring project at: %s", projectPath)
 
 	for relPath, content := range project.Project.Files {
 		fullPath := filepath.Join(projectPath, relPath)
@@ -158,6 +165,23 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 		fullPath := filepath.Join(projectPath, relPath)
 		if err := os.MkdirAll(fullPath, 0755); err != nil {
 			continue
+		}
+	}
+
+	// Restore Git data if available
+	if err := s.db.First(&task, "id = ?", taskID).Error; err == nil && task.GitData != "" {
+		log.Printf("📦 Restoring Git data...")
+		if err := git.RestoreGitDataFromJSON(projectPath, task.GitData); err != nil {
+			log.Printf("Warning: failed to restore git data: %v", err)
+		} else {
+			// Make initial commit after restore
+			if err := git.Add(projectPath); err != nil {
+				log.Printf("Warning: failed to git add: %v", err)
+			} else if err := git.Commit(projectPath, "Restored from history"); err != nil {
+				log.Printf("Warning: failed to git commit: %v", err)
+			} else {
+				log.Printf("✅ Git data restored and committed")
+			}
 		}
 	}
 
