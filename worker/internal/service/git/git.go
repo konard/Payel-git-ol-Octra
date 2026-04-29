@@ -136,6 +136,20 @@ func HasChanges(dir string) (bool, error) {
 	return strings.TrimSpace(status) != "", nil
 }
 
+// IsGitRepo checks whether the directory is a valid git repository.
+func IsGitRepo(dir string) (bool, error) {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		if _, statErr := os.Stat(filepath.Join(dir, ".git")); os.IsNotExist(statErr) {
+			return false, nil
+		}
+		return false, fmt.Errorf("git rev-parse failed: %w", err)
+	}
+	return strings.TrimSpace(string(output)) == "true", nil
+}
+
 // SaveGitData saves the .git folder contents to a map (for DB storage)
 func SaveGitData(projectPath string) (map[string]string, error) {
 	gitDir := filepath.Join(projectPath, ".git")

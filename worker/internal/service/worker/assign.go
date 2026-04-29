@@ -299,12 +299,28 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 		log.Printf("Worker wrote %d files to %s", len(files), projectPath)
 
 		// Git operations - commit to current branch
+		isRepo, err := git.IsGitRepo(projectPath)
+		if err != nil {
+			worker.Status = "error"
+			database.Db.Save(worker)
+			return nil, fmt.Errorf("failed to validate git repository at %s: %w", projectPath, err)
+		}
+		if !isRepo {
+			worker.Status = "error"
+			database.Db.Save(worker)
+			return nil, fmt.Errorf("git repository not found at project path: %s", projectPath)
+		}
+
 		commitMessage := fmt.Sprintf("Worker %s: %s", role, taskMD)
 		if err := git.Add(projectPath); err != nil {
-			log.Printf("Git add failed: %v", err)
+			worker.Status = "error"
+			database.Db.Save(worker)
+			return nil, fmt.Errorf("git add failed at %s: %w", projectPath, err)
 		}
 		if err := git.Commit(projectPath, commitMessage); err != nil {
-			log.Printf("Git commit failed: %v", err)
+			worker.Status = "error"
+			database.Db.Save(worker)
+			return nil, fmt.Errorf("git commit failed at %s: %w", projectPath, err)
 		}
 
 		// Collect files - add worker prefix to avoid collisions
