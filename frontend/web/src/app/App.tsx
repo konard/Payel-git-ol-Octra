@@ -5,6 +5,7 @@ import { StatusBar } from './components/StatusBar';
 import { ConsolePanel } from './components/ConsolePanel';
 import { Canvas } from './components/Canvas';
 import { Chat } from './components/Chat';
+import { CodeViewer } from './components/CodeViewer';
 import { BottomInput } from './components/BottomInput';
 import { ChatInput } from './components/ChatInput';
 import type { TaskData } from './components/BottomInput';
@@ -28,7 +29,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [mode, setMode] = useState<'canvas' | 'chat'>('canvas');
+  const [mode, setMode] = useState<'canvas' | 'chat' | 'code'>('canvas');
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   // Chat state
@@ -332,6 +333,8 @@ export default function App() {
       <ReactFlowProvider>
         {mode === 'canvas' ? (
           <Canvas mode={mode} onModeChange={setMode} hasUnreadMessages={hasUnreadMessages} />
+        ) : mode === 'code' ? (
+          <CodeViewer />
         ) : (
           <Chat
             messages={chatMessages}
@@ -353,7 +356,7 @@ export default function App() {
           isExpanded={isExpanded}
           onToggleExpand={toggleExpand}
         />
-      ) : (
+      ) : mode === 'code' ? null : (
         <ChatInput onSendMessage={handleSendChatMessage} />
       )}
 

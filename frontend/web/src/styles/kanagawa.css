@@ -1,0 +1,195 @@
+/* Kanagawa-inspired Syntax Highlighting Theme for highlight.js */
+
+/* Dark theme (default) - Kanagawa Wave */
+:root {
+  --kanagawa-bg: #1F1F28;
+  --kanagawa-fg: #C8C093;
+  --kanagawa-comment: #727169;
+  --kanagawa-keyword: #957FB8;
+  --kanagawa-function: #7E9CD8;
+  --kanagawa-string: #98BB6C;
+  --kanagawa-number: #D27E99;
+  --kanagawa-operator: #C0A36E;
+  --kanagawa-type: #7AA89F;
+  --kanagawa-punctuation: #9CABCA;
+  --kanagawa-constant: #FFA066;
+  --kanagawa-property: #7FB4CA;
+  --kanagawa-tag: #E46876;
+  --kanagawa-attribute: #FF9E3B;
+  --kanagawa-builtin: #7FB4CA;
+  --kanagawa-title: #7E9CD8;
+  --kanagawa-params: #C8C093;
+}
+
+/* Light theme - Kanagawa Lotus */
+:root[data-theme="light"] {
+  --kanagawa-bg: #DCD7BA;
+  --kanagawa-fg: #54546D;
+  --kanagawa-comment: #8A8980;
+  --kanagawa-keyword: #7E9CD8;
+  --kanagawa-function: #658594;
+  --kanagawa-string: #76946A;
+  --kanagawa-number: #C34043;
+  --kanagawa-operator: #938056;
+  --kanagawa-type: #6A9589;
+  --kanagawa-punctuation: #54546D;
+  --kanagawa-constant: #DCA561;
+  --kanagawa-property: #658594;
+  --kanagawa-tag: #C34043;
+  --kanagawa-attribute: #FF9E3B;
+  --kanagawa-builtin: #6A9589;
+  --kanagawa-title: #658594;
+  --kanagawa-params: #54546D;
+}
+
+/* Override with .dark class for dark theme */
+:root.dark {
+  --kanagawa-bg: #1F1F28;
+  --kanagawa-fg: #C8C093;
+  --kanagawa-comment: #727169;
+  --kanagawa-keyword: #957FB8;
+  --kanagawa-function: #7E9CD8;
+  --kanagawa-string: #98BB6C;
+  --kanagawa-number: #D27E99;
+  --kanagawa-operator: #C0A36E;
+  --kanagawa-type: #7AA89F;
+  --kanagawa-punctuation: #9CABCA;
+  --kanagawa-constant: #FFA066;
+  --kanagawa-property: #7FB4CA;
+  --kanagawa-tag: #E46876;
+  --kanagawa-attribute: #FF9E3B;
+  --kanagawa-builtin: #7FB4CA;
+  --kanagawa-title: #7E9CD8;
+  --kanagawa-params: #C8C093;
+}
+
+/* Code syntax highlighting - highlight.js classes */
+.hljs {
+  color: var(--kanagawa-fg);
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--kanagawa-comment);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-attr {
+  color: var(--kanagawa-keyword);
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: var(--kanagawa-property);
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-section,
+.hljs-attribute,
+.hljs-literal,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-addition {
+  color: var(--kanagawa-string);
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-subst,
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: var(--kanagawa-number);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--kanagawa-comment);
+}
+
+.hljs-deletion {
+  color: var(--kanagawa-tag);
+}
+
+.hljs-function {
+  color: var(--kanagawa-function);
+}
+
+.hljs-title.function_ {
+  color: var(--kanagawa-title);
+}
+
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+  color: var(--kanagawa-title);
+}
+
+.hljs-params {
+  color: var(--kanagawa-params);
+}
+
+.hljs-tag {
+  color: var(--kanagawa-tag);
+}
+
+.hljs-tag .hljs-name {
+  color: var(--kanagawa-tag);
+}
+
+.hljs-tag .hljs-attr {
+  color: var(--kanagawa-attribute);
+}
+
+.hljs-attr {
+  color: var(--kanagawa-attribute);
+}
+
+.hljs-symbol,
+.hljs-file-helper,
+.hljs-regexp,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--kanagawa-constant);
+}
+
+.hljs-language-.hljs-punctuation {
+  color: var(--kanagawa-punctuation);
+}
+
+.hljs-punctuation {
+  color: var(--kanagawa-punctuation);
+}
+
+/* Operators */
+.hljs-operator,
+.hljs-char,
+.hljs-constant {
+  color: var(--kanagawa-operator);
+}
+
+.hljs-meta {
+  color: var(--kanagawa-comment);
+}
+
+.hljs-link {
+  color: var(--kanagawa-builtin);
+  text-decoration: underline;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}

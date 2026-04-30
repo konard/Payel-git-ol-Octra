@@ -203,24 +203,24 @@ services:
       - crewai-network
     restart: unless-stopped
 
-  tgbot:
-    build:
-      context: ./tgbot
-      dockerfile: Dockerfile
-    container_name: crewai-tgbot
-    env_file:
-      - ./tgbot/.env
-    environment:
-      - AUTH_API_URL=http://user:3112
-      - API_GATEWAY_URL=ws://apigateway:3111
-    depends_on:
-      user:
-        condition: service_started
-      apigateway:
-        condition: service_started
-    networks:
-      - crewai-network
-    restart: unless-stopped
+  # tgbot:
+    # build:
+      # context: ./tgbot
+      # dockerfile: Dockerfile
+    # container_name: crewai-tgbot
+    # env_file:
+      # - ./tgbot/.env
+    # environment:
+      # - AUTH_API_URL=http://user:3112
+      # - API_GATEWAY_URL=ws://apigateway:3111
+    # depends_on:
+      # user:
+        # condition: service_started
+      # apigateway:
+        # condition: service_started
+    # networks:
+      # - crewai-network
+    # restart: unless-stopped
 
 networks:
   crewai-network:

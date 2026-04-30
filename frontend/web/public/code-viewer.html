@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#1f1f1f;
+--bg2:#252526;
+--bd:#3c3c3c;
+--fg:#cccccc;
+--fg2:#858585;
+--accent:#007acc;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:13px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.app{display:flex;flex-direction:column;height:100vh}
+/*sidebar*/
+.sidebar{width:180px;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column}
+.sidebar-header{height:28px;padding:0 8px;display:flex;align-items:center;font:11px uppercase;letter-spacing:.5px;color:var(--fg2)}
+.list{flex:1;overflow:auto}
+.item{padding:3px 8px 3px 16px;cursor:pointer;font-size:13px}
+.item:hover{background:rgba(255,255,255,.04)}
+.item.active{background:rgba(255,255,255,.08)}
+/*main*/
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+/*tabs*/
+.tabs{height:28px;background:#181818;display:flex;align-items:flex-end;overflow:hidden}
+.tab{height:28px;padding:0 8px;display:flex;align-items:center;gap:4px;background:#2d2d2d;color:var(--fg2);cursor:pointer;font-size:12px;border-right:1px solid var(--bd);white-space:nowrap;position:relative}
+.tab:hover{color:var(--fg)}
+.tab.active{background:var(--bg);color:var(--fg)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent)}
+/*editor*/
+.editor{flex:1;display:flex;overflow:hidden;background:var(--bg);font:14px Consolas,Monaco,'Courier New',monospace;line-height:20px}
+.line-nums{width:45px;padding:8px 8px 8px 0;text-align:right;color:var(--fg2);background:var(--bg);user-select:none}
+.line-num{height:20px}
+.code{flex:1;padding:8px 0 8px 16px;overflow:auto;white-space:pre}
+.code-line{height:20px}
+/*syntax*/
+.k{color:#569cd6}
+.s{color:#ce9178}
+.n{color:#b5cea8}
+.c{color:#6a9955}
+.f{color:#dcdcaa}
+.t{color:#4ec9b0}
+.v{color:#9cdcfe}
+.o{color:#d4d4d4}
+/*scroll*/
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:0}
+::-webkit-scrollbar-thumb{background:rgba(128,128,128,.3);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.5)}
+/*empty*/
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--fg2);gap:12px}
+.empty svg{width:48px;height:48px;opacity:.5}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar">
+<div class="sidebar-header">Explorer</div>
+<div class="list">
+<div class="item active">main.go</div>
+<div class="item">config.go</div>
+<div class="item">handler.go</div>
+<div class="item">models.go</div>
+</div>
+</div>
+<div class="main">
+<div class="tabs"><div class="tab active">main.go</div></div>
+<div class="editor" id="editor">
+<div class="empty">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+<path d="M14 2v6h6"/>
+</svg>
+<span>No code generated</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+// Render sample code
+const code=[
+{n:1,t:'k',v:'package'},{n:1,v:' main'},
+{n:2,v:''},
+{n:3,t:'k',v:'func'},{n:3,v:' main() {'},
+{n:4,v:'  '},{n:4,t:'c',v:'// TODO: Your generated code will appear here'},
+{n:5,v:'}'},
+];
+
+function render(){
+const e=document.getElementById('editor');
+if(!code.length){e.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>No code</span></div>';return}
+let h='<div class="line-nums">';
+code.forEach(l=>h+=`<div class="line-num">${l.n}</div>`);
+h+='</div><div class="code">';
+code.forEach(l=>h+=`<div class="code-line">${l.t?'<span class="'+l.t+'">'+l.v+'</span>':l.v}</div>`);
+h+='</div>';
+e.innerHTML=h;
+}
+render();
+</script>
+</body>
+</html>

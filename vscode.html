@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VS Code - main.go</title>
+    <style>
+        /* Сброс и базовые стили */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #1e1e1e;
+            color: #cccccc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        /* Утилиты */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .hidden { display: none; }
+        .select-none { user-select: none; }
+
+        /* --- Activity Bar (Самая левая полоса) --- */
+        .activity-bar {
+            width: 48px;
+            background-color: #333333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            flex-shrink: 0;
+        }
+        .activity-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            color: #858585;
+            transition: color 0.2s;
+        }
+        .activity-icon:hover { color: #ffffff; }
+        .activity-icon.active { color: #ffffff; }
+        .activity-icon.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ffffff;
+        }
+        .activity-icon svg { width: 24px; height: 24px; fill: currentColor; }
+        .activity-bottom { margin-top: auto; margin-bottom: 10px; }
+
+        /* --- Side Bar (Панель проводника) --- */
+        .side-bar {
+            width: 250px;
+            background-color: #252526;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #252526; /* Визуально почти сливается */
+            flex-shrink: 0;
+        }
+        .side-bar-header {
+            height: 35px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #bbbbbb;
+        }
+        .explorer-section { display: flex; flex-direction: column; }
+        .explorer-title {
+            padding: 6px 8px;
+            font-weight: 700;
+            font-size: 11px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .explorer-title:hover { background-color: #2a2d2e; }
+        .file-tree { font-size: 13px; }
+        
+        .tree-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px 4px 20px; /* Отступ для иерархии */
+            cursor: pointer;
+            color: #cccccc;
+            gap: 6px;
+        }
+        .tree-item:hover { background-color: #2a2d2e; }
+        .tree-item.folder { padding-left: 8px; }
+        .tree-item.file { padding-left: 24px; }
+        
+        .folder-icon { color: #dcb67a; display: flex; align-items: center; }
+        .go-icon { color: #519aba; display: flex; align-items: center; }
+        .file-active { background-color: #37373d; color: #ffffff; }
+
+        /* --- Main Editor Area --- */
+        .editor-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background-color: #1e1e1e;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            height: 35px;
+            background-color: #252526;
+            display: flex;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
+        }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        
+        .tab {
+            min-width: 120px;
+            max-width: 200px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            background-color: #2d2d2d;
+            color: #969696;
+            border-right: 1px solid #252526;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .tab.active {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-top: 1px solid #007acc;
+        }
+        .tab-content { display: flex; align-items: center; gap: 6px; overflow: hidden; }
+        .tab-close { opacity: 0; border-radius: 3px; padding: 2px; font-size: 14px; line-height: 1; }
+        .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
+        .tab-close:hover { background-color: #ffffff20; }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            height: 22px;
+            font-size: 12px;
+            color: #aaaaaa;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            background-color: #1e1e1e;
+        }
+        .breadcrumb span { margin: 0 4px; }
+        .breadcrumb-item:hover { color: #ffffff; cursor: pointer; }
+
+        /* Code Area */
+        .code-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 21px;
+        }
+        
+        .line-numbers {
+            width: 50px;
+            text-align: right;
+            padding-right: 16px;
+            color: #858585;
+            background-color: #1e1e1e;
+            user-select: none;
+            padding-top: 4px;
+        }
+        
+        .code-content {
+            flex: 1;
+            padding-left: 0; /* Линии сетки */
+            overflow: auto;
+            padding-top: 4px;
+            position: relative;
+        }
+
+        .code-row {
+            display: flex;
+            min-height: 21px;
+            width: 100%;
+        }
+        .code-row.active {
+            background-color: #264f78; /* Подсветка активной строки */
+        }
+        .code-line {
+            white-space: pre;
+            padding-right: 20px;
+        }
+
+        /* Minimap */
+        .minimap {
+            width: 80px;
+            background-color: #1e1e1e;
+            opacity: 0.7;
+            padding-top: 4px;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: none; /* Скрываем на очень узких экранах, включим через media query */
+        }
+        .minimap-line {
+            height: 3px;
+            margin-bottom: 1px;
+            background-color: #555;
+            width: 60%;
+            margin-left: auto;
+            border-radius: 1px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 22px;
+            background-color: #007acc;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 12px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .status-left, .status-right { display: flex; align-items: center; gap: 12px; }
+        .status-item { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .status-item:hover { opacity: 0.8; }
+
+        /* Syntax Highlighting (Go Theme) */
+        .kwd { color: #569cd6; } /* Keyword */
+        .str { color: #ce9178; } /* String */
+        .typ { color: #4ec9b0; } /* Type */
+        .fun { color: #dcdcaa; } /* Function */
+        .var { color: #9cdcfe; } /* Variable */
+        .cmt { color: #6a9955; } /* Comment */
+        .num { color: #b5cea8; } /* Number */
+        .op { color: #d4d4d4; }  /* Operator */
+        .pkg { color: #dcdcaa; } /* Package call */
+        
+        @media (min-width: 1000px) {
+            .minimap { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Root Layout -->
+    <div class="flex w-full h-full">
+        
+        <!-- Activity Bar -->
+        <div class="activity-bar">
+            <div class="activity-icon active" title="Explorer (Ctrl+Shift+E)">
+                <svg viewBox="0 0 24 24"><path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z"/></svg>
+            </div>
+            <div class="activity-icon" title="Search (Ctrl+Shift+F)">
+                <svg viewBox="0 0 24 24"><path d="M15.25 0a8.25 8.25 0 0 0-6.18 13.72L1 22.88l1.12 1.12 8.05-9.12A8.251 8.251 0 1 0 15.25.01V0zm0 15a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5z"/></svg>
+            </div>
+            <div class="activity-icon" title="Source Control (Ctrl+Shift+G)">
+                <svg viewBox="0 0 24 24"><path d="M21.007 8.222A3.738 3.738 0 0 0 17.5 5.5a3.73 3.73 0 0 0-3.007 1.528 3.738 3.738 0 0 0-3.007-1.528 3.73 3.73 0 0 0-3.007 1.528A3.738 3.738 0 0 0 5.5 5.5a3.75 3.75 0 0 0 0 7.5 3.73 3.73 0 0 0 3.007-1.528 3.738 3.738 0 0 0 3.007 1.528 3.73 3.73 0 0 0 3.007-1.528A3.738 3.738 0 0 0 17.5 13a3.75 3.75 0 0 0 3.507-4.778zM5.5 11.5a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5zm6 0a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5zm6 0a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5z"/></svg>
+            </div>
+            <div class="activity-icon" title="Run and Debug">
+                <svg viewBox="0 0 24 24"><path d="M10.94 13.5l-1.32 1.32a3.73 3.73 0 0 0-7.24 0L1.06 13.5 0 14.56l1.72 1.72-.22.22V18H0v1.5h1.5v.08c.077.489.214.966.41 1.42L0 22.94 1.06 24l1.65-1.65A4.308 4.308 0 0 0 6 24a4.31 4.31 0 0 0 3.29-1.65L10.94 24 12 22.94 10.09 21c.198-.464.336-.951.41-1.45v-.07H12V18h-1.5v-1.5l-.22-.22L12 14.56l-1.06-1.06zM6 13.5a2.25 2.25 0 0 1 2.25 2.25h-4.5A2.25 2.25 0 0 1 6 13.5zm3 6a3 3 0 0 1-6 0v-2.25h6v2.25zm14.06-6l-1.32 1.32a3.73 3.73 0 0 0-7.24 0L13.56 13.5 12.5 14.56l1.72 1.72-.22.22V18h-1.5v1.5h1.5v.08c.077.489.214.966.41 1.42L12.5 22.94l1.06 1.06 1.65-1.65A4.308 4.308 0 0 0 18.5 24a4.31 4.31 0 0 0 3.29-1.65l1.65 1.65 1.06-1.06-1.91-1.94c.198-.464.336-.951.41-1.45v-.07h1.5V18h-1.5v-1.5l-.22-.22 1.72-1.72-1.06-1.06zM18.5 13.5a2.25 2.25 0 0 1 2.25 2.25h-4.5a2.25 2.25 0 0 1 2.25-2.25zm3 6a3 3 0 0 1-6 0v-2.25h6v2.25zM23 5.5h-2V3h-2v2.5h-2.5v2H19v2.5h2V7.5h2V5.5z"/></svg>
+            </div>
+            <div class="activity-bottom activity-icon" title="Accounts">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            </div>
+            <div class="activity-bottom activity-icon" title="Settings (Ctrl+,)">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.04.17 0 .34.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.04-.17 0-.34-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </div>
+        </div>
+
+        <!-- Side Bar: Explorer -->
+        <div class="side-bar">
+            <div class="side-bar-header">Explorer</div>
+            <div class="explorer-section">
+                <div class="explorer-title">
+                    <span>▼</span> GO-SERVER
+                </div>
+                <div class="file-tree">
+                    <div class="tree-item folder">
+                        <span class="folder-icon">▼</span> <span>src</span>
+                    </div>
+                    <div class="tree-item file file-active">
+                        <span class="go-icon">G</span> <span>main.go</span>
+                    </div>
+                    <div class="tree-item file">
+                        <span class="go-icon">G</span> <span>config.go</span>
+                    </div>
+                    <div class="tree-item file">
+                        <span class="go-icon">G</span> <span>handler.go</span>
+                    </div>
+                    <div class="tree-item file">
+                        <span class="go-icon">G</span> <span>utils.go</span>
+                    </div>
+                    <div class="tree-item folder" style="margin-top: 4px;">
+                        <span class="folder-icon">▶</span> <span>pkg</span>
+                    </div>
+                    <div class="tree-item file" style="margin-top: 4px;">
+                        <span style="color:#dcb67a">M</span> <span>go.mod</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor Group -->
+        <div class="editor-group">
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <div class="tab active">
+                    <div class="tab-content">
+                        <span class="go-icon" style="font-size:13px; font-weight:bold; color:#519aba;">G</span>
+                        <span>main.go</span>
+                    </div>
+                    <div class="tab-close">×</div>
+                </div>
+                <div class="tab">
+                    <div class="tab-content">
+                        <span class="go-icon" style="font-size:13px; font-weight:bold; color:#519aba;">G</span>
+                        <span>config.go</span>
+                    </div>
+                    <div class="tab-close">×</div>
+                </div>
+                <div class="tab">
+                    <div class="tab-content">
+                        <span class="go-icon" style="font-size:13px; font-weight:bold; color:#519aba;">G</span>
+                        <span>handler.go</span>
+                    </div>
+                    <div class="tab-close">×</div>
+                </div>
+            </div>
+
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">go-server</span>
+                <span>›</span>
+                <span class="breadcrumb-item">src</span>
+                <span>›</span>
+                <span class="breadcrumb-item" style="color:#ffffff;">main.go</span>
+            </div>
+
+            <!-- Code Area -->
+            <div class="code-area">
+                <div class="line-numbers">
+                    <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+                    <div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div>
+                    <div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div>
+                    <div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div>
+                    <div>25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div>
+                    <div>31</div><div>32</div><div>33</div><div>34</div><div>35</div><div>36</div>
+                    <div>37</div><div>38</div><div>39</div><div>40</div><div>41</div>
+                </div>
+                <div class="code-content">
+                    <!-- Line 1 -->
+                    <div class="code-row"><div class="code-line"><span class="kwd">package</span> <span class="pkg">main</span></div></div>
+                    <!-- Line 2 -->
+                    <div class="code-row"><div class="code-line">&nbsp;</div></div>
+                    <!-- Line 3 -->
+                    <div class="code-row"><div class="code-line"><span class="kwd">import</span> (</div></div>
+                    <!-- Line 4 -->
+                    <div class="code-row"><div class="code-line">	<span class="str">"fmt"</span></div></div>
+                    <!-- Line 5 -->
+                    <div class="code-row"><div class="code-line">	<span class="str">"net/http"</span></div></div>
+                    <!-- Line 6 -->
+                    <div class="code-row"><div class="code-line">	<span class="str">"encoding/json"</span></div></div>
+                    <!-- Line 7 -->
+                    <div class="code-row"><div class="code-line">	<span class="str">"context"</span></div></div>
+                    <!-- Line 8 -->
+                    <div class="code-row"><div class="code-line">)</div></div>
+                    <!-- Line 9 -->
+                    <div class="code-row"><div class="code-line">&nbsp;</div></div>
+                    <!-- Line 10 -->
+                    <div class="code-row"><div class="code-line"><span class="kwd">type</span> <span class="typ">Config</span> <span class="kwd">struct</span> {</div></div>
+                    <!-- Line 11 -->
+                    <div class="code-row"><div class="code-line">	<span class="typ">Port</span> <span class="typ">string</span> <span class="str">`json:"port"`</span></div></div>
+                    <!-- Line 12 -->
+                    <div class="code-row"><div class="code-line">	<span class="typ">Host</span> <span class="typ">string</span> <span class="str">`json:"host"`</span></div></div>
+                    <!-- Line 13 -->
+                    <div class="code-row"><div class="code-line">}</div></div>
+                    <!-- Line 14 -->
+                    <div class="code-row"><div class="code-line">&nbsp;</div></div>
+                    <!-- Line 15 -->
+                    <div class="code-row active"><div class="code-line"><span class="kwd">func</span> <span class="fun">main</span>() {</div></div>
+                    <!-- Line 16 -->
+                    <div class="code-row"><div class="code-line">	<span class="var">cfg</span> := <span class="typ">Config</span>{</div></div>
+                    <!-- Line 17 -->
+                    <div class="code-row"><div class="code-line">		<span class="var">Port</span>: <span class="str">"8080"</span>,</div></div>
+                    <!-- Line 18 -->
+                    <div class="code-row"><div class="code-line">		<span class="var">Host</span>: <span class="str">"localhost"</span>,</div></div>
+                    <!-- Line 19 -->
+                    <div class="code-row"><div class="code-line">	}</div></div>
+                    <!-- Line 20 -->
+                    <div class="code-row"><div class="code-line">	</div></div>
+                    <!-- Line 21 -->
+                    <div class="code-row"><div class="code-line">	<span class="var">ctx</span> := <span class="pkg">context</span>.<span class="fun">Background</span>()</div></div>
+                    <!-- Line 22 -->
+                    <div class="code-row"><div class="code-line">	<span class="var">server</span> := &<span class="pkg">http</span>.<span class="typ">Server</span>{</div></div>
+                    <!-- Line 23 -->
+                    <div class="code-row"><div class="code-line">		<span class="var">Addr</span>: <span class="str">":"</span> + <span class="var">cfg</span>.<span class="var">Port</span>,</div></div>
+                    <!-- Line 24 -->
+                    <div class="code-row"><div class="code-line">	}</div></div>
+                    <!-- Line 25 -->
+                    <div class="code-row"><div class="code-line">	</div></div>
+                    <!-- Line 26 -->
+                    <div class="code-row"><div class="code-line">	<span class="pkg">http</span>.<span class="fun">HandleFunc</span>(<span class="str">"/"</span>, <span class="kwd">func</span>(<span class="var">w</span> <span class="pkg">http</span>.<span class="typ">ResponseWriter</span>, <span class="var">r</span> *<span class="pkg">http</span>.<span class="typ">Request</span>) {</div></div>
+                    <!-- Line 27 -->
+                    <div class="code-row"><div class="code-line">		<span class="var">w</span>.<span class="fun">Header</span>().<span class="fun">Set</span>(<span class="str">"Content-Type"</span>, <span class="str">"application/json"</span>)</div></div>
+                    <!-- Line 28 -->
+                    <div class="code-row"><div class="code-line">		<span class="var">resp</span> := <span class="kwd">map</span>[<span class="typ">string</span>]<span class="typ">string</span>{</div></div>
+                    <!-- Line 29 -->
+                    <div class="code-row"><div class="code-line">			<span class="str">"message"</span>: <span class="str">"Welcome to CrewAI"</span>,</div></div>
+                    <!-- Line 30 -->
+                    <div class="code-row"><div class="code-line">			<span class="str">"status"</span>:   <span class="str">"running"</span>,</div></div>
+                    <!-- Line 31 -->
+                    <div class="code-row"><div class="code-line">		}</div></div>
+                    <!-- Line 32 -->
+                    <div class="code-row"><div class="code-line">		<span class="pkg">json</span>.<span class="fun">NewEncoder</span>(<span class="var">w</span>).<span class="fun">Encode</span>(<span class="var">resp</span>)</div></div>
+                    <!-- Line 33 -->
+                    <div class="code-row"><div class="code-line">	})</div></div>
+                    <!-- Line 34 -->
+                    <div class="code-row"><div class="code-line">	</div></div>
+                    <!-- Line 35 -->
+                    <div class="code-row"><div class="code-line">	<span class="pkg">fmt</span>.<span class="fun">Printf</span>(<span class="str">"Server starting on http://%s:%s\n"</span>, <span class="var">cfg</span>.<span class="var">Host</span>, <span class="var">cfg</span>.<span class="var">Port</span>)</div></div>
+                    <!-- Line 36 -->
+                    <div class="code-row"><div class="code-line">	<span class="pkg">fmt</span>.<span class="fun">Println</span>(<span class="str">"Press Ctrl+C to stop"</span>)</div></div>
+                    <!-- Line 37 -->
+                    <div class="code-row"><div class="code-line">	</div></div>
+                    <!-- Line 38 -->
+                    <div class="code-row"><div class="code-line">	<span class="kwd">if</span> <span class="var">err</span> := <span class="var">server</span>.<span class="fun">ListenAndServe</span>(); <span class="var">err</span> != <span class="kwd">nil</span> {</div></div>
+                    <!-- Line 39 -->
+                    <div class="code-row"><div class="code-line">		<span class="pkg">fmt</span>.<span class="fun">Println</span>(<span class="str">"Server error:"</span>, <span class="var">err</span>)</div></div>
+                    <!-- Line 40 -->
+                    <div class="code-row"><div class="code-line">	}</div></div>
+                    <!-- Line 41 -->
+                    <div class="code-row"><div class="code-line">}</div></div>
+                </div>
+                
+                <!-- Decorative Minimap -->
+                <div class="minimap">
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div>
+                    <div class="minimap-line" style="width:80%"></div><div class="minimap-line" style="width:70%"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line" style="width:90%"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div>
+                    <div class="minimap-line"></div><div class="minimap-line" style="width:95%"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line" style="width:85%"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div>
+                    <div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line"></div><div class="minimap-line" style="width:60%"></div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-left">
+                    <div class="status-item" title="main">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M14.5 2H9l-.35-.15-.65-.64-.65.64-.35.15H1.5l-.5.5v10l.5.5h13l.5-.5v-10l-.5-.5zm-.5 10H2V3h5.05l.35.15.65.64.65-.64.35-.15H14v9z"/></svg>
+                        main
+                    </div>
+                    <div class="status-item" title="0 Errors, 0 Warnings">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M7 4h2v5H7zm0 6h2v2H7z"/></svg>
+                        0
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" style="margin-left:4px"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M12 8l-4 4-4-4"/></svg>
+                        0
+                    </div>
+                </div>
+                <div class="status-right">
+                    <div class="status-item">Ln 15, Col 1</div>
+                    <div class="status-item">Spaces: 4</div>
+                    <div class="status-item">UTF-8</div>
+                    <div class="status-item">CRLF</div>
+                    <div class="status-item"><span style="color:#519aba">Go</span></div>
+                    <div class="status-item">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM3 8a5 5 0 1 0 10 0A5 5 0 0 0 3 8z"/></svg>
+                    </div>
+                    <div class="status-item">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 2H9V1H8v1H2.5l-.5.5v10l.5.5H5v1h1v-1h8v1h1v-1h.5l.5-.5v-10l-.5-.5zM3 3h5v2H3V3zm6 9H3v-2h6v2zm2 0v-2h2v2h-2zm2-3H3V6h10v3z"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
