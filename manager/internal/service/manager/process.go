@@ -79,7 +79,14 @@ func (s *ManagerService) processManagerWithProgress(ctx context.Context, req *ma
 		progressCallback(10, fmt.Sprintf("Manager %s thinking about workers...", req.Role))
 	}
 
-	workerRolesList, err := s.managerThink(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description)
+	gradeWeight := "10" // default
+	if req.Metadata != nil {
+		if gw, ok := req.Metadata["grade_weight"]; ok {
+			gradeWeight = gw
+		}
+	}
+
+	workerRolesList, err := s.managerThink(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight)
 	if err != nil {
 		log.Printf("Manager think error: %v", err)
 		manager.Status = "error"

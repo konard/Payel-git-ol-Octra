@@ -86,8 +86,8 @@
     "cancel": "キャンセル",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "コンソールを非表示",
+    "hideConsoleHint": "コンソールパネルを非表示",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -163,6 +163,9 @@
     "duplicate": "ノードを複製",
     "delete": "ノードを削除",
     "notConnected": "未接続",
+    "customPrompt": "カスタムプロンプト",
+    "customPromptPlaceholder": "このノードにカスタムプロンプトを入力...",
+    "scale": "サイズ",
     "n8nAutomation": {
       "title": "N8n Automation",
       "workflow": "Workflow",

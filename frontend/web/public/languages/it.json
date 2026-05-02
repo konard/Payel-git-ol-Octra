@@ -86,8 +86,8 @@
     "cancel": "Annulla",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Nascondi console",
+    "hideConsoleHint": "Nascondi il pannello della console",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -163,6 +163,9 @@
     "duplicate": "Duplica nodo",
     "delete": "Elimina nodo",
     "notConnected": "Non connesso",
+    "customPrompt": "Prompt personalizzato",
+    "customPromptPlaceholder": "Inserisci un prompt personalizzato per questo nodo...",
+    "scale": "Dimensione",
     "n8nAutomation": {
       "title": "N8n Automation",
       "workflow": "Workflow",

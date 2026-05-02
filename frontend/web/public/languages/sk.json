@@ -162,7 +162,10 @@
     "changeRole": "Zmeniť rolu:",
     "duplicate": "Duplikovať uzol",
     "delete": "Odstrániť uzol",
-    "notConnected": "Nepripojené"
+    "notConnected": "Nepripojené",
+    "customPrompt": "Vlastný prompt",
+    "customPromptPlaceholder": "Zadajte vlastný prompt pre tento uzol...",
+    "scale": "Velkost"
   },
   "integrations": {
     "title": "Integrácie",

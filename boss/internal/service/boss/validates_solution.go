@@ -3,6 +3,7 @@ package boss
 import (
 	"boss/internal/fetcher/grpc/manager/managerpb"
 	"boss/internal/service"
+	"boss/internal/prompts"
 	"context"
 	"encoding/json"
 	"log"
@@ -40,34 +41,15 @@ func (s *BossService) validateSolution(ctx context.Context, agentsClient *servic
 		}
 	}
 
-	prompt := `You are the CTO (Chief Technology Officer) reviewing the final deliverable.
-
-ORIGINAL TASK:
-Title: ` + tokens["title"] + `
-
-ARCHITECTURE DECISION:
-Technical: ` + decision.TechnicalDescription + `
-Stack: ` + strings.Join(decision.TechStack, ", ") + `
-` + decision.ArchitectureNotes + `
-
-MANAGERS RESULTS:
-` + summary + `
-
-GENERATED FILES (` + strconv.Itoa(fileCount) + ` total):
-` + fileList + `
-
-Review:
-1. Does the solution meet the requirements?
-2. Is the architecture followed?
-3. Are all managers completed their work?
-4. Is the file structure reasonable?
-5. Any critical issues?
-
-Reply ONLY with JSON:
-{
-  "approved": true/false,
-  "feedback": "detailed feedback"
-}`
+	prompt := prompts.ValidateSolution(
+		tokens["title"],
+		decision.TechnicalDescription,
+		strings.Join(decision.TechStack, ", "),
+		decision.ArchitectureNotes,
+		summary,
+		strconv.Itoa(fileCount),
+		fileList,
+	)
 
 	resp, err := agentsClient.GenerateFromTask(ctx, provider, model, prompt, tokens)
 	if err != nil {

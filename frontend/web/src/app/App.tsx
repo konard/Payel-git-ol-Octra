@@ -313,6 +313,10 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
+      <div 
+        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-200 ${showSidebar ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setShowSidebar(false)}
+      />
       <Sidebar
         isOpen={showSidebar}
         onClose={() => setShowSidebar(false)}

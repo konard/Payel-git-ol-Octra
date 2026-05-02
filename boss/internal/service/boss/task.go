@@ -6,6 +6,7 @@ import (
 	"boss/internal/service/git"
 	"boss/pkg/database"
 	"boss/pkg/models"
+	"boss/internal/prompts"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -367,9 +368,30 @@ func (s *BossService) executeTaskFlow(
 		return err
 	}
 
-	// 7. Mark as done
+	// 7a. Push to GitHub if token is available (BEFORE sending success)
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken != "" && task.ProjectJSON == "" {
+		log.Printf("Pushing results to GitHub...")
+		githubClient := s.getGitHubClient()
+		if githubClient != nil {
+			repoURL, err := githubClient.CreateRepository(ctx, &task)
+			if err != nil {
+				log.Printf("Failed to create GitHub repository: %v", err)
+			} else {
+				if err := githubClient.PushToRepository(ctx, &task, projectPath, repoURL); err != nil {
+					log.Printf("Failed to push to GitHub: %v", err)
+				} else {
+					log.Printf("Successfully pushed to GitHub: %s", repoURL)
+					task.ProjectJSON = repoURL
+					database.Db.Save(&task)
+				}
+			}
+		}
+	}
+
+	// 7b. Mark as done
 	task.Status = "done"
-database.Db.Save(task)
+	database.Db.Save(task)
 
 	log.Printf("✅ Task %s completed!", taskID)
 
@@ -581,31 +603,9 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 	if err != nil {
 		log.Printf("Warning: failed to save git data: %v", err)
 	} else {
-		task.GitData = gitData
+task.GitData = gitData
 		database.Db.Save(task)
 		log.Printf("✅ Git data saved to DB")
-	}
-
-	// 8. Push to GitHub if token is available
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if githubToken != "" {
-		log.Printf("Pushing results to GitHub...")
-		githubClient := s.getGitHubClient()
-		if githubClient != nil {
-			repoURL, err := githubClient.CreateRepository(ctx, task)
-			if err != nil {
-				log.Printf("Failed to create GitHub repository: %v", err)
-			} else {
-				if err := githubClient.PushToRepository(ctx, task, projectPath, repoURL); err != nil {
-					log.Printf("Failed to push to GitHub: %v", err)
-				} else {
-					log.Printf("Successfully pushed to GitHub: %s", repoURL)
-					// Update task with repo URL
-					task.ProjectJSON = repoURL
-					database.Db.Save(task)
-				}
-			}
-		}
 	}
 
 	// 8. Return result with ZIP
@@ -622,35 +622,7 @@ func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequ
 func (s *BossService) thinkAboutTask(ctx context.Context, agentsClient *service.AgentClientWrapper, provider, model string, req *bosspb.CreateTaskRequest) (*BossDecisionResult, error) {
 	log.Printf("Boss thinking about task: %s", req.Title)
 
-	prompt := `You are CTO. Analyze the task and decide what manager roles are needed.
-
-Title: ` + req.Title + `
-Description: ` + req.Description + `
-
-IMPORTANT RULES:
-- Create ONLY the managers that are actually needed for this specific task
-- Do NOT create frontend manager if the task is backend-only, API, CLI tool, or infrastructure
-- Do NOT add unnecessary managers just for the sake of having them
-- Each manager must have a clear purpose related to the task
-- Typical projects need 1-3 managers, not more
-
-Reply ONLY with JSON:
-{
-  "managers_count": 2,
-  "manager_roles": [
-    {"role": "backend", "description": "Backend API and business logic", "priority": 1},
-    {"role": "testing", "description": "Unit and integration tests", "priority": 2}
-  ],
-  "technical_description": "Technical description...",
-  "tech_stack": ["Python", "FastAPI", "Redis"],
-  "architecture_notes": "Architecture notes..."
-}
-
-Choose the tech stack based on what the task actually needs — don't copy the example.
-If the task is a CLI tool: Go, Cobra, etc.
-If it's a web app: React, Node.js, etc.
-If it's a proxy/API: Go, gorilla/mux, etc.
-Always include only the technologies that are genuinely required.`
+	prompt := prompts.PlanArchitecture(req.Title, req.Description)
 
 	log.Printf("Sending request to AI...")
 	// Add model to tokens for custom providers

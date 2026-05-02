@@ -255,8 +255,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     });
   };
 
-  // Helper: add ZIP Archive node with edges from all workers
-  const addZIPArchiveNode = () => {
+  // Helper: add GitHub node with edges from all workers
+  const addGitHubNode = () => {
     if (zipNodeAdded.current || hasUserNodes()) return;
     zipNodeAdded.current = true;
 
@@ -270,21 +270,21 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const centerX = allX.length > 0 ? Math.min(...allX) + (Math.max(...allX) - Math.min(...allX)) / 2 : 400;
 
     storeActions.addNode({
-      id: 'zip-archive',
-      type: 'zip',
-      role: 'ZIP Archive',
-      status: 'working',
-      fileName: 'project.zip',
+      id: 'github-archive',
+      type: 'github',
+      role: 'GitHub',
+      status: 'pending',
+      repoUrl: '',
       position: { x: centerX, y: 520 },
     });
 
     // Add edges from all workers to ZIP (or managers if no workers)
     const edgeSources = workerNodes.length > 0 ? workerNodes : managerNodes;
     edgeSources.forEach((node) => {
-      storeActions.addEdge({ from: node.id, to: 'zip-archive' });
+      storeActions.addEdge({ from: node.id, to: 'github-archive' });
     });
 
-    console.log('[WS] => ZIP Archive node added with', edgeSources.length, 'edges');
+    console.log('[WS] => GitHub node added with', edgeSources.length, 'edges');
   };
 
   const handleProgressMessage = (msg: WebSocketMessage) => {
@@ -479,16 +479,16 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         }
       });
 
-      // Add ZIP Archive node
-      addZIPArchiveNode();
+      // Add GitHub node
+      addGitHubNode();
     }
 
     // === BOSS VALIDATING ===
     if (message.includes('Boss validating')) {
       storeActions.updateNode('boss-1', { status: 'reviewing' });
 
-      // Ensure ZIP node exists (if not added by "All managers completed")
-      addZIPArchiveNode();
+      // Ensure GitHub node exists (if not added by "All managers completed")
+      addGitHubNode();
     }
 
     // === PACKAGING ===

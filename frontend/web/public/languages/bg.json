@@ -162,7 +162,10 @@
     "changeRole": "Промяна на ролята:",
     "duplicate": "Дублирай възел",
     "delete": "Изтрий възел",
-    "notConnected": "Не е свързано"
+    "notConnected": "Не е свързано",
+    "customPrompt": "Персонализирана подкана",
+    "customPromptPlaceholder": "Въведете персонализирана подкана за този възел...",
+    "scale": "Размер"
   },
   "integrations": {
     "title": "Интеграции",

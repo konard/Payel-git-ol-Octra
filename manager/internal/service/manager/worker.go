@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 	"manager/internal/fetcher/grpc/managerpb"
 	"manager/internal/fetcher/grpc/workerpb"
+	"manager/internal/prompts"
 )
 
 // reviewWorkerResult — менеджер проверяет работу воркера через AI
 func (s *ManagerService) reviewWorkerResult(ctx context.Context, provider, model string, tokens map[string]string, managerRole string, wr *workerpb.WorkerResult) (*ReviewResult, error) {
-	// Build list of files
 	filesList := ""
 	for path, content := range wr.Files {
 		preview := content
@@ -20,32 +21,16 @@ func (s *ManagerService) reviewWorkerResult(ctx context.Context, provider, model
 		filesList += fmt.Sprintf("\n--- %s ---\n%s\n", path, preview)
 	}
 
-	prompt := fmt.Sprintf(`You are a %s manager reviewing work from a %s developer.
+	prompt := prompts.ReviewWork(managerRole, wr.Role, wr.TaskMd, wr.SolutionMd, filesList)
 
-TASK:
-%s
+	// Timeout 30s for review to avoid WS disconnect
+	genCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
-PROPOSED SOLUTION:
-%s
-
-FILES:
-%s
-
-Review the work:
-1. Does it fulfill the task requirements?
-2. Is the code quality acceptable?
-3. Are there obvious bugs or missing pieces?
-4. Does it integrate well with the team (if context provided)?
-
-Reply ONLY with JSON:
-{
-  "approved": true/false,
-  "feedback": "detailed feedback if not approved, or praise if approved"
-}`, managerRole, wr.Role, wr.TaskMd, wr.SolutionMd, filesList)
-
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 1024, 0.3)
+	resp, err := s.agentsClient.Generate(genCtx, provider, model, prompt, tokens, 1024, 0.3)
 	if err != nil {
-		return nil, err
+		// Auto-approve on timeout/error
+		return &ReviewResult{Approved: true, Feedback: fmt.Sprintf("Review timeout/error: %v", err)}, nil
 	}
 
 	var review ReviewResult

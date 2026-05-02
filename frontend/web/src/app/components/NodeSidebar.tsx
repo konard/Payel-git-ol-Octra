@@ -130,12 +130,16 @@ export function NodeSidebar({ isOpen, onClose, onDragStart, onOpenWorkflowLibrar
 
   // Close dropdown when clicking outside the sidebar
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    // Only close if clicking outside the entire sidebar
+    const target = e.target as Node;
     const sidebar = document.querySelector('[data-sidebar]');
-    if (sidebar && !sidebar.contains(e.target as Node)) {
-      setCreateOpen(false);
-      setWorkflowsOpen(false);
-    }
+    const reactFlow = document.querySelector('.react-flow');
+    
+    // Don't close if clicking on sidebar or ReactFlow canvas (for node connections)
+    if (sidebar?.contains(target)) return;
+    if (reactFlow?.contains(target)) return;
+    
+    setCreateOpen(false);
+    setWorkflowsOpen(false);
   }, []);
 
   useEffect(() => {

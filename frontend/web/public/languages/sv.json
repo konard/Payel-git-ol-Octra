@@ -86,8 +86,8 @@
     "cancel": "Avbryt",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Dölj konsol",
+    "hideConsoleHint": "Dölj konsolpanelen",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Ändra roll:",
     "duplicate": "Duplicera nod",
     "delete": "Radera nod",
-    "notConnected": "Inte ansluten"
+    "notConnected": "Inte ansluten",
+    "customPrompt": "Anpassad prompt",
+    "customPromptPlaceholder": "Ange en anpassad prompt för denna nod...",
+    "scale": "Storlek"
   },
   "integrations": {
     "title": "Integrationer",

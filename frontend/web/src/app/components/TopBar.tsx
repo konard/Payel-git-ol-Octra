@@ -110,7 +110,6 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'custom-providers', labelKey: 'settings.customProviders', icon: Puzzle },
   { id: 'custom-models', labelKey: 'settings.customModels', icon: Puzzle },
   { id: 'language', labelKey: 'settings.language', icon: Languages },
-  { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   { id: 'visibility', labelKey: 'settings.interface', icon: Eye },
   { id: 'integrations', labelKey: 'settings.integrations', icon: Puzzle },
 ];
@@ -597,7 +596,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                    </div>
                  )}
 
-                {activeTab === 'appearance' && (
+                {activeTab === 'visibility' && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -613,11 +612,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                         {t('settings.themeToggle')}
                       </button>
                     </div>
-                  </div>
-                )}
 
-                {activeTab === 'visibility' && (
-                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-[var(--text)]">
@@ -644,10 +639,10 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-[var(--text)]">
-                          Скрыть консоль
+                          {t('settings.hideConsole')}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
-                          Скрывает нижнюю панель логов и событий.
+                          {t('settings.hideConsoleHint')}
                         </div>
                       </div>
                       <button

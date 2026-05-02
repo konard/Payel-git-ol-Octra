@@ -86,8 +86,8 @@
     "cancel": "Annuler",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Masquer la console",
+    "hideConsoleHint": "Masquer le panneau de console",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -137,6 +137,9 @@
     "duplicate": "Dupliquer le nœud",
     "delete": "Supprimer le nœud",
     "notConnected": "Non connecté",
+    "customPrompt": "Invite personnalisée",
+    "customPromptPlaceholder": "Entrez une invite personnalisée pour ce nœud...",
+    "scale": "Taille",
     "n8nAutomation": {
       "title": "Automatisation N8n",
       "workflow": "Workflow",

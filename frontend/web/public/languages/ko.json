@@ -162,7 +162,10 @@
     "changeRole": "역할 변경:",
     "duplicate": "노드 복제",
     "delete": "노드 삭제",
-    "notConnected": "연결되지 않음"
+    "notConnected": "연결되지 않음",
+    "customPrompt": "사용자 정의 프롬프트",
+    "customPromptPlaceholder": "이 노드에 대한 사용자 정의 프롬프트 입력...",
+    "scale": "크기"
   },
   "integrations": {
     "title": "통합",

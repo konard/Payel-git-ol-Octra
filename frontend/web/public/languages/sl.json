@@ -162,7 +162,10 @@
     "changeRole": "Spremeni vlogo:",
     "duplicate": "Podvoji vozel",
     "delete": "Izbriši vozel",
-    "notConnected": "Ni povezano"
+    "notConnected": "Ni povezano",
+    "customPrompt": "Poljuben poziv",
+    "customPromptPlaceholder": "Vnesite poljuben poziv za ta vozel...",
+    "scale": "Velikost"
   },
   "integrations": {
     "title": "Integracije",

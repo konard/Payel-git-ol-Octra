@@ -294,7 +294,7 @@ export function WorkflowLibrary({ onClose, onImportWorkflow }: WorkflowLibraryPr
                 setImportCategory('');
                 setImportIsPublic(true);
               }}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
+              className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-medium rounded-md transition-colors"
             >
               {t('workflowLibrary.importWorkflow')}
             </button>

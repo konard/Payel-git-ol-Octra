@@ -122,13 +122,45 @@ function getCursorInfo(text: string, position: number) {
 }
 
 export function CodeViewer() {
-  const [files, setFiles] = useState<EditorFile[]>(INITIAL_FILES);
+  const [allFiles] = useState<EditorFile[]>(INITIAL_FILES);
+  const [openFileIds, setOpenFileIds] = useState<string[]>([INITIAL_FILES[0].id]);
   const [activeFileId, setActiveFileId] = useState(INITIAL_FILES[0].id);
   const [isExplorerOpen, setIsExplorerOpen] = useState(true);
+  const [explorerWidth, setExplorerWidth] = useState(250);
   const [cursor, setCursor] = useState({ line: 1, col: 1 });
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
+  const explorerRef = useRef<HTMLDivElement>(null);
+  const isResizing = useRef(false);
+
+  const files = allFiles;
+  const openFiles = allFiles.filter(f => openFileIds.includes(f.id));
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current || !explorerRef.current) return;
+      const newWidth = e.clientX - explorerRef.current.getBoundingClientRect().left;
+      setExplorerWidth(Math.max(150, Math.min(500, newWidth)));
+    };
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const startResize = () => {
+    isResizing.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   const toggleFolder = (folder: string) => {
     setExpandedFolders((prev) => {
@@ -142,7 +174,24 @@ export function CodeViewer() {
     });
   };
 
-  const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
+  const closeFile = (fileId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newOpenFileIds = openFileIds.filter(id => id !== fileId);
+    setOpenFileIds(newOpenFileIds);
+    
+    if (activeFileId === fileId && newOpenFileIds.length > 0) {
+      setActiveFileId(newOpenFileIds[0]);
+    }
+  };
+
+  const openFile = (fileId: string) => {
+    if (!openFileIds.includes(fileId)) {
+      setOpenFileIds([...openFileIds, fileId]);
+    }
+    setActiveFileId(fileId);
+  };
+
+  const activeFile = openFiles.find((file) => file.id === activeFileId) ?? null;
 
   const lineCount = useMemo(() => {
     if (!activeFile) return 1;
@@ -199,7 +248,76 @@ export function CodeViewer() {
   };
 
   if (!activeFile) {
-    return <div className="w-full h-full" />;
+    return (
+      <div className="w-full h-full flex bg-[var(--background)] text-[var(--text)] overflow-hidden">
+        {/* Sidebar icons */}
+        <div className="w-12 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col items-center py-1 shrink-0">
+          <button
+            className="w-12 h-12 flex items-center justify-center text-[var(--text)] relative"
+            type="button"
+            aria-label="Explorer"
+            onClick={() => setIsExplorerOpen((prev) => !prev)}
+          >
+            <span className={`absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--accent)] ${isExplorerOpen ? '' : 'opacity-0'}`} />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z" />
+            </svg>
+          </button>
+        </div>
+
+        {isExplorerOpen && (
+          <div ref={explorerRef} style={{ width: explorerWidth }} className="bg-[var(--surface)] border-r border-[var(--border)] flex flex-col shrink-0">
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/50 transition-colors z-10"
+              onMouseDown={startResize}
+            />
+            <div className="h-9 px-4 flex items-center text-xs uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">Explorer</div>
+            <div className="p-2 text-sm overflow-auto">
+              <button
+                type="button"
+                onClick={() => toggleFolder('src')}
+                className="w-full text-left px-2 py-1 rounded text-[var(--text)]/90 hover:bg-[var(--background)]"
+              >
+                <span className="mr-1">{expandedFolders.has('src') ? '▼' : '▶'}</span>
+                src
+              </button>
+              {expandedFolders.has('src') && (
+                <div className="ml-3">
+                  {files.map((file) => {
+                    return (
+                      <button
+                        key={file.id}
+                        type="button"
+                        onClick={() => openFile(file.id)}
+                        className="w-full text-left pl-6 pr-2 py-1 rounded transition-colors text-[var(--text)]/85 hover:bg-[var(--background)]"
+                      >
+                        <span className="text-[#519aba] font-semibold mr-2">G</span>
+                        {file.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => toggleFolder('pkg')}
+                className="w-full text-left px-2 py-1 rounded text-[var(--text)]/80 hover:bg-[var(--background)] mt-1"
+              >
+                <span className="mr-1">{expandedFolders.has('pkg') ? '▼' : '▶'}</span>
+                pkg
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 flex items-center justify-center bg-[var(--background)] text-[var(--text-muted)]">
+          <div className="text-center">
+            <p>No file open</p>
+            <p className="text-sm mt-2">Click on a file in the Explorer to open it</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -237,7 +355,11 @@ export function CodeViewer() {
       </div>
 
       {isExplorerOpen && (
-        <div className="w-[250px] bg-[var(--surface)] border-r border-[var(--border)] flex flex-col shrink-0">
+        <div ref={explorerRef} style={{ width: explorerWidth }} className="bg-[var(--surface)] border-r border-[var(--border)] flex flex-col shrink-0 relative">
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/50 transition-colors z-10"
+            onMouseDown={startResize}
+          />
           <div className="h-9 px-4 flex items-center text-xs uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">Explorer</div>
 
           <div className="p-2 text-sm overflow-auto">
@@ -252,14 +374,14 @@ export function CodeViewer() {
             {expandedFolders.has('src') && (
               <div className="ml-3">
                 {files.map((file) => {
-                  const isActive = file.id === activeFileId;
+                  const isOpen = openFileIds.includes(file.id);
                   return (
                     <button
                       key={file.id}
                       type="button"
-                      onClick={() => setActiveFileId(file.id)}
+                      onClick={() => openFile(file.id)}
                       className={`w-full text-left pl-6 pr-2 py-1 rounded transition-colors ${
-                        isActive
+                        isOpen
                           ? 'bg-[var(--accent)]/20 text-[var(--text)]'
                           : 'text-[var(--text)]/85 hover:bg-[var(--background)]'
                       }`}
@@ -290,7 +412,7 @@ export function CodeViewer() {
 
       <div className="flex-1 min-w-0 flex flex-col bg-[var(--background)]">
         <div className="h-9 bg-[var(--surface)] flex overflow-x-auto border-b border-[var(--border)]">
-          {files.map((file) => {
+          {openFiles.map((file) => {
             const isActive = file.id === activeFileId;
             return (
               <button
@@ -304,7 +426,12 @@ export function CodeViewer() {
                 }`}
               >
                 <span className="truncate">{file.name}</span>
-                <span className="opacity-60">×</span>
+                <span 
+                  onClick={(e) => closeFile(file.id, e)}
+                  className="opacity-60 hover:opacity-100 hover:text-red-500 cursor-pointer"
+                >
+                  ×
+                </span>
               </button>
             );
           })}

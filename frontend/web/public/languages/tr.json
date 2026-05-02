@@ -86,8 +86,8 @@
     "cancel": "İptal",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Konsolu gizle",
+    "hideConsoleHint": "Konsol panelini gizle",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Rolü değiştir:",
     "duplicate": "Düğümü çoğalt",
     "delete": "Düğümü sil",
-    "notConnected": "Bağlı değil"
+    "notConnected": "Bağlı değil",
+    "customPrompt": "Özel istem",
+    "customPromptPlaceholder": "Bu düğüm için özel istem girin...",
+    "scale": "Boyut"
   },
   "integrations": {
     "title": "Entegrasyonlar",

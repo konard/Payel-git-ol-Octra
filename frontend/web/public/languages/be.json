@@ -86,8 +86,8 @@
     "cancel": "Адмена",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Схаваць кансоль",
+    "hideConsoleHint": "Схаваць панель кансолі",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Змяніць ролю:",
     "duplicate": "Дубляваць ноду",
     "delete": "Выдаліць ноду",
-    "notConnected": "Не падключана"
+    "notConnected": "Не падключана",
+    "customPrompt": "Карыстальніцкі запыт",
+    "customPromptPlaceholder": "Увядзіце карыстальніцкі запыт для гэтай ноды...",
+    "scale": "Памер"
   },
   "integrations": {
     "title": "Інтэграцыі",

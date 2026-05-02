@@ -86,8 +86,8 @@
     "cancel": "Չեղարկել",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Թաքցնել կոնսոլը",
+    "hideConsoleHint": "Թաքցնել կոնսոլի վահանակը",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -135,7 +135,10 @@
     "changeRole": "Փոխել դերը.",
     "duplicate": "Կրկնօրինակել նոդը",
     "delete": "Ջնջել նոդը",
-    "notConnected": "Միացված չէ"
+    "notConnected": "Միացված չէ",
+    "customPrompt": "Անհատական հարցում",
+    "customPromptPlaceholder": "Մուտքագրեք դեպի այս նոդը հարցում...",
+    "scale": "Չափ"
   },
   "integrations": {
     "title": "Ինտեգրացիաներ",

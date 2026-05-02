@@ -162,7 +162,10 @@
     "changeRole": "Promijeni ulogu:",
     "duplicate": "Dupliciraj čvor",
     "delete": "Obriši čvor",
-    "notConnected": "Nije povezano"
+    "notConnected": "Nije povezano",
+    "customPrompt": "Prilagođeni prompt",
+    "customPromptPlaceholder": "Unesite prilagođeni prompt za ovaj čvor...",
+    "scale": "Veličina"
   },
   "integrations": {
     "title": "Integracije",

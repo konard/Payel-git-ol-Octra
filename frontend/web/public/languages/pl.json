@@ -86,8 +86,8 @@
     "cancel": "Anuluj",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Ukryj konsolę",
+    "hideConsoleHint": "Ukryj panel konsoli",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Zmień rolę:",
     "duplicate": "Duplikuj węzeł",
     "delete": "Usuń węzeł",
-    "notConnected": "Nie podłączono"
+    "notConnected": "Nie podłączono",
+    "customPrompt": "Niestandardowy prompt",
+    "customPromptPlaceholder": "Wprowadź niestandardowy prompt dla tego węzła...",
+    "scale": "Rozmiar"
   },
   "integrations": {
     "title": "Integracje",

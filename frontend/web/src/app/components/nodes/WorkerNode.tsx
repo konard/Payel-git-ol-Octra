@@ -3,26 +3,20 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { Cpu } from 'lucide-react';
 import { useI18n } from '../../../hooks/useI18n';
+import { useNodeResize } from '../../../hooks/useNodeResize';
 
 interface WorkerNodeData {
   role?: string;
   status?: 'pending' | 'thinking' | 'working' | 'reviewing' | 'done' | 'error';
   filesCount?: number;
   isConnected?: boolean;
+  scale?: number;
 }
 
-const statusIcons: Record<string, string> = {
-  pending: 'WAITING',
-  thinking: 'THINKING',
-  working: 'WORKING',
-  reviewing: 'REVIEWING',
-  done: 'DONE',
-  error: 'ERROR',
-};
-
-function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
-  const { role = 'Developer', status = 'pending', filesCount, isConnected = false } = data;
+function WorkerNodeComponent({ id, data }: NodeProps<{ data: WorkerNodeData }>) {
+  const { role = 'Developer', status = 'pending', filesCount, isConnected = false, scale = 1 } = data;
   const { t } = useI18n();
+  const { scale: currentScale, handleResize } = useNodeResize(id, scale);
 
   const statusColors: Record<string, string> = {
     pending: 'border-gray-500',
@@ -53,7 +47,7 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
   };
 
   return (
-    <div className={getNodeClasses()}>
+    <div className={`${getNodeClasses()} relative`} style={{ transform: `scale(${currentScale})`, transformOrigin: 'center center' }}>
       <Handle type="target" position={Position.Top} />
 
       {/* Header с иконкой */}
@@ -83,6 +77,16 @@ function WorkerNodeComponent({ data }: NodeProps<{ data: WorkerNodeData }>) {
             <span className="text-[var(--text-muted)] font-medium">Файлов:</span> <span className="text-[var(--text)] ml-1">{filesCount}</span>
           </div>
         )}
+      </div>
+
+      {/* Resize handle */}
+      <div 
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-50 hover:opacity-100"
+        onMouseDown={handleResize}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
+          <path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM22 14H20V12H22V14ZM18 18H16V16H18V18ZM14 22H12V20H14V22Z"/>
+        </svg>
       </div>
 
       <Handle type="source" position={Position.Bottom} />

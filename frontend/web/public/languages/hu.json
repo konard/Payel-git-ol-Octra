@@ -86,8 +86,8 @@
     "cancel": "Mégse",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Konzol elrejtése",
+    "hideConsoleHint": "A konzolpanel elrejtése",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Szerep módosítása:",
     "duplicate": "Csomópont másolása",
     "delete": "Csomópont törlése",
-    "notConnected": "Nincs csatlakoztatva"
+    "notConnected": "Nincs csatlakoztatva",
+    "customPrompt": "Egyéni prompt",
+    "customPromptPlaceholder": "Adjon meg egy egyéni promptot ehhez a csomóponthoz...",
+    "scale": "Méret"
   },
   "integrations": {
     "title": "Integrációk",

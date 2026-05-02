@@ -85,8 +85,8 @@
     "cancel": "Bekor qilish",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Konsolni yashirish",
+    "hideConsoleHint": "Konsol panelini yashirish",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -135,6 +135,9 @@
     "duplicate": "Tugunni nusxalash",
     "delete": "Tugunni o'chirish",
     "notConnected": "Ulanmagan",
+    "customPrompt": "Maxsus so'rov",
+    "customPromptPlaceholder": "Ushbu tugun uchun maxsus so'rov kiriting...",
+    "scale": "Hajm",
     "n8nAutomation": {
       "title": "N8n avtomatizatsiya",
       "workflow": "Workflow",

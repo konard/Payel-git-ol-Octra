@@ -1,16 +1,19 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { FolderArchive, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Github } from 'lucide-react';
 import type { AgentNodeStatus } from '../../../stores/taskStore';
 import { t } from '../../../hooks/useI18n';
+import { useNodeResize } from '../../../hooks/useNodeResize';
+import githubImage from '../../../images/github-image.png';
 
-interface ZIPArchiveNodeProps {
+interface GitHubNodeProps {
+  id: string;
   data: {
     role?: string;
     status?: AgentNodeStatus;
-    fileName?: string;
-    fileSize?: string;
-    filesCount?: number;
+    repoUrl?: string;
+    commitCount?: number;
+    scale?: number;
   };
 }
 
@@ -41,20 +44,20 @@ const statusConfig: Record<string, { border: string; bg: string; icon: React.Rea
   },
 };
 
-function ZIPArchiveNodeComponent({ data }: ZIPArchiveNodeProps) {
+function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
   const status = data.status || 'pending';
   const config = statusConfig[status] || statusConfig.pending;
-  const fileName = data.fileName || 'project.zip';
-  const fileSize = data.fileSize || '';
-  const filesCount = data.filesCount;
+  const repoUrl = data.repoUrl || '';
+  const commitCount = data.commitCount;
+  const { scale: currentScale, handleResize } = useNodeResize(id, data.scale || 1);
 
   return (
-    <div className={`rounded-xl border-2 ${config.border} shadow-lg min-w-[180px]`}>
+    <div className={`rounded-xl border-2 ${config.border} shadow-lg min-w-[200px] relative`} style={{ transform: `scale(${currentScale})`, transformOrigin: 'center center' }}>
       {/* Header */}
       <div className={`${config.bg} px-3 py-2 rounded-t-lg border-b ${config.border}`}>
         <div className="flex items-center gap-2">
-          <FolderArchive size={18} className="text-[var(--text)]" />
-          <span className="text-sm font-semibold text-[var(--text)]">{t('nodes.zipArchive')}</span>
+          <img src={githubImage} alt="GitHub" className="w-5 h-5" />
+          <span className="text-sm font-semibold text-[var(--text)]">GitHub</span>
         </div>
       </div>
 
@@ -66,22 +69,18 @@ function ZIPArchiveNodeComponent({ data }: ZIPArchiveNodeProps) {
           <span className="text-[var(--text-muted)]">{config.label}</span>
         </div>
 
-        {/* File name */}
-        <div className="text-xs font-mono text-[var(--text)] truncate">
-          📦 {fileName}
-        </div>
-
-        {/* File size */}
-        {fileSize && (
-          <div className="text-xs text-[var(--text-muted)]">
-            {t('nodes.size')}: {fileSize}
+        {/* Repo URL */}
+        {repoUrl && (
+          <div className="text-xs font-mono text-[var(--text)] truncate">
+            <Github size={12} className="inline mr-1" />
+            {repoUrl}
           </div>
         )}
 
-        {/* Files count */}
-        {filesCount !== undefined && (
+        {/* Commit count */}
+        {commitCount !== undefined && (
           <div className="text-xs text-[var(--text-muted)]">
-            {t('nodes.filesCount')}: {filesCount}
+            Commits: {commitCount}
           </div>
         )}
       </div>
@@ -91,8 +90,18 @@ function ZIPArchiveNodeComponent({ data }: ZIPArchiveNodeProps) {
       <Handle type="target" position={Position.Top} id="input-1" className="!bg-blue-500 !w-2 !h-2" style={{ top: -4, left: '40%' }} />
       <Handle type="target" position={Position.Top} id="input-2" className="!bg-blue-500 !w-2 !h-2" style={{ top: -4, left: '60%' }} />
       <Handle type="target" position={Position.Top} id="input-3" className="!bg-blue-500 !w-2 !h-2" style={{ top: -4, left: '80%' }} />
+
+      {/* Resize handle */}
+      <div 
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-50 hover:opacity-100"
+        onMouseDown={handleResize}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[var(--text)]">
+          <path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM22 14H20V12H22V14ZM18 18H16V16H18V18ZM14 22H12V20H14V22Z"/>
+        </svg>
+      </div>
     </div>
   );
 }
 
-export const ZIPArchiveNode = memo(ZIPArchiveNodeComponent);
+export const GitHubNode = memo(GitHubNodeComponent);

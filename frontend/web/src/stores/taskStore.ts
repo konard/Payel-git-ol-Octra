@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'zip';
+export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'github';
 export type AgentNodeStatus = 'pending' | 'thinking' | 'working' | 'reviewing' | 'done' | 'error';
 export type TaskStatus = 'idle' | 'creating' | 'planning' | 'executing' | 'done' | 'error';
 
@@ -14,9 +14,9 @@ export interface AgentNode {
   workerCount?: number;
   techStack?: string[];
   position?: { x: number; y: number };
-  // ZIP Archive specific fields
-  fileName?: string;
-  fileSize?: string;
+  // GitHub specific fields
+  repoUrl?: string;
+  commitCount?: number;
   // N8n automation
   n8nTrigger?: 'start' | 'end' | 'middle' | 'custom';
   n8nPercentage?: number;
@@ -24,6 +24,8 @@ export interface AgentNode {
   n8nWebhookUrl?: string;
   // Custom prompt
   customPrompt?: string;
+  // Node scale
+  scale?: number;
 }
 
 export interface WorkflowConfig {

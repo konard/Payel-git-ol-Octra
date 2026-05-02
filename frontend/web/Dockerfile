@@ -14,7 +14,7 @@ FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY languages /usr/share/nginx/html/languages
+COPY --from=builder /app/public/languages /usr/share/nginx/html/languages
 
 EXPOSE 80
 

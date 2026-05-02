@@ -9,28 +9,34 @@ import (
 )
 
 // generateCodeMultiPass generates all files in a single LLM request (optimized, -45% tokens)
-func (s *WorkerService) generateCodeMultiPass(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context string) (map[string]string, []string, error) {
+func (s *WorkerService) generateCodeMultiPass(ctx context.Context, provider, model string, tokens map[string]string, taskMD, role, description, managerRole, basePath, context, techStack string) (map[string]string, []string, error) {
 	contextSection := ""
 	if context != "" {
 		contextSection = "\n\nCONTEXT FROM OTHER WORKERS:\n" + context
 	}
 
+	if techStack == "" {
+		techStack = "Go"
+	}
+
 	// Single request: generate all files at once
 	prompt := fmt.Sprintf(`You are a %s developer. Role: %s
+Language: %s
 
 TASK: %s%s
 
-Create 3-5 most important files for this project.
+IMPORTANT: Write code in %s ONLY. NOT JavaScript, NOT TypeScript.
+Create 3-5 most important files for this project (use .%s extension).
 
 AFTER files, provide COMMANDS to execute in the project (mkdir, echo, etc.).
 
 RETURN FORMAT (STRICT - follow exactly):
-=== FILE: path/to/file1.ext ===
-<complete code for file1.ext - no placeholders, no TODOs>
-=== FILE: path/to/file2.ext ===
-<complete code for file2.ext - no placeholders, no TODOs>
-=== FILE: path/to/file3.ext ===
-<complete code for file3.ext - no placeholders, no TODOs>
+=== FILE: path/to/file1.%s ===
+<complete code for file1.%s - no placeholders, no TODOs>
+=== FILE: path/to/file2.%s ===
+<complete code for file2.%s - no placeholders, no TODOs>
+=== FILE: path/to/file3.%s ===
+<complete code for file3.%s - no placeholders, no TODOs>
 === COMMANDS ===
 mkdir -p dir
 echo 'content' > file.txt
@@ -38,7 +44,7 @@ echo 'content' > file.txt
 
 RULES:
 1. Each file MUST start with "=== FILE: <path> ===" on its own line
-2. File paths should be relative to project root (e.g., main.go, cmd/server/main.go) - DO NOT include project name in path
+2. File paths should be relative to project root (e.g., main.%s, cmd/server/main.%s) - DO NOT include project name in path
 3. File content MUST be complete code - no placeholders, no TODOs, no "implement later"
 4. Use proper imports and exports
 5. Keep code compact but functional (300-500 lines max per file)
@@ -46,12 +52,19 @@ RULES:
 7. If you can't create a file, skip it and move to the next one
 8. COMMANDS: List bash commands to run in project root, one per line
 9. Return ONLY the files and commands, no explanations`,
-		role, description, taskMD, contextSection)
+		role, description, techStack,
+		taskMD, contextSection,
+		techStack, techStack,
+		techStack, techStack, techStack, techStack, techStack, techStack, techStack, techStack,
+		techStack, techStack)
 
 	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
 	if err != nil {
 		return nil, nil, fmt.Errorf("multi-pass generation failed: %w", err)
 	}
+
+	log.Printf("[Worker] Multi-pass response length: %d chars", len(response))
+	log.Printf("[Worker] Multi-pass response preview: %.200s", response)
 
 	// Parse multi-file response
 	files, commands := parseMultiFileResponse(response)
@@ -59,7 +72,7 @@ RULES:
 	if len(files) == 0 {
 		// Fallback to N+1 approach if parsing failed
 		log.Printf("[Worker] Multi-pass parsing failed, falling back to N+1")
-		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, context)
+		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, context, techStack)
 	}
 
 	// Keep relative paths from model output; caller writes them under project root.

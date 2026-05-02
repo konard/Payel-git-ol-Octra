@@ -86,8 +86,8 @@
     "cancel": "Ακύρωση",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Απόκρυψη κονσόλας",
+    "hideConsoleHint": "Απόκρυψη πίνακα κονσόλας",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Αλλαγή ρόλου:",
     "duplicate": "Διπλότυπος κόμβος",
     "delete": "Διαγραφή κόμβου",
-    "notConnected": "Δεν συνδέθηκε"
+    "notConnected": "Δεν συνδέθηκε",
+    "customPrompt": "Προσαρμοσμένη εντολή",
+    "customPromptPlaceholder": "Εισαγωγή προσαρμοσμένης εντολής για αυτόν τον κόμβο...",
+    "scale": "Μέγεθος"
   },
   "integrations": {
     "title": "Ενσωματώσεις",

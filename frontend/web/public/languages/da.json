@@ -86,8 +86,8 @@
     "cancel": "Annuller",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Skjul konsol",
+    "hideConsoleHint": "Skjul konsolpanelet",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Skift rolle:",
     "duplicate": "Dupliker node",
     "delete": "Slet node",
-    "notConnected": "Ikke forbundet"
+    "notConnected": "Ikke forbundet",
+    "customPrompt": "Brugerdefineret prompt",
+    "customPromptPlaceholder": "Indtast en brugerdefineret prompt til denne node...",
+    "scale": "Storrelse"
   },
   "integrations": {
     "title": "Integrationer",

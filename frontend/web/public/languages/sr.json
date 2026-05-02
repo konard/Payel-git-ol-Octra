@@ -162,7 +162,10 @@
     "changeRole": "Промени улогу:",
     "duplicate": "Дуплирај чвор",
     "delete": "Обриши чвор",
-    "notConnected": "Није повезано"
+    "notConnected": "Није повезано",
+    "customPrompt": "Прилагођени подстицај",
+    "customPromptPlaceholder": "Унесите прилагођени подстицај за овај чвор...",
+    "scale": "Величина"
   },
   "integrations": {
     "title": "Интеграције",

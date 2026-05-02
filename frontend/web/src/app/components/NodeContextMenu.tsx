@@ -37,6 +37,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
   const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
   const { t } = useI18n();
   const currentNode = useTaskStore((state) => state.nodes.find((n) => n.id === nodeId));
+  const [position, setPosition] = useState({ left: x, top: y });
   const [n8nTrigger, setN8nTrigger] = useState<'start' | 'end' | 'middle' | 'custom' | null>(currentNode?.n8nTrigger || null);
   const [customPercentage, setCustomPercentage] = useState(currentNode?.n8nPercentage || 50);
   const [n8nWorkflows, setN8nWorkflows] = useState<N8nWorkflow[]>([]);
@@ -57,6 +58,34 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
+
+  // Расчёт позиции чтобы меню не выходило за экран
+  useEffect(() => {
+    if (!menuRef.current) return;
+    
+    const menuWidth = menuRef.current.offsetWidth;
+    const menuHeight = menuRef.current.offsetHeight;
+    const padding = 10;
+    
+    let newLeft = x;
+    let newTop = y;
+    
+    // Проверяем правый край
+    if (x + menuWidth > window.innerWidth - padding) {
+      newLeft = window.innerWidth - menuWidth - padding;
+    }
+    
+    // Проверяем нижний край
+    if (y + menuHeight > window.innerHeight - padding) {
+      newTop = window.innerHeight - menuHeight - padding;
+    }
+    
+    // Не выходим за левый/верхний край
+    newLeft = Math.max(padding, newLeft);
+    newTop = Math.max(padding, newTop);
+    
+    setPosition({ left: newLeft, top: newTop });
+  }, [x, y]);
 
   // Загрузка n8n workflow при открытии меню
   useEffect(() => {
@@ -85,6 +114,10 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
   const handleDelete = () => {
     removeNode(nodeId);
     onClose();
+  };
+
+  const handleScaleChange = (newScale: number) => {
+    updateNode(nodeId, { scale: newScale });
   };
 
   const handleDuplicate = () => {
@@ -157,7 +190,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     <div
       ref={menuRef}
       className="fixed z-[100] bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl min-w-[220px] overflow-hidden"
-      style={{ left: x, top: y }}
+      style={{ left: position.left, top: position.top }}
     >
       {/* Header с изображением */}
       <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
@@ -298,10 +331,41 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
         <textarea
           value={customPrompt}
           onChange={(e) => handleCustomPromptChange(e.target.value)}
-          placeholder="Введите кастомный промт для этой ноды..."
+          placeholder={t('contextMenu.customPromptPlaceholder')}
           className="w-full px-3 py-2 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)] placeholder-[var(--text-muted)] resize-none"
           rows={4}
         />
+      </div>
+
+      {/* Scale */}
+      <div className="p-2 border-b border-[var(--border)]">
+        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">{t('contextMenu.scale')}</div>
+        <div className="flex items-center gap-2 px-2">
+          <button
+            onClick={() => handleScaleChange(0.75)}
+            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 0.75 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
+          >
+            S
+          </button>
+          <button
+            onClick={() => handleScaleChange(1)}
+            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
+          >
+            M
+          </button>
+          <button
+            onClick={() => handleScaleChange(1.25)}
+            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1.25 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
+          >
+            L
+          </button>
+          <button
+            onClick={() => handleScaleChange(1.5)}
+            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1.5 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
+          >
+            XL
+          </button>
+        </div>
       </div>
 
       {/* Действия */}
@@ -310,13 +374,13 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
           onClick={handleDuplicate}
           className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-[var(--background)] text-[var(--text)] transition-colors flex items-center gap-2"
         >
-          <span>Duplicate</span> {t('contextMenu.duplicate')}
+          {t('contextMenu.duplicate')}
         </button>
         <button
           onClick={handleDelete}
           className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-red-500/20 text-red-500 transition-colors flex items-center gap-2"
         >
-          <span>Delete</span> {t('contextMenu.delete')}
+          {t('contextMenu.delete')}
         </button>
       </div>
     </div>

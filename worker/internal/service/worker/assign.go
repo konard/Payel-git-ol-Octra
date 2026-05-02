@@ -108,6 +108,10 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 	if model == "" {
 		model = "gpt-4o-mini"
 	}
+	techStack := metadata["tech_stack"]
+	if techStack == "" {
+		techStack = "go"
+	}
 
 	// Parse tokens
 	tokens := make(map[string]string)
@@ -154,6 +158,7 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			}
 		}
 	}
+	log.Printf("Worker project path: %s", basePath)
 
 	if err := os.MkdirAll(basePath, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create project directory %s: %w", basePath, err)
@@ -254,10 +259,10 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 		var files map[string]string
 		var commands []string
 		if workerMode == "multypass" {
-			files, commands, err = s.generateCodeMultiPass(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+			files, commands, err = s.generateCodeMultiPass(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, techStack)
 		} else {
 			// Fallback to legacy N+1 approach
-			files, commands, err = s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext)
+			files, commands, err = s.generateCode(ctx, provider, model, tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, techStack)
 		}
 
 		if err != nil {
@@ -266,6 +271,8 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 			database.Db.Save(worker)
 			continue
 		}
+
+		log.Printf("Worker generated %d files for role %s", len(files), role)
 
 		// Execute commands in project path
 		projectPath := basePath

@@ -162,7 +162,10 @@
     "changeRole": "Změnit roli:",
     "duplicate": "Duplikovat uzel",
     "delete": "Smazat uzel",
-    "notConnected": "Nepřipojeno"
+    "notConnected": "Nepřipojeno",
+    "customPrompt": "Vlastní prompt",
+    "customPromptPlaceholder": "Zadejte vlastní prompt pro tento uzel...",
+    "scale": "Velikost"
   },
   "integrations": {
     "title": "Integrace",

@@ -60,11 +60,17 @@ func (s *BossService) assignManagersParallelWithProgress(ctx context.Context, ta
 
 // assignManagersParallel calls AssignManager for each manager IN PARALLEL
 func (s *BossService) assignManagersParallel(ctx context.Context, taskID string, decision *BossDecisionResult, req *bosspb.CreateTaskRequest, progressCallback func(string, int, string), projectPath string) ([]*managerpb.ManagerResult, error) {
+	techStack := "go"
+	if len(decision.TechStack) > 0 {
+		techStack = decision.TechStack[0]
+	}
 	metadata := map[string]string{
-		"tokens":   marshalString(req.Tokens),
-		"model":    req.Meta["model"],
-		"provider": req.Meta["provider"],
-		"title":   req.Title,
+		"tokens":       marshalString(req.Tokens),
+		"model":        req.Meta["model"],
+		"provider":     req.Meta["provider"],
+		"title":        req.Title,
+		"grade_weight": "10",
+		"tech_stack":   techStack,
 	}
 	for k, v := range req.Tokens {
 		metadata[k] = v

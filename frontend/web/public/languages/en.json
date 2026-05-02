@@ -161,6 +161,8 @@
     "delete": "Delete node",
     "notConnected": "Not connected",
     "customPrompt": "Custom Prompt",
+    "customPromptPlaceholder": "Enter custom prompt for this node...",
+    "scale": "Size",
     "n8nAutomation": {
       "title": "N8n Automation",
       "workflow": "Workflow",

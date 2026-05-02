@@ -86,8 +86,8 @@
     "cancel": "Annuleren",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Console verbergen",
+    "hideConsoleHint": "Consolepaneel verbergen",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Rol wijzigen:",
     "duplicate": "Knooppunt dupliceren",
     "delete": "Knooppunt verwijderen",
-    "notConnected": "Niet verbonden"
+    "notConnected": "Niet verbonden",
+    "customPrompt": "Aangepaste prompt",
+    "customPromptPlaceholder": "Voer een aangepaste prompt in voor dit knooppunt...",
+    "scale": "Grootte"
   },
   "integrations": {
     "title": "Integraties",

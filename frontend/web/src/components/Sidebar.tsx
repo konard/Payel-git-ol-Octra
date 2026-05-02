@@ -141,10 +141,8 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
     return d.toLocaleDateString(t('language'), { month: 'short', day: 'numeric' });
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transform transition-transform duration-200">
+    <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">

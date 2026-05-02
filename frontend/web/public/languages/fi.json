@@ -86,8 +86,8 @@
     "cancel": "Peruuta",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "Piilota konsoli",
+    "hideConsoleHint": "Piilota konsolipaneeli",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "Vaihda roolia:",
     "duplicate": "Monista solmu",
     "delete": "Poista solmu",
-    "notConnected": "Ei yhdistetty"
+    "notConnected": "Ei yhdistetty",
+    "customPrompt": "Mukautettu kehote",
+    "customPromptPlaceholder": "Syota mukautettu kehote tahan solmulle...",
+    "scale": "Koko"
   },
   "integrations": {
     "title": "Integraatiot",

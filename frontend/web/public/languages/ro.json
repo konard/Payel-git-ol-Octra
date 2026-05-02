@@ -162,7 +162,10 @@
     "changeRole": "Schimbă rolul:",
     "duplicate": "Duplicare nod",
     "delete": "Ștergere nod",
-    "notConnected": "Nu este conectat"
+    "notConnected": "Nu este conectat",
+    "customPrompt": "Prompt personalizat",
+    "customPromptPlaceholder": "Introduceți un prompt personalizat pentru acest nod...",
+    "scale": "Dimensiune"
   },
   "integrations": {
     "title": "Integrări",

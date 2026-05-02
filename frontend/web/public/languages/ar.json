@@ -86,8 +86,8 @@
     "cancel": "إلغاء",
     "hideServerStatus": "Hide server status",
     "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
+    "hideConsole": "اخفاء وحدة التحكم",
+    "hideConsoleHint": "اخفاء لوحة وحدة التحكم",
     "customProviders": "Custom Providers"
   },
   "languages": {
@@ -162,7 +162,10 @@
     "changeRole": "تغيير الدور:",
     "duplicate": "تكرار العقدة",
     "delete": "حذف العقدة",
-    "notConnected": "غير متصل"
+    "notConnected": "غير متصل",
+    "customPrompt": "موجه مخصص",
+    "customPromptPlaceholder": "أدخل موجه مخصص لهذه العقدة...",
+    "scale": "الحجم"
   },
   "integrations": {
     "title": "التكاملات",

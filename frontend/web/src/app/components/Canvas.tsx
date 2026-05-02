@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTaskStore, type AgentNodeType, type AgentNode } from '../../stores/taskStore';
-import { BossNode, ManagerNode, WorkerNode, ZIPArchiveNode } from './nodes';
+import { BossNode, ManagerNode, WorkerNode, GitHubNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
 
@@ -28,7 +28,7 @@ const nodeTypes = {
   boss: BossNode,
   manager: ManagerNode,
   worker: WorkerNode,
-  zip: ZIPArchiveNode,
+  github: GitHubNode,
 };
 
 const nodeRoleDefaults: Record<string, string> = {
