@@ -1,6 +1,15 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import hljs from '../../lib/hljs';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface EditorFile {
   id: string;
   name: string;

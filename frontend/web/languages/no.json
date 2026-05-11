@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "Endre rolle:",
     "duplicate": "Dupliser node",
     "delete": "Slett node",
-    "notConnected": "Ikke tilkoblet"
+    "notConnected": "Ikke tilkoblet",
+    "customPrompt": "Egendefinert prompt",
+    "customPromptPlaceholder": "Skriv en egendefinert prompt for denne noden...",
+    "scale": "Storrelse"
   },
   "integrations": {
     "title": "Integrasjoner",

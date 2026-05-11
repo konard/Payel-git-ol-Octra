@@ -87,7 +87,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -135,6 +136,9 @@
     "duplicate": "Tugunni nusxalash",
     "delete": "Tugunni o'chirish",
     "notConnected": "Ulanmagan",
+    "customPrompt": "Maxsus so'rov",
+    "customPromptPlaceholder": "Ushbu tugun uchun maxsus so'rov kiriting...",
+    "scale": "Hajm",
     "n8nAutomation": {
       "title": "N8n avtomatizatsiya",
       "workflow": "Workflow",

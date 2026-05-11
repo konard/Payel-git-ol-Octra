@@ -19,6 +19,26 @@ import (
 	"github.com/google/uuid"
 )
 
+func validateFilePath(basePath, filePath string) (string, error) {
+	clean := filepath.Clean(filePath)
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path traversal attempt detected: %s", filePath)
+	}
+	fullPath := filepath.Join(basePath, clean)
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return "", err
+	}
+	absFull, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(absFull, absBase) {
+		return "", fmt.Errorf("path escapes base directory: %s", filePath)
+	}
+	return fullPath, nil
+}
+
 // AssignWorkersAndWait accepts task, generates code via AI agents and returns ZIP
 func (s *WorkerService) AssignWorkersAndWait(ctx context.Context, req *workerpb.AssignWorkersRequest) (*workerpb.AssignWorkersResponse, error) {
 	return s.assignWorkersAndWaitWithProgress(ctx, req, nil)
@@ -294,7 +314,11 @@ func (s *WorkerService) assignWorkersAndWaitWithProgress(ctx context.Context, re
 
 		// Write generated files to disk
 		for path, content := range files {
-			fullPath := filepath.Join(projectPath, path)
+			fullPath, err := validateFilePath(projectPath, path)
+			if err != nil {
+				log.Printf("Warning: path validation failed for %s: %v", path, err)
+				continue
+			}
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				log.Printf("Warning: failed to create dir for %s: %v", path, err)
 				continue

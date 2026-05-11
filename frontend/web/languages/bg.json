@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Скрий лентата за състояние на сървъра",
     "hideConsole": "Скрий конзолата",
     "hideConsoleHint": "Скрий панела на конзолата",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Персонализирани модели"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "Промяна на ролята:",
     "duplicate": "Дублирай възел",
     "delete": "Изтрий възел",
-    "notConnected": "Не е свързано"
+    "notConnected": "Не е свързано",
+    "customPrompt": "Персонализирана подкана",
+    "customPromptPlaceholder": "Въведете персонализирана подкана за този възел...",
+    "scale": "Размер"
   },
   "integrations": {
     "title": "Интеграции",

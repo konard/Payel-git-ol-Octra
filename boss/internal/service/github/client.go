@@ -91,6 +91,16 @@ func (c *Client) PushToRepository(ctx context.Context, task *models.Task, repoPa
 		log.Printf("Warning: failed to configure git: %v", err)
 	}
 
+	// Add files to git
+	if err := c.gitAdd(repoPath); err != nil {
+		return fmt.Errorf("failed to add files: %w", err)
+	}
+
+	// Commit files
+	if err := c.gitCommit(repoPath, "Initial commit - CrewAI generated project"); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
 	// Add remote origin
 	if err := c.addRemote(repoPath, repoURL); err != nil {
 		return fmt.Errorf("failed to add remote: %w", err)
@@ -146,20 +156,100 @@ func (c *Client) addRemote(dir, repoURL string) error {
 func (c *Client) gitAdd(dir string) error {
 	cmd := exec.Command("git", "add", ".")
 	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git add failed: %w", err)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("git add output: %s", string(out))
+		return fmt.Errorf("git add failed: %w - %s", err, string(out))
 	}
+	log.Printf("git add output: %s", string(out))
 	return nil
 }
 
 func (c *Client) gitCommit(dir, message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
 	cmd.Dir = dir
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(out), "nothing to commit") {
+			log.Printf("git commit: nothing to commit (already committed)")
+			return nil
+		}
+		log.Printf("git commit output: %s", string(out))
+		return fmt.Errorf("git commit failed: %w - %s", err, string(out))
+	}
+	log.Printf("git commit output: %s", string(out))
+	return nil
 }
 
 func (c *Client) gitPush(dir string) error {
-	cmd := exec.Command("git", "push", "-u", "origin", "main")
+	branchCmd := exec.Command("git", "branch", "--show-current")
+	branchCmd.Dir = dir
+	branchOut, branchErr := branchCmd.CombinedOutput()
+	currentBranch := "unknown"
+	if branchErr == nil {
+		currentBranch = strings.TrimSpace(string(branchOut))
+	}
+	log.Printf("git push: current branch is '%s'", currentBranch)
+
+	branchesCmd := exec.Command("git", "branch", "-a")
+	branchesCmd.Dir = dir
+	branchesOut, _ := branchesCmd.CombinedOutput()
+	log.Printf("git push: available branches: %s", string(branchesOut))
+
+	if currentBranch == "" || currentBranch == "(no branch)" {
+		log.Printf("git push: no current branch, checking HEAD")
+		headCmd := exec.Command("git", "rev-parse", "HEAD")
+		headCmd.Dir = dir
+		headOut, headErr := headCmd.CombinedOutput()
+		if headErr != nil {
+			return fmt.Errorf("no commits found in repository")
+		}
+		log.Printf("git push: HEAD is %s", strings.TrimSpace(string(headOut)))
+
+		checkoutCmd := exec.Command("git", "checkout", "-b", "main")
+		checkoutCmd.Dir = dir
+		if err := checkoutCmd.Run(); err != nil {
+			log.Printf("git checkout -b main failed: %v", err)
+		} else {
+			currentBranch = "main"
+		}
+	}
+
+	pushBranch := currentBranch
+	if currentBranch == "manager-backend" || currentBranch == "(no branch)" {
+		pushBranch = "main"
+		checkoutCmd := exec.Command("git", "checkout", "main")
+		checkoutCmd.Dir = dir
+		if err := checkoutCmd.Run(); err != nil {
+			checkoutCmd = exec.Command("git", "checkout", "-b", "main")
+			checkoutCmd.Dir = dir
+			if err := checkoutCmd.Run(); err != nil {
+				log.Printf("git checkout main failed: %v, using current branch", err)
+				pushBranch = currentBranch
+			}
+		}
+	}
+
+	log.Printf("git push: pushing branch '%s'", pushBranch)
+	cmd := exec.Command("git", "push", "-u", "origin", pushBranch)
 	cmd.Dir = dir
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(out), "refusing to merge unrelated histories") {
+			log.Printf("git push: merging unrelated histories, forcing push")
+			forceCmd := exec.Command("git", "push", "-u", "origin", pushBranch, "--force")
+			forceCmd.Dir = dir
+			forceOut, forceErr := forceCmd.CombinedOutput()
+			if forceErr != nil {
+				log.Printf("git push --force output: %s", string(forceOut))
+				return fmt.Errorf("git push --force failed: %w - %s", forceErr, string(forceOut))
+			}
+			log.Printf("git push --force output: %s", string(forceOut))
+			return nil
+		}
+		log.Printf("git push output: %s", string(out))
+		return fmt.Errorf("git push failed: %w - %s", err, string(out))
+	}
+	log.Printf("git push output: %s", string(out))
+	return nil
 }

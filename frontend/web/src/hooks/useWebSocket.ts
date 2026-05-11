@@ -171,10 +171,12 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         });
         if (msg.data?.repoUrl) {
           storeActions.setZipUrl(msg.data.repoUrl);
+          // Update GitHub node with the repository URL
+          storeActions.updateNode('github-archive', { repoUrl: msg.data.repoUrl });
         } else if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
         }
-        // Update all nodes to done including ZIP
+        // Update all nodes to done
         finalizeAllNodes('done');
         // Clear stored task payload — task is complete, no need to resend
         lastTaskPayload.current = null;
@@ -286,6 +288,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
     console.log('[WS] => GitHub node added with', edgeSources.length, 'edges');
   };
+
+
 
   const handleProgressMessage = (msg: WebSocketMessage) => {
     const progress = msg.progress || 0;
@@ -414,31 +418,24 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         workersByManager.current[managerRole].push(role);
         const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
 
-        // Only add auto-generated worker if no user nodes exist
-        const userNodesCheck = hasUserNodes();
-        console.log('[WS] => Adding worker:', role, 'for manager:', managerRole, 'hasUserNodes:', userNodesCheck, 'currentManagerRole:', currentManagerRole.current);
-        if (!userNodesCheck) {
-          // Position: under the manager
-          const mgrPosition = managerIdx >= 0 ?
-            (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
-          const workerX = mgrPosition + (wIdx - 1) * 120;
-          const workerY = 370;
+        // Always add workers - they should appear on canvas regardless of user nodes
+        const mgrPosition = managerIdx >= 0 ?
+          (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
+        const workerX = mgrPosition + (wIdx - 1) * 120;
+        const workerY = 370;
 
-          console.log('[WS] => Worker node:', workerId, 'position:', workerX, workerY);
-          storeActions.addNode({
-            id: workerId,
-            type: 'worker',
-            role: capitalizeRole(role),
-            status: 'working',
-            position: { x: workerX, y: workerY },
-          });
+        console.log('[WS] => Adding worker:', workerId, 'at position:', workerX, workerY);
+        storeActions.addNode({
+          id: workerId,
+          type: 'worker',
+          role: capitalizeRole(role),
+          status: 'working',
+          position: { x: workerX, y: workerY },
+        });
 
-          // Edge from manager to worker
-          if (managerIdx >= 0) {
-            storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
-          }
-        } else {
-          console.log('[WS] => Skipping worker add due to user nodes present');
+        // Edge from manager to worker
+        if (managerIdx >= 0) {
+          storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
         }
 
 
@@ -495,11 +492,14 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     if (message.includes('Packaging')) {
       storeActions.updateNode('boss-1', { status: 'done' });
 
-      // Update ZIP node to done
-      storeActions.updateNode('zip-archive', { status: 'done' });
+      // Update GitHub node to done (packaging means publishing to GitHub)
+      storeActions.updateNode('github-archive', { status: 'done' });
+    }
 
-      // Ensure ZIP node exists
-      addZIPArchiveNode();
+    // === PROJECT READY (progress 100) ===
+    if (progress === 100 && msg.data?.repoUrl) {
+      storeActions.setZipUrl(msg.data.repoUrl);
+      storeActions.updateNode('github-archive', { repoUrl: msg.data.repoUrl, status: 'done' });
     }
   };
 

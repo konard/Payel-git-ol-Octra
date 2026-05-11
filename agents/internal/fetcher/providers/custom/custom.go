@@ -1,6 +1,7 @@
 package custom
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -60,7 +61,7 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 				"content": prompt,
 			},
 		},
-		"stream": false,
+		"stream": true,
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -95,7 +96,21 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 		return "", fmt.Errorf("Custom provider base URL not configured")
 	}
 
-	url := fmt.Sprintf("%s/v1/chat/completions", baseURL)
+	baseURL = strings.TrimRight(baseURL, "/")
+	var url string
+	if strings.HasSuffix(baseURL, "/v1/chat/completions") || strings.HasSuffix(baseURL, "/api/v1/chat/completions") {
+		url = baseURL
+	} else if strings.HasSuffix(baseURL, "/chat/completions") || strings.HasSuffix(baseURL, "/inference/chat/completions") {
+		url = baseURL
+	} else if strings.HasSuffix(baseURL, "/v1") {
+		url = fmt.Sprintf("%s/chat/completions", baseURL)
+	} else if strings.HasSuffix(baseURL, "/api/v1") {
+		url = fmt.Sprintf("%s/chat/completions", baseURL)
+	} else if strings.Contains(baseURL, "/inference") {
+		url = fmt.Sprintf("%s/chat/completions", baseURL)
+	} else {
+		url = fmt.Sprintf("%s/v1/chat/completions", baseURL)
+	}
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -123,24 +138,59 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response (OpenAI-compatible format)
-	var response struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
+	contentType := resp.Header.Get("Content-Type")
+	var responseText string
+
+	if strings.Contains(contentType, "text/event-stream") || strings.HasPrefix(string(body), "data:") {
+		scanner := bufio.NewScanner(bytes.NewReader(body))
+		var fullContent string
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "data:") {
+				data := strings.TrimPrefix(line, "data:")
+				data = strings.TrimSpace(data)
+				if data == "[DONE]" || data == "" {
+					continue
+				}
+				var chunk struct {
+					Choices []struct {
+						Delta struct {
+							Content string `json:"content"`
+						} `json:"delta"`
+					} `json:"choices"`
+				}
+				if err := json.Unmarshal([]byte(data), &chunk); err == nil {
+					if len(chunk.Choices) > 0 {
+						fullContent += chunk.Choices[0].Delta.Content
+					}
+				}
+			}
+		}
+		responseText = fullContent
+	} else {
+		var response struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+
+		if err := json.Unmarshal(body, &response); err != nil {
+			return "", fmt.Errorf("failed to parse response: %w", err)
+		}
+
+		if len(response.Choices) == 0 {
+			return "", fmt.Errorf("no content in response")
+		}
+		responseText = response.Choices[0].Message.Content
 	}
 
-	if err := json.Unmarshal(body, &response); err != nil {
-		return "", fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	if len(response.Choices) == 0 {
+	if responseText == "" {
 		return "", fmt.Errorf("no content in response")
 	}
 
-	return response.Choices[0].Message.Content, nil
+	return responseText, nil
 }
 
 // Name returns the provider name

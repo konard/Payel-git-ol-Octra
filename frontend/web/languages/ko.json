@@ -88,7 +88,8 @@
     "hideServerStatusHint": "서버 연결 상태 표시줄 숨기기",
     "hideConsole": "콘솔 숨기기",
     "hideConsoleHint": "콘솔 패널 숨기기",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "사용자 정의 모델"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "역할 변경:",
     "duplicate": "노드 복제",
     "delete": "노드 삭제",
-    "notConnected": "연결되지 않음"
+    "notConnected": "연결되지 않음",
+    "customPrompt": "사용자 정의 프롬프트",
+    "customPromptPlaceholder": "이 노드에 대한 사용자 정의 프롬프트 입력...",
+    "scale": "크기"
   },
   "integrations": {
     "title": "통합",

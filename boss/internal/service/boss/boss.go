@@ -15,7 +15,28 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+func validateFilePath(basePath, filePath string) (string, error) {
+	clean := filepath.Clean(filePath)
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path traversal attempt detected: %s", filePath)
+	}
+	fullPath := filepath.Join(basePath, clean)
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return "", err
+	}
+	absFull, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(absFull, absBase) {
+		return "", fmt.Errorf("path escapes base directory: %s", filePath)
+	}
+	return fullPath, nil
+}
 
 // BossService — boss service
 type BossService struct {
@@ -151,7 +172,11 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 	log.Printf("📁 Restoring project at: %s", projectPath)
 
 	for relPath, content := range project.Project.Files {
-		fullPath := filepath.Join(projectPath, relPath)
+		fullPath, err := validateFilePath(projectPath, relPath)
+		if err != nil {
+			log.Printf("Warning: path validation failed for %s: %v", relPath, err)
+			continue
+		}
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 			continue
 		}
@@ -162,7 +187,11 @@ func (s *BossService) restoreProject(taskID string) (string, error) {
 
 	// For dir, create empty files or dirs if needed
 	for relPath, _ := range project.Project.Dir {
-		fullPath := filepath.Join(projectPath, relPath)
+		fullPath, err := validateFilePath(projectPath, relPath)
+		if err != nil {
+			log.Printf("Warning: path validation failed for %s: %v", relPath, err)
+			continue
+		}
 		if err := os.MkdirAll(fullPath, 0755); err != nil {
 			continue
 		}

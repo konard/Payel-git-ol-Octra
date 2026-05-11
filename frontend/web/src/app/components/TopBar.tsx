@@ -25,7 +25,7 @@ function AddModelForm({ onSave, onCancel, providers }: {
   onCancel: () => void;
   providers: CustomProvider[];
 }) {
-  const { t } = useI18n();
+  const { t, loading: translationsLoading } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     providerId: '',
@@ -49,28 +49,28 @@ function AddModelForm({ onSave, onCancel, providers }: {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-[var(--text)] mb-2">
-          {t('models.name')}
+          {translationsLoading ? 'Model Name' : t('models.name')}
         </label>
         <input
           type="text"
           value={formData.name}
           onChange={(e) => handleInputChange('name', e.target.value)}
           className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-          placeholder={t('models.namePlaceholder') || 'Например: gpt-4, minimax-m2.7:cloud'}
+          placeholder={translationsLoading ? 'e.g.: gpt-4, minimax-m2.7:cloud' : (t('models.namePlaceholder') || 'Например: gpt-4, minimax-m2.7:cloud')}
           autoFocus
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-[var(--text)] mb-2">
-          {t('models.provider')} ({t('common.optional')})
+          {translationsLoading ? 'Provider (optional)' : `${t('models.provider')} (${t('common.optional')})`}
         </label>
         <select
           value={formData.providerId}
           onChange={(e) => handleInputChange('providerId', e.target.value)}
           className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
         >
-          <option value="">{t('models.noProvider')}</option>
+          <option value="">{translationsLoading ? 'No Provider' : t('models.noProvider')}</option>
           {providers.map((provider) => (
             <option key={provider.id} value={provider.id}>
               {provider.name}
@@ -85,14 +85,14 @@ function AddModelForm({ onSave, onCancel, providers }: {
           disabled={!formData.name.trim()}
           className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
         >
-          {t('models.save')}
+          {translationsLoading ? 'Save' : t('models.save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-4 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-md transition-colors"
         >
-          {t('models.cancel')}
+          {translationsLoading ? 'Cancel' : t('models.cancel')}
         </button>
       </div>
     </form>
@@ -138,7 +138,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
   const setHideServerStatus = useSettingsStore((state) => state.setHideServerStatus);
   const setHideConsole = useSettingsStore((state) => state.setHideConsole);
-  const { language, changeLanguage, t } = useI18n();
+  const { language, changeLanguage, t, loading: translationsLoading } = useI18n();
    const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
    const { isDark, toggleTheme } = useThemeStore();
    const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -187,8 +187,12 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
           }
         });
 
-        // Sync models to store
+        // Sync models to store (skip empty names)
         models.forEach(model => {
+          if (!model.name || !model.name.trim()) {
+            console.warn('Skipping model with empty name:', model);
+            return;
+          }
           if (!customModels.find(m => m.id === model.id)) {
             addModel(model);
           }
@@ -483,9 +487,11 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                   {activeTab === 'custom-models' && (
                     <div className="space-y-4 max-w-lg">
                       <div>
-                        <div className="text-sm font-medium text-[var(--text)] mb-1">{t('models.title')}</div>
+                        <div className="text-sm font-medium text-[var(--text)] mb-1">
+                          {translationsLoading ? 'Loading...' : t('models.title')}
+                        </div>
                         <div className="text-xs text-[var(--text-muted)] mb-4">
-                          {t('models.description')}
+                          {translationsLoading ? 'Loading translations...' : t('models.description')}
                         </div>
                       </div>
 
@@ -535,7 +541,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                                 }
                               }}
                               className="p-1 hover:bg-red-500/20 rounded-md transition-colors text-red-500"
-                              title={t('models.delete')}
+                              title={translationsLoading ? 'Delete' : t('models.delete')}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -547,9 +553,10 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       <button
                         onClick={() => setShowAddModel(true)}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                        disabled={translationsLoading}
                       >
                         <Plus size={16} />
-                        {t('models.addNew')}
+                        {translationsLoading ? 'Loading...' : t('models.addNew')}
                       </button>
                     </div>
                   )}
@@ -723,7 +730,9 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text)]">{t('models.addNew')}</h3>
+              <h3 className="text-lg font-semibold text-[var(--text)]">
+                {translationsLoading ? 'Add Model' : t('models.addNew')}
+              </h3>
               <button
                 onClick={() => setShowAddModel(false)}
                 className="p-1 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text-muted)]"

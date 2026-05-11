@@ -24,7 +24,7 @@ import (
 func (s *BossService) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.BossService_CreateTaskStreamServer) error {
 	ctx := stream.Context()
 	taskID := uuid.New()
-	log.Printf("🎯 Received task from %s: %s (task_id=%s)", req.Username, req.Title, taskID.String())
+	log.Printf("🎯 Received task from %s (user_id=%s): %s (task_id=%s)", req.Username, req.UserId, req.Title, taskID.String())
 
 	return s.executeTaskFlow(ctx, stream, taskID.String(), req.UserId, req)
 }
@@ -478,7 +478,7 @@ func (s *BossService) mergeManagerBranches(repoPath string, managerRoles []model
 
 // CreateTask accepts task, executes full cycle and returns ZIP
 func (s *BossService) CreateTask(ctx context.Context, req *bosspb.CreateTaskRequest) (*bosspb.BossDecision, error) {
-	log.Printf("Received task from %s: %s", req.Username, req.Title)
+	log.Printf("Received task from %s (user_id: %s): %s", req.Username, req.UserId, req.Title)
 
 	taskID := uuid.New()
 

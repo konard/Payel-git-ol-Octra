@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -135,7 +136,10 @@
     "changeRole": "Рөлді өзгерту:",
     "duplicate": "Түйінді көшіру",
     "delete": "Түйінді жою",
-    "notConnected": "Қосылмаған"
+    "notConnected": "Қосылмаған",
+    "customPrompt": "Жеке сұрау",
+    "customPromptPlaceholder": "Осы түйінге жеке сұрауды енгізіңіз...",
+    "scale": "Өлшем"
   },
   "integrations": {
     "title": "Интеграциялар",

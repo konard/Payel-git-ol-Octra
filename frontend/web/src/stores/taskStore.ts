@@ -81,6 +81,7 @@ interface TaskState {
   getWorkflow: () => WorkflowConfig | null;
   setWorkflow: (workflow: WorkflowConfig | null) => void;
   resetTask: () => void;
+  resetTaskExecution: () => void;
 }
 
 let nodeIdCounter = 0;
@@ -165,7 +166,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       !node.id.startsWith('boss-') &&
       !node.id.startsWith('manager-') &&
       !node.id.startsWith('worker-') &&
-      node.id !== 'zip-archive'
+      node.id !== 'github-archive'
     );
     const userNodeIds = new Set(userNodes.map(node => node.id));
 
@@ -188,4 +189,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       startTime: null,
     };
   }),
+
+  // New method to clear only task execution state but keep user workflow
+  resetTaskExecution: () => set((state) => ({
+    taskId: null,
+    status: 'idle',
+    logs: [],
+    solutionZip: null,
+    zipUrl: null,
+    tokensUsed: 0,
+    startTime: null,
+    // Keep nodes, edges, and workflow
+  })),
 }));

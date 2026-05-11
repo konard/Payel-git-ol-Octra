@@ -6,6 +6,7 @@
 - Multi-agent system: Boss → Manager → Workers
 - Project structure: projects/{taskID}/{projectName}/
 - Git integration (.git in project folder)
+- **GitHub publishing**: Boss публикует проекты в GitHub репозитории (если установлен GITHUB_TOKEN)
 - WebSocket streaming with redis
 - File generation (Go, JS, Python code)
 - **Frontend Code Editor** (CodeViewer) с подсветкой синтаксиса Kanagawa
@@ -18,6 +19,7 @@
 4. **Task doesn't complete**: Stops at "Manager backend reviewing workers..." (87%)
 5. **File duplication**: AI adds project name to paths - fixed by using filepath.Base
 6. **Username/user_id**: Was hardcoded "user" - now uses auth store
+7. **GitHub publishing**: Boss должен отправлять ссылку на репозиторий, но repoUrl не появляется в success сообщении (нужен GITHUB_TOKEN в .env)
 
 ### Latest Changes (In Progress)
 - worker/internal/prompts/task.go: Added techStack parameter to PlanFiles and GenerateFile functions
@@ -30,6 +32,24 @@
 - Fixed JSON parsing fallback (extractJSONFromMarkdown finds JSON without markdown blocks)
 - Added grade_weight system in boss metadata for worker count prediction
 - manager: Added 30s timeout to reviewWorkerResult and managerThink AI calls (auto-approve on timeout)
+- **Debug user_id**: Added logging in apigateway and boss to trace user_id flow
+- **Removed ZIP Archive system**: Полностью удалена устаревшая система ZIP-архивов, заменена на GitHub публикацию
+- **Fixed frontend error**: Исправлена ошибка ReferenceError addZIPArchiveNode в useWebSocket.ts
+- **Updated GitHub publishing**: Boss теперь должен отправлять repoUrl в success сообщении (требуется GITHUB_TOKEN)
+
+### Frontend Recent Changes
+- ZIP Archive node replaced with GitHub node (uses github-image.png)
+- **Removed ZIP Archive system**: Полностью удалена обработка ZIP-узлов, теперь только GitHub
+- **Fixed addZIPArchiveNode error**: Добавлена отсутствующая функция и затем удалена вместе с ZIP системой
+- **Updated GitHub node handling**: GitHub-узел обновляется с repoUrl при success сообщении
+- Node resizing: Drag the bottom-right corner to resize nodes (scale 0.5-2x)
+- CodeViewer: Close tabs without removing files from Explorer
+- CodeViewer: Explorer stays visible when all tabs closed
+- Explorer: Resizable width (drag right edge, 150-500px)
+- NodeSidebar: Smooth slide animation, overlay background
+- NodeContextMenu: Duplicate text fixed, positioned to stay on screen
+- Settings: Theme moved from "Appearance" to "Interface" tab
+- Added translations for all 32 languages (customPromptPlaceholder, scale, hideConsole)
 
 ### Architecture
 ```
@@ -76,3 +96,4 @@ projects/
 - `AGENTS_SERVICE_HOST` — Agents gRPC address
 - `REDIS_URL` / `REDIS_ENABLED` — Redis for WebSocket and context caching
 - `WORKER_MODE` — `multypass` (optimized) or `nplus1` (legacy)
+- `GITHUB_TOKEN` — GitHub personal access token для публикации репозиториев

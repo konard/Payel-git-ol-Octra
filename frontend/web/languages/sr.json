@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Сакриј траку статуса везе сервера",
     "hideConsole": "Сакриј конзолу",
     "hideConsoleHint": "Сакриј панел конзоле",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Прилагођени модели"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "Промени улогу:",
     "duplicate": "Дуплирај чвор",
     "delete": "Обриши чвор",
-    "notConnected": "Није повезано"
+    "notConnected": "Није повезано",
+    "customPrompt": "Прилагођени подстицај",
+    "customPromptPlaceholder": "Унесите прилагођени подстицај за овај чвор...",
+    "scale": "Величина"
   },
   "integrations": {
     "title": "Интеграције",

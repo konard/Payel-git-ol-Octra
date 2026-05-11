@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "Змінити роль:",
     "duplicate": "Дублювати ноду",
     "delete": "Видалити ноду",
-    "notConnected": "Не підключено"
+    "notConnected": "Не підключено",
+    "customPrompt": "Власний промпт",
+    "customPromptPlaceholder": "Введіть власний промпт для цієї ноди...",
+    "scale": "Розмір"
   },
   "integrations": {
     "title": "Інтеграції",

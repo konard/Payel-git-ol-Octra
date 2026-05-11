@@ -14,7 +14,7 @@ import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
-import { getChat, updateChatWorkflow } from '../services/chatHistoryService';
+import { getChat, updateChatWorkflow, createChat } from '../services/chatHistoryService';
 import { PaymentSuccess } from '../components/PaymentSuccess';
 import { Sidebar } from '../components/Sidebar';
 import { useAuthStore } from '../stores/authStore';
@@ -158,28 +158,48 @@ export default function App() {
     setShowAuthModal(true);
   };
 
-  const handleCreateTask = (data: TaskData) => {
+  const handleCreateTask = async (data: TaskData) => {
     if (!hasSubscription) {
       setShowSubscriptionModal(true);
       return;
     }
 
+    const authUser = useAuthStore.getState().user;
+
+    // Create a new chat session if none exists
+    let chatId = currentChatId;
+    if (!chatId && authUser?.id) {
+      try {
+        const newChat = await createChat(authUser.id, data.title);
+        chatId = newChat.id;
+        setCurrentChatId(chatId);
+        // Update sidebar to reflect the new chat
+        // Note: Sidebar will reload chats automatically when opened
+      } catch (error) {
+        console.error('Failed to create chat session:', error);
+        // Continue without chat session for now
+      }
+    }
+
     const store = useTaskStore.getState();
-    const hasUserDefinedWorkflow = store.nodes.some(node =>
+    const userNodes = store.nodes.filter(node =>
       !node.id.startsWith('boss-') &&
       !node.id.startsWith('manager-') &&
       !node.id.startsWith('worker-') &&
+      node.id !== 'github-archive' &&
       node.id !== 'zip-archive'
     );
-    const workflow = hasUserDefinedWorkflow ? store.getWorkflow() : null;
+    const userEdges = store.edges.filter(edge =>
+      userNodes.some(n => n.id === edge.from) && userNodes.some(n => n.id === edge.to)
+    );
+    const hasUserDefinedWorkflow = userNodes.length > 0;
 
-    store.resetTask();
+    // Reset only task execution state, keep user workflow
+    store.resetTaskExecution();
 
     // Check if this is a custom provider
     const customProviders = useCustomProvidersStore.getState().providers;
     const customProvider = customProviders.find(p => p.id === data.provider);
-
-    const authUser = useAuthStore.getState().user;
 
     let taskPayload: any = {
       username: authUser?.username || 'user',
@@ -189,8 +209,21 @@ export default function App() {
       meta: {
         model: data.model,
       },
-      ...(workflow && { workflow }),
     };
+
+    // Send user workflow as nodes and edges
+    if (hasUserDefinedWorkflow) {
+      taskPayload.workflow = {
+        nodes: userNodes.map(n => ({
+          id: n.id,
+          type: n.type,
+          role: n.role,
+          status: n.status,
+          position: n.position,
+        })),
+        edges: userEdges,
+      };
+    }
 
     if (customProvider) {
       // For custom providers, send base_url in tokens for the custom provider
@@ -199,6 +232,7 @@ export default function App() {
         ollama: data.apiKey,
         base_url: customProvider.base_url,
       };
+      console.log('Custom provider tokens:', taskPayload.tokens);
     } else {
       // For standard providers, use existing logic
       const tokenKey = data.provider === 'openrouter' ? 'openrouter'
@@ -291,9 +325,13 @@ export default function App() {
       if (chat.workflow) {
         const workflowData = JSON.parse(chat.workflow);
         if (workflowData.nodes?.length || workflowData.edges?.length) {
-          useTaskStore.getState().resetTask();
+          // Clear current workflow state but preserve task execution state
+          const store = useTaskStore.getState();
+          store.resetTask(); // This preserves user workflows but clears auto-generated nodes
+
+          // Load the saved workflow
           workflowData.nodes?.forEach((node: any) => {
-            useTaskStore.getState().addNode({
+            store.addNode({
               id: node.id,
               type: node.type,
               role: node.role,
@@ -302,7 +340,7 @@ export default function App() {
             });
           });
           workflowData.edges?.forEach((edge: any) => {
-            useTaskStore.getState().addEdge(edge);
+            store.addEdge(edge);
           });
         }
       }

@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -163,6 +164,9 @@
     "duplicate": "Duplica nodo",
     "delete": "Elimina nodo",
     "notConnected": "Non connesso",
+    "customPrompt": "Prompt personalizzato",
+    "customPromptPlaceholder": "Inserisci un prompt personalizzato per questo nodo...",
+    "scale": "Dimensione",
     "n8nAutomation": {
       "title": "N8n Automation",
       "workflow": "Workflow",

@@ -27,12 +27,53 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultToken = useSettingsStore((state) => state.defaultToken);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
   const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
   const setDefaultModel = useSettingsStore((state) => state.setDefaultModel);
+
+  // Bubble animation state
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const createBubble = useCallback(() => {
+    if (!buttonRef.current) return;
+    const bubble = document.createElement('span');
+    bubble.className = 'bubble';
+
+    const randomX = Math.random() * 80 + 10;
+    const randomY = Math.random() * 80 + 10;
+    bubble.style.setProperty('--start-x', `${randomX}%`);
+    bubble.style.setProperty('--start-y', `${randomY}%`);
+
+    const size = Math.random() * 6 + 4;
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+
+    const wobble = (Math.random() - 0.5) * 15;
+    bubble.style.setProperty('--wobble-dist', `${wobble}px`);
+
+    const speed = Math.random() * 1.5 + 1.5;
+    bubble.style.setProperty('--speed', `${speed}s`);
+
+    buttonRef.current.appendChild(bubble);
+
+    setTimeout(() => {
+      if (bubble.parentNode) bubble.remove();
+    }, speed * 1000);
+  }, []);
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    if (isAnimating) {
+      intervalId = setInterval(createBubble, 100);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isAnimating, createBubble]);
 
   // Custom providers
   const { providers: customProviders, models: customModels } = useCustomProvidersStore();
@@ -294,10 +335,17 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
           </div>
 
           <button
+            ref={buttonRef}
             type={isSubmitting ? "button" : "submit"}
             disabled={false}
-            onClick={isSubmitting ? onStop : undefined}
-            className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors flex-shrink-0 ${
+            onClick={(e) => {
+              if (!isSubmitting && !isAnimating) {
+                setIsAnimating(true);
+                setTimeout(() => setIsAnimating(false), 400);
+              }
+              if (isSubmitting && onStop) onStop();
+            }}
+            className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors flex-shrink-0 overflow-visible ${
               isSubmitting
                 ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse cursor-pointer'
                 : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'

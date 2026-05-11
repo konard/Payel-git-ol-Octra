@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -162,7 +163,10 @@
     "changeRole": "Alterar função:",
     "duplicate": "Duplicar nó",
     "delete": "Excluir nó",
-    "notConnected": "Não conectado"
+    "notConnected": "Não conectado",
+    "customPrompt": "Prompt personalizado",
+    "customPromptPlaceholder": "Digite um prompt personalizado para este nó...",
+    "scale": "Tamanho"
   },
   "integrations": {
     "title": "Integrações",

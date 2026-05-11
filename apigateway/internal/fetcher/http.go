@@ -148,6 +148,9 @@ func handleTaskCreateWS(c *gin.Context) {
 
 	if taskReq.UserID == "" {
 		taskReq.UserID = uuid.New().String()
+		log.Printf("⚠️ Empty user_id, generated new: %s", taskReq.UserID)
+	} else {
+		log.Printf("✅ Using provided user_id: %s", taskReq.UserID)
 	}
 
 	// Send confirmation

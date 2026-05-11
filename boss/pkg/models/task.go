@@ -10,20 +10,20 @@ import (
 // Task — задача от пользователя
 type Task struct {
 	ID                    uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	UserID                string    `gorm:"not null" json:"user_id"`
-	Username              string    `gorm:"not null" json:"username"`
-	Status                string    `gorm:"default:'pending'" json:"status"`
-	Title                 string    `json:"title"`
-	Description           string    `json:"description"`
+	UserID                string    `gorm:"not null;size:36" json:"user_id"`
+	Username              string    `gorm:"not null;size:100" json:"username"`
+	Status                string    `gorm:"default:'pending';size:50" json:"status"`
+	Title                 string    `gorm:"size:500" json:"title"`
+	Description           string    `gorm:"type:text" json:"description"`
 	TechnicalDescription  string    `gorm:"type:text" json:"technical_description"`
 	Tokens                string    `gorm:"type:jsonb" json:"tokens"`
 	Meta                  string    `gorm:"type:jsonb" json:"meta"`
 	Managers              []Manager `gorm:"foreignKey:TaskID;references:ID" json:"managers"`
 	AwaitingClarification bool      `gorm:"default:false" json:"awaiting_clarification"`
-	ClarificationQuestion string    `json:"clarification_question"`
-	ClarificationResponse string    `json:"clarification_response"`
+	ClarificationQuestion string    `gorm:"size:2000" json:"clarification_question"`
+	ClarificationResponse string    `gorm:"size:5000" json:"clarification_response"`
 	ProjectJSON           string    `gorm:"type:text" json:"project_json"`
-	GitData              string    `gorm:"type:text" json:"git_data"` // .git folder contents (base64 or json)
+	GitData              string    `gorm:"type:text" json:"git_data"`
 	Solution              []byte    `gorm:"type:bytea" json:"solution"`
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`

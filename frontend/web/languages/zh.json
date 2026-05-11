@@ -88,7 +88,8 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers"
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models"
   },
   "languages": {
     "en": "English",
@@ -163,6 +164,9 @@
     "duplicate": "复制节点",
     "delete": "删除节点",
     "notConnected": "未连接",
+    "customPrompt": "自定义提示词",
+    "customPromptPlaceholder": "为此节点输入自定义提示词...",
+    "scale": "大小",
     "n8nAutomation": {
       "title": "N8n 自动化",
       "workflow": "工作流",

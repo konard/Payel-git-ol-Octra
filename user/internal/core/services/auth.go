@@ -22,12 +22,12 @@ const (
 func GenerateTokens(user models.UserRegister) (string, string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "default-secret-change-in-production"
+		return "", "", errors.New("JWT_SECRET environment variable is not set")
 	}
 
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
 	if refreshSecret == "" {
-		refreshSecret = "default-refresh-secret-change-in-production"
+		return "", "", errors.New("JWT_REFRESH_SECRET environment variable is not set")
 	}
 
 	// Access Token
@@ -67,7 +67,7 @@ func GenerateTokens(user models.UserRegister) (string, string, error) {
 func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "default-secret-change-in-production"
+		return nil, errors.New("JWT_SECRET environment variable is not set")
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -92,7 +92,7 @@ func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
 func ValidateRefreshToken(tokenString string) (*jwt.Token, error) {
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
 	if refreshSecret == "" {
-		refreshSecret = "default-refresh-secret-change-in-production"
+		return nil, errors.New("JWT_REFRESH_SECRET environment variable is not set")
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
