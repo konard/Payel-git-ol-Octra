@@ -409,7 +409,7 @@ export default function App() {
         />
       )}
 
-      {showSubscriptionModal && isAuthenticated && !hasSubscription && false && (
+      {showSubscriptionModal && isAuthenticated && !hasSubscription && (
         <SubscriptionModal
           onClose={() => setShowSubscriptionModal(false)}
           onSubscribe={async () => {
