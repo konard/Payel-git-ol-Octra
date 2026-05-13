@@ -1,0 +1,7 @@
+tree d5469f472a07eff776258690b97323193fb34867
+parent dde13e014ed4dbb52ca1636c8205e4f3ac25d3ff
+parent 1ac403e6b39c8e1a0cd248d50c2ea313239fc34b
+author Payel-git-ol <pasazaharenko940@gmail.com> 1778675941 +0300
+committer Payel-git-ol <pasazaharenko940@gmail.com> 1778675941 +0300
+
+WIP on master: dde13e0 Ignore all env files to prevent committing secrets

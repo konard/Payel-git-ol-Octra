@@ -1,8 +1,12 @@
-# CrewAI — Многоагентная система генерации кода
+# CrewAI - Multi-Agent Code Generation Platform
 
-Современная веб-платформа для автоматической генерации программного кода с использованием ИИ-агентов. Работает как полноценная IT-компания с иерархией ролей.
+<div align="center">
+  <img src="crewai-mascot.png" alt="CrewAI Mascot" width="200">
+</div>
 
-## 🏗 Архитектура
+CrewAI is a modern web platform that automates software development using AI agents organized in a hierarchical IT company structure. Users describe projects in natural language, and the system generates complete, production-ready codebases published directly to GitHub repositories.
+
+## Architecture
 
 ```
 ┌─────────────┐      HTTP/WS     ┌─────────────┐      gRPC       ┌─────────────┐
@@ -10,7 +14,7 @@
 │   (React)   │     :80          │   (proxy)   │   :3111         │  (port 50051)│
 └──────┬──────┘                  └──────┬──────┘                 └──────┬──────┘
        │                                 │                               │
-       │                                 │                gRPC (ПАРАЛЛЕЛЬНО)
+       │                                 │                gRPC (PARALLEL)
        │                                 │               ┌───────┴───────┐
        │                                 ▼               ▼               ▼
        │                        ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
@@ -19,7 +23,7 @@
        │                        │   :3112     │  └──────┬──────┘  └──────┬──────┘
        │                        └─────────────┘         │                 │
        │                                                 │                 │
-       │                                       gRPC (последовательно)     │
+       │                                       gRPC (SEQUENTIAL)          │
        │                                                 ▼                 ▼
        │                                  ┌─────────────┐  ┌─────────────┐
        │                                  │   Worker(s) │  │   Worker(s) │
@@ -36,139 +40,140 @@
                                                OpenAI, Claude, DeepSeek, Grok)
 ```
 
-## 💡 Что такое CrewAI?
+## What is CrewAI?
 
-CrewAI — это веб-платформа, которая позволяет пользователям описывать программные проекты на естественном языке, а система автоматически генерирует полный рабочий код.
+CrewAI revolutionizes software development by creating an AI-powered development team that operates like a real IT company. Instead of manually writing code, users simply describe their project requirements in natural language, and CrewAI handles the entire development lifecycle - from architectural planning to code implementation and deployment.
 
-### Как это работает:
-1. **Пользователь** описывает задачу: "Создай REST API на Go с аутентификацией"
-2. **Boss агент** анализирует задачу и планирует архитектуру
-3. **Manager агенты** распределяют работу между разработчиками
-4. **Worker агенты** пишут код для каждого компонента
-5. **Система** собирает всё в готовый проект и возвращает ZIP-архив
+### How It Works:
+1. **User** describes the task: "Create a REST API in Go with authentication"
+2. **Boss Agent** analyzes requirements and designs the system architecture
+3. **Manager Agents** hire and coordinate development teams
+4. **Worker Agents** implement individual components and features
+5. **System** validates code quality and publishes the complete project to GitHub
 
-## ✨ Возможности
+## Key Features
 
-- 🎯 **Интеллектуальное планирование** — ИИ анализирует требования и выбирает оптимальную архитектуру
-- 👥 **Командная работа** — несколько агентов работают параллельно над разными частями проекта
-- 🔄 **Итеративная разработка** — автоматические review и исправления кода
-- 💳 **Подписка Pro** — расширенные возможности для активных пользователей
-- 🌐 **Веб-интерфейс** — удобный интерфейс с real-time обновлениями
-- 📱 **Чат и канвас** — два режима работы: чат и визуальный редактор
+- **Intelligent Project Planning** - AI analyzes requirements and selects optimal technology stacks and architectures
+- **Parallel Development Teams** - Multiple AI agents work simultaneously on different project components
+- **Iterative Code Review** - Automated code validation and improvement cycles
+- **GitHub Integration** - Direct publishing of generated codebases to GitHub repositories
+- **Multi-Provider LLM Support** - Access to OpenRouter, Gemini, OpenAI, Claude, DeepSeek, and Grok models
+- **Real-time Web Interface** - Live progress updates and interactive development canvas
+- **Professional Code Quality** - Production-ready code with proper structure and documentation
 
-## 🚀 Быстрый старт
+## Quick Start
 
-### 1. Клонирование и настройка
+### 1. Clone and Setup
 ```bash
 git clone <repository>
 cd crewai
-cp .env.example .env
-# Настройте переменные окружения (API ключи провайдеров)
+# Configure environment variables (API keys for LLM providers)
 ```
 
-### 2. Запуск через Docker Compose
+### 2. Launch with Docker Compose
 ```bash
 docker compose up -d --build
 ```
 
-### 3. Доступ к приложению
-- **Веб-интерфейс**: http://localhost
+### 3. Access the Application
+- **Web Interface**: http://localhost
 - **API Gateway**: http://localhost:3111
 - **User Service**: http://localhost:3112
 
-### 4. Первое использование
-1. Откройте http://localhost
-2. Зарегистрируйтесь или войдите в аккаунт
-3. Оформите подписку Pro (тестовая оплата доступна для разработки)
-4. Создайте задачу в режиме Canvas или Chat
-5. Скачайте готовый проект в ZIP архиве
+### 4. First Use
+1. Open http://localhost
+2. Register or sign in
+3. Subscribe to Pro plan (test payments available for development)
+4. Create a task using Canvas or Chat mode
+5. Access your generated project on GitHub
 
-## 💳 Подписка Pro
+## Pro Subscription
 
-CrewAI работает по модели подписки для обеспечения качества и доступности сервиса.
+CrewAI operates on a subscription model to ensure service quality and accessibility.
 
-### Тарифы:
-- **1 месяц** — $10
-- **3 месяца** — $25 (экономия 17%)
-- **6 месяцев** — $50 (экономия 17%)
-- **1 год** — $100 (экономия 17%)
+### Pricing:
+- **1 month** - $10
+- **3 months** - $25 (17% savings)
+- **6 months** - $50 (17% savings)
+- **1 year** - $100 (17% savings)
 
-### Что дает подписка Pro:
-- ✅ Доступ ко всем LLM провайдерам (OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok)
-- ✅ Неограниченное количество задач
-- ✅ Приоритетная обработка
-- ✅ Расширенные возможности генерации кода
-- ✅ Кастомные провайдеры и модели
-- ✅ Техническая поддержка
+### Pro Features:
+- Access to all LLM providers (OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok)
+- Unlimited task creation
+- Priority processing
+- Advanced code generation capabilities
+- Custom providers and models
+- Technical support
 
-### Платежи:
-- 💳 Банковские карты через YooKassa
-- 🔄 Автоматическое продление подписки
-- 🛡️ Безопасная обработка платежей
-- 📧 Квитанции и история платежей
+### Payments:
+- Bank cards via YooKassa
+- Automatic subscription renewal
+- Secure payment processing
+- Payment receipts and history
 
-### Для разработки:
-- 🧪 Тестовая оплата доступна для проверки функционала
-- 🔧 Настройка платежей через переменные окружения
+### Development:
+- Test payments available for functionality verification
+- Payment configuration via environment variables
 
-## 📁 Структура проекта
+## Project Structure
 
 ```
 crewai/
-├── frontend/web/        # React веб-приложение
+├── frontend/web/        # React web application
 │   ├── src/
-│   │   ├── app/         # Основное приложение
-│   │   ├── components/  # UI компоненты
-│   │   ├── services/    # API сервисы
-│   │   ├── stores/      # Zustand стейт менеджмент
-│   │   └── hooks/       # React хуки
-│   ├── nginx.conf       # Nginx конфигурация
+│   │   ├── app/         # Main application
+│   │   ├── components/  # UI components
+│   │   ├── services/    # API services
+│   │   ├── stores/      # Zustand state management
+│   │   └── hooks/       # React hooks
+│   ├── nginx.conf       # Nginx configuration
 │   └── Dockerfile
-├── user/                # User сервис (аутентификация, подписки)
-│   ├── cmd/app/         # Основное приложение
-│   ├── internal/core/   # Бизнес логика
-│   ├── pkg/             # Вспомогательные пакеты
+├── user/                # User service (authentication, subscriptions)
+│   ├── cmd/app/         # Main application
+│   ├── internal/core/   # Business logic
+│   ├── pkg/             # Helper packages
 │   └── Dockerfile
 ├── apigateway/          # API Gateway
 │   ├── cmd/app/
 │   ├── internal/
 │   └── pkg/
-├── boss/                # Boss агент (координатор)
-├── manager/             # Manager агенты
-├── worker/              # Worker агенты
-├── agents/              # LLM провайдеры
-├── docker-compose.yml   # Docker конфигурация
+├── boss/                # Boss agent (coordinator)
+├── manager/             # Manager agents
+├── worker/              # Worker agents
+├── agents/              # LLM providers
+├── docker-compose.yml   # Docker configuration
 ├── go.work             # Go workspace
-└── .env.example        # Пример переменных окружения
+└── .env.example        # Environment variables example
 ```
 
-## 🔄 Поток выполнения задачи
+## Development Workflow
 
 ```
 1. User → Apigateway (WebSocket)
 2. Apigateway → Boss (gRPC: CreateTaskStream)
-3. Boss → Agents: «Проанализируй задачу, определи стек и менеджеров»
-4. Boss → Manager #1, #2, #3 (gRPC: AssignManager — ПАРАЛЛЕЛЬНО)
-   ├── Manager → Agents: «Каких воркеров нанять для моей команды?»
+3. Boss → Agents: "Analyze task, determine stack and managers"
+4. Boss → Manager #1, #2, #3 (gRPC: AssignManager — PARALLEL)
+   ├── Manager → Agents: "What workers to hire for my team?"
    ├── Manager → Worker(s) (gRPC: AssignWorkersAndWait)
-   │   ├── Worker → Agents: «Какие файлы создать?»
-   │   ├── Worker → Agents: «Напиши файл 1»
-   │   ├── Worker → Agents: «Напиши файл 2»
-   │   └── Worker → ZIP-архив
-   ├── Manager → Agents: «Проверить работу воркера»
-   ├── Manager → Worker (gRPC: ReviewWorker — если не одобрено)
-   └── Manager → ZIP + результаты
-5. Boss → Agents: «Валидировать итоговое решение»
-6. Boss → Apigateway → User: ZIP-архив
+   │   ├── Worker → Agents: "What files to create?"
+   │   ├── Worker → Agents: "Write file 1"
+   │   ├── Worker → Agents: "Write file 2"
+   │   └── Worker → Code implementation
+   ├── Manager → Agents: "Review worker output"
+   ├── Manager → Worker (gRPC: ReviewWorker — if not approved)
+   └── Manager → Code + results
+5. Boss → Agents: "Validate final solution"
+6. Boss → GitHub: Create repository and push code
+7. Boss → Apigateway → User: GitHub repository URL
 ```
 
-## 📝 Модели данных
+## Data Models
 
 ### Task
 - ID, UserID, Username, Title, Description
 - Tokens (JSON), Meta (JSON)
 - Status: `pending → boss_planning → managers_assigned → processing → reviewing → done/error`
-- Solution (ZIP архив)
+- ProjectJSON (GitHub repository URL)
 
 ### BossDecision
 - TaskID, ManagersCount, ManagerRoles (JSON)
@@ -183,97 +188,96 @@ crewai/
 - TaskMD, SolutionMD
 - Files (JSON), Success, Approved, Feedback
 
-## 🔧 Разработка
+## Development
 
-### Требования
+### Requirements
 - Docker & Docker Compose
 - Go 1.25+
-- Node.js 18+ (для frontend)
+- Node.js 18+ (for frontend)
 - PostgreSQL 15+
 - Redis 7+
 
-### Запуск в режиме разработки
+### Development Mode
 ```bash
-# Клонирование
+# Clone
 git clone <repository>
 cd crewai
 
-# Настройка переменных окружения
-cp .env.example .env
-# Отредактируйте .env файл
+# Setup environment
+# Edit environment variables
 
-# Запуск всех сервисов
+# Launch all services
 docker compose up -d
 
-# Или только необходимые для разработки
+# Or only required for development
 docker compose up -d postgres redis user frontend
 ```
 
-### Frontend разработка
+### Frontend Development
 ```bash
 cd frontend/web
 npm install
-npm run dev  # Запуск на http://localhost:5173
+npm run dev  # Runs on http://localhost:5173
 ```
 
-### Backend разработка
+### Backend Development
 ```bash
-# Локальный запуск сервисов (после запуска БД)
+# Local service startup (after DB launch)
 cd user && go run cmd/app/main.go
 cd apigateway && go run cmd/app/main.go
-# ... другие сервисы
+# ... other services
 ```
 
-### Работа с protobuf
+### Protobuf
 ```bash
-# Генерация Go кода из proto файлов
-# Используйте скрипт генерации или protoc вручную
+# Generate Go code from proto files
+# Use generation script or protoc manually
 protoc --go_out=. --go_opt=paths=source_relative \
   --go-grpc_out=. --go-grpc_opt=paths=source_relative \
   proto/*.proto
 ```
 
-## ⚠️ Важные замечания
+## Important Notes
 
-1. **Подписка обязательна** — для использования сервиса требуется активная подписка Pro
-2. **API ключи провайдеров** — настройте хотя бы один LLM провайдер в переменных окружения
-3. **PostgreSQL и Redis** — используются для хранения данных и кэширования
-4. **Docker Compose** — рекомендуемый способ запуска для разработки и продакшена
-5. **Тестовая оплата** — доступна для проверки платежного функционала без реальных денег
-6. **Производительность** — время генерации зависит от сложности задачи и выбранной модели
-7. **Безопасность** — API ключи хранятся securely и не передаются в логи
+1. **Pro Subscription Required** - Active Pro subscription needed for service usage
+2. **LLM Provider API Keys** - Configure at least one LLM provider in environment variables
+3. **PostgreSQL and Redis** - Used for data storage and caching
+4. **Docker Compose** - Recommended for development and production deployment
+5. **Test Payments** - Available for payment functionality testing without real money
+6. **Performance** - Generation time depends on task complexity and selected model
+7. **Security** - API keys stored securely and not logged
 
 ---
 
-## ⚙️ Переменные окружения
+## Environment Variables
 
-Создайте файл `.env` на основе `.env.example`:
+Create `.env` file based on `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-### Обязательные переменные:
+### Required Variables:
 
 ```bash
-# JWT токены (сгенерируйте случайные строки)
+# JWT tokens (generate random strings)
 JWT_SECRET="your-jwt-secret-here"
 JWT_REFRESH_SECRET="your-refresh-secret-here"
 
-# YooKassa платежи (тестовые данные)
+# YooKassa payments (test data)
 YOOKASSA_SHOP_ID="1339826"
 YOOKASSA_SECRET_KEY="test_StL4_VJfVFbOJ7_BbolU2VhoR1zjIQ7Qf2gcwN3Gngw"
 
-# API ключи провайдеров (минимум один)
+# Provider API keys (at least one required)
 OPENROUTER_API_KEY="sk-or-v1-..."
 GEMINI_API_KEY="AIzaSy..."
-# Другие провайдеры опциональны
+# Other providers optional
 ```
 
-### Опциональные переменные:
+### Optional Variables:
 
 ```bash
-# Порты сервисов (по умолчанию)
+# Service ports (defaults)
 AUTH_PORT=3112
 API_GATEWAY_PORT=3111
 
@@ -281,17 +285,20 @@ API_GATEWAY_PORT=3111
 RATE_LIMIT_TASK_CREATE=10/60
 RATE_LIMIT_TASK_STATUS=60/60
 
-# Redis (для кэширования)
+# Redis (for caching)
 REDIS_URL=redis://redis:6379/0
+
+# GitHub token (for publishing generated code)
+GITHUB_TOKEN=ghp_...
 ```
 
-## 📞 Поддержка
+## Support
 
-- 📧 Email: support@crewai.com
-- 💬 Discord: [Присоединяйтесь к сообществу](https://discord.gg/crewai)
-- 📚 Документация: [docs.crewai.com](https://docs.crewai.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/crewai/crewai/issues)
+- Email: support@crewai.com
+- Discord: [Join our community](https://discord.gg/crewai)
+- Documentation: [docs.crewai.com](https://docs.crewai.com)
+- Issues: [GitHub Issues](https://github.com/crewai/crewai/issues)
 
-## 📄 Лицензия
+## License
 
-MIT License - см. [LICENSE](LICENSE) файл для деталей.
+MIT License - see [LICENSE](LICENSE) file for details.
