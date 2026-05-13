@@ -66,7 +66,7 @@ type Manager struct {
 	Status  string `gorm:"default:'active'"` // active, completed, error
 
 	// Решение менеджера
-	WorkerRoles  string `gorm:"type:jsonb"` // []WorkerRole
+	WorkerRoles  string // []WorkerRole as JSON string
 	WorkersCount int32
 }
 
@@ -101,7 +101,7 @@ type WorkerSolution struct {
 	TaskID   uuid.UUID `gorm:"type:uuid;not null;index"`
 
 	// Файлы решения
-	Files    string `gorm:"type:jsonb"` // map[string]string {path: content}
+	Files    string // map[string]string {path: content} as JSON string
 	Success  bool
 	Feedback string `gorm:"type:text"` // Если нужно исправить
 	Approved bool   `gorm:"default:false"`
