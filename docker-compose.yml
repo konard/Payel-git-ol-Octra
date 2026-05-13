@@ -52,7 +52,7 @@ services:
       - REDIS_ENABLED=true
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
       - GIT_USER_NAME=CrewAI Boss
-      - GITHUB_TOKEN=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
+      - GITHUB_TOKEN=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
     ports:
       - "50051:50051"
     volumes:
