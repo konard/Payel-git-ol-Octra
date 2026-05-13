@@ -4,7 +4,8 @@
     "subtitle": "Spoločnosť AI Agentov"
   },
   "common": {
-    "close": "Zavrieť"
+    "close": "Zavrieť",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Stiahnuť",
@@ -64,6 +65,12 @@
     "close": "Zatvoriť"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Vlastné modely",
+    "hideServerStatus": "Skryť stav servera",
+    "hideServerStatusHint": "Skryť stavový riadok pripojenia servera",
+    "hideConsole": "Skryť konzolu",
+    "hideConsoleHint": "Skryť panel konzoly",
     "apiTokens": "API & Tokeny",
     "language": "Jazyk",
     "appearance": "Vzhľad",
@@ -83,13 +90,7 @@
     "hideTokenField": "Skryť pole na zadanie tokenu",
     "hideTokenFieldHint": "Skryť pole API kľúča na hlavnej obrazovke",
     "save": "Uložiť",
-    "cancel": "Zrušiť",
-    "hideServerStatus": "Skryť stav servera",
-    "hideServerStatusHint": "Skryť stavový riadok pripojenia servera",
-    "hideConsole": "Skryť konzolu",
-    "hideConsoleHint": "Skryť panel konzoly",
-    "customProviders": "Custom Providers",
-    "customModels": "Vlastné modely"
+    "cancel": "Zrušiť"
   },
   "languages": {
     "en": "English",
@@ -332,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

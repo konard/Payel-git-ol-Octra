@@ -4,7 +4,8 @@
     "subtitle": "Yapay Zeka Ajanları Şirketi"
   },
   "common": {
-    "close": "Kapat"
+    "close": "Kapat",
+    "optional": "optional"
   },
   "topbar": {
     "download": "İndir",
@@ -64,6 +65,12 @@
     "close": "Kapat"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
     "apiTokens": "API ve Jetonlar",
     "language": "Dil",
     "appearance": "Görünüm",
@@ -83,13 +90,7 @@
     "hideTokenField": "Jeton giriş alanını gizle",
     "hideTokenFieldHint": "Ana ekranda API anahtarı alanını gizle",
     "save": "Kaydet",
-    "cancel": "İptal",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers",
-    "customModels": "Custom Models"
+    "cancel": "İptal"
   },
   "languages": {
     "en": "English",
@@ -332,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

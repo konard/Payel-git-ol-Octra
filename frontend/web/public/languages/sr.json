@@ -4,7 +4,8 @@
     "subtitle": "Компанија ВИ Агената"
   },
   "common": {
-    "close": "Затвори"
+    "close": "Затвори",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Преузми",
@@ -64,6 +65,12 @@
     "close": "Затвори"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Прилагођени модели",
+    "hideServerStatus": "Сакриј статус сервера",
+    "hideServerStatusHint": "Сакриј траку статуса везе сервера",
+    "hideConsole": "Сакриј конзолу",
+    "hideConsoleHint": "Сакриј панел конзоле",
     "apiTokens": "API и Токени",
     "language": "Језик",
     "appearance": "Изглед",
@@ -83,12 +90,7 @@
     "hideTokenField": "Сакриј поље за унос токена",
     "hideTokenFieldHint": "Сакриј поље API кључа на главном екрану",
     "save": "Сачувај",
-    "cancel": "Откажи",
-    "hideServerStatus": "Сакриј статус сервера",
-    "hideServerStatusHint": "Сакриј траку статуса везе сервера",
-    "hideConsole": "Сакриј конзолу",
-    "hideConsoleHint": "Сакриј панел конзоле",
-    "customProviders": "Custom Providers"
+    "cancel": "Откажи"
   },
   "languages": {
     "en": "English",
@@ -331,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

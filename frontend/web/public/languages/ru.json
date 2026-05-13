@@ -6,7 +6,8 @@
     "chat": "Чат"
   },
   "common": {
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "optional": "необязательно"
   },
   "topbar": {
     "download": "Скачать",
@@ -67,6 +68,12 @@
     "close": "Закрыть"
   },
   "settings": {
+    "customProviders": "Кастомные провайдеры",
+    "customModels": "Кастомные модели",
+    "hideServerStatus": "Скрыть статус сервера",
+    "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
+    "hideConsole": "Скрыть консоль",
+    "hideConsoleHint": "Скрыть панель консоли",
     "apiTokens": "API и токены",
     "language": "Язык",
     "appearance": "Внешний вид",
@@ -86,12 +93,7 @@
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
     "save": "Сохранить",
-    "cancel": "Отмена",
-    "hideServerStatus": "Скрыть статус сервера",
-    "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
-    "hideConsole": "Скрыть консоль",
-    "hideConsoleHint": "Скрыть панель консоли",
-    "customProviders": "Кастомные провайдеры"
+    "cancel": "Отмена"
   },
   "languages": {
     "en": "English",
@@ -287,10 +289,10 @@
     "confirmPassword": "Подтвердите пароль",
     "repeatPassword": "Повторите пароль",
     "registering": "Регистрация...",
-"noAccount": "Нет аккаунта?",
-   "hasAccount": "Уже есть аккаунт?"
- },
-"chatSidebar": {
+    "noAccount": "Нет аккаунта?",
+    "hasAccount": "Уже есть аккаунт?"
+  },
+  "chatSidebar": {
     "history": "История",
     "newChat": "Новый чат",
     "noChats": "Чатов пока нет",
@@ -299,7 +301,7 @@
     "thisMonth": "Этот месяц",
     "lastMonth": "Прошлый месяц"
   },
- "providers": {
+  "providers": {
     "title": "Кастомные провайдеры",
     "description": "Добавляйте собственные AI провайдеры для использования в задачах",
     "newProvider": "Новый провайдер",
@@ -317,27 +319,24 @@
     "baseUrlHint": "URL API сервера провайдера (например: https://api.example.com/v1)",
     "apiKey": "API ключ",
     "apiKeyPlaceholder": "sk-...",
-     "save": "Сохранить",
-     "cancel": "Отмена",
-     "requiresApiKey": "API ключ не нужен",
-     "requiresApiKeyHint": "Отключите если провайдер не требует API ключа (например, локальный Ollama)",
-     "noApiKeyRequired": "API ключ не требуется",
-     "localNote": "Локальный сервис - API ключ не требуется"
-   },
-   "models": {
-     "title": "Кастомные модели",
-     "description": "Добавляйте и управляйте своими AI моделями",
-     "addNew": "Добавить модель",
-     "name": "Название модели",
-     "namePlaceholder": "Например: gpt-4, minimax-m2.7:cloud",
-     "provider": "Провайдер",
-     "noProvider": "Без провайдера",
-     "save": "Сохранить",
-     "cancel": "Отмена",
-     "delete": "Удалить",
-     "confirmDelete": "Вы уверены, что хотите удалить эту модель?"
-   },
-   "common": {
-     "optional": "необязательно"
-   }
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "requiresApiKey": "API ключ не нужен",
+    "requiresApiKeyHint": "Отключите если провайдер не требует API ключа (например, локальный Ollama)",
+    "noApiKeyRequired": "API ключ не требуется",
+    "localNote": "Локальный сервис - API ключ не требуется"
+  },
+  "models": {
+    "title": "Кастомные модели",
+    "description": "Добавляйте и управляйте своими AI моделями",
+    "addNew": "Добавить модель",
+    "name": "Название модели",
+    "namePlaceholder": "Например: gpt-4, minimax-m2.7:cloud",
+    "provider": "Провайдер",
+    "noProvider": "Без провайдера",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "confirmDelete": "Вы уверены, что хотите удалить эту модель?"
+  }
 }

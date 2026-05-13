@@ -3,6 +3,10 @@ const langsDir = 'languages';
 const publicLangsDir = 'public/languages';
 
 const extraKeys = {
+  common: {
+    close: 'Close',
+    optional: 'optional'
+  },
   settings: {
     customProviders: 'Custom Providers',
     customModels: 'Custom Models',
@@ -31,6 +35,19 @@ const extraKeys = {
     apiKeyPlaceholder: 'sk-...',
     save: 'Save',
     cancel: 'Cancel'
+  },
+  models: {
+    title: 'Custom Models',
+    description: 'Add and manage your AI models',
+    addNew: 'Add Model',
+    name: 'Model Name',
+    namePlaceholder: 'e.g.: gpt-4, minimax-m2.7:cloud',
+    provider: 'Provider',
+    noProvider: 'No Provider',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    confirmDelete: 'Are you sure you want to delete this model?'
   },
   profile: {
     subscriptionEnd: 'Valid until',
@@ -115,35 +132,59 @@ const translations = {
   }
 };
 
-// First copy all files from public/languages to languages
-const files = fs.readdirSync(publicLangsDir);
+function readJsonIfExists(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function mergeSection(data, section, defaults, overrides) {
+  data[section] = {
+    ...defaults,
+    ...(data[section] || {}),
+    ...(overrides || {})
+  };
+}
+
+function applyRequiredKeys(data, lang) {
+  const overrides = translations[lang] || {};
+  const commonDefaults = {
+    ...extraKeys.common,
+    close: data.modelSelector?.close || extraKeys.common.close
+  };
+
+  mergeSection(data, 'common', commonDefaults, overrides.common);
+  mergeSection(data, 'settings', extraKeys.settings, overrides.settings);
+  mergeSection(data, 'providers', extraKeys.providers, overrides.providers);
+  mergeSection(data, 'models', {
+    ...extraKeys.models,
+    title: data.settings.customModels || extraKeys.models.title
+  }, overrides.models);
+
+  if (!data.profile) data.profile = {};
+  if (overrides.profile) {
+    Object.assign(data.profile, overrides.profile);
+  }
+  if (overrides.auth) {
+    data.auth = overrides.auth;
+  }
+}
+
+const files = Array.from(new Set([
+  ...fs.readdirSync(langsDir),
+  ...fs.readdirSync(publicLangsDir)
+])).filter(f => f.endsWith('.json')).sort();
+
 files.forEach(f => {
-  if (!f.endsWith('.json')) return;
-  const srcPath = publicLangsDir + '/' + f;
-  const destPath = langsDir + '/' + f;
-  const data = JSON.parse(fs.readFileSync(srcPath, 'utf8'));
-  
-  // Ensure settings has all required keys from extraKeys first
-  Object.assign(data.settings, extraKeys.settings);
-
-  // Apply language-specific overrides
   const lang = f.replace('.json', '');
-  if (translations[lang]) {
-    Object.assign(data.settings, translations[lang].settings);
-    if (translations[lang].providers) {
-      if (!data.providers) data.providers = {};
-      Object.assign(data.providers, translations[lang].providers);
-    }
-    Object.assign(data.profile, translations[lang].profile);
-    data.auth = translations[lang].auth;
-  }
+  const sourcePath = langsDir + '/' + f;
+  const publicPath = publicLangsDir + '/' + f;
+  const data = readJsonIfExists(sourcePath) || readJsonIfExists(publicPath);
 
-  // Ensure providers section exists with defaults
-  if (!data.providers) {
-    data.providers = { ...extraKeys.providers };
-  }
-  
-  fs.writeFileSync(destPath, JSON.stringify(data, null, 2), 'utf8');
+  applyRequiredKeys(data, lang);
+
+  const output = JSON.stringify(data, null, 2) + '\n';
+  fs.writeFileSync(sourcePath, output, 'utf8');
+  fs.writeFileSync(publicPath, output, 'utf8');
   console.log('Updated ' + f);
 });
 console.log('Done!');

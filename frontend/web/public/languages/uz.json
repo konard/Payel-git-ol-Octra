@@ -4,7 +4,8 @@
     "subtitle": "Sun'iy intellekt agentlari kompaniyasi"
   },
   "common": {
-    "close": "Yopish"
+    "close": "Yopish",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Yuklab olish",
@@ -63,6 +64,12 @@
     "close": "Yopish"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
     "apiTokens": "API va Tokenlar",
     "language": "Til",
     "appearance": "Ko'rinish",
@@ -82,12 +89,7 @@
     "hideTokenField": "Token kiritish maydonini yashirish",
     "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
     "save": "Saqlash",
-    "cancel": "Bekor qilish",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Konsolni yashirish",
-    "hideConsoleHint": "Konsol panelini yashirish",
-    "customProviders": "Custom Providers"
+    "cancel": "Bekor qilish"
   },
   "languages": {
     "en": "English",
@@ -315,5 +317,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

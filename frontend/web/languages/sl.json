@@ -4,7 +4,8 @@
     "subtitle": "Podjetje AI Agentov"
   },
   "common": {
-    "close": "Zapri"
+    "close": "Zapri",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Prenesi",
@@ -64,6 +65,12 @@
     "close": "Zapri"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Lastne modele",
+    "hideServerStatus": "Skrij status strežnika",
+    "hideServerStatusHint": "Skrij vrstico stanja povezave strežnika",
+    "hideConsole": "Skrij konzolo",
+    "hideConsoleHint": "Skrij ploščo konzole",
     "apiTokens": "API in Žetoni",
     "language": "Jezik",
     "appearance": "Videz",
@@ -83,13 +90,7 @@
     "hideTokenField": "Skrij polje za vnos žetona",
     "hideTokenFieldHint": "Skrij polje API ključa na glavnem zaslonu",
     "save": "Shrani",
-    "cancel": "Prekliči",
-    "hideServerStatus": "Skrij status strežnika",
-    "hideServerStatusHint": "Skrij vrstico stanja povezave strežnika",
-    "hideConsole": "Skrij konzolo",
-    "hideConsoleHint": "Skrij ploščo konzole",
-    "customProviders": "Custom Providers",
-    "customModels": "Lastne modele"
+    "cancel": "Prekliči"
   },
   "languages": {
     "en": "English",
@@ -332,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }
