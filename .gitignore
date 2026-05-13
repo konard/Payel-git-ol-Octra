@@ -4,7 +4,9 @@ TASK_12-13.md
 TASK_FRONTEND.md
 .idea
 .sixth
+.env
 .env.example
 .env.prod
+.env.local
 projects
 .github
