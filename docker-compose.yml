@@ -193,7 +193,7 @@ services:
     environment:
       - FRONTEND_PORT=80
     ports:
-      - "70:80"
+      - "80:80"
     depends_on:
       user:
         condition: service_started
