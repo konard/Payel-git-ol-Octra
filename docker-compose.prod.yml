@@ -52,7 +52,7 @@ services:
       - REDIS_ENABLED=true
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
       - GIT_USER_NAME=${GIT_USER_NAME:-}
-       - GITHUB_TOKEN=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
+       - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "50051:50051"
     volumes:
