@@ -1,10 +1,10 @@
-# CrewAI - Multi-Agent Code Generation Platform
+# Octra - Multi-Agent Code Generation Platform
 
 <div align="center">
-  <img src="crewai-mascot.png" alt="CrewAI Mascot" width="200">
+  <img src="octra-mascot.png" alt="Octra Mascot" width="200">
 </div>
 
-CrewAI is a modern web platform that automates software development using AI agents organized in a hierarchical IT company structure. Users describe projects in natural language, and the system generates complete, production-ready codebases published directly to GitHub repositories.
+Octra is a modern web platform that automates software development using AI agents organized in a hierarchical IT company structure. Users describe projects in natural language, and the system generates complete, production-ready codebases published directly to GitHub repositories.
 
 ## Architecture
 
@@ -40,9 +40,9 @@ CrewAI is a modern web platform that automates software development using AI age
                                                OpenAI, Claude, DeepSeek, Grok)
 ```
 
-## What is CrewAI?
+## What is Octra?
 
-CrewAI revolutionizes software development by creating an AI-powered development team that operates like a real IT company. Instead of manually writing code, users simply describe their project requirements in natural language, and CrewAI handles the entire development lifecycle - from architectural planning to code implementation and deployment.
+Octra revolutionizes software development by creating an AI-powered development team that operates like a real IT company. Instead of manually writing code, users simply describe their project requirements in natural language, and CrewAI handles the entire development lifecycle - from architectural planning to code implementation and deployment.
 
 ### How It Works:
 1. **User** describes the task: "Create a REST API in Go with authentication"
@@ -89,7 +89,7 @@ docker compose up -d --build
 
 ## Pro Subscription
 
-CrewAI operates on a subscription model to ensure service quality and accessibility.
+Octra operates on a subscription model to ensure service quality and accessibility.
 
 ### Pricing:
 - **1 month** - $10
@@ -291,14 +291,3 @@ REDIS_URL=redis://redis:6379/0
 # GitHub token (for publishing generated code)
 GITHUB_TOKEN=ghp_...
 ```
-
-## Support
-
-- Email: support@crewai.com
-- Discord: [Join our community](https://discord.gg/crewai)
-- Documentation: [docs.crewai.com](https://docs.crewai.com)
-- Issues: [GitHub Issues](https://github.com/crewai/crewai/issues)
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
