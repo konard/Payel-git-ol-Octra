@@ -6,6 +6,7 @@
     "chat": "Чат"
   },
   "common": {
+    "close": "Закрыть",
     "optional": "необязательно"
   },
   "topbar": {
@@ -67,6 +68,12 @@
     "close": "Закрыть"
   },
   "settings": {
+    "customProviders": "Кастомные провайдеры",
+    "customModels": "Кастомные модели",
+    "hideServerStatus": "Скрыть статус сервера",
+    "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
+    "hideConsole": "Скрыть консоль",
+    "hideConsoleHint": "Скрыть панель консоли",
     "apiTokens": "API и токены",
     "language": "Язык",
     "appearance": "Внешний вид",
@@ -86,13 +93,7 @@
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
     "save": "Сохранить",
-    "cancel": "Отмена",
-    "hideServerStatus": "Скрыть статус сервера",
-    "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
-    "hideConsole": "Скрыть консоль",
-    "hideConsoleHint": "Скрыть панель консоли",
-    "customProviders": "Кастомные провайдеры",
-    "customModels": "Кастомные модели"
+    "cancel": "Отмена"
   },
   "languages": {
     "en": "English",

@@ -4,7 +4,8 @@
     "subtitle": "KI-Agenten Unternehmen"
   },
   "common": {
-    "close": "Schließen"
+    "close": "Schließen",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Herunterladen",
@@ -64,6 +65,12 @@
     "close": "Schließen"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
     "apiTokens": "API & Token",
     "language": "Sprache",
     "appearance": "Erscheinungsbild",
@@ -83,13 +90,7 @@
     "hideTokenField": "Token-Eingabefeld ausblenden",
     "hideTokenFieldHint": "API-Schlussel-Feld auf dem Hauptbildschirm ausblenden",
     "save": "Speichern",
-    "cancel": "Abbrechen",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers",
-    "customModels": "Custom Models"
+    "cancel": "Abbrechen"
   },
   "languages": {
     "en": "English",
@@ -318,5 +319,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

@@ -6,6 +6,7 @@
     "chat": "Chat"
   },
   "common": {
+    "close": "Close",
     "optional": "optional"
   },
   "topbar": {
@@ -67,8 +68,13 @@
     "close": "Close"
   },
   "settings": {
-    "apiTokens": "API & Tokens",
     "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
+    "apiTokens": "API & Tokens",
     "language": "Language",
     "appearance": "Appearance",
     "interface": "Interface",
@@ -87,12 +93,7 @@
     "hideTokenField": "Hide token input field",
     "hideTokenFieldHint": "Hide API key field on main screen",
     "save": "Save",
-    "cancel": "Cancel",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
-    "customModels": "Custom Models"
+    "cancel": "Cancel"
   },
   "providers": {
     "title": "Custom Providers",

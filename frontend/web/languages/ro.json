@@ -4,7 +4,8 @@
     "subtitle": "Companie de Agenți IA"
   },
   "common": {
-    "close": "Închide"
+    "close": "Închide",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Descarcă",
@@ -64,6 +65,12 @@
     "close": "Închide"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Modele personalizate",
+    "hideServerStatus": "Ascunde status server",
+    "hideServerStatusHint": "Ascunde bara de stare a conexiunii serverului",
+    "hideConsole": "Ascunde consola",
+    "hideConsoleHint": "Ascunde panoul consolei",
     "apiTokens": "API și Tokenuri",
     "language": "Limbă",
     "appearance": "Aspect",
@@ -83,13 +90,7 @@
     "hideTokenField": "Ascunde câmpul de introducere a tokenului",
     "hideTokenFieldHint": "Ascunde câmpul cheie API pe ecranul principal",
     "save": "Salvează",
-    "cancel": "Anulează",
-    "hideServerStatus": "Ascunde status server",
-    "hideServerStatusHint": "Ascunde bara de stare a conexiunii serverului",
-    "hideConsole": "Ascunde consola",
-    "hideConsoleHint": "Ascunde panoul consolei",
-    "customProviders": "Custom Providers",
-    "customModels": "Modele personalizate"
+    "cancel": "Anulează"
   },
   "languages": {
     "en": "English",
@@ -332,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

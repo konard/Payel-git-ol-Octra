@@ -4,7 +4,8 @@
     "subtitle": "Компанія ШІ-агентів"
   },
   "common": {
-    "close": "Закрити"
+    "close": "Закрити",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Завантажити",
@@ -64,6 +65,12 @@
     "close": "Закрити"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
     "apiTokens": "API та токени",
     "language": "Мова",
     "appearance": "Зовнішній вигляд",
@@ -83,12 +90,7 @@
     "hideTokenField": "Не показувати поле введення токена",
     "hideTokenFieldHint": "Приховати поле API ключа на головному екрані",
     "save": "Зберегти",
-    "cancel": "Скасувати",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Приховати консоль",
-    "hideConsoleHint": "Приховати панель консолі",
-    "customProviders": "Custom Providers"
+    "cancel": "Скасувати"
   },
   "languages": {
     "en": "English",
@@ -331,5 +333,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }

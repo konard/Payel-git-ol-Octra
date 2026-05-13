@@ -4,7 +4,8 @@
     "subtitle": "Azienda di Agenti IA"
   },
   "common": {
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "optional": "optional"
   },
   "topbar": {
     "download": "Scarica",
@@ -64,6 +65,12 @@
     "close": "Chiudi"
   },
   "settings": {
+    "customProviders": "Custom Providers",
+    "customModels": "Custom Models",
+    "hideServerStatus": "Hide server status",
+    "hideServerStatusHint": "Hide the server connection status bar",
+    "hideConsole": "Hide console",
+    "hideConsoleHint": "Hide the console panel",
     "apiTokens": "API e Token",
     "language": "Lingua",
     "appearance": "Aspetto",
@@ -83,13 +90,7 @@
     "hideTokenField": "Nascondi campo input token",
     "hideTokenFieldHint": "Nascondi campo chiave API nella schermata principale",
     "save": "Salva",
-    "cancel": "Annulla",
-    "hideServerStatus": "Hide server status",
-    "hideServerStatusHint": "Hide the server connection status bar",
-    "hideConsole": "Hide console",
-    "hideConsoleHint": "Hide the console panel",
-    "customProviders": "Custom Providers",
-    "customModels": "Custom Models"
+    "cancel": "Annulla"
   },
   "languages": {
     "en": "English",
@@ -344,5 +345,18 @@
     "apiKeyPlaceholder": "sk-...",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "models": {
+    "title": "Custom Models",
+    "description": "Add and manage your AI models",
+    "addNew": "Add Model",
+    "name": "Model Name",
+    "namePlaceholder": "e.g.: gpt-4, minimax-m2.7:cloud",
+    "provider": "Provider",
+    "noProvider": "No Provider",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this model?"
   }
 }
