@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: crewai-postgres
+    environment:
+      POSTGRES_USER: crewai
+      POSTGRES_PASSWORD: crewai_password
+      POSTGRES_DB: crewai
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - crewai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crewai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: crewai-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - crewai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  boss:
+    build:
+      context: .
+      dockerfile: ./boss/Dockerfile
+    container_name: crewai-boss
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - AGENTS_SERVICE_HOST=agents:50053
+      - MANAGER_SERVICE_HOST=manager:50052
+      - MERGER_SERVICE_HOST=merger:50054
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+      - GIT_USER_NAME=${GIT_USER_NAME:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./projects:/workspace/projects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agents:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  manager:
+    build:
+      context: .
+      dockerfile: ./manager/Dockerfile
+    container_name: crewai-manager
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AGENTS_SERVICE_HOST=agents:50053
+      - WORKER_SERVICE_HOST=worker:50053
+    ports:
+      - "50052:50052"
+    volumes:
+      - ./projects:/workspace/projects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      boss:
+        condition: service_started
+      agents:
+        condition: service_started
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./worker/Dockerfile
+    container_name: crewai-worker
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - AGENTS_SERVICE_HOST=agents:50053
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - WORKER_MODE=multypass
+      - PROJECTS_DIR=/workspace/projects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      manager:
+        condition: service_started
+      agents:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./projects:/workspace/projects
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  agents:
+    build:
+      context: .
+      dockerfile: ./agents/Dockerfile
+    container_name: crewai-agents
+    environment:
+      - AGENTS_PORT=50053
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - ZAI_API_URL=https://api.z.ai/api/v1
+    ports:
+      - "50053:50053"
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  apigateway:
+    build:
+      context: ./apigateway
+      dockerfile: Dockerfile
+    container_name: crewai-apigateway
+    environment:
+      - BOSS_SERVICE_HOST=boss:50051
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - AUTH_SERVICE_HOST=user:3112
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_TASK_CREATE=${RATE_LIMIT_TASK_CREATE:-10/60}
+      - RATE_LIMIT_TASK_STATUS=${RATE_LIMIT_TASK_STATUS:-60/60}
+      - RATE_LIMIT_TASK_RECONNECT=${RATE_LIMIT_TASK_RECONNECT:-30/60}
+      - RATE_LIMIT_HEALTH=${RATE_LIMIT_HEALTH:-120/60}
+    ports:
+      - "3111:3111"
+    depends_on:
+      boss:
+        condition: service_started
+      agents:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  user:
+    build:
+      context: .
+      dockerfile: ./user/Dockerfile
+    container_name: crewai-user
+    environment:
+      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-refresh-in-production}
+      - AUTH_PORT=3112
+      - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID:-}
+      - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY:-}
+    ports:
+      - "3112:3112"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
+    container_name: crewai-frontend
+    environment:
+      - FRONTEND_PORT=80
+    ports:
+      - "80:80"
+    depends_on:
+      user:
+        condition: service_started
+      apigateway:
+        condition: service_started
+    networks:
+      - crewai-network
+    restart: unless-stopped
+
+networks:
+  crewai-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

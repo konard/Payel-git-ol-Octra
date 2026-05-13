@@ -108,7 +108,8 @@ export default function App() {
   };
 
   // Иначе показываем приложение
-  const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/task/create`;
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = import.meta.env.VITE_WS_URL || `${wsProtocol}//${window.location.host}/api/task/create`;
   const { send, sendChat } = useWebSocket(wsUrl, handleIncomingChatMessage, updateBossProgress);
 
   const status = useTaskStore((state) => state.status);
