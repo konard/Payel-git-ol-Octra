@@ -39,21 +39,21 @@ const LINE_HEIGHT = 24;
 const EDITOR_PADDING_TOP = 16;
 
 const CODE_VIEW_THEME = {
-  '--code-bg': '#222a32',
-  '--code-surface': '#29323c',
-  '--code-surface-soft': '#252d36',
-  '--code-surface-muted': '#20272f',
-  '--code-border': '#3a4652',
-  '--code-border-soft': '#323c47',
-  '--code-text': '#d7dee7',
-  '--code-text-muted': '#8f9aa7',
-  '--code-text-faint': '#66717f',
-  '--code-accent': '#9fb8d6',
-  '--code-accent-strong': '#b8cce4',
-  '--code-selection': '#465464',
-  '--code-line-active': 'rgba(136, 153, 171, 0.12)',
-  '--code-tree-active': 'rgba(136, 153, 171, 0.2)',
-  '--code-tree-hover': 'rgba(136, 153, 171, 0.1)',
+  '--code-bg': 'var(--background)',
+  '--code-surface': 'var(--surface)',
+  '--code-surface-soft': 'var(--surface)',
+  '--code-surface-muted': 'var(--surface)',
+  '--code-border': 'var(--border)',
+  '--code-border-soft': 'var(--border)',
+  '--code-text': 'var(--text)',
+  '--code-text-muted': 'var(--text-muted)',
+  '--code-text-faint': 'color-mix(in srgb, var(--text-muted) 70%, transparent)',
+  '--code-accent': 'var(--accent)',
+  '--code-accent-strong': 'var(--accent)',
+  '--code-selection': 'color-mix(in srgb, var(--accent) 35%, transparent)',
+  '--code-line-active': 'color-mix(in srgb, var(--accent) 8%, transparent)',
+  '--code-tree-active': 'color-mix(in srgb, var(--accent) 15%, transparent)',
+  '--code-tree-hover': 'color-mix(in srgb, var(--text) 8%, transparent)',
 } as CSSProperties & Record<string, string>;
 
 const INITIAL_FILES: EditorFile[] = [

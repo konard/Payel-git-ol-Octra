@@ -283,7 +283,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
               onClick={() => onModeChange('code')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                 mode === 'code'
-                  ? 'bg-[#2f3a45] text-[#d7dee7]'
+                  ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
               }`}
             >
