@@ -223,9 +223,9 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
   return (
     <>
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Left: Logo + Mode Switch */}
-        <div className="flex items-center gap-3">
+        <div className="min-w-0 flex flex-1 flex-wrap items-center gap-3">
           {/* History & New Chat buttons */}
           <div className="flex items-center gap-1">
             <button
@@ -258,7 +258,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
           />
           <h1 className="text-lg font-semibold text-[var(--text)]">CrewAI</h1>
           {/* Переключатель режимов */}
-          <div className="border border-[var(--border)] rounded-lg overflow-hidden shadow-sm ml-4">
+          <div className="shrink-0 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm sm:ml-4">
             <button
               onClick={() => onModeChange('canvas')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -283,7 +283,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
               onClick={() => onModeChange('code')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                 mode === 'code'
-                  ? 'bg-[var(--accent)] text-white'
+                  ? 'bg-[#2f3a45] text-[#d7dee7]'
                   : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
               }`}
             >
@@ -293,7 +293,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
         </div>
 
         {/* Center: Download button */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {status === 'done' && zipUrl && (
             <button
               onClick={handleDownload}
@@ -306,7 +306,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
         </div>
 
         {/* Right: Theme & Settings & Profile */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={toggleTheme}
             className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
