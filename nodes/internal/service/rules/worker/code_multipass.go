@@ -58,8 +58,7 @@ RULES:
 		role, description, techStack,
 		taskMD, contextSection,
 		techStack, techStack,
-		techStack, techStack, techStack, techStack, techStack, techStack, techStack, techStack,
-		techStack, techStack)
+		techStack, techStack, techStack, techStack, techStack, techStack, techStack, techStack)
 
 	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
 	if err != nil {
