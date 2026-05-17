@@ -1,4 +1,21 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bug,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  File,
+  FileCode2,
+  Files,
+  Folder,
+  FolderOpen,
+  GitBranch,
+  Search,
+  X,
+} from 'lucide-react';
 import hljs from '../../lib/hljs';
 
 function escapeHtml(str: string): string {
@@ -17,6 +34,30 @@ interface EditorFile {
   language: string;
   content: string;
 }
+
+const LINE_HEIGHT = 24;
+const EDITOR_PADDING_TOP = 16;
+const EDITOR_GUTTER_WIDTH = 48;
+const EDITOR_GUTTER_PADDING_X = 8;
+const EDITOR_CONTENT_PADDING_X = 12;
+
+const CODE_VIEW_THEME = {
+  '--code-bg': 'var(--background)',
+  '--code-surface': 'var(--surface)',
+  '--code-surface-soft': 'var(--surface)',
+  '--code-surface-muted': 'var(--surface)',
+  '--code-border': 'var(--border)',
+  '--code-border-soft': 'var(--border)',
+  '--code-text': 'var(--text)',
+  '--code-text-muted': 'var(--text-muted)',
+  '--code-text-faint': 'color-mix(in srgb, var(--text-muted) 70%, transparent)',
+  '--code-accent': 'var(--accent)',
+  '--code-accent-strong': 'var(--accent)',
+  '--code-selection': 'color-mix(in srgb, var(--accent) 35%, transparent)',
+  '--code-line-active': 'color-mix(in srgb, var(--accent) 8%, transparent)',
+  '--code-tree-active': 'color-mix(in srgb, var(--accent) 15%, transparent)',
+  '--code-tree-hover': 'color-mix(in srgb, var(--text) 8%, transparent)',
+} as CSSProperties & Record<string, string>;
 
 const INITIAL_FILES: EditorFile[] = [
   {
@@ -130,40 +171,91 @@ function getCursorInfo(text: string, position: number) {
   return { line, col };
 }
 
+function getLanguage(lang: string): string {
+  const langMap: Record<string, string> = {
+    Go: 'go',
+    JavaScript: 'javascript',
+    TypeScript: 'typescript',
+    Python: 'python',
+    Java: 'java',
+    C: 'c',
+    Cpp: 'cpp',
+    CSS: 'css',
+    JSON: 'json',
+    Markdown: 'markdown',
+    Bash: 'bash',
+    SQL: 'sql',
+    HTML: 'html',
+    YAML: 'yaml',
+  };
+  return langMap[lang] || 'plaintext';
+}
+
 export function CodeViewer() {
-  const [allFiles] = useState<EditorFile[]>(INITIAL_FILES);
+  const [files, setFiles] = useState<EditorFile[]>(INITIAL_FILES);
   const [openFileIds, setOpenFileIds] = useState<string[]>([INITIAL_FILES[0].id]);
   const [activeFileId, setActiveFileId] = useState(INITIAL_FILES[0].id);
-  const [isExplorerOpen, setIsExplorerOpen] = useState(true);
-  const [explorerWidth, setExplorerWidth] = useState(250);
+  const [isExplorerOpen, setIsExplorerOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 720);
+  const [explorerWidth, setExplorerWidth] = useState(320);
   const [cursor, setCursor] = useState({ line: 1, col: 1 });
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
+  const [editorScroll, setEditorScroll] = useState({ top: 0, left: 0 });
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['go-server', 'src', 'pkg']));
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const lineNumbersRef = useRef<HTMLDivElement>(null);
   const explorerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
 
-  const files = allFiles;
-  const openFiles = allFiles.filter(f => openFileIds.includes(f.id));
+  const openFiles = openFileIds
+    .map((id) => files.find((file) => file.id === id))
+    .filter((file): file is EditorFile => Boolean(file));
+  const activeFile = openFiles.find((file) => file.id === activeFileId) ?? null;
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!isResizing.current || !explorerRef.current) return;
       const newWidth = e.clientX - explorerRef.current.getBoundingClientRect().left;
-      setExplorerWidth(Math.max(150, Math.min(500, newWidth)));
+      setExplorerWidth(Math.max(220, Math.min(520, newWidth)));
     };
+
     const handleMouseUp = () => {
       isResizing.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
+
+  const lineCount = useMemo(() => {
+    if (!activeFile) return 1;
+    return Math.max(activeFile.content.split('\n').length, 1);
+  }, [activeFile]);
+
+  const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
+
+  const highlightedCode = useMemo(() => {
+    if (!activeFile?.content) return '';
+    const lang = getLanguage(activeFile.language);
+
+    try {
+      if (lang === 'plaintext' || !hljs.getLanguage(lang)) {
+        return escapeHtml(activeFile.content);
+      }
+
+      return hljs.highlight(activeFile.content, { language: lang }).value;
+    } catch {
+      return escapeHtml(activeFile.content);
+    }
+  }, [activeFile?.content, activeFile?.language]);
+
+  const pathParts = useMemo(() => activeFile?.path.split('/') ?? [], [activeFile?.path]);
+
+  const activeLineTop = EDITOR_PADDING_TOP + (cursor.line - 1) * LINE_HEIGHT - editorScroll.top;
 
   const startResize = () => {
     isResizing.current = true;
@@ -183,64 +275,23 @@ export function CodeViewer() {
     });
   };
 
-  const closeFile = (fileId: string, e: React.MouseEvent) => {
+  const closeFile = (fileId: string, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    const newOpenFileIds = openFileIds.filter(id => id !== fileId);
-    setOpenFileIds(newOpenFileIds);
-    
-    if (activeFileId === fileId && newOpenFileIds.length > 0) {
-      setActiveFileId(newOpenFileIds[0]);
+
+    const nextOpenFileIds = openFileIds.filter((id) => id !== fileId);
+    setOpenFileIds(nextOpenFileIds);
+
+    if (activeFileId === fileId) {
+      setActiveFileId(nextOpenFileIds.at(-1) ?? '');
     }
   };
 
   const openFile = (fileId: string) => {
-    if (!openFileIds.includes(fileId)) {
-      setOpenFileIds([...openFileIds, fileId]);
-    }
+    setOpenFileIds((prev) => (prev.includes(fileId) ? prev : [...prev, fileId]));
     setActiveFileId(fileId);
+    setCursor({ line: 1, col: 1 });
+    setEditorScroll({ top: 0, left: 0 });
   };
-
-  const activeFile = openFiles.find((file) => file.id === activeFileId) ?? null;
-
-  const lineCount = useMemo(() => {
-    if (!activeFile) return 1;
-    return Math.max(activeFile.content.split('\n').length, 1);
-  }, [activeFile]);
-
-  const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
-
-  const getLanguage = (lang: string): string => {
-    const langMap: Record<string, string> = {
-      'Go': 'go',
-      'JavaScript': 'javascript',
-      'TypeScript': 'typescript',
-      'Python': 'python',
-      'Java': 'java',
-      'C': 'c',
-      'Cpp': 'cpp',
-      'CSS': 'css',
-      'JSON': 'json',
-      'Markdown': 'markdown',
-      'Bash': 'bash',
-      'SQL': 'sql',
-      'HTML': 'html',
-      'YAML': 'yaml',
-    };
-    return langMap[lang] || 'plaintext';
-  };
-
-  const highlightedCode = useMemo(() => {
-    if (!activeFile?.content) return '';
-    const lang = getLanguage(activeFile.language);
-    try {
-      if (lang === 'plaintext' || !hljs.getLanguage(lang)) {
-        return activeFile.content;
-      }
-      return hljs.highlight(activeFile.content, { language: lang }).value;
-    } catch {
-      return activeFile.content;
-    }
-  }, [activeFile?.content, activeFile?.language]);
 
   const updateActiveFile = (nextContent: string, cursorPos: number) => {
     setFiles((prev) =>
@@ -256,262 +307,344 @@ export function CodeViewer() {
     setCursor(getCursorInfo(nextContent, cursorPos));
   };
 
-  if (!activeFile) {
-    return (
-      <div className="w-full h-full flex bg-[var(--background)] text-[var(--text)] overflow-hidden">
-        {/* Sidebar icons */}
-        <div className="w-12 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col items-center py-1 shrink-0">
-          <button
-            className="w-12 h-12 flex items-center justify-center text-[var(--text)] relative"
-            type="button"
-            aria-label="Explorer"
-            onClick={() => setIsExplorerOpen((prev) => !prev)}
-          >
-            <span className={`absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--accent)] ${isExplorerOpen ? '' : 'opacity-0'}`} />
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z" />
-            </svg>
-          </button>
-        </div>
-
-        {isExplorerOpen && (
-          <div ref={explorerRef} style={{ width: explorerWidth }} className="bg-[var(--surface)] border-r border-[var(--border)] flex flex-col shrink-0">
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/50 transition-colors z-10"
-              onMouseDown={startResize}
-            />
-            <div className="h-9 px-4 flex items-center text-xs uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">Explorer</div>
-            <div className="p-2 text-sm overflow-auto">
-              <button
-                type="button"
-                onClick={() => toggleFolder('src')}
-                className="w-full text-left px-2 py-1 rounded text-[var(--text)]/90 hover:bg-[var(--background)]"
-              >
-                <span className="mr-1">{expandedFolders.has('src') ? '▼' : '▶'}</span>
-                src
-              </button>
-              {expandedFolders.has('src') && (
-                <div className="ml-3">
-                  {files.map((file) => {
-                    return (
-                      <button
-                        key={file.id}
-                        type="button"
-                        onClick={() => openFile(file.id)}
-                        className="w-full text-left pl-6 pr-2 py-1 rounded transition-colors text-[var(--text)]/85 hover:bg-[var(--background)]"
-                      >
-                        <span className="text-[#519aba] font-semibold mr-2">G</span>
-                        {file.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => toggleFolder('pkg')}
-                className="w-full text-left px-2 py-1 rounded text-[var(--text)]/80 hover:bg-[var(--background)] mt-1"
-              >
-                <span className="mr-1">{expandedFolders.has('pkg') ? '▼' : '▶'}</span>
-                pkg
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 flex items-center justify-center bg-[var(--background)] text-[var(--text-muted)]">
-          <div className="text-center">
-            <p>No file open</p>
-            <p className="text-sm mt-2">Click on a file in the Explorer to open it</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full h-full flex bg-[var(--background)] text-[var(--text)] overflow-hidden">
-      <div className="w-12 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col items-center py-1 shrink-0">
+    <div
+      className="w-full h-full flex overflow-hidden bg-[var(--code-bg)] text-[var(--code-text)]"
+      style={CODE_VIEW_THEME}
+    >
+      <div className="w-[50px] bg-[var(--code-surface-muted)] border-r border-[var(--code-border)] flex flex-col items-center py-2 shrink-0">
         <button
-          className="w-12 h-12 flex items-center justify-center text-[var(--text)] relative"
+          className={`relative w-9 h-9 flex items-center justify-center rounded-md transition-colors ${
+            isExplorerOpen
+              ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
+              : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+          }`}
           type="button"
           aria-label="Explorer"
+          title="Explorer"
           onClick={() => setIsExplorerOpen((prev) => !prev)}
         >
-          <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--accent)]" />
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z" />
-          </svg>
+          {isExplorerOpen && <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--code-accent)]" />}
+          <Files size={20} strokeWidth={1.8} />
         </button>
 
-        <button className="w-12 h-12 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)]" type="button" aria-label="Search">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.25 0a8.25 8.25 0 0 0-6.18 13.72L1 22.88l1.12 1.12 8.05-9.12A8.251 8.251 0 1 0 15.25.01V0zm0 15a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5z" />
-          </svg>
+        <button
+          className="mt-2 w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+          type="button"
+          aria-label="Search"
+          title="Search"
+        >
+          <Search size={20} strokeWidth={1.8} />
         </button>
 
-        <button className="w-12 h-12 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)]" type="button" aria-label="Source Control">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M21.007 8.222A3.738 3.738 0 0 0 17.5 5.5a3.73 3.73 0 0 0-3.007 1.528 3.738 3.738 0 0 0-3.007-1.528 3.73 3.73 0 0 0-3.007 1.528A3.738 3.738 0 0 0 5.5 5.5a3.75 3.75 0 0 0 0 7.5 3.73 3.73 0 0 0 3.007-1.528 3.738 3.738 0 0 0 3.007 1.528 3.73 3.73 0 0 0 3.007-1.528A3.738 3.738 0 0 0 17.5 13a3.75 3.75 0 0 0 3.507-4.778z" />
-          </svg>
+        <button
+          className="w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+          type="button"
+          aria-label="Source Control"
+          title="Source Control"
+        >
+          <GitBranch size={20} strokeWidth={1.8} />
         </button>
 
-        <button className="w-12 h-12 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)]" type="button" aria-label="Run and Debug">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23 5.5h-2V3h-2v2.5h-2.5v2H19v2.5h2V7.5h2V5.5zM6 13.5a2.25 2.25 0 0 1 2.25 2.25h-4.5A2.25 2.25 0 0 1 6 13.5zm3 6a3 3 0 0 1-6 0v-2.25h6v2.25zm9.5-6a2.25 2.25 0 0 1 2.25 2.25h-4.5a2.25 2.25 0 0 1 2.25-2.25zm3 6a3 3 0 0 1-6 0v-2.25h6v2.25z" />
-          </svg>
+        <button
+          className="w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+          type="button"
+          aria-label="Run and Debug"
+          title="Run and Debug"
+        >
+          <Bug size={20} strokeWidth={1.8} />
         </button>
       </div>
 
       {isExplorerOpen && (
-        <div ref={explorerRef} style={{ width: explorerWidth }} className="bg-[var(--surface)] border-r border-[var(--border)] flex flex-col shrink-0 relative">
+        <aside
+          ref={explorerRef}
+          style={{ width: `min(${explorerWidth}px, calc(100vw - 180px))` }}
+          className="relative bg-[var(--code-surface-soft)] border-r border-[var(--code-border)] flex flex-col shrink-0"
+        >
           <div
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/50 transition-colors z-10"
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--code-accent)]/40 transition-colors z-10"
             onMouseDown={startResize}
           />
-          <div className="h-9 px-4 flex items-center text-xs uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">Explorer</div>
 
-          <div className="p-2 text-sm overflow-auto">
+          <div className="h-11 px-4 border-b border-[var(--code-border-soft)] flex items-center justify-between">
+            <span className="text-xs font-medium text-[var(--code-text-muted)] uppercase">Project</span>
+            <span className="text-[11px] text-[var(--code-text-faint)]">go-server</span>
+          </div>
+
+          <div className="flex-1 overflow-auto px-2 py-3 text-sm">
             <button
               type="button"
-              onClick={() => toggleFolder('src')}
-              className="w-full text-left px-2 py-1 rounded text-[var(--text)]/90 hover:bg-[var(--background)]"
+              onClick={() => toggleFolder('go-server')}
+              className="w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/90 transition-colors hover:bg-[var(--code-tree-hover)]"
             >
-              <span className="mr-1">{expandedFolders.has('src') ? '▼' : '▶'}</span>
-              src
+              {expandedFolders.has('go-server') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              {expandedFolders.has('go-server') ? <FolderOpen size={16} /> : <Folder size={16} />}
+              <span className="truncate">go-server</span>
             </button>
-            {expandedFolders.has('src') && (
-              <div className="ml-3">
-                {files.map((file) => {
-                  const isOpen = openFileIds.includes(file.id);
-                  return (
-                    <button
-                      key={file.id}
-                      type="button"
-                      onClick={() => openFile(file.id)}
-                      className={`w-full text-left pl-6 pr-2 py-1 rounded transition-colors ${
-                        isOpen
-                          ? 'bg-[var(--accent)]/20 text-[var(--text)]'
-                          : 'text-[var(--text)]/85 hover:bg-[var(--background)]'
-                      }`}
-                    >
-                      <span className="text-[#519aba] font-semibold mr-2">G</span>
-                      {file.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => toggleFolder('pkg')}
-              className="w-full text-left px-2 py-1 rounded text-[var(--text)]/80 hover:bg-[var(--background)] mt-1"
-            >
-              <span className="mr-1">{expandedFolders.has('pkg') ? '▼' : '▶'}</span>
-              pkg
-            </button>
-            {expandedFolders.has('pkg') && (
-              <div className="ml-3">
-                <div className="pl-6 pr-2 py-1 rounded text-[var(--text)]/80">go.mod</div>
+
+            {expandedFolders.has('go-server') && (
+              <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
+                <button
+                  type="button"
+                  onClick={() => toggleFolder('src')}
+                  className="w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/90 transition-colors hover:bg-[var(--code-tree-hover)]"
+                >
+                  {expandedFolders.has('src') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                  {expandedFolders.has('src') ? <FolderOpen size={16} /> : <Folder size={16} />}
+                  <span className="truncate">src</span>
+                </button>
+
+                {expandedFolders.has('src') && (
+                  <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
+                    {files.map((file) => {
+                      const isActive = file.id === activeFileId;
+                      const isOpen = openFileIds.includes(file.id);
+
+                      return (
+                        <button
+                          key={file.id}
+                          type="button"
+                          onClick={() => openFile(file.id)}
+                          className={`w-full h-7 pl-2 pr-2 flex items-center gap-2 rounded transition-colors ${
+                            isActive
+                              ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
+                              : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+                          }`}
+                        >
+                          <FileCode2 size={15} className="text-[var(--code-accent)]" />
+                          <span className="truncate">{file.name}</span>
+                          {isOpen && <Circle size={6} fill="currentColor" className="ml-auto text-[var(--code-text-faint)]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => toggleFolder('pkg')}
+                  className="mt-1 w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/80 transition-colors hover:bg-[var(--code-tree-hover)]"
+                >
+                  {expandedFolders.has('pkg') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                  {expandedFolders.has('pkg') ? <FolderOpen size={16} /> : <Folder size={16} />}
+                  <span className="truncate">pkg</span>
+                </button>
+
+                {expandedFolders.has('pkg') && (
+                  <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
+                    <div className="h-7 pl-2 pr-2 flex items-center gap-2 text-[var(--code-text-muted)]">
+                      <File size={15} className="text-[var(--code-text-faint)]" />
+                      <span className="truncate">go.mod</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
+        </aside>
       )}
 
-      <div className="flex-1 min-w-0 flex flex-col bg-[var(--background)]">
-        <div className="h-9 bg-[var(--surface)] flex overflow-x-auto border-b border-[var(--border)]">
-          {openFiles.map((file) => {
-            const isActive = file.id === activeFileId;
-            return (
-              <button
-                key={file.id}
-                type="button"
-                onClick={() => setActiveFileId(file.id)}
-                className={`min-w-[120px] max-w-[220px] h-full px-3 border-r border-[var(--border)] text-sm flex items-center justify-between gap-2 ${
-                  isActive
-                    ? 'bg-[var(--background)] text-[var(--text)] border-t-2 border-t-[var(--accent)]'
-                    : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--background)]'
-                }`}
-              >
-                <span className="truncate">{file.name}</span>
-                <span 
-                  onClick={(e) => closeFile(file.id, e)}
-                  className="opacity-60 hover:opacity-100 hover:text-red-500 cursor-pointer"
-                >
-                  ×
+      <main className="flex-1 min-w-0 flex flex-col bg-[var(--code-bg)]">
+        <div className="h-11 bg-[var(--code-surface-soft)] border-b border-[var(--code-border)] flex items-end overflow-hidden">
+          <div className="h-full px-2 border-r border-[var(--code-border)] flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+              aria-label="Back"
+              title="Back"
+            >
+              <ArrowLeft size={17} />
+            </button>
+            <button
+              type="button"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-[var(--code-text-faint)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text-muted)]"
+              aria-label="Forward"
+              title="Forward"
+            >
+              <ArrowRight size={17} />
+            </button>
+          </div>
+
+          <div className="flex-1 min-w-0 flex overflow-x-auto">
+            {openFiles.length > 0 ? (
+              openFiles.map((file) => {
+                const isActive = file.id === activeFileId;
+
+                return (
+                  <div
+                    key={file.id}
+                    className={`h-11 min-w-[148px] max-w-[240px] px-3 border-r border-[var(--code-border)] flex items-center gap-2 text-sm transition-colors ${
+                      isActive
+                        ? 'bg-[var(--code-bg)] text-[var(--code-text)]'
+                        : 'bg-[var(--code-surface-soft)] text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveFileId(file.id);
+                        setCursor({ line: 1, col: 1 });
+                        setEditorScroll({ top: 0, left: 0 });
+                      }}
+                      className="min-w-0 flex-1 h-full flex items-center gap-2 text-left"
+                    >
+                      <FileCode2 size={15} className={isActive ? 'text-[var(--code-accent-strong)]' : 'text-[var(--code-text-faint)]'} />
+                      <span className="truncate">{file.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => closeFile(file.id, e)}
+                      className="ml-auto w-5 h-5 rounded flex items-center justify-center text-[var(--code-text-faint)] transition-colors hover:bg-[var(--code-tree-active)] hover:text-[var(--code-text)]"
+                      aria-label={`Close ${file.name}`}
+                      title={`Close ${file.name}`}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="h-11 px-4 flex items-center text-sm text-[var(--code-text-faint)]">No file open</div>
+            )}
+          </div>
+        </div>
+
+        {activeFile && (
+          <div className="h-10 px-5 text-sm border-b border-[var(--code-border-soft)] bg-[var(--code-bg)] flex items-center gap-2 overflow-hidden">
+            {pathParts.map((part, index) => {
+              const isLast = index === pathParts.length - 1;
+              return (
+                <span key={`${part}-${index}`} className="flex items-center gap-2 min-w-0">
+                  <span className={isLast ? 'text-[var(--code-text)] truncate' : 'text-[var(--code-text-muted)] truncate'}>
+                    {part}
+                  </span>
+                  {!isLast && <ChevronRight size={14} className="text-[var(--code-text-faint)] shrink-0" />}
                 </span>
-              </button>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        <div className="h-6 px-4 text-xs text-[var(--text-muted)] border-b border-[var(--border)] bg-[var(--background)] flex items-center gap-2">
-          <span className="hover:text-[var(--text)] cursor-pointer">go-server</span>
-          <span>›</span>
-          <span className="hover:text-[var(--text)] cursor-pointer">src</span>
-          <span>›</span>
-          <span className="text-[var(--text)]">{activeFile.name}</span>
-        </div>
+        {activeFile ? (
+          <div className="flex-1 min-h-0 flex overflow-hidden bg-[var(--code-bg)] font-mono text-[13px]">
+            <div
+              className="shrink-0 border-r border-[var(--code-border-soft)] bg-[var(--code-bg)] text-right text-[var(--code-text-faint)] overflow-hidden select-none"
+              style={{ width: EDITOR_GUTTER_WIDTH }}
+            >
+              <div
+                style={{
+                  paddingTop: EDITOR_PADDING_TOP,
+                  paddingLeft: EDITOR_GUTTER_PADDING_X,
+                  paddingRight: EDITOR_GUTTER_PADDING_X,
+                  transform: `translateY(${-editorScroll.top}px)`,
+                  lineHeight: `${LINE_HEIGHT}px`,
+                }}
+              >
+                {lines.map((line) => (
+                  <div
+                    key={line}
+                    className={`h-6 text-xs ${line === cursor.line ? 'text-[var(--code-accent-strong)]' : ''}`}
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        <div className="flex-1 min-h-0 flex overflow-hidden font-mono text-[13px] leading-6 bg-[var(--background)]">
-          <div ref={lineNumbersRef} className="w-12 shrink-0 border-r border-[var(--border)] bg-[var(--surface)] text-right pr-2 text-[var(--text-muted)] overflow-hidden select-none">
-            {lines.map((line) => (
-              <div key={line} className={`h-6 text-xs leading-6 ${line === cursor.line ? 'bg-[var(--accent)]/20 text-[var(--text)]' : ''}`}>{line}</div>
-            ))}
+            <div className="flex-1 min-w-0 relative overflow-hidden">
+              {activeLineTop > -LINE_HEIGHT && (
+                <div
+                  className="absolute left-0 right-0 h-6 bg-[var(--code-line-active)] pointer-events-none"
+                  style={{ top: activeLineTop }}
+                />
+              )}
+
+              <pre
+                className="absolute inset-0 z-10 p-0 m-0 overflow-hidden whitespace-pre pointer-events-none code-editor"
+                aria-hidden="true"
+              >
+                <code
+                  className="block"
+                  style={{
+                    paddingTop: EDITOR_PADDING_TOP,
+                    paddingLeft: EDITOR_CONTENT_PADDING_X,
+                    paddingRight: EDITOR_CONTENT_PADDING_X,
+                    tabSize: 2,
+                    lineHeight: `${LINE_HEIGHT}px`,
+                    transform: `translate(${-editorScroll.left}px, ${-editorScroll.top}px)`,
+                    fontFamily:
+                      'JetBrains Mono, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: highlightedCode + '\n' }}
+                />
+              </pre>
+
+              <textarea
+                key={activeFile.id}
+                ref={textAreaRef}
+                value={activeFile.content}
+                onChange={(e) => updateActiveFile(e.target.value, e.target.selectionStart)}
+                onSelect={(e) => {
+                  const target = e.currentTarget;
+                  setCursor(getCursorInfo(target.value, target.selectionStart));
+                }}
+                onClick={(e) => {
+                  const target = e.currentTarget;
+                  setCursor(getCursorInfo(target.value, target.selectionStart));
+                }}
+                onKeyUp={(e) => {
+                  const target = e.currentTarget;
+                  setCursor(getCursorInfo(target.value, target.selectionStart));
+                }}
+                onScroll={(e) => {
+                  const target = e.currentTarget;
+                  setEditorScroll({ top: target.scrollTop, left: target.scrollLeft });
+                }}
+                spellCheck={false}
+                className="absolute inset-0 z-20 w-full h-full resize-none border-0 outline-none bg-transparent text-transparent caret-[var(--code-text)] selection:bg-[var(--code-selection)] selection:text-transparent overflow-auto whitespace-pre"
+                style={{
+                  paddingTop: EDITOR_PADDING_TOP,
+                  paddingLeft: EDITOR_CONTENT_PADDING_X,
+                  paddingRight: EDITOR_CONTENT_PADDING_X,
+                  tabSize: 2,
+                  lineHeight: `${LINE_HEIGHT}px`,
+                  fontFamily:
+                    'JetBrains Mono, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace',
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 bg-[var(--code-bg)] flex items-center justify-center text-[var(--code-text-muted)]">
+            <div className="flex flex-col items-center gap-3">
+              <FileCode2 size={42} strokeWidth={1.4} className="text-[var(--code-text-faint)]" />
+              <p className="text-sm">Open a file from the project tree</p>
+            </div>
+          </div>
+        )}
+
+        <div className="h-7 bg-[var(--code-surface-muted)] border-t border-[var(--code-border)] text-[12px] text-[var(--code-text-muted)] px-3 flex items-center justify-between">
+          <div className="min-w-0 flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-[var(--code-text)]">
+              <GitBranch size={14} />
+              main
+            </span>
+            {activeFile && (
+              <span className="hidden sm:inline truncate text-[var(--code-text-faint)]">{activeFile.path}</span>
+            )}
           </div>
 
-          <div className="flex-1 relative overflow-hidden">
-            <pre
-              className="absolute inset-0 p-0 px-4 py-0 m-0 overflow-auto whitespace-pre pointer-events-none code-editor"
-              style={{ tabSize: 2 }}
-              dangerouslySetInnerHTML={{ __html: highlightedCode + '\n' }}
-            />
-            <textarea
-              ref={textAreaRef}
-              value={activeFile.content}
-              onChange={(e) => updateActiveFile(e.target.value, e.target.selectionStart)}
-              onSelect={(e) => {
-                const target = e.currentTarget;
-                setCursor(getCursorInfo(target.value, target.selectionStart));
-              }}
-              onClick={(e) => {
-                const target = e.currentTarget;
-                setCursor(getCursorInfo(target.value, target.selectionStart));
-              }}
-              onKeyUp={(e) => {
-                const target = e.currentTarget;
-                setCursor(getCursorInfo(target.value, target.selectionStart));
-              }}
-              onScroll={(e) => {
-                const target = e.currentTarget;
-                const pre = target.previousElementSibling as HTMLElement;
-                if (pre) {
-                  pre.scrollTop = target.scrollTop;
-                }
-                if (lineNumbersRef.current) {
-                  lineNumbersRef.current.scrollTop = target.scrollTop;
-                }
-              }}
-              spellCheck={false}
-              className="absolute inset-0 w-full h-full resize-none border-0 outline-none bg-transparent text-transparent caret-[var(--text)] p-0 px-4 py-0 whitespace-pre"
-              style={{ tabSize: 2 }}
-            />
-          </div>
+          {activeFile && (
+            <div className="flex items-center gap-3 shrink-0">
+              <span>Ln {cursor.line}, Col {cursor.col}</span>
+              <span>Spaces: 2</span>
+              <span>UTF-8</span>
+              <span>{activeFile.language}</span>
+            </div>
+          )}
         </div>
-
-        <div className="h-6 bg-[var(--accent)] text-white px-3 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span>main</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span>Ln {cursor.line}, Col {cursor.col}</span>
-            <span>Spaces: 2</span>
-            <span>UTF-8</span>
-            <span>{activeFile.language}</span>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
