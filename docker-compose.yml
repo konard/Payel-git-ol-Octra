@@ -37,22 +37,26 @@ services:
       retries: 5
     restart: unless-stopped
 
-  boss:
+  # nodes — единый процесс с boss + manager + worker внутри.
+  # Раньше это были три отдельных gRPC-сервиса; теперь все вызовы
+  # между ролями идут напрямую через Go, без gRPC.
+  nodes:
     build:
       context: .
-      dockerfile: ./boss/Dockerfile
-    container_name: crewai-boss
+      dockerfile: ./nodes/Dockerfile
+    container_name: crewai-nodes
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - AGENTS_SERVICE_HOST=agents:50053
-      - MANAGER_SERVICE_HOST=manager:50052
-      - MERGER_SERVICE_HOST=merger:50054
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
+      - WORKER_MODE=multypass
+      - PROJECTS_DIR=/workspace/projects
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
-      - GIT_USER_NAME=CrewAI Boss
-       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GIT_USER_NAME=CrewAI Nodes
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - NODES_GRPC_PORT=50051
     ports:
       - "50051:50051"
     volumes:
@@ -64,57 +68,6 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-    networks:
-      - crewai-network
-    restart: unless-stopped
-
-  manager:
-    build:
-      context: .
-      dockerfile: ./manager/Dockerfile
-    container_name: crewai-manager
-    environment:
-      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
-      - AGENTS_SERVICE_HOST=agents:50053
-      - WORKER_SERVICE_HOST=worker:50053
-    ports:
-      - "50052:50052"
-    volumes:
-      - ./projects:/workspace/projects
-    depends_on:
-      postgres:
-        condition: service_healthy
-      boss:
-        condition: service_started
-      agents:
-        condition: service_started
-    networks:
-      - crewai-network
-    restart: unless-stopped
-
-  worker:
-    build:
-      context: .
-      dockerfile: ./worker/Dockerfile
-    container_name: crewai-worker
-    environment:
-      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
-      - AGENTS_SERVICE_HOST=agents:50053
-      - REDIS_URL=redis://redis:6379/0
-      - REDIS_ENABLED=true
-      - WORKER_MODE=multypass
-      - PROJECTS_DIR=/workspace/projects
-    depends_on:
-      postgres:
-        condition: service_healthy
-      manager:
-        condition: service_started
-      agents:
-        condition: service_started
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./projects:/workspace/projects
     networks:
       - crewai-network
     restart: unless-stopped
@@ -140,7 +93,7 @@ services:
       dockerfile: Dockerfile
     container_name: crewai-apigateway
     environment:
-      - BOSS_SERVICE_HOST=boss:50051
+      - BOSS_SERVICE_HOST=nodes:50051
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
@@ -154,7 +107,7 @@ services:
     ports:
       - "3111:3111"
     depends_on:
-      boss:
+      nodes:
         condition: service_started
       agents:
         condition: service_started

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"apigateway/internal/core/ratelimit"
@@ -21,7 +22,6 @@ import (
 	"github.com/gorilla/websocket"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
 )
 
 var bossClient *boss.Client
@@ -59,7 +59,10 @@ func PingWriter(conn *websocket.Conn, done <-chan struct{}) {
 
 func init() {
 	var err error
-	bossHost := "boss:50051"
+	bossHost := os.Getenv("BOSS_SERVICE_HOST")
+	if bossHost == "" {
+		bossHost = "nodes:50051"
+	}
 	bossClient, err = boss.NewClient(bossHost)
 	if err != nil {
 		log.Printf("Warning: failed to connect to Boss service: %v", err)
