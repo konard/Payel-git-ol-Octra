@@ -37,6 +37,9 @@ interface EditorFile {
 
 const LINE_HEIGHT = 24;
 const EDITOR_PADDING_TOP = 16;
+const EDITOR_GUTTER_WIDTH = 48;
+const EDITOR_GUTTER_PADDING_X = 8;
+const EDITOR_CONTENT_PADDING_X = 12;
 
 const CODE_VIEW_THEME = {
   '--code-bg': 'var(--background)',
@@ -525,11 +528,15 @@ export function CodeViewer() {
 
         {activeFile ? (
           <div className="flex-1 min-h-0 flex overflow-hidden bg-[var(--code-bg)] font-mono text-[13px]">
-            <div className="w-[62px] shrink-0 border-r border-[var(--code-border-soft)] bg-[var(--code-bg)] text-right text-[var(--code-text-faint)] overflow-hidden select-none">
+            <div
+              className="shrink-0 border-r border-[var(--code-border-soft)] bg-[var(--code-bg)] text-right text-[var(--code-text-faint)] overflow-hidden select-none"
+              style={{ width: EDITOR_GUTTER_WIDTH }}
+            >
               <div
-                className="px-3"
                 style={{
                   paddingTop: EDITOR_PADDING_TOP,
+                  paddingLeft: EDITOR_GUTTER_PADDING_X,
+                  paddingRight: EDITOR_GUTTER_PADDING_X,
                   transform: `translateY(${-editorScroll.top}px)`,
                   lineHeight: `${LINE_HEIGHT}px`,
                 }}
@@ -558,9 +565,11 @@ export function CodeViewer() {
                 aria-hidden="true"
               >
                 <code
-                  className="block px-6"
+                  className="block"
                   style={{
                     paddingTop: EDITOR_PADDING_TOP,
+                    paddingLeft: EDITOR_CONTENT_PADDING_X,
+                    paddingRight: EDITOR_CONTENT_PADDING_X,
                     tabSize: 2,
                     lineHeight: `${LINE_HEIGHT}px`,
                     transform: `translate(${-editorScroll.left}px, ${-editorScroll.top}px)`,
@@ -593,9 +602,11 @@ export function CodeViewer() {
                   setEditorScroll({ top: target.scrollTop, left: target.scrollLeft });
                 }}
                 spellCheck={false}
-                className="absolute inset-0 z-20 w-full h-full resize-none border-0 outline-none bg-transparent text-transparent caret-[var(--code-text)] px-6 selection:bg-[var(--code-selection)] selection:text-transparent overflow-auto whitespace-pre"
+                className="absolute inset-0 z-20 w-full h-full resize-none border-0 outline-none bg-transparent text-transparent caret-[var(--code-text)] selection:bg-[var(--code-selection)] selection:text-transparent overflow-auto whitespace-pre"
                 style={{
                   paddingTop: EDITOR_PADDING_TOP,
+                  paddingLeft: EDITOR_CONTENT_PADDING_X,
+                  paddingRight: EDITOR_CONTENT_PADDING_X,
                   tabSize: 2,
                   lineHeight: `${LINE_HEIGHT}px`,
                   fontFamily:
