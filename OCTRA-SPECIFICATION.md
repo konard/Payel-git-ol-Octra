@@ -58,13 +58,21 @@ This tells the server to restore the task state from Redis and continue streamin
 
 ### Outgoing messages
 
-**Create task**:
+**Create task** (правильный формат):
 ```json
 {
-  "title": "Build REST API",
-  "description": "Create a Go API with auth",
-  "tokens": { "openai": "sk-..." },
-  "meta": { "provider": "openai", "model": "gpt-4o-mini" }
+  "username": "",
+  "user_id": "",
+  "title": "Need a mini proxy in Go without frontend and tests",
+  "description": "Need a mini proxy in Go without frontend and tests",
+  "meta": {
+    "model": "your-model",
+    "provider": "provider"
+  },
+  "tokens": {
+    "provider": "your-api-key",
+    "base_url": "https://api.example.com/v1"
+  }
 }
 ```
 

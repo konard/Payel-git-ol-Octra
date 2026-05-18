@@ -17,7 +17,14 @@ loop do
     if task_id
       ws.send({type: "resume", taskId: task_id}.to_json)
     else
-      ws.send({type: "create", title: "Crystal Task"}.to_json)
+      ws.send({
+        username: "CrystalClient",
+        user_id: "00000000-0000-0000-0000-000000000007",
+        title: "Crystal Task",
+        description: "Test from Crystal",
+        meta: { model: "your-model", provider: "provider" },
+        tokens: { provider: "your-api-key" }
+      }.to_json)
     end
 
     ws.on_message do |message|

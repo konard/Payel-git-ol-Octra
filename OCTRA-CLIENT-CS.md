@@ -28,7 +28,7 @@ class OctraClient
                 if (!string.IsNullOrEmpty(taskId))
                     await SendAsync(ws, $"{{\"type\":\"resume\",\"taskId\":\"{taskId}\"}}");
                 else
-                    await SendAsync(ws, "{\"type\":\"create\",\"title\":\"C# Task\"}");
+                    await SendAsync(ws, "{\"username\":\"CSharpClient\",\"user_id\":\"00000000-0000-0000-0000-000000000005\",\"title\":\"C# Task\",\"description\":\"Test from C#\",\"meta\":{\"model\":\"your-model\",\"provider\":\"provider\"},\"tokens\":{\"provider\":\"your-api-key\"}}");
 
                 var buffer = new byte[4096];
                 while (ws.State == WebSocketState.Open)

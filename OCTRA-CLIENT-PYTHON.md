@@ -19,8 +19,12 @@ async def run_client():
                     await ws.send(json.dumps({"type": "resume", "taskId": task_id}))
                 else:
                     await ws.send(json.dumps({
-                        "type": "create",
-                        "title": "Python client task"
+                        "username": "PythonClient",
+                        "user_id": "00000000-0000-0000-0000-000000000001",
+                        "title": "Python client task",
+                        "description": "Test task from Python",
+                        "meta": {"model": "your-model", "provider": "provider"},
+                        "tokens": {"provider": "your-api-key"}
                     }))
 
                 async for message in ws:

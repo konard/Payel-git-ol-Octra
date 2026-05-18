@@ -28,9 +28,13 @@ func main() {
 		if taskID != "" {
 			conn.WriteJSON(map[string]string{"type": "resume", "taskId": taskID})
 		} else {
-			conn.WriteJSON(map[string]string{
-				"type":  "create",
-				"title": "Go client task",
+			conn.WriteJSON(map[string]interface{}{
+				"username":    "GoClient",
+				"user_id":     "00000000-0000-0000-0000-000000000003",
+				"title":       "Go client task",
+				"description": "Test from Go",
+				"meta":        map[string]string{"model": "your-model", "provider": "provider"},
+				"tokens":      map[string]string{"provider": "your-api-key"},
 			})
 		}
 

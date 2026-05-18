@@ -32,7 +32,14 @@ function connect() {
     if (taskId) {
       ws.send(JSON.stringify({ type: 'resume', taskId }));
     } else {
-      ws.send(JSON.stringify({ type: 'create', title: 'TS Task' }));
+      ws.send(JSON.stringify({
+        username: "TSClient",
+        user_id: "00000000-0000-0000-0000-000000000002",
+        title: "TS Task",
+        description: "Test from TypeScript",
+        meta: { model: "your-model", provider: "provider" },
+        tokens: { provider: "your-api-key" }
+      }));
     }
   });
 

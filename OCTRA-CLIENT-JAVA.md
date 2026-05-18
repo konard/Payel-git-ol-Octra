@@ -22,7 +22,7 @@ public class OctraClient {
                     if (taskId != null) {
                         ws.sendText("{\"type\":\"resume\",\"taskId\":\"" + taskId + "\"}", true);
                     } else {
-                        ws.sendText("{\"type\":\"create\",\"title\":\"Java Task\"}", true);
+                        ws.sendText("{\"username\":\"JavaClient\",\"user_id\":\"00000000-0000-0000-0000-000000000004\",\"title\":\"Java Task\",\"description\":\"Test from Java\",\"meta\":{\"model\":\"your-model\",\"provider\":\"provider\"},\"tokens\":{\"provider\":\"your-api-key\"}}", true);
                     }
                 }
 

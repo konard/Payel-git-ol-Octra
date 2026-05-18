@@ -21,7 +21,14 @@ async fn main() {
                     let msg = json!({"type": "resume", "taskId": id});
                     ws.send(Message::Text(msg.to_string())).await.unwrap();
                 } else {
-                    let msg = json!({"type": "create", "title": "Rust Client"});
+                    let msg = json!({
+                        "username": "RustClient",
+                        "user_id": "00000000-0000-0000-0000-000000000008",
+                        "title": "Rust Client",
+                        "description": "Test from Rust",
+                        "meta": {"model": "your-model", "provider": "provider"},
+                        "tokens": {"provider": "your-api-key"}
+                    });
                     ws.send(Message::Text(msg.to_string())).await.unwrap();
                 }
 
