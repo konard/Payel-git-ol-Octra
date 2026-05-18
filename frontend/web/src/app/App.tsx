@@ -44,7 +44,7 @@ export default function App() {
   const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
 
   const { language, changeLanguage } = useI18n();
-  const { isAuthenticated, hasSubscription, checkAuth, setSubscription } = useAuthStore();
+  const { isAuthenticated, hasSubscription, isInTrial, checkAuth, setSubscription } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
 
   // Определяем, показывать лендинг или приложение
@@ -160,7 +160,10 @@ export default function App() {
   };
 
   const handleCreateTask = async (data: TaskData) => {
-    if (!hasSubscription) {
+    const { hasSubscription, isInTrial } = useAuthStore.getState();
+
+    // Allow usage during 14-day trial or with active subscription
+    if (!hasSubscription && !isInTrial) {
       setShowSubscriptionModal(true);
       return;
     }
@@ -410,7 +413,7 @@ export default function App() {
         />
       )}
 
-      {showSubscriptionModal && isAuthenticated && !hasSubscription && (
+      {showSubscriptionModal && isAuthenticated && !hasSubscription && !isInTrial && (
         <SubscriptionModal
           onClose={() => setShowSubscriptionModal(false)}
           onSubscribe={async () => {

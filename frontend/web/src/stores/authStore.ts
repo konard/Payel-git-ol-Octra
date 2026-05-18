@@ -13,6 +13,17 @@ import {
   type User,
 } from '../services/authService';
 
+// 14-day trial period
+const TRIAL_DAYS = 14;
+
+function isUserInTrial(createdAt?: string): boolean {
+  if (!createdAt) return false;
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const trialEnd = new Date(createdDate.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  return now < trialEnd;
+}
+
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
@@ -46,6 +57,7 @@ interface AuthState {
   isAuthenticated: boolean;
   hasSubscription: boolean;
   subscriptionEnd: number | null;
+  isInTrial: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -65,6 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: !!getStoredAccessToken(),
   hasSubscription: false,
   subscriptionEnd: null,
+  isInTrial: false,
   isLoading: false,
   error: null,
 
@@ -79,6 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         refreshToken: response.data.refresh_token,
         isAuthenticated: true,
         hasSubscription: false,
+        isInTrial: true, // New users start in trial
         isLoading: false,
         error: null,
       });
@@ -88,6 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           hasSubscription: userResponse.data.has_subscription || false,
           subscriptionEnd: userResponse.data.subscription_end || null,
+          isInTrial: isUserInTrial(userResponse.data.created_at),
           user: { ...response.data.user, subscription_end: userResponse.data.subscription_end },
         });
       } catch {
@@ -113,6 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         refreshToken: response.data.refresh_token,
         isAuthenticated: true,
         hasSubscription: false,
+        isInTrial: false,
         isLoading: false,
         error: null,
       });
@@ -122,7 +138,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           hasSubscription: userResponse.data.has_subscription || false,
           subscriptionEnd: userResponse.data.subscription_end || null,
-          user: { ...response.data.user, subscription_end: userResponse.data.subscription_end },
+          isInTrial: isUserInTrial(userResponse.data.created_at),
+          isAuthenticated: true,
+          error: null,
         });
       } catch {
         // ignore - will check on next page load
@@ -219,6 +237,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
         hasSubscription: response.data.has_subscription || false,
         subscriptionEnd: response.data.subscription_end || null,
+        isInTrial: isUserInTrial(response.data.created_at),
         isAuthenticated: true,
         error: null,
       });
