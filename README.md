@@ -8,7 +8,7 @@ Octra is a modern web platform that automates software development using AI agen
 
 ## Architecture
 
-![Architecture Diagram](Untitled-2025-11-30-1925.svg)
+![Architecture Diagram](octra-arc.png)
 
 **Boss flow inside Nodes:**
 
