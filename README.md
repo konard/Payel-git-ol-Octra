@@ -9,36 +9,31 @@ Octra is a modern web platform that automates software development using AI agen
 ## Architecture
 
 ```
-┌─────────────┐      HTTP/WS     ┌─────────────┐      gRPC       ┌─────────────┐
-│   Frontend  │ ───────────────► │  Apigateway │ ──────────────► │    Boss     │
-│   (React)   │     :80          │   (proxy)   │   :3111         │  (port 50051)│
-└──────┬──────┘                  └──────┬──────┘                 └──────┬──────┘
-       │                                 │                               │
-       │                                 │                gRPC (PARALLEL)
-       │                                 │               ┌───────┴───────┐
-       │                                 ▼               ▼               ▼
-       │                        ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-       │                        │ User Service│  │  Manager #1 │  │  Manager #2 │
-       │                        │  (auth)     │  │  (port 50052)│  │  (port 50052)│
-       │                        │   :3112     │  └──────┬──────┘  └──────┬──────┘
-       │                        └─────────────┘         │                 │
-       │                                                 │                 │
-       │                                       gRPC (SEQUENTIAL)          │
-       │                                                 ▼                 ▼
-       │                                  ┌─────────────┐  ┌─────────────┐
-       │                                  │   Worker(s) │  │   Worker(s) │
-       │                                  │  (port 50053)│  │  (port 50053)│
-       │                                  └──────┬──────┘  └──────┬──────┘
-       │                                         │                 │
-       │                                         ▼                 ▼
-       │                                  ┌─────────────┐  ┌─────────────┐
-       │                                  │   Agents    │  │   Agents    │
-       │                                  │  (port 50053)│  │  (port 50053)│
-       └─────────────────────────────────────────────────┼─────────────────┘
-                                                         │
-                                               LLM API (OpenRouter, Gemini,
-                                               OpenAI, Claude, DeepSeek, Grok)
+┌─────────────┐     HTTP/WS      ┌─────────────┐      gRPC       ┌─────────────┐
+│  Frontend   │ ───────────────► │  Apigateway │ ──────────────► │    Nodes    │
+│   (React)   │     :80          │   (proxy)   │   :3111         │  (Boss+     │
+└──────┬──────┘                  └──────┬──────┘                 │ Manager+    │
+       │                                │                        │ Worker)     │
+       │                                ▼                        └──────┬──────┘
+       │                         ┌─────────────┐                       │
+       │                         │ User Service│                       │
+       │                         │  (auth)     │                       │
+       │                         │   :3112     │                       ▼
+       │                         └─────────────┘                ┌─────────────┐
+       │                                                        │  Grademodel │
+       │                                                        │ (HTTP:50055)│
+       └────────────────────────────────────────────────────────┼─────────────┘
+                                                                │
+                                                      LLM API (OpenRouter, Gemini,
+                                                      OpenAI, Claude, DeepSeek, Grok)
 ```
+
+**Nodes** — единый процесс, внутри которого работают:
+- **Boss** — планирование архитектуры и координация
+- **Manager(s)** — найм и управление Worker'ами (параллельно)
+- **Worker(s)** — генерация кода и работа с файлами
+
+Grademodel вызывается по HTTP перед планированием Boss'а.
 
 ## What is Octra?
 
@@ -53,6 +48,7 @@ Octra revolutionizes software development by creating an AI-powered development 
 
 ## Key Features
 
+- **Task Complexity Grading** - Built-in grademodel (FastAPI) predicts task difficulty (1-10) before planning to optimize token usage
 - **Intelligent Project Planning** - AI analyzes requirements and selects optimal technology stacks and architectures
 - **Parallel Development Teams** - Multiple AI agents work simultaneously on different project components
 - **Iterative Code Review** - Automated code validation and improvement cycles
@@ -137,10 +133,13 @@ crewai/
 │   ├── cmd/app/
 │   ├── internal/
 │   └── pkg/
-├── boss/                # Boss agent (coordinator)
-├── manager/             # Manager agents
-├── worker/              # Worker agents
-├── agents/              # LLM providers
+├── nodes/               # All nodes consolidated here
+│   ├── internal/service/rules/
+│   │   ├── boss/        # Boss logic + planning + GitHub push
+│   │   ├── manager/     # Manager agents
+│   │   └── worker/      # Worker agents
+│   └── ...
+├── agents/              # LLM providers (external gRPC)
 ├── docker-compose.yml   # Docker configuration
 ├── go.work             # Go workspace
 └── .env.example        # Environment variables example
@@ -187,6 +186,10 @@ crewai/
 - TaskID, ManagerID, Role, Status
 - TaskMD, SolutionMD
 - Files (JSON), Success, Approved, Feedback
+
+### Context Storage
+- Projects are created locally under `projects/{taskID}/{title}/`
+- Agent context is stored in `.octra/context.json` (replaces legacy .crewai)
 
 ## Development
 
