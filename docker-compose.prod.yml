@@ -149,7 +149,7 @@ services:
       dockerfile: Dockerfile
     container_name: octra-frontend
     ports:
-      - "80:80"
+      - "70:80"
     depends_on:
       user:
         condition: service_started
