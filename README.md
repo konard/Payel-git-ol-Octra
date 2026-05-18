@@ -8,32 +8,23 @@ Octra is a modern web platform that automates software development using AI agen
 
 ## Architecture
 
-```
-┌─────────────┐     HTTP/WS      ┌─────────────┐      gRPC       ┌─────────────┐
-│  Frontend   │ ───────────────► │  Apigateway │ ──────────────► │    Nodes    │
-│   (React)   │     :80          │   (proxy)   │   :3111         │  (Boss+     │
-└──────┬──────┘                  └──────┬──────┘                 │ Manager+    │
-       │                                │                        │ Worker)     │
-       │                                ▼                        └──────┬──────┘
-       │                         ┌─────────────┐                       │
-       │                         │ User Service│                       │
-       │                         │  (auth)     │                       │
-       │                         │   :3112     │                       ▼
-       │                         └─────────────┘                ┌─────────────┐
-       │                                                        │  Grademodel │
-       │                                                        │ (HTTP:50055)│
-       └────────────────────────────────────────────────────────┼─────────────┘
-                                                                │
-                                                      LLM API (OpenRouter, Gemini,
-                                                      OpenAI, Claude, DeepSeek, Grok)
-```
+![Architecture Diagram](Untitled-2025-11-30-1925.svg)
 
-**Nodes** — единый процесс, внутри которого работают:
-- **Boss** — планирование архитектуры и координация
-- **Manager(s)** — найм и управление Worker'ами (параллельно)
-- **Worker(s)** — генерация кода и работа с файлами
+**Boss flow inside Nodes:**
 
-Grademodel вызывается по HTTP перед планированием Boss'а.
+1. Task received from Apigateway
+2. **Boss calls Grademodel once** (`POST /grade`) → gets complexity score (1-10)
+3. **Boss calls Agents** (gRPC) with grade included in the prompt
+4. Agents routes the request to the selected LLM provider
+5. Managers and Workers run in parallel
+6. Final result pushed to GitHub (if token configured)
+
+**Nodes** is a single process that contains:
+- **Boss** — architecture planning and coordination
+- **Manager(s)** — hiring and managing Workers (in parallel)
+- **Worker(s)** — code generation and file operations
+
+Grademodel is called **only once** before the first LLM request from Boss.
 
 ## What is Octra?
 
