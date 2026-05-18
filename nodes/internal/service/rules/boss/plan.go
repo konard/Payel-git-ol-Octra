@@ -18,7 +18,7 @@ func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, re
 		{provider, model},
 		{"openai", "gpt-4o-mini"},
 		{"anthropic", "claude-3-haiku-20240307"},
-		{"google", "gemini-pro"},
+		{"gemini", "gemini-pro"},
 	}
 
 	var lastErr error

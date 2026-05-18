@@ -16,7 +16,7 @@ COPY agents/proto ./agents/proto
 COPY agents/pb ./agents/pb
 
 # Копируем nodes (boss + manager + worker в одном процессе)
-COPY nodes/go.mod nodes/go.sum ./nodes/
+COPY nodes/go.mod ./nodes/
 COPY nodes/internal ./nodes/internal
 COPY nodes/pkg ./nodes/pkg
 COPY nodes/cmd ./nodes/cmd
@@ -25,7 +25,7 @@ COPY nodes/proto ./nodes/proto
 RUN cd agents && go mod download
 RUN cd nodes && go mod download
 
-RUN cd nodes && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/nodes ./cmd/app
+RUN cd nodes && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/nodes-bin ./cmd/app
 
 FROM alpine:latest
 
@@ -37,6 +37,6 @@ RUN git config --global user.email "${GIT_USER_EMAIL:-nodes@crewai.local}" && \
     git config --global user.name "${GIT_USER_NAME:-CrewAI Nodes}" && \
     git config --global credential.helper store
 
-COPY --from=builder /workspace/nodes .
+COPY --from=builder /workspace/nodes-bin ./nodes
 
 CMD ["./nodes"]

@@ -212,8 +212,11 @@ func extractAPIKey(tokens map[string]interface{}) string {
 			}
 		}
 	}
-	// Fallback: first string value
-	for _, v := range tokens {
+	// Fallback: first string value (skip base_url and model)
+	for k, v := range tokens {
+		if k == "base_url" || k == "model" {
+			continue
+		}
 		if s, ok := v.(string); ok && len(s) > 0 {
 			return s
 		}
