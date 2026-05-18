@@ -1,9 +1,12 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -24,15 +27,31 @@ func (c *Client) configureGit(dir string) error {
 
 // addRemote — добавляет origin remote, встраивая токен для авторизации
 func (c *Client) addRemote(dir, repoURL string) error {
-	if strings.HasPrefix(repoURL, "https://") {
-		parts := strings.Split(repoURL, "https://")
-		if len(parts) == 2 {
-			repoURL = "https://" + c.token + "@" + parts[1]
-		}
-	}
+	repoURL = c.authenticatedGitURL(repoURL)
 	cmd := exec.Command("git", "remote", "add", "origin", repoURL)
 	cmd.Dir = dir
 	return cmd.Run()
+}
+
+// CloneRepository — клонирует репозиторий issue-задачи в рабочую директорию.
+func (c *Client) CloneRepository(ctx context.Context, owner, repo, dir string) (*RepositoryResponse, error) {
+	repository, err := c.GetRepository(ctx, owner, repo)
+	if err != nil {
+		return nil, err
+	}
+	cloneURL := repository.CloneURL
+	if cloneURL == "" {
+		cloneURL = fmt.Sprintf("https://github.com/%s/%s.git", owner, repo)
+	}
+	if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create project parent dir: %w", err)
+	}
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", c.authenticatedGitURL(cloneURL), dir)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("git clone failed: %w - %s", err, c.sanitize(string(out)))
+	}
+	return repository, nil
 }
 
 // gitAdd — выполняет git add . с подробным логированием
@@ -142,5 +161,21 @@ func (c *Client) gitPush(dir string) error {
 		return fmt.Errorf("git push failed: %w - %s", err, string(out))
 	}
 	log.Printf("git push output: %s", string(out))
+	return nil
+}
+
+// PushBranch — пушит указанную ветку в origin.
+func (c *Client) PushBranch(ctx context.Context, dir, branch string) error {
+	if branch == "" {
+		return fmt.Errorf("branch is required")
+	}
+	cmd := exec.CommandContext(ctx, "git", "push", "-u", "origin", branch)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("git push branch output: %s", c.sanitize(string(out)))
+		return fmt.Errorf("git push branch failed: %w - %s", err, c.sanitize(string(out)))
+	}
+	log.Printf("git push branch output: %s", c.sanitize(string(out)))
 	return nil
 }

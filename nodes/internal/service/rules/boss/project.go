@@ -1,18 +1,20 @@
 package boss
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
 	"nodes/internal/service/git"
+	gh "nodes/internal/service/github"
 	"nodes/internal/service/util"
 	"nodes/pkg/models"
 )
 
 // setupProject — создаёт workspace-директорию проекта и инициализирует git
-func (s *Service) setupProject(taskID, title string) (string, error) {
+func (s *Service) setupProject(ctx context.Context, taskID, title string, issueTarget *gh.IssueTarget) (string, error) {
 	projectsDir := os.Getenv("PROJECTS_DIR")
 	if projectsDir == "" {
 		projectsDir = "/workspace/projects"
@@ -32,6 +34,28 @@ func (s *Service) setupProject(taskID, title string) (string, error) {
 	if title != "" {
 		projectPath = filepath.Join(projectPath, util.SanitizeProjectName(title))
 	}
+
+	if issueTarget != nil && s.githubClient != nil {
+		if err := ensureCloneTarget(projectPath); err != nil {
+			return "", err
+		}
+		repository, err := s.githubClient.CloneRepository(ctx, issueTarget.Owner, issueTarget.Repo, projectPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to clone GitHub issue repository: %w", err)
+		}
+		issueTarget.BaseBranch = firstNonEmpty(repository.DefaultBranch, issueTarget.BaseBranch, "main")
+		issueTarget.RepositoryURL = firstNonEmpty(repository.HTMLURL, issueTarget.RepositoryURL)
+		if err := git.SetUser(projectPath, envOrDefault("GIT_USER_NAME", "CrewAI Bot"), envOrDefault("GIT_USER_EMAIL", "bot@crewai.local")); err != nil {
+			return "", fmt.Errorf("failed to configure git user: %w", err)
+		}
+		if err := git.CreateBranch(projectPath, issueTarget.BranchName); err != nil {
+			return "", fmt.Errorf("failed to create pull request branch: %w", err)
+		}
+		issueTarget.Cloned = true
+		log.Printf("GitHub issue repository cloned at: %s (branch %s)", projectPath, issueTarget.BranchName)
+		return projectPath, nil
+	}
+
 	if err := os.MkdirAll(projectPath, 0755); err != nil {
 		return "", fmt.Errorf("failed to create project dir: %w", err)
 	}
@@ -39,6 +63,18 @@ func (s *Service) setupProject(taskID, title string) (string, error) {
 		return "", fmt.Errorf("failed to init git: %w", err)
 	}
 	return projectPath, nil
+}
+
+func ensureCloneTarget(projectPath string) error {
+	if entries, err := os.ReadDir(projectPath); err == nil {
+		if len(entries) > 0 {
+			return fmt.Errorf("project dir already exists and is not empty: %s", projectPath)
+		}
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check project dir: %w", err)
+	}
+	return nil
 }
 
 // initGitRepo — инициализирует git-репозиторий с настройкой пользователя
@@ -58,10 +94,13 @@ func (s *Service) initGitRepo(repoPath string) error {
 	return nil
 }
 
-// mergeManagerBranches — сливает manager-{role} ветки в main
-func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRole) {
-	if err := git.CheckoutBranch(repoPath, "main"); err != nil {
-		log.Printf("Failed to checkout main: %v", err)
+// mergeManagerBranches — сливает manager-{role} ветки в итоговую ветку
+func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRole, targetBranch string) {
+	if targetBranch == "" {
+		targetBranch = "main"
+	}
+	if err := git.CheckoutBranch(repoPath, targetBranch); err != nil {
+		log.Printf("Failed to checkout %s: %v", targetBranch, err)
 		return
 	}
 	for _, role := range roles {
@@ -71,7 +110,7 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 			log.Printf("Failed to merge branch %s: %v", branchName, err)
 		}
 	}
-	log.Printf("Merged all manager branches into main")
+	log.Printf("Merged all manager branches into %s", targetBranch)
 }
 
 // cleanupProject — удаляет workspace-директорию после завершения задачи

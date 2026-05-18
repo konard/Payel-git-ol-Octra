@@ -1,16 +1,12 @@
 package boss
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"nodes/internal/service/rules"
 	"nodes/pkg/database"
@@ -26,6 +22,7 @@ import (
 func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progress rules.ProgressFunc) error {
 	taskID := uuid.New()
 	log.Printf("Received task from %s (user_id=%s): %s (task_id=%s)", req.Username, req.UserId, req.Title, taskID.String())
+	issueTarget := s.detectGitHubIssueTask(ctx, req, taskID.String())
 
 	task, err := s.persistTask(taskID, req)
 	if err != nil {
@@ -53,7 +50,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	})
 	s.saveBossDecision(task.ID, decision)
 
-	projectPath, err := s.setupProject(taskID.String(), req.Title)
+	projectPath, err := s.setupProject(ctx, taskID.String(), req.Title, issueTarget)
 	if err != nil {
 		task.Status = "error"
 		database.Db.Save(task)
@@ -61,6 +58,9 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return err
 	}
 	defer s.cleanupProject(projectPath)
+	if issueTarget != nil && issueTarget.Cloned {
+		appendRepositoryContext(decision, projectPath)
+	}
 
 	emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
 	managerResults, err := s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
@@ -77,7 +77,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return fmt.Errorf("no solution generated")
 	}
 
-	s.mergeManagerBranches(projectPath, decision.ManagerRoles)
+	integrationBranch := "main"
+	if issueTarget != nil && issueTarget.Cloned && issueTarget.BranchName != "" {
+		integrationBranch = issueTarget.BranchName
+	}
+	s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
 	emit(progress, 80, "Boss validating solution...", nil)
 	tokens := req.Tokens
 	if tokens == nil {
@@ -87,7 +91,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	s.validateSolution(ctx, provider, model, tokens, decision, managerResults)
 
 	emit(progress, 90, "Packaging project", nil)
-	repoURL := s.pushToGitHub(ctx, task, projectPath)
+	repoURL := s.pushToGitHub(ctx, task, projectPath, issueTarget)
 
 	task.Status = "done"
 	database.Db.Save(task)
@@ -98,6 +102,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL
+	}
+	if issueTarget != nil && repoURL != "" {
+		data["githubMode"] = "pull_request"
+		data["pullRequestUrl"] = repoURL
+		data["githubIssueUrl"] = issueTarget.IssueURL
 	}
 	emit(progress, 100, "Project ready! "+task.Title+" created successfully", data)
 	return nil
@@ -171,33 +180,4 @@ func errorData() map[string]string {
 func util_stack(stack []string) string {
 	b, _ := json.Marshal(stack)
 	return string(b)
-}
-
-// gradeTask calls the HTTP grader and returns complexity 1-10 (default 5 on error)
-func gradeTask(taskText string) int {
-	client := &http.Client{Timeout: 5 * time.Second}
-	body := map[string]string{"task": taskText}
-	b, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "http://octra-grader:50055/grade", bytes.NewReader(b))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return 5
-	}
-	defer resp.Body.Close()
-	var res struct {
-		Grade int `json:"grade"`
-	}
-	if json.NewDecoder(resp.Body).Decode(&res) == nil && res.Grade >= 1 && res.Grade <= 10 {
-		return res.Grade
-	}
-	// fallback: try to read raw int from body
-	raw, _ := io.ReadAll(resp.Body)
-	if len(raw) > 0 {
-		var g int
-		if _, err := fmt.Sscanf(string(raw), "%d", &g); err == nil && g >= 1 && g <= 10 {
-			return g
-		}
-	}
-	return 5
 }

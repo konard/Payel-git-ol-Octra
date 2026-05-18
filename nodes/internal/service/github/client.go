@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"nodes/pkg/models"
@@ -15,9 +16,11 @@ import (
 
 // Client — клиент GitHub: создаёт репозитории и пушит готовые проекты
 type Client struct {
-	token    string
-	username string
-	email    string
+	token      string
+	username   string
+	email      string
+	apiBaseURL string
+	httpClient *http.Client
 }
 
 // CreateRepoRequest — тело запроса для создания репозитория
@@ -35,10 +38,18 @@ type CreateRepoResponse struct {
 
 // NewClient — создаёт клиента GitHub с токеном и git-идентичностью
 func NewClient(token, username, email string) *Client {
+	if username == "" {
+		username = "Octra Bot"
+	}
+	if email == "" {
+		email = "bot@octra.local"
+	}
 	return &Client{
-		token:    token,
-		username: username,
-		email:    email,
+		token:      token,
+		username:   username,
+		email:      email,
+		apiBaseURL: "https://api.github.com",
+		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -50,37 +61,66 @@ func (c *Client) CreateRepository(ctx context.Context, task *models.Task) (strin
 		Description: fmt.Sprintf("CrewAI generated project for task: %s", task.Title),
 		Private:     false,
 	}
-	jsonData, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.github.com/user/repos", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "token "+c.token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to create repository: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
-	}
-
 	var repoResp CreateRepoResponse
-	if err := json.NewDecoder(resp.Body).Decode(&repoResp); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doJSON(ctx, "POST", "/user/repos", reqBody, &repoResp, http.StatusCreated); err != nil {
+		return "", fmt.Errorf("failed to create repository: %w", err)
 	}
 	log.Printf("Created GitHub repository: %s", repoResp.HTMLURL)
 	return repoResp.HTMLURL, nil
+}
+
+func (c *Client) doJSON(ctx context.Context, method, path string, body any, out any, expectedStatus int) error {
+	var reader io.Reader
+	if body != nil {
+		jsonData, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request: %w", err)
+		}
+		reader = bytes.NewReader(jsonData)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.apiURL(path), reader)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "token "+c.token)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	httpClient := c.httpClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != expectedStatus {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(responseBody))
+	}
+
+	if out == nil {
+		return nil
+	}
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) apiURL(path string) string {
+	base := strings.TrimRight(c.apiBaseURL, "/")
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return base + path
 }
 
 // PushToRepository — добавляет файлы, коммитит и пушит проект в GitHub
