@@ -97,7 +97,7 @@ func (p *OpenRouterProvider) Generate(ctx context.Context, prompt string, tokens
 	for attempt := 0; attempt < 3; attempt++ {
 		if attempt > 0 {
 			delay := time.Duration(attempt) * 2 * time.Second
-			log.Printf("OpenRouter retry %d/%3 after %v...", attempt, delay)
+			log.Printf("OpenRouter retry %d/3 after %v...", attempt, delay)
 			time.Sleep(delay)
 		}
 
