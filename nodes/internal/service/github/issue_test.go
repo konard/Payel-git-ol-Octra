@@ -67,6 +67,15 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 	}
 }
 
+func TestNewIssueBranchNameUsesTaskID(t *testing.T) {
+	taskID := "550e8400-e29b-41d4-a716-446655440000"
+	got := NewIssueBranchName(taskID)
+	want := "Issue-550e8400-e29b-41d4-a716-446655440000"
+	if got != want {
+		t.Fatalf("NewIssueBranchName() = %q, want %q", got, want)
+	}
+}
+
 func TestCreatePullRequestSendsExpectedPayload(t *testing.T) {
 	var gotAuth string
 	var gotReq PullRequestRequest
@@ -95,7 +104,7 @@ func TestCreatePullRequestSendsExpectedPayload(t *testing.T) {
 		Owner: "octra-labs",
 		Repo:  "demo",
 		Title: "Fix #7: Create pull request",
-		Head:  "octra/issue-7-abc12345",
+		Head:  "Issue-550e8400-e29b-41d4-a716-446655440000",
 		Base:  "main",
 		Body:  "Fixes octra-labs/demo#7",
 	})
@@ -112,7 +121,7 @@ func TestCreatePullRequestSendsExpectedPayload(t *testing.T) {
 		t.Fatalf("owner/repo must stay path-only, got request body %#v", gotReq)
 	}
 	if gotReq.Title != "Fix #7: Create pull request" ||
-		gotReq.Head != "octra/issue-7-abc12345" ||
+		gotReq.Head != "Issue-550e8400-e29b-41d4-a716-446655440000" ||
 		gotReq.Base != "main" ||
 		!strings.Contains(gotReq.Body, "Fixes octra-labs/demo#7") {
 		t.Fatalf("unexpected request body: %#v", gotReq)

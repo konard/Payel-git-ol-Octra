@@ -21,7 +21,7 @@ func (s *Service) detectGitHubIssueTask(ctx context.Context, req *CreateTaskRequ
 
 	target := &gh.IssueTarget{
 		IssueReference: *ref,
-		BranchName:     gh.NewIssueBranchName(ref.Number, taskID),
+		BranchName:     gh.NewIssueBranchName(taskID),
 		BaseBranch:     "main",
 		IssueURL:       ref.URL,
 	}

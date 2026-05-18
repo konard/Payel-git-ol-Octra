@@ -79,15 +79,12 @@ func ParseIssueReference(text string) (*IssueReference, bool) {
 	return ref, true
 }
 
-func NewIssueBranchName(issueNumber int, taskID string) string {
-	shortID := strings.ReplaceAll(taskID, "-", "")
-	if len(shortID) > 8 {
-		shortID = shortID[:8]
+func NewIssueBranchName(taskID string) string {
+	taskID = strings.TrimSpace(taskID)
+	if taskID == "" {
+		taskID = "task"
 	}
-	if shortID == "" {
-		shortID = "task"
-	}
-	return fmt.Sprintf("octra/issue-%d-%s", issueNumber, shortID)
+	return fmt.Sprintf("Issue-%s", taskID)
 }
 
 func (c *Client) GetIssue(ctx context.Context, owner, repo string, number int) (*IssueResponse, error) {
