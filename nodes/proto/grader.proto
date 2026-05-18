@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package grader;
+
+service Grader {
+    rpc GradeTask (GradeRequest) returns (GradeResponse);
+}
+
+message GradeRequest {
+    string task = 1;
+}
+
+message GradeResponse {
+    string task = 1;
+    string translated = 2;
+    int32 grade = 3;
+}
