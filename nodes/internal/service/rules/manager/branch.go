@@ -37,13 +37,13 @@ func mergeWorkerBranches(repoPath string, results []*rules.WorkerResult) {
 	}
 }
 
-// updateContextFile — добавляет решение менеджера в .crewai/context.json
+// updateContextFile — добавляет решение менеджера в .octra/context.json
 func updateContextFile(projectPath, taskID, role string, workerRoles []models.WorkerRole) {
 	if projectPath == "" {
 		return
 	}
-	crewaiDir := filepath.Join(projectPath, ".crewai")
-	contextPath := filepath.Join(crewaiDir, "context.json")
+	octraDir := filepath.Join(projectPath, ".octra")
+	contextPath := filepath.Join(octraDir, "context.json")
 	var contextData map[string]interface{}
 	if data, err := os.ReadFile(contextPath); err == nil {
 		json.Unmarshal(data, &contextData)
@@ -65,6 +65,6 @@ func updateContextFile(projectPath, taskID, role string, workerRoles []models.Wo
 	})
 	contextData["history"] = history
 	contextJSON, _ := json.MarshalIndent(contextData, "", "  ")
-	os.MkdirAll(crewaiDir, 0755)
+	os.MkdirAll(octraDir, 0755)
 	os.WriteFile(contextPath, contextJSON, 0644)
 }

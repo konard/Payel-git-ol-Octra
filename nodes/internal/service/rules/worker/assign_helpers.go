@@ -76,7 +76,7 @@ func buildContextSummary(other []*rules.WorkerResult) string {
 	return contextSummary
 }
 
-// writeContextFile — пишет .crewai/context.json для текущей задачи
+// writeContextFile — пишет .octra/context.json для текущей задачи
 func writeContextFile(basePath, taskID, managerID, managerRole string, workerRoles []*rules.WorkerRole, contextSummary string) {
 	contextData := map[string]interface{}{
 		"task_id": taskID,
@@ -89,7 +89,7 @@ func writeContextFile(basePath, taskID, managerID, managerRole string, workerRol
 		"history": []map[string]interface{}{},
 	}
 	contextJSON, _ := json.MarshalIndent(contextData, "", "  ")
-	crewaiDir := filepath.Join(basePath, ".crewai")
-	os.MkdirAll(crewaiDir, 0755)
-	os.WriteFile(filepath.Join(crewaiDir, "context.json"), contextJSON, 0644)
+	octraDir := filepath.Join(basePath, ".octra")
+	os.MkdirAll(octraDir, 0755)
+	os.WriteFile(filepath.Join(octraDir, "context.json"), contextJSON, 0644)
 }
