@@ -1,0 +1,150 @@
+package worker
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"nodes/internal/service/git"
+	"nodes/internal/service/rules"
+	"nodes/internal/service/util"
+	"nodes/pkg/database"
+	"nodes/pkg/models"
+
+	"github.com/google/uuid"
+)
+
+// runOneWorker — обработка одного воркера: TASK.md → код → файлы → коммит
+func (s *Service) runOneWorker(
+	ctx context.Context, req *rules.AssignWorkersRequest, wr *rules.WorkerRole,
+	meta workerMeta, basePath, accumulatedContext string,
+) (*rules.WorkerResult, error) {
+	role := wr.Role
+	description := wr.Description
+
+	workerID := uuid.New()
+	taskUUID, _ := uuid.Parse(req.TaskId)
+	managerUUID, _ := uuid.Parse(req.ManagerId)
+	workerModel := &models.Worker{
+		ID:        workerID,
+		TaskID:    taskUUID,
+		ManagerID: managerUUID,
+		Role:      role,
+		Status:    "thinking",
+		TaskMD:    req.TaskMd,
+	}
+	if err := database.Db.Create(workerModel).Error; err != nil {
+		log.Printf("Error creating worker: %v", err)
+		return nil, err
+	}
+
+	if req.ProjectPath != "" {
+		branchName := fmt.Sprintf("worker-%s", role)
+		if err := git.CreateBranch(req.ProjectPath, branchName); err != nil {
+			log.Printf("Failed to create worker branch %s: %v", branchName, err)
+		}
+	}
+
+	taskMD, err := s.createTaskMD(ctx, meta.provider, meta.model, meta.tokens, role, description, req.TaskMd, accumulatedContext)
+	if err != nil {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("worker think: %w", err)
+	}
+	workerModel.Status = "coding"
+	database.Db.Save(workerModel)
+
+	workerMode := os.Getenv("WORKER_MODE")
+	if workerMode == "" {
+		workerMode = "multypass"
+	}
+	var files map[string]string
+	var commands []string
+	if workerMode == "multypass" {
+		files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+	} else {
+		files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+	}
+	if err != nil {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("worker generate: %w", err)
+	}
+
+	if err := os.MkdirAll(basePath, 0755); err != nil {
+		log.Printf("Warning: failed to ensure project path %s: %v", basePath, err)
+	}
+	for _, cmd := range commands {
+		if cmd == "" {
+			continue
+		}
+		parts := strings.Fields(cmd)
+		if len(parts) == 0 {
+			continue
+		}
+		c := exec.Command(parts[0], parts[1:]...)
+		c.Dir = basePath
+		c.Run()
+	}
+	for path, content := range files {
+		fullPath, err := util.ValidateFilePath(basePath, path)
+		if err != nil {
+			log.Printf("Warning: path validation failed for %s: %v", path, err)
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			log.Printf("Warning: failed to create dir for %s: %v", path, err)
+			continue
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			log.Printf("Warning: failed to write file %s: %v", path, err)
+		}
+	}
+
+	isRepo, err := git.IsGitRepo(basePath)
+	if err != nil {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("git check at %s: %w", basePath, err)
+	}
+	if !isRepo {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("git repository not found at: %s", basePath)
+	}
+
+	commitMessage := fmt.Sprintf("Worker %s: %s", role, taskMD)
+	if err := git.Add(basePath); err != nil {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("git add: %w", err)
+	}
+	if err := git.Commit(basePath, commitMessage); err != nil {
+		workerModel.Status = "error"
+		database.Db.Save(workerModel)
+		return nil, fmt.Errorf("git commit: %w", err)
+	}
+
+	result := &rules.WorkerResult{
+		WorkerId:   workerID.String(),
+		Role:       role,
+		TaskMd:     taskMD,
+		SolutionMd: fmt.Sprintf("Generated %d files for role %s", len(files), role),
+		Files:      files,
+		Success:    true,
+		Commands:   commands,
+	}
+
+	workerModel.SolutionMD = result.SolutionMd
+	workerModel.Files = util.MarshalJSON(files)
+	workerModel.Status = "done"
+	workerModel.Success = true
+	database.Db.Save(workerModel)
+
+	log.Printf("Worker (%s) completed: %d files", role, len(files))
+	return result, nil
+}
