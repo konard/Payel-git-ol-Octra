@@ -3,7 +3,7 @@ Train multilingual grader on tasks.txt data
 """
 
 import argparse
-from grader import ComplexityGrader
+from grademodel.src.model.grader import ComplexityGrader
 
 def parse_tasks(filepath):
     tasks = []
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=100, help='Number of training epochs')
     args = parser.parse_args()
     
-    tasks = parse_tasks('tasks.txt')
+    tasks = parse_tasks('../../tasks.txt')
     print(f"Loaded {len(tasks)} tasks")
     
     texts = [t[0] for t in tasks]

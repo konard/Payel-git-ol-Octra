@@ -158,9 +158,9 @@ services:
     build:
       context: ./grademodel
       dockerfile: Dockerfile
-    container_name: crewai-grader
+    container_name: octra-grader
     ports:
-      - "50054:50054"
+      - "50055:50055"
     networks:
       - octra-network
     restart: unless-stopped

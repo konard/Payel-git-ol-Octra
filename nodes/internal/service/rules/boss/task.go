@@ -1,12 +1,16 @@
 package boss
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"nodes/internal/service/rules"
 	"nodes/pkg/database"
@@ -29,6 +33,9 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return err
 	}
 	emit(progress, 10, "Task saved to database", nil)
+
+	req.Grade = gradeTask(req.Title + "\n" + req.Description)
+	emit(progress, 12, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
 
 	provider, model := pickProviderModel(req.Meta)
 	emit(progress, 15, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
@@ -164,4 +171,33 @@ func errorData() map[string]string {
 func util_stack(stack []string) string {
 	b, _ := json.Marshal(stack)
 	return string(b)
+}
+
+// gradeTask calls the HTTP grader and returns complexity 1-10 (default 5 on error)
+func gradeTask(taskText string) int {
+	client := &http.Client{Timeout: 5 * time.Second}
+	body := map[string]string{"task": taskText}
+	b, _ := json.Marshal(body)
+	req, _ := http.NewRequest("POST", "http://octra-grader:50055/grade", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return 5
+	}
+	defer resp.Body.Close()
+	var res struct {
+		Grade int `json:"grade"`
+	}
+	if json.NewDecoder(resp.Body).Decode(&res) == nil && res.Grade >= 1 && res.Grade <= 10 {
+		return res.Grade
+	}
+	// fallback: try to read raw int from body
+	raw, _ := io.ReadAll(resp.Body)
+	if len(raw) > 0 {
+		var g int
+		if _, err := fmt.Sscanf(string(raw), "%d", &g); err == nil && g >= 1 && g <= 10 {
+			return g
+		}
+	}
+	return 5
 }

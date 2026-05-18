@@ -47,7 +47,7 @@ func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, re
 
 // thinkOnce — один запрос к AI для планирования архитектуры
 func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *CreateTaskRequest) (*DecisionResult, error) {
-	prompt := prompts.PlanArchitecture(req.Title, req.Description)
+	prompt := prompts.PlanArchitecture(req.Title, req.Description, req.Grade)
 
 	tokens := req.Tokens
 	if tokens == nil {

@@ -1,16 +1,14 @@
 package prompts
 
+import "fmt"
+
 // PlanArchitecture — промпт для босса: спланировать архитектуру задачи
-func PlanArchitecture(title, desc string) string {
+func PlanArchitecture(title, desc string, grade int) string {
 	return `You are CTO. Analyze the task and decide what manager roles are needed.
 
 Title: ` + title + `
 Description: ` + desc + `
-
-Grade the task complexity from 1 to 100:
-- 1-20: Simple (single file, CLI, mini proxy)
-- 21-40: Medium (API with few endpoints)
-- 41-60: Complex (full system)
+MODEL GRADED COMPLEXITY: ` + fmt.Sprintf("%d/10", grade) + ` (higher = more complex)
 
 IMPORTANT:
 - Choose tech_stack based on user description ONLY
@@ -21,7 +19,7 @@ IMPORTANT:
 
 Reply ONLY with JSON:
 {
-  "grade_weight": 10,
+  "grade_weight": ` + fmt.Sprintf("%d", grade*10) + `,
   "managers_count": 1,
   "manager_roles": [{"role": "backend", "description": "Backend development", "priority": 1}],
   "tech_stack": ["CHOOSE_FROM_DESCRIPTION"],

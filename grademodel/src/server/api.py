@@ -4,12 +4,12 @@ FastAPI server for complexity grader
 
 from fastapi import FastAPI
 from pydantic import BaseModel
-from grader import ComplexityGrader
+from model.grader import ComplexityGrader
 
 app = FastAPI(title="Complexity Grader API")
 
 grader = ComplexityGrader()
-grader.load("model.pkl")
+grader.load("/app/model.pkl")
 
 
 class TaskRequest(BaseModel):

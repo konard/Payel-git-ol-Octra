@@ -1,5 +1,5 @@
 """Test grader translations"""
-from grader import ComplexityGrader
+from grademodel.src.model.grader import ComplexityGrader
 
 g = ComplexityGrader()
 g.load("model.pkl")

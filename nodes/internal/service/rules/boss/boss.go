@@ -73,6 +73,7 @@ type CreateTaskRequest struct {
 	Tokens        map[string]string
 	Meta          map[string]string
 	UseAiPlanning bool
+	Grade         int // model-predicted complexity 1-10
 }
 
 // DecisionResult — итог boss-планирования
