@@ -304,6 +304,7 @@
     "noAccount": "계정이 없으신가요?",
     "hasAccount": "이미 계정이 있으신가요?"
   },
+  "goToGitHub": "GitHub으로 이동",
   "chatSidebar": {
     "history": "기록",
     "newChat": "새 채팅",

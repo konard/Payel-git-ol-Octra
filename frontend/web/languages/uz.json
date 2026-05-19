@@ -288,6 +288,7 @@
     "noAccount": "Akkauntingiz yo'qmi?",
     "hasAccount": "Allaqachon akkauntingiz bormi?"
   },
+  "goToGitHub": "GitHubga o'tish",
   "chatSidebar": {
     "history": "Tarix",
     "newChat": "Yangi suhbat",

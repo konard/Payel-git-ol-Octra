@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "CrewAI",
+    "title": "Octra",
     "subtitle": "Компания ИИ-агентов",
     "canvas": "Канва",
     "chat": "Чат"
@@ -290,8 +290,13 @@
     "repeatPassword": "Повторите пароль",
     "registering": "Регистрация...",
     "noAccount": "Нет аккаунта?",
-    "hasAccount": "Уже есть аккаунт?"
+    "hasAccount": "Уже есть аккаунт?",
+    "continueWithGoogle": "Войти через Google",
+    "continueWithGithub": "Войти через GitHub",
+    "registerWithGoogle": "Регистрация через Google",
+    "registerWithGithub": "Регистрация через GitHub"
   },
+  "goToGitHub": "Перейти на GitHub",
   "chatSidebar": {
     "history": "История",
     "newChat": "Новый чат",

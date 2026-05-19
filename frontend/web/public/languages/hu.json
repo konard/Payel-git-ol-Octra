@@ -304,6 +304,7 @@
     "noAccount": "Nincs fiókja?",
     "hasAccount": "Már van fiókja?"
   },
+  "goToGitHub": "Ugrás a GitHubra",
   "chatSidebar": {
     "history": "Előzmények",
     "newChat": "Új beszélgetés",

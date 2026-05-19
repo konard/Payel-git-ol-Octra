@@ -290,6 +290,7 @@
     "noAccount": "Pas de compte?",
     "hasAccount": "Déjà un compte?"
   },
+  "goToGitHub": "Aller sur GitHub",
   "chatSidebar": {
     "history": "Historique",
     "newChat": "Nouveau chat",

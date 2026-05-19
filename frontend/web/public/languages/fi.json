@@ -304,6 +304,7 @@
     "noAccount": "Eikö sinulla ole tiliä?",
     "hasAccount": "Onko sinulla jo tili?"
   },
+  "goToGitHub": "Siirry GitHubiin",
   "chatSidebar": {
     "history": "Historia",
     "newChat": "Uusi keskustelu",

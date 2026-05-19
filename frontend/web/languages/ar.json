@@ -304,6 +304,7 @@
     "noAccount": "ليس لديك حساب؟",
     "hasAccount": "لديك حساب بالفعل؟"
   },
+  "goToGitHub": "الذهاب إلى GitHub",
   "chatSidebar": {
     "history": "السجل",
     "newChat": "محادثة جديدة",

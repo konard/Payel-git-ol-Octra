@@ -304,6 +304,7 @@
     "noAccount": "Δεν έχετε λογαριασμό;",
     "hasAccount": "Έχετε ήδη λογαριασμό;"
   },
+  "goToGitHub": "Μετάβαση στο GitHub",
   "chatSidebar": {
     "history": "Ιστορία",
     "newChat": "Νέα συνομιλία",

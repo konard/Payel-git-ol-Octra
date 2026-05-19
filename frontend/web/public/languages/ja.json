@@ -316,6 +316,7 @@
     "noAccount": "アカウントをお持ちでないですか？",
     "hasAccount": "すでにアカウントをお持ちですか？"
   },
+  "goToGitHub": "GitHubへ移動",
   "chatSidebar": {
     "history": "履歴",
     "newChat": "新しいチャット",

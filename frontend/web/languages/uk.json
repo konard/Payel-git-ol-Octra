@@ -304,6 +304,7 @@
     "noAccount": "Немає аккаунта?",
     "hasAccount": "Вже є аккаунт?"
   },
+  "goToGitHub": "Перейти на GitHub",
   "chatSidebar": {
     "history": "Історія",
     "newChat": "Новий чат",

@@ -304,6 +304,7 @@
     "noAccount": "Har du ingen konto?",
     "hasAccount": "Har du allerede en konto?"
   },
+  "goToGitHub": "Gå til GitHub",
   "chatSidebar": {
     "history": "Historik",
     "newChat": "Ny chat",

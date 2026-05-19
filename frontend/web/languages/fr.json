@@ -288,8 +288,13 @@
     "repeatPassword": "Répétez le mot de passe",
     "registering": "Inscription...",
     "noAccount": "Pas de compte?",
-    "hasAccount": "Déjà un compte?"
+    "hasAccount": "Déjà un compte?",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithGithub": "Continuer avec GitHub",
+    "registerWithGoogle": "S'inscrire avec Google",
+    "registerWithGithub": "S'inscrire avec GitHub"
   },
+  "goToGitHub": "Aller sur GitHub",
   "chatSidebar": {
     "history": "Historique",
     "newChat": "Nouveau chat",

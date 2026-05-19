@@ -304,6 +304,7 @@
     "noAccount": "Немате налог?",
     "hasAccount": "Већ имате налог?"
   },
+  "goToGitHub": "Иди на GitHub",
   "chatSidebar": {
     "history": "Историја",
     "newChat": "Нови ћаскање",

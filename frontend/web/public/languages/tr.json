@@ -304,6 +304,7 @@
     "noAccount": "Hesabınız yok mu?",
     "hasAccount": "Zaten hesabınız var mı?"
   },
+  "goToGitHub": "GitHub'a Git",
   "chatSidebar": {
     "history": "Geçmiş",
     "newChat": "Yeni sohbet",

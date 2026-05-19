@@ -218,7 +218,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                  disabled={isLoading}
                >
                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
-                 <span>Войти через Google</span>
+                 <span>{t('auth.continueWithGoogle')}</span>
                </button>
 
                <button
@@ -230,7 +230,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                  disabled={isLoading}
                >
                  <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                 <span>Войти через GitHub</span>
+                 <span>{t('auth.continueWithGithub')}</span>
                </button>
              </form>
 
@@ -331,7 +331,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                  disabled={isLoading}
                >
                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
-                 <span>Регистрация через Google</span>
+                 <span>{t('auth.registerWithGoogle')}</span>
                </button>
 
                <button
@@ -343,7 +343,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                  disabled={isLoading}
                >
                  <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                 <span>Регистрация через GitHub</span>
+                 <span>{t('auth.registerWithGithub')}</span>
                </button>
              </form>
            )}

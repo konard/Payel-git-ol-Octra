@@ -316,6 +316,7 @@
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?"
   },
+  "goToGitHub": "Ir a GitHub",
   "chatSidebar": {
     "history": "Historial",
     "newChat": "Nuevo chat",

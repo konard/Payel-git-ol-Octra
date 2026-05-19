@@ -314,8 +314,13 @@
     "repeatPassword": "パスワードを再入力",
     "registering": "登録中...",
     "noAccount": "アカウントをお持ちでないですか？",
-    "hasAccount": "すでにアカウントをお持ちですか？"
+    "hasAccount": "すでにアカウントをお持ちですか？",
+    "continueWithGoogle": "Googleで続ける",
+    "continueWithGithub": "GitHubで続ける",
+    "registerWithGoogle": "Googleで登録",
+    "registerWithGithub": "GitHubで登録"
   },
+  "goToGitHub": "GitHubへ移動",
   "chatSidebar": {
     "history": "履歴",
     "newChat": "新しいチャット",

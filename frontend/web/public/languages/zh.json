@@ -316,6 +316,7 @@
     "noAccount": "没有账号？",
     "hasAccount": "已有账号？"
   },
+  "goToGitHub": "前往 GitHub",
   "chatSidebar": {
     "history": "历史记录",
     "newChat": "新对话",

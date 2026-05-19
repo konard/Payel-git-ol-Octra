@@ -277,6 +277,7 @@
     "noAccount": "Аккаунт жоқ па?",
     "hasAccount": "Аккаунт бар ма?"
   },
+  "goToGitHub": "GitHub-қа өту",
   "chatSidebar": {
     "history": "Тарих",
     "newChat": "Жаңа сөйлесу",
