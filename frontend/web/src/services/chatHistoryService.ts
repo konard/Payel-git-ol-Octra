@@ -135,7 +135,7 @@ export async function updateChatWorkflow(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to update workflow');
+    throw new Error(`Failed to update workflow: ${response.status}`);
   }
 }
 

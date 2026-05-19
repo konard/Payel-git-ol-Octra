@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -81,8 +83,16 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// Если это доработка существующего проекта — клонируем репозиторий с GitHub
 	if req.ExistingRepoUrl != "" {
 		log.Printf("Refinement mode: cloning existing repo %s", req.ExistingRepoUrl)
-		// Здесь можно добавить логику клонирования вместо restore
-		// Пока оставляем как есть, но помечаем, что это refinement
+		os.RemoveAll(projectPath)
+		if err := os.MkdirAll(projectPath, 0755); err != nil {
+			return err
+		}
+		cmd := exec.Command("git", "clone", req.ExistingRepoUrl, projectPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Printf("Failed to clone existing repo: %v", err)
+		}
 	}
 	defer s.cleanupProject(projectPath)
 	if issueTarget != nil && issueTarget.Cloned {
@@ -122,7 +132,10 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		tokens = map[string]string{}
 	}
 	tokens["title"] = req.Title
-	s.validateSolution(ctx, provider, model, tokens, decision, managerResults)
+	validation := s.validateSolution(ctx, provider, model, tokens, decision, managerResults)
+	if !validation.Approved {
+		log.Printf("Boss validation rejected: %s", validation.Feedback)
+	}
 
 	emit(progress, 90, "Packaging project", nil)
 	repoURL := s.pushToGitHub(ctx, task, projectPath, issueTarget)
@@ -133,6 +146,9 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	data := map[string]string{
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"techStack": util_stack(decision.TechStack),
+	}
+	if validation != nil && validation.Feedback != "" {
+		data["bossReview"] = validation.Feedback
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL

@@ -128,6 +128,8 @@ interface TopBarProps {
 export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
+  const repoUrl = useTaskStore((state) => state.repoUrl);
+  const pullRequestUrl = useTaskStore((state) => state.pullRequestUrl);
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
   const defaultToken = useSettingsStore((state) => state.defaultToken);
@@ -151,9 +153,20 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
    const [editingProvider, setEditingProvider] = useState<string | null>(null);
   
   // Integration state
-  const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
-  const telegramIntegration = useIntegrationStore((state) => state.integrations.telegram);
-  const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
+   const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
+   const telegramIntegration = useIntegrationStore((state) => state.integrations.telegram);
+   const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
+   const rawGithub = useIntegrationStore((state) => state.integrations.github);
+   const githubIntegration = rawGithub ?? { 
+     connected: false, 
+     config: { 
+       useDefaultKey: false, 
+       apiKey: '', 
+       workflowId: '',
+       publishNewProjects: false,
+       createPullRequests: false 
+     } 
+   };
   const setIntegrationConnected = useIntegrationStore((state) => state.setIntegrationConnected);
   const disconnectIntegration = useIntegrationStore((state) => state.disconnectIntegration);
 
@@ -292,15 +305,17 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
           </div>
         </div>
 
-        {/* Center: Download button */}
+        {/* Center: GitHub button */}
         <div className="flex shrink-0 items-center gap-2">
-          {status === 'done' && zipUrl && (
+          {status === 'done' && (repoUrl || pullRequestUrl) && (
             <button
-              onClick={handleDownload}
+              onClick={() => {
+                const url = pullRequestUrl || repoUrl;
+                if (url) window.open(url, '_blank');
+              }}
               className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
             >
-              <Download size={16} />
-              Скачать ZIP
+              {t('goToGitHub')}
             </button>
           )}
         </div>
@@ -701,17 +716,30 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       onDisconnect={() => disconnectIntegration('telegram')}
                     />
 
-                    <IntegrationCard
-                      type="n8n"
-                      name={t('integrations.n8n.name')}
-                      description={t('integrations.n8n.description')}
-                      icon={n8nIcon}
-                      connected={n8nIntegration.connected}
-                      config={n8nIntegration.config}
-                      onConnect={(config) => setIntegrationConnected('n8n', true, config)}
-                      onDisconnect={() => disconnectIntegration('n8n')}
-                    />
-                  </div>
+                     <IntegrationCard
+                       type="n8n"
+                       name={t('integrations.n8n.name')}
+                       description={t('integrations.n8n.description')}
+                       icon={n8nIcon}
+                       connected={n8nIntegration.connected}
+                       config={n8nIntegration.config}
+                       onConnect={(config) => setIntegrationConnected('n8n', true, config)}
+                       onDisconnect={() => disconnectIntegration('n8n')}
+                     />
+
+                     {githubIntegration && (
+                       <IntegrationCard
+                         type="github"
+                         name="GitHub"
+                         description="Публикация проектов и Pull Requests"
+                         icon="/assets/github-image.png"
+                         connected={githubIntegration.connected}
+                         config={githubIntegration.config}
+                         onConnect={(config) => setIntegrationConnected('github', true, config)}
+                         onDisconnect={() => disconnectIntegration('github')}
+                       />
+                     )}
+                   </div>
                 )}
 
 

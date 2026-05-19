@@ -3,9 +3,9 @@ services:
     image: postgres:15-alpine
     container_name: octra-postgres
     environment:
-      POSTGRES_USER: octra
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-octra_password}
-      POSTGRES_DB: octra
+      POSTGRES_USER: crewai
+      POSTGRES_PASSWORD: crewai_password
+      POSTGRES_DB: crewai
     ports:
       - "5433:5432"
     volumes:

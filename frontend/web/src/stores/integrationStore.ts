@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type IntegrationType = 'lefine' | 'telegram' | 'n8n';
+export type IntegrationType = 'lefine' | 'telegram' | 'n8n' | 'github';
 
 export interface IntegrationConfig {
   useDefaultKey: boolean;
@@ -11,6 +11,9 @@ export interface IntegrationConfig {
   activityPubUrl?: string;
   outboxEndpoint?: string;
   inboxEndpoint?: string;
+  // GitHub specific
+  publishNewProjects?: boolean;
+  createPullRequests?: boolean;
 }
 
 export interface Integration {
@@ -60,6 +63,18 @@ const DEFAULT_N8N_INTEGRATION: Integration = {
   },
 };
 
+const DEFAULT_GITHUB_INTEGRATION: Integration = {
+  type: 'github',
+  connected: false,
+  config: {
+    useDefaultKey: false,
+    apiKey: '',
+    workflowId: '',
+    publishNewProjects: false,
+    createPullRequests: false,
+  },
+};
+
 export const useIntegrationStore = create<IntegrationState>()(
   persist(
     (set, get) => ({
@@ -67,6 +82,7 @@ export const useIntegrationStore = create<IntegrationState>()(
         lefine: DEFAULT_INTEGRATION,
         telegram: DEFAULT_TELEGRAM_INTEGRATION,
         n8n: DEFAULT_N8N_INTEGRATION,
+        github: DEFAULT_GITHUB_INTEGRATION,
       },
 
       setIntegrationConnected: (type, connected, config = {}) => {

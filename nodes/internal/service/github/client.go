@@ -55,7 +55,7 @@ func NewClient(token, username, email string) *Client {
 
 // CreateRepository — создаёт новый публичный репозиторий для задачи
 func (c *Client) CreateRepository(ctx context.Context, task *models.Task) (string, error) {
-	repoName := fmt.Sprintf("crewai-task-%s", task.ID.String()[:8])
+	repoName := fmt.Sprintf("octra-task-%s", task.ID.String()[:8])
 	reqBody := CreateRepoRequest{
 		Name:        repoName,
 		Description: fmt.Sprintf("CrewAI generated project for task: %s", task.Title),

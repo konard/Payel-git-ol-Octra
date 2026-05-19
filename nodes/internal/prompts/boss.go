@@ -17,7 +17,7 @@ IMPORTANT:
 - If description says "node" or "js" → use Node.js
 - If the task contains a concrete GitHub issue URL (https://github.com/{owner}/{repo}/issues/{number}), plan a focused fix for that existing repository and preserve its current structure
 - Treat ordinary repository, package, documentation, and library URLs as references only; do not plan to clone or rewrite them unless they are concrete GitHub issue URLs
-- Create ONLY the managers that are actually needed
+- ALWAYS create at least 1 manager (even for simple tasks). Only use 0 in extremely trivial cases (one file, <20 lines).
 
 Reply ONLY with JSON:
 {

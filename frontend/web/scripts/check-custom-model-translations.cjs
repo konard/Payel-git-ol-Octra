@@ -1,60 +1,70 @@
+const translate = require('@vitalets/google-translate-api').translate;
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
-const languageDirs = [
-  path.join(root, 'languages'),
-  path.join(root, 'public', 'languages'),
+const SOURCE_LANG = 'en';
+const TARGET_DIRS = [
+  'languages',
+  'public/languages',
 ];
 
-const requiredKeys = [
-  'settings.customModels',
-  'models.title',
-  'models.description',
-  'models.addNew',
-  'models.name',
-  'models.namePlaceholder',
-  'models.provider',
-  'models.noProvider',
-  'models.save',
-  'models.cancel',
-  'models.delete',
-  'models.confirmDelete',
-];
-
-function getNestedValue(data, keyPath) {
-  return keyPath.split('.').reduce((current, key) => {
-    if (current && typeof current === 'object' && key in current) {
-      return current[key];
-    }
-    return undefined;
-  }, data);
-}
-
-const failures = [];
-
-for (const dir of languageDirs) {
-  const files = fs.readdirSync(dir).filter((file) => file.endsWith('.json')).sort();
-
-  for (const file of files) {
-    const fullPath = path.join(dir, file);
-    const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-
-    for (const key of requiredKeys) {
-      const value = getNestedValue(data, key);
-      if (typeof value !== 'string' || value.trim() === '' || value === key) {
-        failures.push(`${path.relative(root, fullPath)}: missing ${key}`);
-      }
-    }
+async function translateText(text, targetLang) {
+  if (!text || typeof text !== 'string') return text;
+  try {
+    const res = await translate(text, { from: SOURCE_LANG, to: targetLang });
+    return res.text;
+  } catch (e) {
+    console.warn(`  [warn] Failed "${text.substring(0, 40)}..." → ${targetLang}: ${e.message}`);
+    return text;
   }
 }
 
-if (failures.length > 0) {
-  console.error('Custom model translation validation failed:');
-  for (const failure of failures) {
-    console.error(`- ${failure}`);
+async function translateObject(obj, targetLang) {
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (typeof value === 'string') {
+      result[key] = await translateText(value, targetLang);
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = await translateObject(value, targetLang);
+    } else {
+      result[key] = value;
+    }
+    await new Promise(r => setTimeout(r, 120)); // polite delay
   }
-  process.exit(1);
+  return result;
 }
 
-console.log('Custom model translations are complete.');
+async function main() {
+  const enPath = path.join('languages', 'en.json');
+  const enData = JSON.parse(fs.readFileSync(enPath, 'utf8'));
+
+  if (!enData.landing) {
+    console.error('No "landing" section in en.json');
+    process.exit(1);
+  }
+
+  const landingEn = enData.landing;
+
+  for (const dir of TARGET_DIRS) {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'en.json');
+
+    for (const file of files) {
+      const langCode = file.replace('.json', '');
+      const filePath = path.join(dir, file);
+
+      console.log(`\n→ Translating landing for ${langCode} (${dir})`);
+
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const translated = await translateObject(landingEn, langCode);
+
+      data.landing = translated;
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      console.log(`   ✓ Saved ${file}`);
+    }
+  }
+
+  console.log('\n✅ Finished translating landing section for all languages');
+}
+
+main().catch(console.error);

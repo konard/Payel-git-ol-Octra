@@ -68,6 +68,12 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 		return nil, err
 	}
 	log.Printf("Boss decision: managers=%d stack=%v", decision.ManagersCount, decision.TechStack)
+
+	// Final safeguard inside thinkOnce
+	if decision.ManagersCount <= 0 {
+		decision.ManagersCount = 1
+	}
+
 	return &decision, nil
 }
 

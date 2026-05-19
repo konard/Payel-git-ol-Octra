@@ -34,8 +34,10 @@ export function IntegrationForm({
   const [outboxEndpoint, setOutboxEndpoint] = useState(initialConfig.outboxEndpoint || 'https://exchange.lefine.pro/outbox');
   const [inboxEndpoint, setInboxEndpoint] = useState(initialConfig.inboxEndpoint || 'https://exchange.lefine.pro/inbox');
 
-  // Load workflows on mount
+  // Load workflows on mount (only for integrations that need workflows)
   useEffect(() => {
+    if (type === 'github') return; // GitHub doesn't need workflows
+
     const loadWorkflows = async () => {
       setLoadingWorkflows(true);
       try {
@@ -48,7 +50,7 @@ export function IntegrationForm({
       }
     };
     loadWorkflows();
-  }, []);
+  }, [type]);
 
   const handleSave = () => {
     const config: IntegrationConfig = {
@@ -63,9 +65,101 @@ export function IntegrationForm({
       ...(type === 'n8n' && {
         activityPubUrl, // Server URL for n8n
       }),
+      ...(type === 'github' && {
+        publishNewProjects: initialConfig.publishNewProjects,
+        createPullRequests: initialConfig.createPullRequests,
+      }),
     };
     onSave(config);
   };
+
+  // GitHub Integration
+  if (type === 'github') {
+    const [publishNewProjects, setPublishNewProjects] = useState<boolean>(initialConfig.publishNewProjects ?? false);
+    const [createPullRequests, setCreatePullRequests] = useState<boolean>(initialConfig.createPullRequests ?? false);
+
+    const handleGitHubSave = () => {
+      const config: IntegrationConfig = {
+        useDefaultKey: false,
+        apiKey: '',
+        workflowId: '',
+        publishNewProjects,
+        createPullRequests,
+      };
+      onSave(config);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <img 
+              src="/assets/github-image.png" 
+              alt="GitHub" 
+              className="w-8 h-8" 
+            />
+            <div>
+              <h3 className="font-semibold text-[var(--text)]">GitHub Integration</h3>
+              <p className="text-sm text-[var(--text-muted)]">Автоматизация работы с репозиториями</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Toggle 1 */}
+          <div className="flex items-center justify-between p-4 bg-[var(--background)] border border-[var(--border)] rounded-xl">
+            <div className="flex-1 pr-4">
+              <div className="font-medium text-[var(--text)]">Публиковать на GitHub новые проекты</div>
+              <div className="text-xs text-[var(--text-muted)] mt-1">
+                При создании нового workflow автоматически создавать репозиторий на GitHub
+              </div>
+            </div>
+            <button
+              onClick={() => setPublishNewProjects(!publishNewProjects)}
+              className={`relative w-12 h-7 rounded-full transition-all flex-shrink-0 ${
+                publishNewProjects ? 'bg-green-500' : 'bg-[var(--border)]'
+              }`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${publishNewProjects ? 'translate-x-5' : ''}`} />
+            </button>
+          </div>
+
+          {/* Toggle 2 */}
+          <div className="flex items-center justify-between p-4 bg-[var(--background)] border border-[var(--border)] rounded-xl">
+            <div className="flex-1 pr-4">
+              <div className="font-medium text-[var(--text)]">Делать pull requests</div>
+              <div className="text-xs text-[var(--text-muted)] mt-1">
+                Автоматически создавать Pull Request при обновлении проектов
+              </div>
+            </div>
+            <button
+              onClick={() => setCreatePullRequests(!createPullRequests)}
+              className={`relative w-12 h-7 rounded-full transition-all flex-shrink-0 ${
+                createPullRequests ? 'bg-green-500' : 'bg-[var(--border)]'
+              }`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${createPullRequests ? 'translate-x-5' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={handleGitHubSave}
+            className="flex-1 px-4 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-lg transition-colors"
+          >
+            {connected ? 'Сохранить настройки' : 'Интегрировать с GitHub'}
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2.5 text-sm font-medium text-[var(--text)] hover:bg-[var(--background)] rounded-lg transition-colors border border-[var(--border)]"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Telegram bot link
   if (type === 'telegram') {
@@ -315,7 +409,7 @@ export function IntegrationForm({
       <div className="flex items-center gap-2 pt-2">
         <button
           onClick={handleSave}
-          disabled={type === 'n8n' ? !apiKey : !workflowId}
+          disabled={type === 'n8n' ? !apiKey : (type !== 'github' && !workflowId)}
           className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
         >
           {t('integrations.saveIntegration')}
