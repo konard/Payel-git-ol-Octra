@@ -8,8 +8,6 @@ COPY agents/go.mod agents/go.sum ./agents/
 COPY agents/internal ./agents/internal
 COPY agents/pkg ./agents/pkg
 COPY agents/cmd ./agents/cmd
-COPY agents/proto ./agents/proto
-COPY agents/pb ./agents/pb
 
 RUN cd agents && go mod download && go mod tidy
 
