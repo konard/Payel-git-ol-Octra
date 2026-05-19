@@ -432,133 +432,135 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
                  {activeTab === 'custom-providers' && (
                    <div className="space-y-4 max-w-lg">
-                     <div>
-                       <div className="text-sm font-medium text-[var(--text)] mb-1">{t('providers.title')}</div>
-                       <div className="text-xs text-[var(--text-muted)] mb-4">
-                         {t('providers.description')}
-                       </div>
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text)] mb-1">{t('providers.title')}</div>
+                        <div className="text-xs text-[var(--text-muted)] mb-4">
+                          {t('providers.description')}
+                        </div>
+                      </div>
+
+                      {/* Add button */}
+                      {!showAddProvider && (
+                        <button
+                          onClick={() => setShowAddProvider(true)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                        >
+                          <Plus size={16} />
+                          {t('providers.addNew')}
+                        </button>
+                      )}
+
+                      {/* Add new provider form */}
+                      {showAddProvider && (
+                        <CustomProviderCard
+                          isNew
+                          onSave={(providerData) => {
+                            addProvider(providerData);
+                            setShowAddProvider(false);
+                          }}
+                          onCancel={() => setShowAddProvider(false)}
+                        />
+                      )}
+
+                       {/* Existing providers */}
+                       {customProviders.map((provider) => (
+                         <CustomProviderCard
+                           key={provider.id}
+                           provider={provider}
+                           isEditing={editingProvider === provider.id}
+                           onSave={(updates) => {
+                             updateProvider(provider.id, updates);
+                             setEditingProvider(null);
+                           }}
+                           onCancel={() => setEditingProvider(null)}
+                           onEdit={() => {
+                             console.log('Edit clicked for provider:', provider.id);
+                             setEditingProvider(provider.id);
+                             console.log('editingProvider set to:', provider.id);
+                           }}
+                           onDelete={() => deleteProvider(provider.id)}
+                         />
+                       ))}
                      </div>
 
-                      {/* Existing providers */}
-                      {customProviders.map((provider) => (
-                        <CustomProviderCard
-                          key={provider.id}
-                          provider={provider}
-                          isEditing={editingProvider === provider.id}
-                          onSave={(updates) => {
-                            updateProvider(provider.id, updates);
-                            setEditingProvider(null);
-                          }}
-                          onCancel={() => setEditingProvider(null)}
-                          onEdit={() => {
-                            console.log('Edit clicked for provider:', provider.id);
-                            setEditingProvider(provider.id);
-                            console.log('editingProvider set to:', provider.id);
-                          }}
-                          onDelete={() => deleteProvider(provider.id)}
-                        />
-                      ))}
-
-                     {/* Add new provider */}
-                     {showAddProvider && (
-                       <CustomProviderCard
-                         isNew
-                         onSave={(providerData) => {
-                           addProvider(providerData);
-                           setShowAddProvider(false);
-                         }}
-                         onCancel={() => setShowAddProvider(false)}
-                       />
-                     )}
-
-                     {/* Add button */}
-                     {!showAddProvider && (
-                       <button
-                         onClick={() => setShowAddProvider(true)}
-                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-                       >
-                         <Plus size={16} />
-                         {t('providers.addNew')}
-                       </button>
-                     )}
-                    </div>
                   )}
 
                   {activeTab === 'custom-models' && (
                     <div className="space-y-4 max-w-lg">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text)] mb-1">
-                          {translationsLoading ? 'Loading...' : t('models.title')}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)] mb-4">
-                          {translationsLoading ? 'Loading translations...' : t('models.description')}
-                        </div>
-                      </div>
+                       <div>
+                         <div className="text-sm font-medium text-[var(--text)] mb-1">
+                           {translationsLoading ? 'Loading...' : t('models.title')}
+                         </div>
+                         <div className="text-xs text-[var(--text-muted)] mb-4">
+                           {translationsLoading ? 'Loading translations...' : t('models.description')}
+                         </div>
+                       </div>
+ 
+                       {/* Add new model */}
+                       <button
+                         onClick={() => setShowAddModel(true)}
+                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                         disabled={translationsLoading}
+                       >
+                         <Plus size={16} />
+                         {translationsLoading ? 'Loading...' : t('models.addNew')}
+                       </button>
+ 
+                        {/* Existing models */}
+                        {customModels.map((model) => (
+                          <div key={model.id} className="flex items-center gap-3 p-3 bg-[var(--background)] border border-[var(--border)] rounded-lg">
+                           <div className="flex-1">
+                             <div className="text-sm font-medium text-[var(--text)]">{model.name}</div>
+                             {model.provider_id && (
+                               <div className="text-xs text-[var(--text-muted)]">
+                                 Provider: {customProviders.find(p => p.id === model.provider_id)?.name || 'Unknown'}
+                               </div>
+                             )}
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <button
+                               onClick={() => {
+                                 const newName = prompt('Enter new model name:', model.name);
+                                 if (newName && newName.trim() && newName.trim() !== model.name) {
+                                   updateModel(model.id, { name: newName.trim() });
+                                   // Try to update on API if authenticated
+                                   if (isAuthenticated) {
+                                     customProviderService.updateCustomModel(model.id, { name: newName.trim() })
+                                       .catch(error => console.warn('API update failed:', error));
+                                   }
+                                 }
+                               }}
+                               className="p-1 hover:bg-[var(--surface)] rounded-md transition-colors text-[var(--text-muted)]"
+                               title="Edit"
+                             >
+                               <Edit size={14} />
+                             </button>
+                             <button
+                               onClick={async () => {
+                                 // Always update local store first
+                                 deleteModel(model.id);
+ 
+                                 // Then try to delete from API if authenticated
+                                 if (isAuthenticated) {
+                                   try {
+                                     await customProviderService.deleteCustomModel(model.id);
+                                   } catch (error) {
+                                     console.warn('API not available, deleted locally only');
+                                   }
+                                 } else {
+                                   console.log('User not authenticated, deleted locally only');
+                                 }
+                               }}
+                               className="p-1 hover:bg-red-500/20 rounded-md transition-colors text-red-500"
+                               title={translationsLoading ? 'Delete' : t('models.delete')}
+                             >
+                               <Trash2 size={14} />
+                             </button>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
 
-                       {/* Existing models */}
-                       {customModels.map((model) => (
-                         <div key={model.id} className="flex items-center gap-3 p-3 bg-[var(--background)] border border-[var(--border)] rounded-lg">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-[var(--text)]">{model.name}</div>
-                            {model.provider_id && (
-                              <div className="text-xs text-[var(--text-muted)]">
-                                Provider: {customProviders.find(p => p.id === model.provider_id)?.name || 'Unknown'}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                const newName = prompt('Enter new model name:', model.name);
-                                if (newName && newName.trim() && newName.trim() !== model.name) {
-                                  updateModel(model.id, { name: newName.trim() });
-                                  // Try to update on API if authenticated
-                                  if (isAuthenticated) {
-                                    customProviderService.updateCustomModel(model.id, { name: newName.trim() })
-                                      .catch(error => console.warn('API update failed:', error));
-                                  }
-                                }
-                              }}
-                              className="p-1 hover:bg-[var(--surface)] rounded-md transition-colors text-[var(--text-muted)]"
-                              title="Edit"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                // Always update local store first
-                                deleteModel(model.id);
-
-                                // Then try to delete from API if authenticated
-                                if (isAuthenticated) {
-                                  try {
-                                    await customProviderService.deleteCustomModel(model.id);
-                                  } catch (error) {
-                                    console.warn('API not available, deleted locally only');
-                                  }
-                                } else {
-                                  console.log('User not authenticated, deleted locally only');
-                                }
-                              }}
-                              className="p-1 hover:bg-red-500/20 rounded-md transition-colors text-red-500"
-                              title={translationsLoading ? 'Delete' : t('models.delete')}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add new model */}
-                      <button
-                        onClick={() => setShowAddModel(true)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-                        disabled={translationsLoading}
-                      >
-                        <Plus size={16} />
-                        {translationsLoading ? 'Loading...' : t('models.addNew')}
-                      </button>
-                    </div>
                   )}
 
                   {activeTab === 'language' && (
