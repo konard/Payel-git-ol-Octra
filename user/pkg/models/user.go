@@ -13,6 +13,6 @@ type UserRegister struct {
 	DeletedAt       *time.Time `gorm:"index"`
 	Username        string     `gorm:"unique"`
 	Email           string     `gorm:"unique"`
-	Password        string     `gorm:"not null"`
+	Password        string     `gorm:"default:null"`
 	SubscriptionEnd *int64     `json:"subscription_end"`
 }

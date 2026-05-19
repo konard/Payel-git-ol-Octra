@@ -145,6 +145,37 @@ func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
 	}, nil
 }
 
+// GetOrCreateUserFromGoogle creates or finds a user from Google OAuth
+func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error) {
+	var user models.UserRegister
+
+	result := database.Db.Where("email = ?", email).First(&user)
+	if result.Error == nil {
+		return &user, nil
+	}
+
+	username := name
+	if username == "" {
+		if len(email) > 10 {
+			username = email[:len(email)-10]
+		} else {
+			username = "user_" + uuid.New().String()[:8]
+		}
+	}
+
+	user = models.UserRegister{
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
+	}
+
+	if err := database.Db.Create(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // RefreshTokens generates new tokens from refresh token
 func RefreshTokens(req requests.RefreshTokenRequest) (map[string]interface{}, error) {
 	// Validate refresh token
@@ -239,14 +270,12 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 	err = database.Db.Create(&user).Error
 	if err != nil {
 		println("Register error: " + err.Error())
-		// Check for duplicate email/username
 		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
 			return nil, errors.New("Пользователь с таким email или именем уже существует")
 		}
 		return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
 	}
 
-	// Generate tokens
 	accessToken, refreshToken, err := GenerateTokens(user)
 	if err != nil {
 		return nil, err

@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"user/internal/core/services"
@@ -12,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	yoopayment "github.com/rvinnie/yookassa-sdk-go/yookassa/payment"
 )
 
@@ -60,6 +66,16 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("userID", userID)
 		c.Set("username", username)
 		c.Next()
+	}
+}
+
+func getGoogleOauthConfig() *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+		Endpoint:     google.Endpoint,
 	}
 }
 
@@ -268,6 +284,84 @@ func main() {
 		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 		c.SetCookie("access_token", "", -1, "/", "", false, true)
 		c.JSON(200, gin.H{"status": "ok", "message": "Logged out successfully"})
+	})
+
+	// ==================== GOOGLE OAUTH ====================
+
+	// GET /auth/google - Start Google OAuth flow
+	r.GET("/auth/google", func(c *gin.Context) {
+		config := getGoogleOauthConfig()
+		url := config.AuthCodeURL("random-state")
+		c.Redirect(http.StatusTemporaryRedirect, url)
+	})
+
+	// GET /auth/google/callback - Handle Google callback
+	r.GET("/auth/google/callback", func(c *gin.Context) {
+		code := c.Query("code")
+		if code == "" {
+			c.JSON(400, gin.H{"status": "error", "error": "Code not found"})
+			return
+		}
+
+		config := getGoogleOauthConfig()
+		token, err := config.Exchange(context.Background(), code)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": "Failed to exchange token: " + err.Error()})
+			return
+		}
+
+		// Get user info from Google
+		client := config.Client(context.Background(), token)
+		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": "Failed to get user info"})
+			return
+		}
+		defer resp.Body.Close()
+
+		body, _ := io.ReadAll(resp.Body)
+		var googleUser struct {
+			ID            string `json:"id"`
+			Email         string `json:"email"`
+			Name          string `json:"name"`
+			Picture       string `json:"picture"`
+			VerifiedEmail bool   `json:"verified_email"`
+		}
+		if err := json.Unmarshal(body, &googleUser); err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": "Failed to parse user info"})
+			return
+		}
+
+		if !googleUser.VerifiedEmail {
+			c.JSON(400, gin.H{"status": "error", "error": "Google account email not verified"})
+			return
+		}
+
+		// Create or get user
+		user, err := services.GetOrCreateUserFromGoogle(googleUser.Email, googleUser.Name)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": err.Error()})
+			return
+		}
+
+		// Generate tokens
+		accessToken, refreshToken, err := services.GenerateTokens(*user)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": "Failed to generate tokens"})
+			return
+		}
+
+		// Set refresh cookie
+		c.SetSameSite(2)
+		c.SetCookie("refresh_token", refreshToken, 604800, "/", "", false, true)
+
+		// Redirect to frontend with access token (supports both dev and prod)
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "https://octra.env.pm"
+		}
+		redirectURL := fmt.Sprintf("%s/app?token=%s", frontendURL, accessToken)
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 	})
 
 	// Custom Models routes

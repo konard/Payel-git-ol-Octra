@@ -120,6 +120,8 @@ services:
       context: .
       dockerfile: ./user/Dockerfile
     container_name: crewai-user
+    env_file:
+      - .env
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}

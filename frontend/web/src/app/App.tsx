@@ -147,7 +147,33 @@ export default function App() {
   }, [isDark]);
 
   useEffect(() => {
-    checkAuth();
+    // Handle OAuth callback token from Google
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthToken = urlParams.get('token');
+
+    if (oauthToken) {
+      // Save the access token
+      localStorage.setItem('access_token', oauthToken);
+      
+      // Clean the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Update store with token
+      useAuthStore.setState({
+        accessToken: oauthToken,
+        isAuthenticated: true,
+      });
+
+      // Immediately fetch user data
+      const { checkAuth } = useAuthStore.getState();
+      checkAuth().catch(() => {
+        // If checkAuth fails, at least keep the token
+        console.log('OAuth login successful, token saved');
+      });
+    } else {
+      // Normal auth check
+      checkAuth();
+    }
   }, []);
 
   const handleAuthSuccess = () => {
