@@ -45,6 +45,23 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, "AI planning failed: "+err.Error(), errorData())
 		return err
 	}
+	// Safeguard: AI sometimes returns 0 managers or empty roles
+	if decision.ManagersCount <= 0 {
+		decision.ManagersCount = 1
+		log.Printf("Boss decision corrected: managers_count was 0, set to 1")
+	}
+
+	if len(decision.ManagerRoles) == 0 && decision.ManagersCount > 0 {
+		decision.ManagerRoles = []models.ManagerRole{
+			{
+				Role:        "implementation",
+				Description: "Implement the requested functionality",
+				Priority:    1,
+			},
+		}
+		log.Printf("Boss decision corrected: ManagerRoles was empty, added default role")
+	}
+
 	emit(progress, 30, "Architecture planned by AI", map[string]string{
 		"managers": strconv.Itoa(int(decision.ManagersCount)),
 	})
@@ -71,6 +88,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return err
 	}
 	if len(managerResults) == 0 {
+		log.Printf("Boss: No manager results. decision.ManagersCount=%d, ManagerRoles=%v", 
+			decision.ManagersCount, decision.ManagerRoles)
 		task.Status = "error"
 		database.Db.Save(task)
 		emit(progress, 0, "No solution generated", errorData())
