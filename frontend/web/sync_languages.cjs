@@ -92,7 +92,7 @@ const translations = {
     settings: { customProviders: 'Кастомные провайдеры', customModels: 'Кастомные модели', hideServerStatus: 'Скрыть статус сервера', hideServerStatusHint: 'Скрыть строку состояния подключения сервера', hideConsole: 'Скрыть консоль', hideConsoleHint: 'Скрыть панель консоли' },
     providers: { title: 'Кастомные провайдеры', description: 'Добавляйте собственные AI провайдеры для использования в задачах', newProvider: 'Новый провайдер', configured: 'Настроен', addCustomProvider: 'Добавить кастомный провайдер', addNew: 'Добавить новый', collapse: 'Свернуть', expand: 'Развернуть', edit: 'Редактировать', delete: 'Удалить', add: 'Добавить', name: 'Название', namePlaceholder: 'Мой AI провайдер', baseUrl: 'Базовый URL', baseUrlHint: 'URL API сервера провайдера (например: https://api.example.com/v1)', apiKey: 'API ключ', apiKeyPlaceholder: 'sk-...', save: 'Сохранить', cancel: 'Отмена' },
     profile: { subscriptionEnd: 'Действительно до', noSubscription: 'Нет активной подписки', userId: 'ID пользователя', memberSince: 'Участник с', logout: 'Выйти' },
-    auth: { login: 'Войти', register: 'Регистрация', loginTitle: 'Войти', registerTitle: 'Регистрация', close: 'Закрыть', emailRequired: 'Email обязателен', passwordRequired: 'Пароль обязателен', usernameRequired: 'Имя пользователя обязательно', invalidEmail: 'Неверный формат email', passwordMinLength: 'Пароль должен содержать минимум 6 символов', passwordsNotMatch: 'Пароли не совпадают', password: 'Пароль', enterPassword: 'Введите пароль', loggingIn: 'Вход...', username: 'Имя пользователя', yourName: 'Ваше имя', min6Chars: 'Мин. 6 символов', confirmPassword: 'Подтвердите пароль', repeatPassword: 'Повторите пароль', registering: 'Регистрация...', noAccount: 'Нет аккаунта?', hasAccount: 'Уже есть аккаунт?' }
+    auth: { login: 'Войти', register: 'Регистрация', loginTitle: 'Войти', registerTitle: 'Регистрация', close: 'Закрыть', emailRequired: 'Email обязателен', passwordRequired: 'Пароль обязателен', usernameRequired: 'Имя пользователя обязательно', invalidEmail: 'Неверный формат email', passwordMinLength: 'Пароль должен содержать минимум 6 символов', passwordsNotMatch: 'Пароли не совпадают', password: 'Пароль', enterPassword: 'Введите пароль', loggingIn: 'Вход...', username: 'Имя пользователя', yourName: 'Ваше имя', min6Chars: 'Мин. 6 символов', confirmPassword: 'Подтвердите пароль', repeatPassword: 'Повторите пароль', registering: 'Регистрация...', noAccount: 'Нет аккаунта?', hasAccount: 'Уже есть аккаунт?', continueWithGoogle: 'Продолжить с Google', continueWithGithub: 'Продолжить с GitHub', registerWithGoogle: 'Регистрация через Google', registerWithGithub: 'Регистрация через GitHub' }
   },
   ko: {
     settings: { customModels: '사용자 정의 모델', hideServerStatus: '서버 상태 숨기기', hideServerStatusHint: '서버 연결 상태 표시줄 숨기기', hideConsole: '콘솔 숨기기', hideConsoleHint: '콘솔 패널 숨기기' },
@@ -165,13 +165,8 @@ function applyRequiredKeys(data, lang) {
     title: data.settings.customModels || extraKeys.models.title
   }, overrides.models);
 
-  if (!data.profile) data.profile = {};
-  if (overrides.profile) {
-    Object.assign(data.profile, overrides.profile);
-  }
-  if (overrides.auth) {
-    data.auth = overrides.auth;
-  }
+  mergeSection(data, 'profile', extraKeys.profile, overrides.profile);
+  mergeSection(data, 'auth', extraKeys.auth, overrides.auth);
 }
 
 const files = Array.from(new Set([

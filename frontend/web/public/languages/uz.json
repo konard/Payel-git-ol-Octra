@@ -286,7 +286,11 @@
     "repeatPassword": "Parolni qaytaring",
     "registering": "Ro'yxatdan o'tish...",
     "noAccount": "Akkauntingiz yo'qmi?",
-    "hasAccount": "Allaqachon akkauntingiz bormi?"
+    "hasAccount": "Allaqachon akkauntingiz bormi?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "GitHubga o'tish",
   "chatSidebar": {

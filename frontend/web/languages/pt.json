@@ -302,7 +302,11 @@
     "repeatPassword": "Repita a senha",
     "registering": "Cadastrando...",
     "noAccount": "Não tem conta?",
-    "hasAccount": "Já tem conta?"
+    "hasAccount": "Já tem conta?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Ir para o GitHub",
   "chatSidebar": {

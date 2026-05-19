@@ -302,7 +302,11 @@
     "repeatPassword": "أعد كلمة المرور",
     "registering": "جار التسجيل...",
     "noAccount": "ليس لديك حساب؟",
-    "hasAccount": "لديك حساب بالفعل؟"
+    "hasAccount": "لديك حساب بالفعل؟",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "الذهاب إلى GitHub",
   "chatSidebar": {

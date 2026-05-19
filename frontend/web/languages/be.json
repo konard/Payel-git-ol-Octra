@@ -302,7 +302,11 @@
     "repeatPassword": "Паўтарыце пароль",
     "registering": "Рэгістрацыя...",
     "noAccount": "Няма аккаўнта?",
-    "hasAccount": "Ужо ёсць акаўнт?"
+    "hasAccount": "Ужо ёсць акаўнт?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Перайсці на GitHub",
   "chatSidebar": {

@@ -302,7 +302,11 @@
     "repeatPassword": "Zopakujte heslo",
     "registering": "Registrace...",
     "noAccount": "Nemáte účet?",
-    "hasAccount": "Už máte účet?"
+    "hasAccount": "Už máte účet?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Přejít na GitHub",
   "chatSidebar": {

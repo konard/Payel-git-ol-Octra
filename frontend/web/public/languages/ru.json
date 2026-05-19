@@ -290,7 +290,11 @@
     "repeatPassword": "Повторите пароль",
     "registering": "Регистрация...",
     "noAccount": "Нет аккаунта?",
-    "hasAccount": "Уже есть аккаунт?"
+    "hasAccount": "Уже есть аккаунт?",
+    "continueWithGoogle": "Продолжить с Google",
+    "continueWithGithub": "Продолжить с GitHub",
+    "registerWithGoogle": "Регистрация через Google",
+    "registerWithGithub": "Регистрация через GitHub"
   },
   "goToGitHub": "Перейти на GitHub",
   "chatSidebar": {

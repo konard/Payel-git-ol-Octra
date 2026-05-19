@@ -302,7 +302,11 @@
     "repeatPassword": "Επαναλάβετε κωδικό",
     "registering": "Εγγραφή...",
     "noAccount": "Δεν έχετε λογαριασμό;",
-    "hasAccount": "Έχετε ήδη λογαριασμό;"
+    "hasAccount": "Έχετε ήδη λογαριασμό;",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Μετάβαση στο GitHub",
   "chatSidebar": {

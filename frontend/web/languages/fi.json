@@ -302,7 +302,11 @@
     "repeatPassword": "Toista salasana",
     "registering": "Rekisteröidytään...",
     "noAccount": "Eikö sinulla ole tiliä?",
-    "hasAccount": "Onko sinulla jo tili?"
+    "hasAccount": "Onko sinulla jo tili?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Siirry GitHubiin",
   "chatSidebar": {

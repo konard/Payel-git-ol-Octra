@@ -275,7 +275,11 @@
     "repeatPassword": "Құпиясөзді қайталаңыз",
     "registering": "Тіркелу...",
     "noAccount": "Аккаунт жоқ па?",
-    "hasAccount": "Аккаунт бар ма?"
+    "hasAccount": "Аккаунт бар ма?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "GitHub-қа өту",
   "chatSidebar": {

@@ -302,7 +302,11 @@
     "repeatPassword": "Herhaal wachtwoord",
     "registering": "Registreren...",
     "noAccount": "Geen account?",
-    "hasAccount": "Al een account?"
+    "hasAccount": "Al een account?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Ga naar GitHub",
   "chatSidebar": {

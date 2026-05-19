@@ -302,7 +302,11 @@
     "repeatPassword": "Repetați parola",
     "registering": "Înregistrare...",
     "noAccount": "Nu aveți cont?",
-    "hasAccount": "Aveți deja cont?"
+    "hasAccount": "Aveți deja cont?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Mergi pe GitHub",
   "chatSidebar": {

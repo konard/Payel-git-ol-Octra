@@ -302,7 +302,11 @@
     "repeatPassword": "Jelszó ismétlése",
     "registering": "Regisztráció...",
     "noAccount": "Nincs fiókja?",
-    "hasAccount": "Már van fiókja?"
+    "hasAccount": "Már van fiókja?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Ugrás a GitHubra",
   "chatSidebar": {

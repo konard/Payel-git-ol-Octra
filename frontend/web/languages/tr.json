@@ -302,7 +302,11 @@
     "repeatPassword": "Şifreyi tekrar girin",
     "registering": "Kayıt yapılıyor...",
     "noAccount": "Hesabınız yok mu?",
-    "hasAccount": "Zaten hesabınız var mı?"
+    "hasAccount": "Zaten hesabınız var mı?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "GitHub'a Git",
   "chatSidebar": {

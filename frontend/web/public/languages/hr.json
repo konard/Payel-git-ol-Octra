@@ -302,7 +302,11 @@
     "repeatPassword": "Ponovite lozinku",
     "registering": "Registracija...",
     "noAccount": "Nemate račun?",
-    "hasAccount": "Već imate račun?"
+    "hasAccount": "Već imate račun?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Idi na GitHub",
   "chatSidebar": {

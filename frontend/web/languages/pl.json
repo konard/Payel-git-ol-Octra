@@ -370,5 +370,33 @@
         "desc": "From simple tasks to complex multi-agent systems without limits"
       }
     }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "loginTitle": "Login",
+    "registerTitle": "Registration",
+    "close": "Close",
+    "emailRequired": "Email is required",
+    "passwordRequired": "Password is required",
+    "usernameRequired": "Username is required",
+    "invalidEmail": "Invalid email format",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordsNotMatch": "Passwords do not match",
+    "password": "Password",
+    "enterPassword": "Enter password",
+    "loggingIn": "Logging in...",
+    "username": "Username",
+    "yourName": "Your name",
+    "min6Chars": "Min. 6 characters",
+    "confirmPassword": "Confirm password",
+    "repeatPassword": "Repeat password",
+    "registering": "Registering...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   }
 }

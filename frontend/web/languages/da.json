@@ -302,7 +302,11 @@
     "repeatPassword": "Gentag adgangskode",
     "registering": "Opretter...",
     "noAccount": "Har du ingen konto?",
-    "hasAccount": "Har du allerede en konto?"
+    "hasAccount": "Har du allerede en konto?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "registerWithGoogle": "Sign up with Google",
+    "registerWithGithub": "Sign up with GitHub"
   },
   "goToGitHub": "Gå til GitHub",
   "chatSidebar": {
