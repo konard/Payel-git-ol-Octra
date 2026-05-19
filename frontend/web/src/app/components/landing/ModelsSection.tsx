@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { useI18n } from '../../../hooks/useI18n';
 import agentsImage from '../../../images/main/dark/agents/agents.png';
 
 interface ModelCategory {
@@ -36,6 +37,7 @@ const modelCategories: ModelCategory[] = [
 ];
 
 export function ModelsSection() {
+  const { t } = useI18n();
   return (
     <section id="models" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -48,7 +50,7 @@ export function ModelsSection() {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
           >
-            Выбор моделей
+            {t('landing.models.badge')}
           </motion.div>
 
           <motion.h2
@@ -58,8 +60,8 @@ export function ModelsSection() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
           >
-            Любые модели для
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> любых задач</span>
+            {t('landing.models.title')}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.models.titleAccent')}</span>
           </motion.h2>
 
           <motion.p

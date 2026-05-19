@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useThemeStore } from '../../../stores/themeStore';
+import { useI18n } from '../../../hooks/useI18n';
 import openaiIcon from '../../../images/icon.png';
 import geminiIcon from '../../../images/gemini-color.png';
 import claudeIcon from '../../../images/Claude_AI_symbol.svg';
@@ -29,6 +30,7 @@ const providers: Provider[] = [
 
 export function ProvidersSection() {
   const { isDark } = useThemeStore();
+  const { t } = useI18n();
 
   return (
     <section id="providers" className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--surface)]">
@@ -42,7 +44,7 @@ export function ProvidersSection() {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
           >
-            Поддерживаемые провайдеры
+            {t('landing.providers.badge')}
           </motion.div>
 
           <motion.h2
@@ -52,8 +54,8 @@ export function ProvidersSection() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
           >
-            Все популярные
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> провайдеры</span>
+            {t('landing.providers.title')}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.providers.titleAccent')}</span>
           </motion.h2>
 
           <motion.p
@@ -63,8 +65,7 @@ export function ProvidersSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-xl text-[var(--text-muted)] max-w-3xl mx-auto"
           >
-            Подключайте любые AI-модели от ведущих провайдеров.
-            Используйте один API ключ для всех задач или комбинируйте несколько провайдеров.
+            {t('landing.providers.description')}
           </motion.p>
         </div>
 

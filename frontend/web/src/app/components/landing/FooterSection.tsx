@@ -1,6 +1,8 @@
 import octraMascot from '../../../images/octra-mascot.png';
+import { useI18n } from '../../../hooks/useI18n';
 
 export function FooterSection() {
+  const { t } = useI18n();
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -16,13 +18,13 @@ export function FooterSection() {
               <span className="text-lg font-semibold text-[var(--text)]">Octra</span>
             </div>
             <p className="text-sm text-[var(--text-muted)]">
-              Визуальный редактор для управления AI-агентами
+              {t('landing.footer.tagline')}
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="text-sm font-semibold text-[var(--text)] mb-4">Продукт</h4>
+            <h4 className="text-sm font-semibold text-[var(--text)] mb-4">{t('landing.footer.product')}</h4>
             <ul className="space-y-2">
               <li><a href="#workflow" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Workflow</a></li>
               <li><a href="#agents" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Агенты</a></li>

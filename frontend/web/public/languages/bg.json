@@ -347,5 +347,61 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete this model?"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Редактор на Visual AI Agent",
+      "title": "Създайте<br />AI екипи<br />Визуално",
+      "subtitle": "Мощен визуален интерфейс за изграждане, свързване и управление на мултиагентни системи. Не се изисква код.",
+      "ctaStart": "Започнете безплатно",
+      "ctaDemo": "Гледайте демонстрация"
+    },
+    "features": {
+      "badge": "Характеристики",
+      "title": "Всичко необходимо за",
+      "titleAccent": "AI работа",
+      "description": "Пълен набор от инструменти за изграждане, управление и мониторинг на мултиагентни системи",
+      "visualEditor": {
+        "title": "Визуален редактор",
+        "desc": "Създавайте и конфигурирайте работни процеси с интерфейс за плъзгане и пускане"
+      },
+      "hierarchy": {
+        "title": "Йерархия на агента",
+        "desc": "Организирайте агентите в Boss → Manager → Worker структура за ефективен контрол"
+      },
+      "realtime": {
+        "title": "Наблюдение в реално време",
+        "desc": "Гледайте изпълнението на задача на живо с анимации на потока от данни"
+      },
+      "flexible": {
+        "title": "Гъвкава конфигурация",
+        "desc": "Конфигурирайте параметрите на всеки агент независимо"
+      },
+      "templates": {
+        "title": "Библиотека с шаблони",
+        "desc": "Запазете и използвайте повторно готови работни процеси за различни задачи"
+      },
+      "export": {
+        "title": "Експорт и импорт",
+        "desc": "Експортирайте проекти в JSON и ги импортирайте по всяко време"
+      },
+      "providers": {
+        "title": "Множество доставчици",
+        "desc": "Supports OpenAI, Google, Anthropic, OpenRouter and many more"
+      },
+      "scalability": {
+        "title": "Scalability",
+        "desc": "From simple tasks to complex multi-agent systems without limits"
+      }
+    },
+    "agents": {
+      "badge": "Agent Hierarchy",
+      "title": "Three levels of",
+      "titleAccent": " management",
+      "description": "Organize AI agents into an efficient hierarchical structure for optimal task management",
+      "boss": "Top coordinator that distributes tasks among managers",
+      "manager": "Manages a group of workers and controls the execution process",
+      "worker": "Executes specific tasks and specializes in particular operations"
+    }
   }
 }

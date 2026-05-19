@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { useI18n } from '../../../hooks/useI18n';
 
 interface Setting {
   title: string;
@@ -40,6 +41,7 @@ const settings: Setting[] = [
 ];
 
 export function SettingsSection() {
+  const { t } = useI18n();
   return (
     <section id="settings" className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--surface)]">
       <div className="max-w-7xl mx-auto">
@@ -52,7 +54,7 @@ export function SettingsSection() {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
           >
-            Настройки
+            {t('landing.settings.badge')}
           </motion.div>
 
           <motion.h2
@@ -62,8 +64,8 @@ export function SettingsSection() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
           >
-            Полная
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> кастомизация</span>
+            {t('landing.settings.title')}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.settings.titleAccent')}</span>
           </motion.h2>
 
           <motion.p

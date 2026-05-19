@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useI18n } from '../../hooks/useI18n';
 import { HeroSection } from './landing/HeroSection';
 import { WorkflowDemo } from './landing/WorkflowDemo';
 import { ProvidersSection } from './landing/ProvidersSection';
@@ -13,6 +14,7 @@ import octraMascot from '../../images/octra-mascot.png';
 export default function LandingPage() {
   const { isDark } = useThemeStore();
   const { isAuthenticated } = useAuthStore();
+  const { t } = useI18n();
 
   useEffect(() => {
     // Scroll to top on mount
@@ -41,19 +43,19 @@ export default function LandingPage() {
             {/* Links */}
             <div className="hidden md:flex items-center gap-8">
               <a href="#workflow" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                Workflow
+                {t('landing.nav.workflow')}
               </a>
               <a href="#agents" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                Агенты
+                {t('landing.nav.agents')}
               </a>
               <a href="#providers" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                Провайдеры
+                {t('landing.nav.providers')}
               </a>
               <a href="#models" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                Модели
+                {t('landing.nav.models')}
               </a>
               <a href="#settings" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                Настройки
+                {t('landing.nav.settings')}
               </a>
             </div>
 
@@ -63,13 +65,13 @@ export default function LandingPage() {
                 href="/app"
                 className="px-4 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface)] rounded-md transition-colors"
               >
-                Войти
+                {t('landing.nav.login')}
               </a>
               <a
                 href="/app"
                 className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-md transition-all shadow-md hover:shadow-lg"
               >
-                Начать
+                {t('landing.nav.start')}
               </a>
             </div>
           </div>

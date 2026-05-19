@@ -57,7 +57,7 @@ export const LANGUAGES_INFO: Record<LanguageCode, LanguageInfo> = {
 
 // Country code to language code mapping for auto-detection
 export const COUNTRY_TO_LANGUAGE: Record<string, LanguageCode> = {
-  RU: 'ru', UA: 'uk', BY: 'be', KZ: 'kk', UZ: 'uz', AM: 'hy',
+  RU: 'ru', UA: 'uk',   BY: 'ru', // Belarus uses Russian by default KZ: 'kk', UZ: 'uz', AM: 'hy',
   FR: 'fr', DE: 'de', ES: 'es', CN: 'zh', JP: 'ja', KR: 'ko', IT: 'it',
   PL: 'pl', PT: 'pt', SA: 'ar', TR: 'tr', NL: 'nl',
   FI: 'fi', SE: 'sv', DK: 'da', NO: 'no', GR: 'el', HU: 'hu',

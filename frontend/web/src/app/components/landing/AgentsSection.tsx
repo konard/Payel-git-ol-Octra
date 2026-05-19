@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
 import { useThemeStore } from '../../../stores/themeStore';
+import { useI18n } from '../../../hooks/useI18n';
 import workflowFull from '../../../images/main/dark/workfloy/workflow_dark_theme.png';
 import workflowFullLight from '../../../images/main/light/main_screen.png';
 
 export function AgentsSection() {
   const { isDark } = useThemeStore();
+  const { t } = useI18n();
 
   return (
     <section id="agents" className="py-20 px-4 sm:px-6 lg:px-8">
@@ -36,7 +38,7 @@ export function AgentsSection() {
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
             >
-              Иерархия агентов
+              {t('landing.agents.badge')}
             </motion.div>
 
             <motion.h2
@@ -46,8 +48,8 @@ export function AgentsSection() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
             >
-              Три уровня
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> управления</span>
+              {t('landing.agents.title')}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.agents.titleAccent')}</span>
             </motion.h2>
 
             <motion.p
@@ -57,7 +59,7 @@ export function AgentsSection() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg text-[var(--text-muted)] mb-8"
             >
-              Организуйте AI-агентов в эффективную иерархическую структуру для оптимального управления задачами
+              {t('landing.agents.description')}
             </motion.p>
 
             <motion.div
@@ -74,7 +76,7 @@ export function AgentsSection() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Boss</h3>
-                  <p className="text-[var(--text-muted)]">Главный координатор, распределяет задачи между менеджерами</p>
+                  <p className="text-[var(--text-muted)]">{t('landing.agents.boss')}</p>
                 </div>
               </div>
 
@@ -85,7 +87,7 @@ export function AgentsSection() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Manager</h3>
-                  <p className="text-[var(--text-muted)]">Управляет группой воркеров, контролирует процесс выполнения</p>
+                  <p className="text-[var(--text-muted)]">{t('landing.agents.manager')}</p>
                 </div>
               </div>
 
@@ -96,7 +98,7 @@ export function AgentsSection() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Worker</h3>
-                  <p className="text-[var(--text-muted)]">Выполняет конкретные задачи, специализируется на определённых операциях</p>
+                  <p className="text-[var(--text-muted)]">{t('landing.agents.worker')}</p>
                 </div>
               </div>
             </motion.div>

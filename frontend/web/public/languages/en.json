@@ -343,5 +343,102 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete this model?"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Visual AI Agent Editor",
+      "title": "Create<br />AI Teams<br />Visually",
+      "subtitle": "Powerful visual interface for building, connecting and running multi-agent systems. No code required.",
+      "ctaStart": "Start for free",
+      "ctaDemo": "Watch demo"
+    },
+    "features": {
+      "badge": "Features",
+      "title": "Everything you need for",
+      "titleAccent": " AI work",
+      "description": "Complete toolkit for building, managing and monitoring multi-agent systems",
+      "visualEditor": {
+        "title": "Visual Editor",
+        "desc": "Create and configure workflows with drag-and-drop interface"
+      },
+      "hierarchy": {
+        "title": "Agent Hierarchy",
+        "desc": "Organize agents in Boss → Manager → Worker structure for efficient control"
+      },
+      "realtime": {
+        "title": "Real-time Monitoring",
+        "desc": "Watch task execution live with data flow animations"
+      },
+      "flexible": {
+        "title": "Flexible Configuration",
+        "desc": "Configure each agent parameters independently"
+      },
+      "templates": {
+        "title": "Template Library",
+        "desc": "Save and reuse ready workflows for different tasks"
+      },
+      "export": {
+        "title": "Export & Import",
+        "desc": "Export projects to JSON and import them anytime"
+      },
+      "providers": {
+        "title": "Multiple Providers",
+        "desc": "Supports OpenAI, Google, Anthropic, OpenRouter and many more"
+      },
+      "scalability": {
+        "title": "Scalability",
+        "desc": "From simple tasks to complex multi-agent systems without limits"
+      }
+    },
+    "agents": {
+      "badge": "Agent Hierarchy",
+      "title": "Three levels of",
+      "titleAccent": " management",
+      "description": "Organize AI agents into an efficient hierarchical structure for optimal task management",
+      "boss": "Top coordinator that distributes tasks among managers",
+      "manager": "Manages a group of workers and controls the execution process",
+      "worker": "Executes specific tasks and specializes in particular operations"
+    },
+    "nav": {
+      "workflow": "Workflow",
+      "agents": "Agents",
+      "providers": "Providers",
+      "models": "Models",
+      "settings": "Settings",
+      "login": "Login",
+      "start": "Get Started"
+    },
+    "workflow": {
+      "badge": "How it works",
+      "title": "Visual AI Agent",
+      "titleAccent": " Management",
+      "description": "Build complex workflows with simple drag-and-drop. Connect agents, configure roles and watch tasks execute in real time.",
+      "feature1": "Drag-and-drop node movement",
+      "feature2": "Real-time execution animation",
+      "feature3": "Boss → Manager → Worker hierarchy",
+      "feature4": "Automatic scaling"
+    },
+    "providers": {
+      "badge": "Supported Providers",
+      "title": "All popular",
+      "titleAccent": " providers",
+      "description": "Connect any AI models from leading providers. Use one API key for all tasks or combine multiple providers."
+    },
+    "models": {
+      "badge": "Model Selection",
+      "title": "Any models for",
+      "titleAccent": " any tasks"
+    },
+    "settings": {
+      "badge": "Settings",
+      "title": "Full",
+      "titleAccent": " customization"
+    },
+    "footer": {
+      "tagline": "Visual editor for managing AI agents",
+      "product": "Product",
+      "resources": "Resources",
+      "company": "Company"
+    }
   }
 }

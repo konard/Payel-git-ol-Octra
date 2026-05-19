@@ -60,7 +60,7 @@ const extraKeys = {
     login: 'Login',
     register: 'Register',
     loginTitle: 'Login',
-    registerTitle: 'Register',
+    registerTitle: 'Registration',
     close: 'Close',
     emailRequired: 'Email is required',
     passwordRequired: 'Password is required',
@@ -78,8 +78,13 @@ const extraKeys = {
     repeatPassword: 'Repeat password',
     registering: 'Registering...',
     noAccount: "Don't have an account?",
-    hasAccount: 'Already have an account?'
+    hasAccount: 'Already have an account?',
+    continueWithGoogle: 'Continue with Google',
+    continueWithGithub: 'Continue with GitHub',
+    registerWithGoogle: 'Sign up with Google',
+    registerWithGithub: 'Sign up with GitHub'
   }
+
 };
 
 const translations = {

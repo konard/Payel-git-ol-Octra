@@ -320,5 +320,52 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete this model?"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Visual AI Agent Editor",
+      "title": "Create<br />AI Teams<br />Visually",
+      "subtitle": "Powerful visual interface for building, connecting and running multi-agent systems. No code required.",
+      "ctaStart": "Start for free",
+      "ctaDemo": "Watch demo"
+    },
+    "features": {
+      "badge": "Features",
+      "title": "Everything you need for",
+      "titleAccent": " AI work",
+      "description": "Complete toolkit for building, managing and monitoring multi-agent systems",
+      "visualEditor": {
+        "title": "Visual Editor",
+        "desc": "Create and configure workflows with drag-and-drop interface"
+      },
+      "hierarchy": {
+        "title": "Agent Hierarchy",
+        "desc": "Organize agents in Boss → Manager → Worker structure for efficient control"
+      },
+      "realtime": {
+        "title": "Real-time Monitoring",
+        "desc": "Watch task execution live with data flow animations"
+      },
+      "flexible": {
+        "title": "Flexible Configuration",
+        "desc": "Configure each agent parameters independently"
+      },
+      "templates": {
+        "title": "Template Library",
+        "desc": "Save and reuse ready workflows for different tasks"
+      },
+      "export": {
+        "title": "Export & Import",
+        "desc": "Export projects to JSON and import them anytime"
+      },
+      "providers": {
+        "title": "Multiple Providers",
+        "desc": "Supports OpenAI, Google, Anthropic, OpenRouter and many more"
+      },
+      "scalability": {
+        "title": "Scalability",
+        "desc": "From simple tasks to complex multi-agent systems without limits"
+      }
+    }
   }
 }

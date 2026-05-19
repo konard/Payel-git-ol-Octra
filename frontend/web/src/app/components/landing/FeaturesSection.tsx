@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { useI18n } from '../../../hooks/useI18n';
 
 interface Feature {
   title: string;
@@ -7,58 +8,60 @@ interface Feature {
   color: string;
 }
 
-const features: Feature[] = [
-  {
-    title: 'Визуальный редактор',
-    description: 'Создавайте и настраивайте workflow с помощью drag-and-drop интерфейса',
-    icon: '⊞',
-    color: '#ff6d5a',
-  },
-  {
-    title: 'Иерархия агентов',
-    description: 'Организуйте агентов в структуры Boss → Manager → Worker для эффективного управления',
-    icon: '⊿',
-    color: '#5a9bff',
-  },
-  {
-    title: 'Real-time мониторинг',
-    description: 'Наблюдайте за выполнением задач в реальном времени с анимацией потока данных',
-    icon: '◉',
-    color: '#50e3c2',
-  },
-  {
-    title: 'Гибкая настройка',
-    description: 'Настраивайте параметры каждого агента независимо от остальных',
-    icon: '⚙',
-    color: '#d97706',
-  },
-  {
-    title: 'Библиотека шаблонов',
-    description: 'Сохраняйте и переиспользуйте готовые workflow для разных задач',
-    icon: '⊡',
-    color: '#8b5cf6',
-  },
-  {
-    title: 'Экспорт и импорт',
-    description: 'Экспортируйте проекты в JSON и импортируйте их в любой момент',
-    icon: '⇄',
-    color: '#ec4899',
-  },
-  {
-    title: 'Множество провайдеров',
-    description: 'Поддерживаются OpenAI, Google, Anthropic, OpenRouter и многие другие',
-    icon: '◎',
-    color: '#06b6d4',
-  },
-  {
-    title: 'Масштабируемость',
-    description: 'От простых задач до сложных multi-agent систем без ограничений',
-    icon: '⬡',
-    color: '#f59e0b',
-  },
-];
-
 export function FeaturesSection() {
+  const { t } = useI18n();
+
+  const features: Feature[] = [
+    {
+      title: t('landing.features.visualEditor.title'),
+      description: t('landing.features.visualEditor.desc'),
+      icon: '⊞',
+      color: '#ff6d5a',
+    },
+    {
+      title: t('landing.features.hierarchy.title'),
+      description: t('landing.features.hierarchy.desc'),
+      icon: '⊿',
+      color: '#5a9bff',
+    },
+    {
+      title: t('landing.features.realtime.title'),
+      description: t('landing.features.realtime.desc'),
+      icon: '◉',
+      color: '#50e3c2',
+    },
+    {
+      title: t('landing.features.flexible.title'),
+      description: t('landing.features.flexible.desc'),
+      icon: '⚙',
+      color: '#d97706',
+    },
+    {
+      title: t('landing.features.templates.title'),
+      description: t('landing.features.templates.desc'),
+      icon: '⊡',
+      color: '#8b5cf6',
+    },
+    {
+      title: t('landing.features.export.title'),
+      description: t('landing.features.export.desc'),
+      icon: '⇄',
+      color: '#ec4899',
+    },
+    {
+      title: t('landing.features.providers.title'),
+      description: t('landing.features.providers.desc'),
+      icon: '◎',
+      color: '#06b6d4',
+    },
+    {
+      title: t('landing.features.scalability.title'),
+      description: t('landing.features.scalability.desc'),
+      icon: '⬡',
+      color: '#f59e0b',
+    },
+  ];
+
   return (
     <section id="features" className="features-section">
       <div className="features-section__content">
@@ -69,7 +72,7 @@ export function FeaturesSection() {
           transition={{ duration: 0.6 }}
           className="features-section__badge"
         >
-          Возможности
+          {t('landing.features.badge')}
         </motion.div>
 
         <motion.h2
@@ -79,8 +82,8 @@ export function FeaturesSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="features-section__title"
         >
-          Всё что нужно для
-          <span className="features-section__title-accent"> работы с AI</span>
+          {t('landing.features.title')}
+          <span className="features-section__title-accent">{t('landing.features.titleAccent')}</span>
         </motion.h2>
 
         <motion.p
@@ -90,7 +93,7 @@ export function FeaturesSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="features-section__description"
         >
-          Полный набор инструментов для создания, управления и мониторинга multi-agent систем
+          {t('landing.features.description')}
         </motion.p>
 
         <div className="features-section__grid">

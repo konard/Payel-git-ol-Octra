@@ -10,6 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion } from 'motion/react';
+import { useI18n } from '../../../hooks/useI18n';
 import { BossNode } from '../../components/nodes/BossNode';
 import { ManagerNode } from '../../components/nodes/ManagerNode';
 import { WorkerNode } from '../../components/nodes/WorkerNode';
@@ -136,6 +137,7 @@ export function WorkflowDemo() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [activeNodeIndex, setActiveNodeIndex] = useState(0);
+  const { t } = useI18n();
 
   // Cycle through nodes to show execution animation
   useEffect(() => {
@@ -170,37 +172,36 @@ export function WorkflowDemo() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Text content */}
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
-            >
-              Как это работает
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
+              >
+                {t('landing.workflow.badge')}
+              </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
-            >
-              Визуальное управление
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> AI-агентами</span>
-            </motion.h2>
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
+              >
+                {t('landing.workflow.title')}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.workflow.titleAccent')}</span>
+              </motion.h2>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg text-[var(--text-muted)] mb-8"
-            >
-              Создавайте сложные workflow с помощью простого drag-and-drop.
-              Соединяйте агентов, настраивайте роли и наблюдайте за выполнением задач в реальном времени.
-            </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-lg text-[var(--text-muted)] mb-8"
+              >
+                {t('landing.workflow.description')}
+              </motion.p>
 
             <motion.ul
               initial={{ opacity: 0, y: 20 }}
@@ -210,10 +211,10 @@ export function WorkflowDemo() {
               className="space-y-4"
             >
               {[
-                'Drag-and-drop перемещение нод',
-                'Анимация выполнения в реальном времени',
-                'Иерархия Boss → Manager → Worker',
-                'Автоматическое масштабирование',
+                t('landing.workflow.feature1'),
+                t('landing.workflow.feature2'),
+                t('landing.workflow.feature3'),
+                t('landing.workflow.feature4'),
               ].map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">

@@ -337,5 +337,102 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete this model?"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Visueller AI-Agenten-Editor",
+      "title": "Erstellen Sie<br />AI-Teams<br />Visuell",
+      "subtitle": "Leistungsstarke visuelle Oberfläche zum Erstellen, Verbinden und Ausführen von Multi-Agenten-Systemen. Kein Code erforderlich.",
+      "ctaStart": "Kostenlos starten",
+      "ctaDemo": "Demo ansehen"
+    },
+    "features": {
+      "badge": "Funktionen",
+      "title": "Alles was Sie brauchen für",
+      "titleAccent": " AI-Arbeit",
+      "description": "Vollständiges Toolkit zum Erstellen, Verwalten und Überwachen von Multi-Agenten-Systemen",
+      "visualEditor": {
+        "title": "Visueller Editor",
+        "desc": "Erstellen und konfigurieren Sie Workflows mit Drag-and-Drop-Oberfläche"
+      },
+      "hierarchy": {
+        "title": "Agenten-Hierarchie",
+        "desc": "Organisieren Sie Agenten in Boss → Manager → Worker-Struktur für effiziente Kontrolle"
+      },
+      "realtime": {
+        "title": "Echtzeit-Überwachung",
+        "desc": "Beobachten Sie die Aufgabenausführung live mit Datenfluss-Animationen"
+      },
+      "flexible": {
+        "title": "Flexible Konfiguration",
+        "desc": "Konfigurieren Sie die Parameter jedes Agenten unabhängig"
+      },
+      "templates": {
+        "title": "Vorlagenbibliothek",
+        "desc": "Speichern und wiederverwenden Sie fertige Workflows für verschiedene Aufgaben"
+      },
+      "export": {
+        "title": "Export & Import",
+        "desc": "Exportieren Sie Projekte als JSON und importieren Sie sie jederzeit"
+      },
+      "providers": {
+        "title": "Mehrere Anbieter",
+        "desc": "Unterstützt OpenAI, Google, Anthropic, OpenRouter und viele mehr"
+      },
+      "scalability": {
+        "title": "Skalierbarkeit",
+        "desc": "Von einfachen Aufgaben bis zu komplexen Multi-Agenten-Systemen ohne Limits"
+      }
+    },
+    "agents": {
+      "badge": "Agenten-Hierarchie",
+      "title": "Drei Ebenen",
+      "titleAccent": " der Verwaltung",
+      "description": "Organisieren Sie AI-Agenten in eine effiziente hierarchische Struktur für optimales Aufgabenmanagement",
+      "boss": "Oberster Koordinator, der Aufgaben an Manager verteilt",
+      "manager": "Verwaltet eine Gruppe von Workern und steuert den Ausführungsprozess",
+      "worker": "Führt spezifische Aufgaben aus und spezialisiert sich auf bestimmte Operationen"
+    },
+    "nav": {
+      "workflow": "Workflow",
+      "agents": "Agenten",
+      "providers": "Anbieter",
+      "models": "Modelle",
+      "settings": "Einstellungen",
+      "login": "Anmelden",
+      "start": "Jetzt starten"
+    },
+    "workflow": {
+      "badge": "So funktioniert es",
+      "title": "Visuelle AI-Agenten",
+      "titleAccent": "-Verwaltung",
+      "description": "Erstellen Sie komplexe Workflows mit einfachem Drag-and-Drop. Verbinden Sie Agenten, konfigurieren Sie Rollen und beobachten Sie die Aufgabenausführung in Echtzeit.",
+      "feature1": "Drag-and-drop Verschieben von Knoten",
+      "feature2": "Echtzeit-Ausführungsanimation",
+      "feature3": "Boss → Manager → Worker Hierarchie",
+      "feature4": "Automatische Skalierung"
+    },
+    "providers": {
+      "badge": "Unterstützte Anbieter",
+      "title": "Alle beliebten",
+      "titleAccent": " Anbieter",
+      "description": "Verbinden Sie beliebige AI-Modelle von führenden Anbietern. Verwenden Sie einen API-Schlüssel für alle Aufgaben oder kombinieren Sie mehrere Anbieter."
+    },
+    "models": {
+      "badge": "Modellauswahl",
+      "title": "Beliebige Modelle für",
+      "titleAccent": " jede Aufgabe"
+    },
+    "settings": {
+      "badge": "Einstellungen",
+      "title": "Vollständige",
+      "titleAccent": " Anpassung"
+    },
+    "footer": {
+      "tagline": "Visueller Editor zur Verwaltung von AI-Agenten",
+      "product": "Produkt",
+      "resources": "Ressourcen",
+      "company": "Unternehmen"
+    }
   }
 }
