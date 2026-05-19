@@ -89,36 +89,6 @@ export function ModelsSection() {
           />
         </motion.div>
 
-        {/* Models grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {modelCategories.map((category, index) => (
-            <motion.div
-              key={category.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:shadow-lg transition-all"
-            >
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br ${category.color} text-white font-bold text-lg mb-4`}>
-                {category.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-[var(--text)] mb-4">
-                {category.name}
-              </h3>
-              <div className="space-y-2">
-                {category.models.map((model) => (
-                  <div
-                    key={model}
-                    className="px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-sm text-[var(--text-muted)]"
-                  >
-                    {model}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
       </div>
     </section>
   );

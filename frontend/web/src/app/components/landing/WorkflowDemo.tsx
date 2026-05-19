@@ -7,92 +7,21 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
-  Handle,
-  Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion } from 'motion/react';
+import { BossNode } from '../../components/nodes/BossNode';
+import { ManagerNode } from '../../components/nodes/ManagerNode';
+import { WorkerNode } from '../../components/nodes/WorkerNode';
 // import bossImage from '../../../images/boss-image.png';
 // import managerImage from '../../../images/manager-image.png';
 // import workerImage from '../../../images/worker-image.png';
 
-// Custom node components for landing
-function LandingBossNode({ data }: { data: any }) {
-  return (
-    <div className="bg-[var(--bg-node)] text-[var(--text-node)] rounded-lg shadow-lg border-2 border-orange-500 min-w-[220px] overflow-hidden">
-      <Handle type="target" position={Position.Top} />
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center text-white font-bold">B</div>
-          <span className="font-bold text-base">BOSS</span>
-        </div>
-        <span className="text-sm font-medium">COORDINATING</span>
-      </div>
-      <div className="p-3 space-y-2">
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Роль:</span> {data.role}
-        </div>
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Статус:</span> <span className="text-orange-500 font-semibold">WORKING</span>
-        </div>
-      </div>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
-  );
-}
-
-function LandingManagerNode({ data }: { data: any }) {
-  return (
-    <div className="bg-[var(--bg-node)] text-[var(--text-node)] rounded-lg shadow-lg border-2 border-blue-500 min-w-[200px] overflow-hidden">
-      <Handle type="target" position={Position.Top} />
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center text-white font-bold">M</div>
-          <span className="font-bold text-base">MANAGER</span>
-        </div>
-        <span className="text-sm font-medium">WORKING</span>
-      </div>
-      <div className="p-3 space-y-2">
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Роль:</span> {data.role}
-        </div>
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Статус:</span> <span className="text-blue-500 font-semibold">ACTIVE</span>
-        </div>
-      </div>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
-  );
-}
-
-function LandingWorkerNode({ data }: { data: any }) {
-  return (
-    <div className="bg-[var(--bg-node)] text-[var(--text-node)] rounded-lg shadow-lg border-2 border-green-500 min-w-[180px] overflow-hidden">
-      <Handle type="target" position={Position.Top} />
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-t-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center text-white font-bold">W</div>
-          <span className="font-bold text-base">WORKER</span>
-        </div>
-        <span className="text-sm font-medium">DONE</span>
-      </div>
-      <div className="p-3 space-y-2">
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Роль:</span> {data.role}
-        </div>
-        <div className="text-xs">
-          <span className="text-[var(--text-muted)]">Статус:</span> <span className="text-green-500 font-semibold">COMPLETE</span>
-        </div>
-      </div>
-      <Handle type="source" position={Position.Bottom} id="source" />
-    </div>
-  );
-}
-
+// Use real node components from the app for perfect visual consistency
 const nodeTypes = {
-  boss: LandingBossNode,
-  manager: LandingManagerNode,
-  worker: LandingWorkerNode,
+  boss: BossNode,
+  manager: ManagerNode,
+  worker: WorkerNode,
 };
 
 // Realistic node positions from the actual application
@@ -101,61 +30,93 @@ const initialNodes: Node[] = [
     id: 'boss-1',
     type: 'boss',
     position: { x: 377, y: 42 },
-    data: { role: 'Project Lead' },
+    data: { 
+      role: 'Project Lead',
+      techStack: ['TypeScript', 'React'],
+      isConnected: true
+    },
   },
   {
     id: 'manager-1',
     type: 'manager',
     position: { x: 50, y: 280 },
-    data: { role: 'Research' },
+    data: { 
+      role: 'Integration',
+      techStack: [],
+      isConnected: true
+    },
   },
   {
     id: 'manager-2',
     type: 'manager',
     position: { x: 400, y: 280 },
-    data: { role: 'Development' },
+    data: { 
+      role: 'Development',
+      techStack: ['React', 'Node.js'],
+      isConnected: true
+    },
   },
   {
     id: 'manager-3',
     type: 'manager',
     position: { x: 750, y: 280 },
-    data: { role: 'Testing' },
+    data: { 
+      role: 'Analyze',
+      techStack: [],
+      isConnected: true
+    },
   },
   {
     id: 'worker-1',
     type: 'worker',
     position: { x: -60, y: 594 },
-    data: { role: 'Search' },
+    data: { 
+      role: 'Research',
+      techStack: ['Python'],
+      isConnected: true
+    },
   },
   {
     id: 'worker-2',
     type: 'worker',
     position: { x: 146, y: 741 },
-    data: { role: 'Analyze' },
+    data: { 
+      role: 'Search',
+      techStack: [],
+      isConnected: true
+    },
   },
   {
     id: 'worker-3',
     type: 'worker',
     position: { x: 266, y: 479 },
-    data: { role: 'Frontend' },
+    data: { 
+      role: 'Testing',
+      techStack: ['Jest'],
+      isConnected: true
+    },
   },
   {
     id: 'worker-4',
     type: 'worker',
     position: { x: 456, y: 630 },
-    data: { role: 'Backend' },
+    data: { 
+      role: 'Backend',
+      techStack: [],
+      isConnected: true
+    },
   },
   {
     id: 'worker-5',
     type: 'worker',
     position: { x: 641, y: 485 },
-    data: { role: 'Unit Tests' },
+    data: { role: 'Unit Tests', isConnected: true },
   },
   {
     id: 'worker-6',
     type: 'worker',
     position: { x: 906, y: 575 },
-    data: { role: 'Integration' },
+    data: { role: 'Integration', isConnected: true },
   },
 ];
 

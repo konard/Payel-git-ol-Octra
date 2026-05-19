@@ -47,9 +47,9 @@ function BossNodeComponent({ id, data }: NodeProps<{ data: BossNodeData }>) {
 
       // Добавляем анимации в зависимости от статуса
       if (status === 'thinking') {
-        classes += ' crewai-node--sending';
+        classes += ' crewai-node--sending ring-2 ring-green-400/50';
       } else if (status === 'working') {
-        classes += ' crewai-node--working';
+        classes += ' crewai-node--working ring-2 ring-blue-400/60 animate-pulse';
       }
     }
 
