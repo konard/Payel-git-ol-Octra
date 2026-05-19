@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useI18n } from '../hooks/useI18n';
+import googleIcon from '../images/google-auth.png';
 
 type AuthView = 'login' | 'register';
 
@@ -125,7 +126,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl w-full max-w-[400px] mx-4 flex flex-col overflow-hidden"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl w-full max-w-[400px] mx-4 flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -189,14 +190,38 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-                {isLoading ? t('auth.loggingIn') : t('auth.login')}
-              </button>
-            </form>
+               <button
+                 type="submit"
+                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                 disabled={isLoading}
+               >
+                 {isLoading ? t('auth.loggingIn') : t('auth.login')}
+               </button>
+
+               {/* Google Login Button */}
+               <div className="relative flex items-center justify-center mt-2">
+                 <div className="absolute inset-0 flex items-center">
+                   <div className="w-full border-t border-[var(--border)]"></div>
+                 </div>
+                 <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
+                   или
+                 </div>
+               </div>
+
+               <button
+                 type="button"
+                 onClick={() => {
+                   // TODO: implement Google OAuth
+                   window.location.href = '/auth/google';
+                 }}
+                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                 disabled={isLoading}
+               >
+                 <img src={googleIcon} alt="Google" className="w-5 h-5" />
+                 <span>Войти через Google</span>
+               </button>
+             </form>
+
           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
@@ -267,15 +292,39 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-                {isLoading ? t('auth.registering') : t('auth.register')}
-              </button>
-            </form>
-          )}
+               <button
+                 type="submit"
+                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                 disabled={isLoading}
+               >
+                 {isLoading ? t('auth.registering') : t('auth.register')}
+               </button>
+
+               {/* Google Login Button */}
+               <div className="relative flex items-center justify-center mt-2">
+                 <div className="absolute inset-0 flex items-center">
+                   <div className="w-full border-t border-[var(--border)]"></div>
+                 </div>
+                 <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
+                   или
+                 </div>
+               </div>
+
+               <button
+                 type="button"
+                 onClick={() => {
+                   // TODO: implement Google OAuth
+                   window.location.href = '/auth/google';
+                 }}
+                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                 disabled={isLoading}
+               >
+                 <img src={googleIcon} alt="Google" className="w-5 h-5" />
+                 <span>Регистрация через Google</span>
+               </button>
+             </form>
+           )}
+
         </div>
 
         {/* Footer */}
