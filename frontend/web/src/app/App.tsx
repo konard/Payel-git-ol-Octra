@@ -160,7 +160,12 @@ export default function App() {
   };
 
   const handleCreateTask = async (data: TaskData) => {
-    const { hasSubscription, isInTrial } = useAuthStore.getState();
+    const { isAuthenticated, hasSubscription, isInTrial } = useAuthStore.getState();
+
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
 
     // Allow usage during 14-day trial or with active subscription
     if (!hasSubscription && !isInTrial) {

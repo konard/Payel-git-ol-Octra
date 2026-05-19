@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +19,7 @@ import (
 	"apigateway/pkg/requests"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,6 +29,35 @@ var bossClient *boss.Client
 var wsHub *services.Hub
 var redisClient *redis.Client
 var pubSubManager *redis.PubSubManager
+
+func validateJWT(tokenString string) (string, string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return "", "", errors.New("JWT_SECRET not set")
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		return "", "", errors.New("invalid token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", "", errors.New("invalid claims")
+	}
+
+	userID, _ := claims["user_id"].(string)
+	username, _ := claims["username"].(string)
+	if userID == "" {
+		return "", "", errors.New("user_id missing in token")
+	}
+	return userID, username, nil
+}
 var rl *ratelimit.RateLimiter
 var db *gorm.DB
 
@@ -109,6 +139,21 @@ func healthHandler(c *gin.Context) {
 
 // handleTaskCreateWS upgrades HTTP to WebSocket and processes task creation
 func handleTaskCreateWS(c *gin.Context) {
+	// Check JWT from cookie or Authorization header
+	token, _ := c.Cookie("access_token")
+	if token == "" {
+		token = c.GetHeader("Authorization")
+		if len(token) > 7 && token[:7] == "Bearer " {
+			token = token[7:]
+		}
+	}
+
+	userID, username, err := validateJWT(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("❌ WebSocket upgrade error: %v", err)
@@ -141,20 +186,15 @@ func handleTaskCreateWS(c *gin.Context) {
 		return
 	}
 
-	// Provide default values for missing fields
-	if taskReq.Username == "" {
-		taskReq.Username = "Anonymous User"
-	}
+	// Force authenticated user data (ignore client values)
+	taskReq.UserID = userID
+	taskReq.Username = username
+
 	if taskReq.Title == "" {
 		taskReq.Title = "Untitled Task"
 	}
 
-	if taskReq.UserID == "" {
-		taskReq.UserID = uuid.New().String()
-		log.Printf("⚠️ Empty user_id, generated new: %s", taskReq.UserID)
-	} else {
-		log.Printf("✅ Using provided user_id: %s", taskReq.UserID)
-	}
+	log.Printf("✅ Authenticated user: %s (%s)", taskReq.Username, taskReq.UserID)
 
 	// Send confirmation
 	conn.WriteJSON(gin.H{
