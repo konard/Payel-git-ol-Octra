@@ -80,8 +80,8 @@ services:
 
   agents:
     build:
-      context: .
-      dockerfile: ./agents/Dockerfile
+      context: ./agents
+      dockerfile: Dockerfile.prod
     container_name: octra-agents
     environment:
       - AGENTS_PORT=50053
