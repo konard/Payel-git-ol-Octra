@@ -144,14 +144,16 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
   return (
     <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <MessageSquare size={18} className="text-[var(--accent)]" />
-          <span className="font-medium text-[var(--text)]">{t('chatSidebar.history')}</span>
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--background)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">
+            <MessageSquare size={18} />
+          </div>
+          <span className="font-semibold text-[15px] text-[var(--text)]">{t('chatSidebar.history')}</span>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-[var(--background)] text-[var(--text-secondary)] transition-colors"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors"
           title={t('common.close')}
         >
           <X size={18} />
@@ -159,18 +161,18 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
       </div>
 
       {/* New Chat Button */}
-      <div className="px-3 py-2">
+      <div className="px-4 py-3.5">
         <button
           onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-lg transition-colors text-sm"
+          className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-2xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
         >
-          <Plus size={16} />
+          <Plus size={18} />
           {t('chatSidebar.newChat')}
         </button>
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-2 py-2" ref={menuRef}>
+      <div className="flex-1 overflow-y-auto px-2.5 pb-4" ref={menuRef}>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin w-5 h-5 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
@@ -181,18 +183,18 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
           </div>
         ) : (
           Object.entries(groupedChats).map(([month, monthChats]) => (
-            <div key={month} className="mb-4">
+            <div key={month} className="mb-3">
               <div className="px-2 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 {month}
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {monthChats.map(chat => (
                   <div
                     key={chat.id}
-                    className={`relative px-2 py-2 rounded-lg transition-colors group ${
+                    className={`relative px-3.5 py-3.5 rounded-2xl transition-all group cursor-pointer border border-transparent ${
                       selectedChatId === chat.id
-                        ? 'bg-[var(--accent)]/10'
-                        : 'hover:bg-[var(--background)]'
+                        ? 'bg-[var(--accent)]/8 border-[var(--accent)]/20'
+                        : 'hover:bg-[var(--background)] hover:border-[var(--border)] hover:translate-x-0.5'
                     }`}
                     onClick={() => handleSelectChat(chat.id)}
                   >
@@ -203,48 +205,48 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
                         onChange={(e) => setEditTitle(e.target.value)}
                         onBlur={() => handleSaveRename(chat.id)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveRename(chat.id)}
-                        className="w-full bg-[var(--background)] text-[var(--text)] text-sm px-2 py-1 rounded border border-[var(--accent)] outline-none"
+                        className="w-full bg-[var(--background)] text-[var(--text)] text-sm px-3 py-1.5 rounded-lg border border-[var(--accent)] outline-none"
                         autoFocus
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
                       <>
-                        <div className="text-sm font-medium truncate pr-8 text-[var(--text)]">
+                        <div className="text-[14px] font-semibold text-[var(--text)] pr-8 truncate">
                           {chat.title || t('chatSidebar.newChat')}
                         </div>
-                        <div className="text-xs text-[var(--text-muted)] truncate mt-0.5">
+                        <div className="text-xs text-[var(--text-muted)] mt-1 truncate">
                           {formatDate(chat.updated_at)}
                         </div>
                       </>
                     )}
                     
                     {/* Menu button */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenMenuId(openMenuId === chat.id ? null : chat.id);
                         }}
-                        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--background)] text-[var(--text-secondary)] transition-all"
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[var(--background)] text-[var(--text-secondary)] transition-all"
                       >
                         <MoreHorizontal size={16} />
                       </button>
                       
                       {/* Dropdown menu */}
                       {openMenuId === chat.id && (
-                        <div className="absolute right-0 top-full mt-1 w-32 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 z-50">
+                        <div className="absolute right-0 top-full mt-1.5 w-36 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 z-50">
                           <button
                             onClick={(e) => handleRename(chat.id, chat.title || t('chatSidebar.newChat'), e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--background)]"
+                            className="w-full flex items-center gap-2 px-3.5 py-2 text-sm text-[var(--text)] hover:bg-[var(--background)]"
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={15} />
                             {t('chatSidebar.rename')}
                           </button>
                           <button
                             onClick={(e) => handleDeleteChat(chat.id, e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10"
+                            className="w-full flex items-center gap-2 px-3.5 py-2 text-sm text-red-500 hover:bg-red-500/10"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={15} />
                             {t('chatSidebar.delete')}
                           </button>
                         </div>
@@ -252,7 +254,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
                     </div>
                     
                     {selectedChatId === chat.id && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[var(--accent)] rounded-r" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--accent)] rounded-r-full" />
                     )}
                   </div>
                 ))}
