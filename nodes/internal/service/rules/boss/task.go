@@ -51,15 +51,18 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		log.Printf("Boss decision corrected: managers_count was 0, set to 1")
 	}
 
-	if len(decision.ManagerRoles) == 0 && decision.ManagersCount > 0 {
+	// === ЖЁСТКИЙ FALLBACK ===
+	// Если AI вернул 0 менеджеров или пустые роли — принудительно создаём одного
+	if len(decision.ManagerRoles) == 0 {
+		decision.ManagersCount = 1
 		decision.ManagerRoles = []models.ManagerRole{
 			{
 				Role:        "implementation",
-				Description: "Implement the requested functionality",
+				Description: "Реализация функционала",
 				Priority:    1,
 			},
 		}
-		log.Printf("Boss decision corrected: ManagerRoles was empty, added default role")
+		log.Printf("Boss: Applied hard fallback - created 1 default manager (implementation)")
 	}
 
 	emit(progress, 30, "Architecture planned by AI", map[string]string{
