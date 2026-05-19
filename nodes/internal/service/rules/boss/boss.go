@@ -74,6 +74,10 @@ type CreateTaskRequest struct {
 	Meta          map[string]string
 	UseAiPlanning bool
 	Grade         int // model-predicted complexity 1-10
+
+	// Для доработок существующего проекта
+	ExistingRepoUrl string // если есть — продолжаем работу над этим репозиторием
+	IsRefinement    bool   // если true — не восстанавливаем проект, а продолжаем
 }
 
 // DecisionResult — итог boss-планирования

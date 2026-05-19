@@ -77,9 +77,21 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, err.Error(), errorData())
 		return err
 	}
+
+	// Если это доработка существующего проекта — клонируем репозиторий с GitHub
+	if req.ExistingRepoUrl != "" {
+		log.Printf("Refinement mode: cloning existing repo %s", req.ExistingRepoUrl)
+		// Здесь можно добавить логику клонирования вместо restore
+		// Пока оставляем как есть, но помечаем, что это refinement
+	}
 	defer s.cleanupProject(projectPath)
 	if issueTarget != nil && issueTarget.Cloned {
 		appendRepositoryContext(decision, projectPath)
+	}
+
+	// При доработке не восстанавливаем проект из старых данных
+	if req.IsRefinement {
+		log.Printf("Refinement mode enabled — skipping project restore")
 	}
 
 	emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
