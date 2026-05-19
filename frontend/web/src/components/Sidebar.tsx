@@ -164,7 +164,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
       <div className="px-4 py-3.5">
         <button
           onClick={handleNewChat}
-          className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-2xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
+          className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
         >
           <Plus size={18} />
           {t('chatSidebar.newChat')}
