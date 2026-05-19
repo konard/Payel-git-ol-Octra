@@ -8,6 +8,7 @@ COPY go.mod go.sum ./
 COPY internal ./internal
 COPY pkg ./pkg
 COPY cmd ./cmd
+COPY pb ./pb
 
 RUN go mod download && go mod tidy
 
