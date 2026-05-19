@@ -183,7 +183,7 @@ export class HeaderComponent extends BaseComponent<HTMLDivElement> {
         iconElement.textContent = 'AI';
 
         const textElement = document.createElement('span');
-        textElement.textContent = 'CrewAI';
+        textElement.textContent = 'Octra';
 
         this.logoElement.appendChild(iconElement);
         this.logoElement.appendChild(textElement);

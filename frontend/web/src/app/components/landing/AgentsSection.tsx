@@ -21,7 +21,7 @@ export function AgentsSection() {
             <div className="relative rounded-xl overflow-hidden shadow-2xl border border-[var(--border)] bg-[var(--surface)]">
               <img
                 src={isDark ? workflowFull : workflowFullLight}
-                alt="CrewAI Full Workflow"
+                alt="Octra Full Workflow"
                 className="w-full h-auto"
               />
             </div>

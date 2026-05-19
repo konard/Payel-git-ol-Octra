@@ -95,7 +95,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]string{
-			"message": "Welcome to CrewAI",
+			"message": "Welcome to Octra",
 			"status":  "running",
 		}
 		_ = json.NewEncoder(w).Encode(resp)

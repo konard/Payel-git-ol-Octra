@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
-import crewaiMascot from '../../images/crewai-mascot.png';
+import octraMascot from '../../images/octra-mascot.png';
 import { useTaskStore } from '../../stores/taskStore';
 
 interface ChatMessage {
@@ -57,12 +57,12 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <img
-                src={crewaiMascot}
-                alt="CrewAI Mascot"
+                src={octraMascot}
+                alt="Octra Mascot"
                 className="w-28 h-28 rounded-lg object-contain mx-auto mb-6"
               />
               <h1 className="text-2xl font-bold text-[var(--text)] mb-2">
-                Добро пожаловать в CrewAI!
+                Добро пожаловать в Octra!
               </h1>
               <p className="text-[var(--text-muted)]">
                 Начните общение с вашим ИИ-ассистентом
@@ -91,8 +91,8 @@ export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
                     {/* CrewAI mascot and progress bar */}
                     <div className="flex items-center gap-4">
                       <img
-                        src={crewaiMascot}
-                        alt="CrewAI Mascot"
+                        src={octraMascot}
+                        alt="Octra Mascot"
                         className="w-12 h-12 rounded-lg object-contain"
                       />
                       <div className="flex-1">

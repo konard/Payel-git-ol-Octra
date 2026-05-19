@@ -15,7 +15,7 @@ import { UserProfile } from '../../components/UserProfile';
 import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
 import n8nIcon from '../../images/n8n-color.png';
-import crewaiMascot from '../../images/crewai-mascot.png';
+import octraMascot from '../../images/octra-mascot.png';
 
 type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations';
 
@@ -251,12 +251,12 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             </button>
           </div>
           <div style={{ width: 3 }}></div>
-          <img
-            src={crewaiMascot}
-            alt="CrewAI Mascot"
-            className="w-10 h-10 rounded-lg object-contain"
-          />
-          <h1 className="text-lg font-semibold text-[var(--text)]">CrewAI</h1>
+           <img
+             src={octraMascot}
+             alt="Octra Mascot"
+             className="w-10 h-10 rounded-lg object-contain"
+            />
+           <h1 className="text-lg font-semibold text-[var(--text)]">Octra</h1>
           {/* Переключатель режимов */}
           <div className="shrink-0 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm sm:ml-4">
             <button

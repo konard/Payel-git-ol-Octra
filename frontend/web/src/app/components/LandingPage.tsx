@@ -8,7 +8,7 @@ import { AgentsSection } from './landing/AgentsSection';
 import { ModelsSection } from './landing/ModelsSection';
 import { SettingsSection } from './landing/SettingsSection';
 import { FooterSection } from './landing/FooterSection';
-import crewaiMascot from '../../images/crewai-mascot.png';
+import octraMascot from '../../images/octra-mascot.png';
 
 export default function LandingPage() {
   const { isDark } = useThemeStore();
@@ -17,6 +17,9 @@ export default function LandingPage() {
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo(0, 0);
+    
+    // Force dark theme on landing page
+    document.documentElement.classList.add('dark');
   }, []);
 
   return (
@@ -28,11 +31,11 @@ export default function LandingPage() {
             {/* Logo */}
             <div className="flex items-center gap-3">
               <img
-                src={crewaiMascot}
-                alt="CrewAI Mascot"
+                src={octraMascot}
+                alt="Octra Mascot"
                 className="w-10 h-10 rounded-lg object-contain"
               />
-              <span className="text-lg font-semibold text-[var(--text)]">CrewAI</span>
+              <span className="text-lg font-semibold text-[var(--text)]">Octra</span>
             </div>
 
             {/* Links */}

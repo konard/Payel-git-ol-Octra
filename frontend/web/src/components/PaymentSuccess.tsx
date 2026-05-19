@@ -51,7 +51,7 @@ export function PaymentSuccess() {
 
         {/* Description */}
         <p className="text-[var(--text-secondary)] mb-8">
-          Ваша подписка Pro активирована. Теперь у вас есть доступ ко всем функциям CrewAI.
+          Ваша подписка Pro активирована. Теперь у вас есть доступ ко всем функциям Octra.
         </p>
 
         {/* Features */}

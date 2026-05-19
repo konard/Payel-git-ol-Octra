@@ -1,4 +1,4 @@
-import crewaiMascot from '../../../images/crewai-mascot.png';
+import octraMascot from '../../../images/octra-mascot.png';
 
 export function FooterSection() {
   return (
@@ -9,11 +9,11 @@ export function FooterSection() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <img
-                src={crewaiMascot}
-                alt="CrewAI Mascot"
+                src={octraMascot}
+                alt="Octra Mascot"
                 className="w-10 h-10 rounded-lg object-contain"
               />
-              <span className="text-lg font-semibold text-[var(--text)]">CrewAI</span>
+              <span className="text-lg font-semibold text-[var(--text)]">Octra</span>
             </div>
             <p className="text-sm text-[var(--text-muted)]">
               Визуальный редактор для управления AI-агентами
@@ -55,7 +55,7 @@ export function FooterSection() {
         {/* Bottom */}
         <div className="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-[var(--text-muted)]">
-            © {new Date().getFullYear()} CrewAI. Все права защищены.
+            © {new Date().getFullYear()} Octra. Все права защищены.
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
