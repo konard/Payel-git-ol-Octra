@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useI18n } from '../hooks/useI18n';
 import googleIcon from '../images/google-auth.png';
+import githubIcon from '../images/github-image.png';
 
 type AuthView = 'login' | 'register';
 
@@ -211,7 +212,6 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                <button
                  type="button"
                  onClick={() => {
-                   // TODO: implement Google OAuth
                    window.location.href = '/auth/google';
                  }}
                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
@@ -219,6 +219,18 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                >
                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
                  <span>Войти через Google</span>
+               </button>
+
+               <button
+                 type="button"
+                 onClick={() => {
+                   window.location.href = '/auth/github';
+                 }}
+                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                 disabled={isLoading}
+               >
+                 <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                 <span>Войти через GitHub</span>
                </button>
              </form>
 
@@ -313,7 +325,6 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                <button
                  type="button"
                  onClick={() => {
-                   // TODO: implement Google OAuth
                    window.location.href = '/auth/google';
                  }}
                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
@@ -321,6 +332,18 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                >
                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
                  <span>Регистрация через Google</span>
+               </button>
+
+               <button
+                 type="button"
+                 onClick={() => {
+                   window.location.href = '/auth/github';
+                 }}
+                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                 disabled={isLoading}
+               >
+                 <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                 <span>Регистрация через GitHub</span>
                </button>
              </form>
            )}
