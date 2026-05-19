@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Crown, Calendar, Edit2, Check, X } from 'lucide-react';
+import { User, Mail, Crown, Calendar, Edit2, Check, X, Copy } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { t } from '../hooks/useI18n';
 
@@ -11,6 +11,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const { user, hasSubscription, subscriptionEnd, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editUsername, setEditUsername] = useState(user?.username || '');
+  const [copied, setCopied] = useState(false);
 
   const handleSaveUsername = async () => {
     // TODO: Call backend API to update username
@@ -202,9 +203,24 @@ export function UserProfile({ onClose }: UserProfileProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-[var(--border)]">
               <span className="text-sm text-[var(--text-muted)]">{t('profile.userId')}</span>
-              <span className="text-sm text-[var(--text)] font-mono">
-                {user?.id ? `${user.id.substring(0, 8)}...` : 'N/A'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-[var(--text)] font-mono">
+                  {user?.id ? `${user.id.substring(0, 8)}...` : 'N/A'}
+                </span>
+                {user?.id && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.id);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    }}
+                    className={`p-1 rounded transition-all ${copied ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--background)]'}`}
+                    title={copied ? 'Copied!' : 'Copy ID'}
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-[var(--text-muted)]">{t('profile.memberSince')}</span>
