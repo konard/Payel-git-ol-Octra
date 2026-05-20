@@ -221,17 +221,20 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                   <span>{t('auth.continueWithGoogle')}</span>
                 </button>
 
-               <button
-                 type="button"
-                 onClick={() => {
-                   window.location.href = '/auth/github';
-                 }}
-                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
-                 disabled={isLoading}
-               >
-                 <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                 <span>{t('auth.continueWithGithub')}</span>
-               </button>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     const googleAuthUrl = import.meta.env.VITE_FRONTEND_MODE === 'PROD'
+                       ? '/auth/google'
+                       : 'http://localhost:3112/auth/google';
+                     window.location.href = googleAuthUrl;
+                   }}
+                   className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                   disabled={isLoading}
+                 >
+                   <img src={googleIcon} alt="Google" className="w-5 h-5" />
+                   <span>{t('auth.continueWithGoogle')}</span>
+                 </button>
              </form>
 
           ) : (
@@ -334,17 +337,20 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                   <span>{t('auth.continueWithGoogle')}</span>
                 </button>
 
-               <button
-                 type="button"
-                 onClick={() => {
-                   window.location.href = '/auth/github';
-                 }}
-                 className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
-                 disabled={isLoading}
-               >
-                  <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                  <span>{t('auth.continueWithGithub')}</span>
-               </button>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     const googleAuthUrl = import.meta.env.VITE_FRONTEND_MODE === 'PROD'
+                       ? '/auth/google'
+                       : 'http://localhost:3112/auth/google';
+                     window.location.href = googleAuthUrl;
+                   }}
+                   className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                   disabled={isLoading}
+                 >
+                   <img src={googleIcon} alt="Google" className="w-5 h-5" />
+                   <span>{t('auth.continueWithGoogle')}</span>
+                 </button>
              </form>
            )}
 
