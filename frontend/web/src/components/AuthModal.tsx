@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useI18n } from '../hooks/useI18n';
 import googleIcon from '../images/google-auth.png';
 import githubIcon from '../images/github-image.png';
+import ReCAPTCHA from '@google-recaptcha/react';
 
 type AuthView = 'login' | 'register';
 
@@ -29,6 +30,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regCaptchaToken, setRegCaptchaToken] = useState('');
   
   const [formError, setFormError] = useState('');
   const { login, register, isLoading, error, clearError } = useAuthStore();
@@ -101,8 +103,13 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
       return;
     }
 
+    if (!regCaptchaToken) {
+      setFormError('Пожалуйста, пройдите капчу');
+      return;
+    }
+
     try {
-      await register(regUsername, regEmail, regPassword);
+      await register(regUsername, regEmail, regPassword, regCaptchaToken);
       onAuthSuccess();
     } catch (err) {
       console.error('Registration error:', err);
@@ -304,6 +311,15 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
+              {/* Капча под паролем и подтверждением */}
+              <div className="flex flex-col gap-2">
+                <ReCAPTCHA
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''}
+                  onChange={(token: string | null) => setRegCaptchaToken(token || '')}
+                  onExpired={() => setRegCaptchaToken('')}
+                />
+              </div>
+ 
                 <button
                   type="submit"
                   className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"

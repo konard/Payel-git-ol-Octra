@@ -10,11 +10,13 @@ export interface UserRegisterRequest {
   username: string;
   email: string;
   password: string;
+  captcha_token: string;
 }
 
 export interface UserLoginRequest {
   email: string;
   password: string;
+  captcha_token: string;
 }
 
 export interface RefreshTokenRequest {
