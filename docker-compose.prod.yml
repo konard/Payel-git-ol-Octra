@@ -125,6 +125,8 @@ services:
       context: .
       dockerfile: ./user/Dockerfile
     container_name: octra-user
+    env_file:
+      - .env.prod
     environment:
       - DB_DNS=host=postgres user=octra password=${POSTGRES_PASSWORD:-octra_password} dbname=octra port=5432
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
