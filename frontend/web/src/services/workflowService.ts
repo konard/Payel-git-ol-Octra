@@ -3,7 +3,7 @@
  * API сервис для работы с библиотекой workflow (использует fetch)
  */
 
-const API_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:3112';
+const API_URL = import.meta.env.VITE_AUTH_URL || '';
 
 export interface WorkflowNode {
   id: string;

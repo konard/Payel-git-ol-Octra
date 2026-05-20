@@ -2,7 +2,7 @@
  * Subscription API Service
  */
 
-const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '/auth';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '';
 
 export interface SubscriptionPlan {
   id: string;
