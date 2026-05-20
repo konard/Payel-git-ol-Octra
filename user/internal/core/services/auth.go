@@ -176,6 +176,37 @@ func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error)
 	return &user, nil
 }
 
+// GetOrCreateUserFromGithub creates or finds a user from GitHub OAuth
+func GetOrCreateUserFromGithub(email, name string) (*models.UserRegister, error) {
+	var user models.UserRegister
+
+	result := database.Db.Where("email = ?", email).First(&user)
+	if result.Error == nil {
+		return &user, nil
+	}
+
+	username := name
+	if username == "" {
+		if len(email) > 10 {
+			username = email[:len(email)-10]
+		} else {
+			username = "user_" + uuid.New().String()[:8]
+		}
+	}
+
+	user = models.UserRegister{
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
+	}
+
+	if err := database.Db.Create(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // RefreshTokens generates new tokens from refresh token
 func RefreshTokens(req requests.RefreshTokenRequest) (map[string]interface{}, error) {
 	// Validate refresh token
