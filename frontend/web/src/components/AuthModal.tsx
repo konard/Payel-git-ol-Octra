@@ -191,43 +191,28 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
-               <button
-                 type="submit"
-                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                 disabled={isLoading}
-               >
-                 {isLoading ? t('auth.loggingIn') : t('auth.login')}
-               </button>
-
-               {/* Google Login Button */}
-               <div className="relative flex items-center justify-center mt-2">
-                 <div className="absolute inset-0 flex items-center">
-                   <div className="w-full border-t border-[var(--border)]"></div>
-                 </div>
-                 <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
-                   или
-                 </div>
-               </div>
-
                 <button
-                  type="button"
-                  onClick={() => {
-                     window.location.href = '/auth/google';
-                  }}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                  type="submit"
+                  className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
-                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
-                  <span>{t('auth.continueWithGoogle')}</span>
+                  {isLoading ? t('auth.loggingIn') : t('auth.login')}
                 </button>
-
+ 
+                {/* Google Login Button */}
+                <div className="relative flex items-center justify-center mt-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[var(--border)]"></div>
+                  </div>
+                  <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
+                    или
+                  </div>
+                </div>
+ 
                  <button
                    type="button"
                    onClick={() => {
-                     const googleAuthUrl = import.meta.env.VITE_FRONTEND_MODE === 'PROD'
-                       ? '/auth/google'
-                       : 'http://localhost:3112/auth/google';
-                     window.location.href = googleAuthUrl;
+                      window.location.href = '/auth/google';
                    }}
                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                    disabled={isLoading}
@@ -235,7 +220,19 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                    <img src={googleIcon} alt="Google" className="w-5 h-5" />
                    <span>{t('auth.continueWithGoogle')}</span>
                  </button>
-             </form>
+ 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = '/auth/github';
+                    }}
+                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                    disabled={isLoading}
+                  >
+                    <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                    <span>{t('auth.continueWithGithub')}</span>
+                  </button>
+              </form>
 
           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
@@ -307,43 +304,28 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
-               <button
-                 type="submit"
-                 className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                 disabled={isLoading}
-               >
-                 {isLoading ? t('auth.registering') : t('auth.register')}
-               </button>
-
-               {/* Google Login Button */}
-               <div className="relative flex items-center justify-center mt-2">
-                 <div className="absolute inset-0 flex items-center">
-                   <div className="w-full border-t border-[var(--border)]"></div>
-                 </div>
-                 <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
-                   или
-                 </div>
-               </div>
-
                 <button
-                  type="button"
-                  onClick={() => {
-                     window.location.href = '/auth/google';
-                  }}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                  type="submit"
+                  className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
-                  <img src={googleIcon} alt="Google" className="w-5 h-5" />
-                  <span>{t('auth.continueWithGoogle')}</span>
+                  {isLoading ? t('auth.registering') : t('auth.register')}
                 </button>
-
+ 
+                {/* Google Login Button */}
+                <div className="relative flex items-center justify-center mt-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[var(--border)]"></div>
+                  </div>
+                  <div className="relative bg-[var(--surface)] px-3 text-xs text-[var(--text-secondary)]">
+                    или
+                  </div>
+                </div>
+ 
                  <button
                    type="button"
                    onClick={() => {
-                     const googleAuthUrl = import.meta.env.VITE_FRONTEND_MODE === 'PROD'
-                       ? '/auth/google'
-                       : 'http://localhost:3112/auth/google';
-                     window.location.href = googleAuthUrl;
+                      window.location.href = '/auth/google';
                    }}
                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                    disabled={isLoading}
@@ -351,8 +333,20 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                    <img src={googleIcon} alt="Google" className="w-5 h-5" />
                    <span>{t('auth.continueWithGoogle')}</span>
                  </button>
-             </form>
-           )}
+ 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = '/auth/github';
+                    }}
+                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
+                    disabled={isLoading}
+                  >
+                    <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                    <span>{t('auth.continueWithGithub')}</span>
+                  </button>
+              </form>
+            )}
 
         </div>
 
