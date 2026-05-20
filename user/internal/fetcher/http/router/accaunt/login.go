@@ -14,6 +14,10 @@ func registerLogin(r *gin.Engine) {
 			c.JSON(400, gin.H{"status": "error", "error": "Invalid request body: " + err.Error()})
 			return
 		}
+		if req.CaptchaToken == "" {
+			c.JSON(400, gin.H{"status": "error", "error": "captcha_token is required"})
+			return
+		}
 
 		result, err := services.LoginUser(req)
 		if err != nil {
