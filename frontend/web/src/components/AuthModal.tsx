@@ -212,7 +212,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = 'http://localhost:3112/auth/google';
+                     window.location.href = '/auth/google';
                   }}
                   className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                   disabled={isLoading}
@@ -325,7 +325,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = 'http://localhost:3112/auth/google';
+                     window.location.href = '/auth/google';
                   }}
                   className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                   disabled={isLoading}
