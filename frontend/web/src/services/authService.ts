@@ -3,7 +3,7 @@
  * Сервис для работы с API авторизации
  */
 
-const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '/auth';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '';
 const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || '/api';
 
 export interface UserRegisterRequest {
