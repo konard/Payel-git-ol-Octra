@@ -1,5 +1,8 @@
 FROM node:22-alpine AS builder
 
+ARG VITE_FRONTEND_MODE=LOCAL
+ENV VITE_FRONTEND_MODE=$VITE_FRONTEND_MODE
+
 WORKDIR /app
 
 COPY package*.json ./

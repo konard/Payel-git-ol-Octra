@@ -147,7 +147,11 @@ services:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile
+      args:
+        - VITE_FRONTEND_MODE
     container_name: octra-frontend
+    env_file:
+      - .env.prod
     ports:
       - "70:80"
     depends_on:
