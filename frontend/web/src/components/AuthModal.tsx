@@ -8,7 +8,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useI18n } from '../hooks/useI18n';
 import googleIcon from '../images/google-auth.png';
 import githubIcon from '../images/github-image.png';
-import ReCAPTCHA from '@google-recaptcha/react';
+import lefineIcon from '../images/lefine.pro.jpg';
+// import ReCAPTCHA from '@google-recaptcha/react';  // temporarily disabled for Docker build (package not in package.json)
 
 type AuthView = 'login' | 'register';
 
@@ -30,7 +31,6 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regCaptchaToken, setRegCaptchaToken] = useState('');
   
   const [formError, setFormError] = useState('');
   const { login, register, isLoading, error, clearError } = useAuthStore();
@@ -103,13 +103,8 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
       return;
     }
 
-    if (!regCaptchaToken) {
-      setFormError('Пожалуйста, пройдите капчу');
-      return;
-    }
-
     try {
-      await register(regUsername, regEmail, regPassword, regCaptchaToken);
+      await register(regUsername, regEmail, regPassword, '');
       onAuthSuccess();
     } catch (err) {
       console.error('Registration error:', err);
@@ -236,12 +231,24 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                     className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                     disabled={isLoading}
                   >
-                    <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                    <span>{t('auth.continueWithGithub')}</span>
-                  </button>
-              </form>
+                     <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                     <span>{t('auth.continueWithGithub')}</span>
+                   </button>
 
-          ) : (
+                   <button
+                     type="button"
+                     onClick={() => {
+                       window.location.href = '/auth/lefine';
+                     }}
+                     className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)] bg-[var(--accent)]/5"
+                     disabled={isLoading}
+                   >
+                     <img src={lefineIcon} alt="LeFine" className="w-5 h-5 rounded" />
+                     <span>Войти через LeFine</span>
+                   </button>
+               </form>
+ 
+           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <label htmlFor="reg-username" className="text-sm font-medium text-[var(--text)]">
@@ -311,16 +318,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                 />
               </div>
 
-              {/* Капча под паролем и подтверждением */}
-              <div className="flex flex-col gap-2">
-                <ReCAPTCHA
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''}
-                  onChange={(token: string | null) => setRegCaptchaToken(token || '')}
-                  onExpired={() => setRegCaptchaToken('')}
-                />
-              </div>
- 
-                <button
+                 <button
                   type="submit"
                   className="w-full py-2 px-4 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-medium rounded-md transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={isLoading}
@@ -358,11 +356,23 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
                     className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)]"
                     disabled={isLoading}
                   >
-                    <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
-                    <span>{t('auth.continueWithGithub')}</span>
-                  </button>
-              </form>
-            )}
+                     <img src={githubIcon} alt="GitHub" className="w-5 h-5" />
+                     <span>{t('auth.continueWithGithub')}</span>
+                   </button>
+
+                   <button
+                     type="button"
+                     onClick={() => {
+                       window.location.href = '/auth/lefine';
+                     }}
+                     className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[var(--border)] hover:bg-[var(--background)] rounded-md transition-colors text-sm text-[var(--text)] bg-[var(--accent)]/5"
+                     disabled={isLoading}
+                   >
+                     <img src={lefineIcon} alt="LeFine" className="w-5 h-5 rounded" />
+                     <span>Войти через LeFine</span>
+                   </button>
+               </form>
+             )}
 
         </div>
 

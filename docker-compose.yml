@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: crewai_password
       POSTGRES_DB: crewai
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -129,6 +129,12 @@ services:
       - AUTH_PORT=3112
       - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID:-1339826}
       - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY:-test_StL4_VJfVFbOJ7_BbolU2VhoR1zjIQ7Qf2gcwN3Gngw}
+
+      # LeFine / Kefine integration (Login with LeFine)
+      # For local dev: points to your local Kefine at http://localhost:5173
+      - LEFINE_BASE_URL=${LEFINE_BASE_URL:-http://localhost:5173}
+      - LEFINE_REDIRECT_URL=${LEFINE_REDIRECT_URL:-http://localhost/auth/lefine/callback}
+      - LEFINE_INTEGRATION_SECRET=dev-only-lefine-octra-shared-secret-change-me
     ports:
       - "3112:3112"
     depends_on:

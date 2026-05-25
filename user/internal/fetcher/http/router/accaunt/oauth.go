@@ -8,4 +8,5 @@ import (
 func registerOAuth(r *gin.Engine) {
 	oauth.RegisterGoogleRoutes(r)
 	oauth.RegisterGithubRoutes(r)
+	oauth.RegisterLeFineRoutes(r)
 }
