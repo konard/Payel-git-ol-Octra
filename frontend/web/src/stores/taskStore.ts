@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'github';
 export type AgentNodeStatus = 'pending' | 'thinking' | 'working' | 'reviewing' | 'done' | 'error';
-export type TaskStatus = 'idle' | 'creating' | 'planning' | 'executing' | 'done' | 'error';
+export type TaskStatus = 'idle' | 'creating' | 'planning' | 'executing' | 'done' | 'error' | 'cancelled';
 
 export interface AgentNode {
   id: string;
@@ -45,6 +45,19 @@ export interface Edge {
   to: string;
 }
 
+export type CodeFileStatus = 'streaming' | 'ready';
+
+export interface CodeFile {
+  path: string;
+  name: string;
+  language: string;
+  content: string;
+  status: CodeFileStatus;
+  workerRole?: string;
+  managerRole?: string;
+  updatedAt: number;
+}
+
 export interface LogEntry {
   id: string;
   timestamp: Date;
@@ -61,6 +74,8 @@ interface TaskState {
   logs: LogEntry[];
   solutionZip: Blob | null;
   zipUrl: string | null;
+  codeFiles: CodeFile[];
+  latestCodeFilePath: string | null;
   isConnected: boolean;
   tokensUsed: number;
   startTime: number | null;
@@ -75,6 +90,10 @@ interface TaskState {
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setSolutionZip: (blob: Blob) => void;
   setZipUrl: (url: string) => void;
+  upsertCodeFiles: (files: Array<Partial<CodeFile> & { path: string; content: string }>) => void;
+  updateCodeFileContent: (path: string, content: string) => void;
+  completeCodeStreaming: () => void;
+  clearCodeFiles: () => void;
   setConnectionStatus: (connected: boolean) => void;
   setTokensUsed: (tokens: number) => void;
   setStartTime: (time: number) => void;
@@ -85,6 +104,22 @@ interface TaskState {
 }
 
 let nodeIdCounter = 0;
+
+const getFileName = (path: string): string => path.split('/').filter(Boolean).at(-1) || path || 'Untitled';
+
+const normalizeCodeFile = (
+  file: Partial<CodeFile> & { path: string; content: string },
+  existing?: CodeFile,
+): CodeFile => ({
+  path: file.path,
+  name: file.name || existing?.name || getFileName(file.path),
+  language: file.language || existing?.language || 'plaintext',
+  content: file.content,
+  status: file.status || existing?.status || 'streaming',
+  workerRole: file.workerRole || existing?.workerRole,
+  managerRole: file.managerRole || existing?.managerRole,
+  updatedAt: file.updatedAt || Date.now(),
+});
 
 // Validation functions
 const validateNodeUpdate = (updates: Partial<AgentNode>): Partial<AgentNode> => {
@@ -112,6 +147,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   logs: [],
   solutionZip: null,
   zipUrl: null,
+  codeFiles: [],
+  latestCodeFilePath: null,
   isConnected: false,
   tokensUsed: 0,
   startTime: null,
@@ -149,6 +186,39 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   setSolutionZip: (blob) => set({ solutionZip: blob }),
   
   setZipUrl: (url) => set({ zipUrl: url }),
+
+  upsertCodeFiles: (files) => set((state) => {
+    if (files.length === 0) {
+      return state;
+    }
+
+    const byPath = new Map(state.codeFiles.map((file) => [file.path, file]));
+    files.forEach((file) => {
+      byPath.set(file.path, normalizeCodeFile(file, byPath.get(file.path)));
+    });
+
+    const codeFiles = Array.from(byPath.values()).sort((a, b) => a.path.localeCompare(b.path));
+    const latestCodeFilePath = files[files.length - 1]?.path ?? state.latestCodeFilePath;
+
+    return { codeFiles, latestCodeFilePath };
+  }),
+
+  updateCodeFileContent: (path, content) => set((state) => ({
+    codeFiles: state.codeFiles.map((file) => (
+      file.path === path
+        ? { ...file, content, status: 'ready', updatedAt: Date.now() }
+        : file
+    )),
+    latestCodeFilePath: path,
+  })),
+
+  completeCodeStreaming: () => set((state) => ({
+    codeFiles: state.codeFiles.map((file) => (
+      file.status === 'streaming' ? { ...file, status: 'ready' } : file
+    )),
+  })),
+
+  clearCodeFiles: () => set({ codeFiles: [], latestCodeFilePath: null }),
   
   setConnectionStatus: (connected) => set({ isConnected: connected }),
   
@@ -185,6 +255,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       logs: [],
       solutionZip: null,
       zipUrl: null,
+      codeFiles: [],
+      latestCodeFilePath: null,
       tokensUsed: 0,
       startTime: null,
     };
@@ -197,6 +269,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     logs: [],
     solutionZip: null,
     zipUrl: null,
+    codeFiles: [],
+    latestCodeFilePath: null,
     tokensUsed: 0,
     startTime: null,
     // Keep nodes, edges, and workflow

@@ -1,652 +1,437 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
-import type { CSSProperties, MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+import Editor, { type OnMount } from '@monaco-editor/react';
 import {
-  ArrowLeft,
-  ArrowRight,
-  Bug,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Circle,
-  File,
+  CircleDotDashed,
   FileCode2,
   Files,
   Folder,
   FolderOpen,
-  GitBranch,
-  Search,
+  PanelLeftClose,
+  PanelLeftOpen,
   X,
 } from 'lucide-react';
-import hljs from '../../lib/hljs';
+import { useTaskStore, type CodeFile } from '../../stores/taskStore';
+import { useThemeStore } from '../../stores/themeStore';
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-interface EditorFile {
-  id: string;
+interface TreeNode {
   name: string;
   path: string;
-  language: string;
-  content: string;
+  type: 'folder' | 'file';
+  children: TreeNode[];
+  file?: CodeFile;
 }
-
-const LINE_HEIGHT = 24;
-const EDITOR_PADDING_TOP = 16;
-const EDITOR_GUTTER_WIDTH = 48;
-const EDITOR_GUTTER_PADDING_X = 8;
-const EDITOR_CONTENT_PADDING_X = 12;
 
 const CODE_VIEW_THEME = {
   '--code-bg': 'var(--background)',
   '--code-surface': 'var(--surface)',
-  '--code-surface-soft': 'var(--surface)',
-  '--code-surface-muted': 'var(--surface)',
   '--code-border': 'var(--border)',
-  '--code-border-soft': 'var(--border)',
   '--code-text': 'var(--text)',
   '--code-text-muted': 'var(--text-muted)',
-  '--code-text-faint': 'color-mix(in srgb, var(--text-muted) 70%, transparent)',
   '--code-accent': 'var(--accent)',
-  '--code-accent-strong': 'var(--accent)',
-  '--code-selection': 'color-mix(in srgb, var(--accent) 35%, transparent)',
-  '--code-line-active': 'color-mix(in srgb, var(--accent) 8%, transparent)',
-  '--code-tree-active': 'color-mix(in srgb, var(--accent) 15%, transparent)',
+  '--code-line-active': 'color-mix(in srgb, var(--accent) 10%, transparent)',
+  '--code-tree-active': 'color-mix(in srgb, var(--accent) 16%, transparent)',
   '--code-tree-hover': 'color-mix(in srgb, var(--text) 8%, transparent)',
 } as CSSProperties & Record<string, string>;
 
-const INITIAL_FILES: EditorFile[] = [
-  {
-    id: 'main-go',
-    name: 'main.go',
-    path: 'go-server/src/main.go',
-    language: 'Go',
-    content: `package main
+function buildFileTree(files: CodeFile[]): TreeNode[] {
+  const root: TreeNode[] = [];
+  const folders = new Map<string, TreeNode>();
 
-import (
-	"fmt"
-	"net/http"
-	"encoding/json"
-	"context"
-)
+  files.forEach((file) => {
+    const parts = file.path.split('/').filter(Boolean);
+    let current = root;
+    let currentPath = '';
 
-type Config struct {
-	Port string \`json:"port"\`
-	Host string \`json:"host"\`
-}
+    parts.forEach((part, index) => {
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      const isFile = index === parts.length - 1;
 
-func main() {
-	cfg := Config{
-		Port: "8080",
-		Host: "localhost",
-	}
-	
-	ctx := context.Background()
-	_ = ctx
+      if (isFile) {
+        current.push({
+          name: part,
+          path: file.path,
+          type: 'file',
+          children: [],
+          file,
+        });
+        return;
+      }
 
-	server := &http.Server{
-		Addr: ":" + cfg.Port,
-	}
-	
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]string{
-			"message": "Welcome to Octra",
-			"status":  "running",
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-		_ = r
-	})
-	
-	fmt.Printf("Server starting on http://%s:%s\\n", cfg.Host, cfg.Port)
-	fmt.Println("Press Ctrl+C to stop")
-	
-	if err := server.ListenAndServe(); err != nil {
-		fmt.Println("Server error:", err)
-	}
-}`,
-  },
-  {
-    id: 'config-go',
-    name: 'config.go',
-    path: 'go-server/src/config.go',
-    language: 'Go',
-    content: `package main
+      let folder = folders.get(currentPath);
+      if (!folder) {
+        folder = {
+          name: part,
+          path: currentPath,
+          type: 'folder',
+          children: [],
+        };
+        folders.set(currentPath, folder);
+        current.push(folder);
+      }
+      current = folder.children;
+    });
+  });
 
-type ServerConfig struct {
-	Host string
-	Port string
-}
-
-func DefaultServerConfig() ServerConfig {
-	return ServerConfig{
-		Host: "localhost",
-		Port: "8080",
-	}
-}
-`,
-  },
-  {
-    id: 'handler-go',
-    name: 'handler.go',
-    path: 'go-server/src/handler.go',
-    language: 'Go',
-    content: `package main
-
-import "net/http"
-
-func RootHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("ok"))
-}
-`,
-  },
-  {
-    id: 'utils-go',
-    name: 'utils.go',
-    path: 'go-server/src/utils.go',
-    language: 'Go',
-    content: `package main
-
-func Must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-`,
-  },
-];
-
-function getCursorInfo(text: string, position: number) {
-  const before = text.slice(0, position);
-  const parts = before.split('\n');
-  const line = parts.length;
-  const col = (parts.at(-1)?.length ?? 0) + 1;
-
-  return { line, col };
-}
-
-function getLanguage(lang: string): string {
-  const langMap: Record<string, string> = {
-    Go: 'go',
-    JavaScript: 'javascript',
-    TypeScript: 'typescript',
-    Python: 'python',
-    Java: 'java',
-    C: 'c',
-    Cpp: 'cpp',
-    CSS: 'css',
-    JSON: 'json',
-    Markdown: 'markdown',
-    Bash: 'bash',
-    SQL: 'sql',
-    HTML: 'html',
-    YAML: 'yaml',
+  const sortNodes = (nodes: TreeNode[]) => {
+    nodes.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    nodes.forEach((node) => sortNodes(node.children));
   };
-  return langMap[lang] || 'plaintext';
+
+  sortNodes(root);
+  return root;
+}
+
+function statusLabel(status: CodeFile['status']) {
+  return status === 'streaming' ? 'Generating' : 'Ready';
+}
+
+function CodeStatus({ status }: { status: CodeFile['status'] }) {
+  if (status === 'streaming') {
+    return <CircleDotDashed size={14} className="animate-spin text-[var(--code-accent)]" />;
+  }
+  return <CheckCircle2 size={14} className="text-[var(--success)]" />;
+}
+
+function TreeRows({
+  nodes,
+  depth,
+  activePath,
+  expandedFolders,
+  onToggleFolder,
+  onOpenFile,
+}: {
+  nodes: TreeNode[];
+  depth: number;
+  activePath: string | null;
+  expandedFolders: Set<string>;
+  onToggleFolder: (path: string) => void;
+  onOpenFile: (path: string) => void;
+}) {
+  return (
+    <>
+      {nodes.map((node) => {
+        const isExpanded = expandedFolders.has(node.path);
+        const paddingLeft = 10 + depth * 16;
+
+        if (node.type === 'folder') {
+          return (
+            <div key={node.path}>
+              <button
+                type="button"
+                onClick={() => onToggleFolder(node.path)}
+                className="flex h-8 w-full items-center gap-1.5 rounded-md pr-2 text-left text-sm text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+                style={{ paddingLeft }}
+              >
+                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                {isExpanded ? <FolderOpen size={15} /> : <Folder size={15} />}
+                <span className="truncate">{node.name}</span>
+              </button>
+              {isExpanded && (
+                <TreeRows
+                  nodes={node.children}
+                  depth={depth + 1}
+                  activePath={activePath}
+                  expandedFolders={expandedFolders}
+                  onToggleFolder={onToggleFolder}
+                  onOpenFile={onOpenFile}
+                />
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={node.path}
+            type="button"
+            onClick={() => onOpenFile(node.path)}
+            className={`flex h-8 w-full items-center gap-2 rounded-md pr-2 text-left text-sm transition-colors ${
+              activePath === node.path
+                ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
+                : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+            }`}
+            style={{ paddingLeft }}
+          >
+            <FileCode2 size={15} />
+            <span className="min-w-0 flex-1 truncate">{node.name}</span>
+            {node.file && <CodeStatus status={node.file.status} />}
+          </button>
+        );
+      })}
+    </>
+  );
 }
 
 export function CodeViewer() {
-  const [files, setFiles] = useState<EditorFile[]>(INITIAL_FILES);
-  const [openFileIds, setOpenFileIds] = useState<string[]>([INITIAL_FILES[0].id]);
-  const [activeFileId, setActiveFileId] = useState(INITIAL_FILES[0].id);
+  const codeFiles = useTaskStore((state) => state.codeFiles);
+  const latestCodeFilePath = useTaskStore((state) => state.latestCodeFilePath);
+  const updateCodeFileContent = useTaskStore((state) => state.updateCodeFileContent);
+  const isDark = useThemeStore((state) => state.isDark);
+  const [openFilePaths, setOpenFilePaths] = useState<string[]>([]);
+  const [activePath, setActivePath] = useState<string | null>(null);
   const [isExplorerOpen, setIsExplorerOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 720);
-  const [explorerWidth, setExplorerWidth] = useState(320);
-  const [cursor, setCursor] = useState({ line: 1, col: 1 });
-  const [editorScroll, setEditorScroll] = useState({ top: 0, left: 0 });
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['go-server', 'src', 'pkg']));
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const explorerRef = useRef<HTMLDivElement>(null);
-  const isResizing = useRef(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [displayContent, setDisplayContent] = useState('');
+  const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const openFiles = openFileIds
-    .map((id) => files.find((file) => file.id === id))
-    .filter((file): file is EditorFile => Boolean(file));
-  const activeFile = openFiles.find((file) => file.id === activeFileId) ?? null;
+  const filesByPath = useMemo(() => new Map(codeFiles.map((file) => [file.path, file])), [codeFiles]);
+  const activeFile = activePath ? filesByPath.get(activePath) ?? null : null;
+  const openFiles = openFilePaths
+    .map((path) => filesByPath.get(path))
+    .filter((file): file is CodeFile => Boolean(file));
+  const tree = useMemo(() => buildFileTree(codeFiles), [codeFiles]);
 
   useEffect(() => {
-    const handleMouseMove = (e: globalThis.MouseEvent) => {
-      if (!isResizing.current || !explorerRef.current) return;
-      const newWidth = e.clientX - explorerRef.current.getBoundingClientRect().left;
-      setExplorerWidth(Math.max(220, Math.min(520, newWidth)));
-    };
+    if (codeFiles.length === 0) {
+      setActivePath(null);
+      setOpenFilePaths([]);
+      setExpandedFolders(new Set());
+      return;
+    }
 
-    const handleMouseUp = () => {
-      isResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
+    const preferredPath = latestCodeFilePath && filesByPath.has(latestCodeFilePath)
+      ? latestCodeFilePath
+      : activePath && filesByPath.has(activePath)
+        ? activePath
+        : codeFiles[0].path;
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    setActivePath(preferredPath);
+    setOpenFilePaths((prev) => {
+      const existing = prev.filter((path) => filesByPath.has(path));
+      return existing.includes(preferredPath) ? existing : [...existing, preferredPath];
+    });
+  }, [activePath, codeFiles, filesByPath, latestCodeFilePath]);
+
+  useEffect(() => {
+    const folders = new Set<string>();
+    codeFiles.forEach((file) => {
+      const parts = file.path.split('/').filter(Boolean);
+      let path = '';
+      parts.slice(0, -1).forEach((part) => {
+        path = path ? `${path}/${part}` : part;
+        folders.add(path);
+      });
+    });
+    setExpandedFolders((prev) => new Set([...folders, ...prev]));
+  }, [codeFiles]);
+
+  useEffect(() => {
+    if (animationRef.current) {
+      clearInterval(animationRef.current);
+      animationRef.current = null;
+    }
+
+    const target = activeFile?.content ?? '';
+    if (!activeFile) {
+      setDisplayContent('');
+      return;
+    }
+
+    if (activeFile.status !== 'streaming') {
+      setDisplayContent(target);
+      return;
+    }
+
+    setDisplayContent((prev) => (target.startsWith(prev) ? prev : ''));
+    animationRef.current = window.setInterval(() => {
+      setDisplayContent((prev) => {
+        if (prev.length >= target.length) {
+          if (animationRef.current) {
+            clearInterval(animationRef.current);
+            animationRef.current = null;
+          }
+          return target;
+        }
+
+        const remaining = target.length - prev.length;
+        const step = Math.max(12, Math.ceil(target.length / 90));
+        return target.slice(0, prev.length + Math.min(step, remaining));
+      });
+    }, 18);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);
-
-  const lineCount = useMemo(() => {
-    if (!activeFile) return 1;
-    return Math.max(activeFile.content.split('\n').length, 1);
-  }, [activeFile]);
-
-  const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
-
-  const highlightedCode = useMemo(() => {
-    if (!activeFile?.content) return '';
-    const lang = getLanguage(activeFile.language);
-
-    try {
-      if (lang === 'plaintext' || !hljs.getLanguage(lang)) {
-        return escapeHtml(activeFile.content);
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
       }
+    };
+  }, [activeFile?.content, activeFile?.path, activeFile?.status]);
 
-      return hljs.highlight(activeFile.content, { language: lang }).value;
-    } catch {
-      return escapeHtml(activeFile.content);
-    }
-  }, [activeFile?.content, activeFile?.language]);
-
-  const pathParts = useMemo(() => activeFile?.path.split('/') ?? [], [activeFile?.path]);
-
-  const activeLineTop = EDITOR_PADDING_TOP + (cursor.line - 1) * LINE_HEIGHT - editorScroll.top;
-
-  const startResize = () => {
-    isResizing.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  };
-
-  const toggleFolder = (folder: string) => {
+  const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
-      if (next.has(folder)) {
-        next.delete(folder);
+      if (next.has(path)) {
+        next.delete(path);
       } else {
-        next.add(folder);
+        next.add(path);
       }
       return next;
     });
   };
 
-  const closeFile = (fileId: string, e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-
-    const nextOpenFileIds = openFileIds.filter((id) => id !== fileId);
-    setOpenFileIds(nextOpenFileIds);
-
-    if (activeFileId === fileId) {
-      setActiveFileId(nextOpenFileIds.at(-1) ?? '');
-    }
+  const openFile = (path: string) => {
+    setActivePath(path);
+    setOpenFilePaths((prev) => (prev.includes(path) ? prev : [...prev, path]));
   };
 
-  const openFile = (fileId: string) => {
-    setOpenFileIds((prev) => (prev.includes(fileId) ? prev : [...prev, fileId]));
-    setActiveFileId(fileId);
-    setCursor({ line: 1, col: 1 });
-    setEditorScroll({ top: 0, left: 0 });
+  const closeFile = (path: string) => {
+    setOpenFilePaths((prev) => {
+      const next = prev.filter((openPath) => openPath !== path);
+      if (activePath === path) {
+        setActivePath(next.at(-1) ?? codeFiles.find((file) => file.path !== path)?.path ?? null);
+      }
+      return next;
+    });
   };
 
-  const updateActiveFile = (nextContent: string, cursorPos: number) => {
-    setFiles((prev) =>
-      prev.map((file) =>
-        file.id === activeFileId
-          ? {
-              ...file,
-              content: nextContent,
-            }
-          : file,
-      ),
-    );
-    setCursor(getCursorInfo(nextContent, cursorPos));
+  const handleMount: OnMount = (editor) => {
+    editor.onDidChangeCursorPosition((event) => {
+      setCursor({ line: event.position.lineNumber, column: event.position.column });
+    });
   };
 
   return (
-    <div
-      className="w-full h-full flex overflow-hidden bg-[var(--code-bg)] text-[var(--code-text)]"
-      style={CODE_VIEW_THEME}
-    >
-      <div className="w-[50px] bg-[var(--code-surface-muted)] border-r border-[var(--code-border)] flex flex-col items-center py-2 shrink-0">
-        <button
-          className={`relative w-9 h-9 flex items-center justify-center rounded-md transition-colors ${
-            isExplorerOpen
-              ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
-              : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
-          }`}
-          type="button"
-          aria-label="Explorer"
-          title="Explorer"
-          onClick={() => setIsExplorerOpen((prev) => !prev)}
-        >
-          {isExplorerOpen && <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[var(--code-accent)]" />}
-          <Files size={20} strokeWidth={1.8} />
-        </button>
-
-        <button
-          className="mt-2 w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-          type="button"
-          aria-label="Search"
-          title="Search"
-        >
-          <Search size={20} strokeWidth={1.8} />
-        </button>
-
-        <button
-          className="w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-          type="button"
-          aria-label="Source Control"
-          title="Source Control"
-        >
-          <GitBranch size={20} strokeWidth={1.8} />
-        </button>
-
-        <button
-          className="w-9 h-9 flex items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-          type="button"
-          aria-label="Run and Debug"
-          title="Run and Debug"
-        >
-          <Bug size={20} strokeWidth={1.8} />
-        </button>
+    <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
+      <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsExplorerOpen((value) => !value)}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+            title={isExplorerOpen ? 'Hide explorer' : 'Show explorer'}
+          >
+            {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+          </button>
+          <Files size={16} className="text-[var(--code-text-muted)]" />
+          <span className="truncate text-sm font-medium">Generated files</span>
+        </div>
+        <div className="text-xs text-[var(--code-text-muted)]">
+          {codeFiles.length} {codeFiles.length === 1 ? 'file' : 'files'}
+        </div>
       </div>
 
-      {isExplorerOpen && (
-        <aside
-          ref={explorerRef}
-          style={{ width: `min(${explorerWidth}px, calc(100vw - 180px))` }}
-          className="relative bg-[var(--code-surface-soft)] border-r border-[var(--code-border)] flex flex-col shrink-0"
-        >
-          <div
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--code-accent)]/40 transition-colors z-10"
-            onMouseDown={startResize}
-          />
-
-          <div className="h-11 px-4 border-b border-[var(--code-border-soft)] flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--code-text-muted)] uppercase">Project</span>
-            <span className="text-[11px] text-[var(--code-text-faint)]">go-server</span>
-          </div>
-
-          <div className="flex-1 overflow-auto px-2 py-3 text-sm">
-            <button
-              type="button"
-              onClick={() => toggleFolder('go-server')}
-              className="w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/90 transition-colors hover:bg-[var(--code-tree-hover)]"
-            >
-              {expandedFolders.has('go-server') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-              {expandedFolders.has('go-server') ? <FolderOpen size={16} /> : <Folder size={16} />}
-              <span className="truncate">go-server</span>
-            </button>
-
-            {expandedFolders.has('go-server') && (
-              <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
-                <button
-                  type="button"
-                  onClick={() => toggleFolder('src')}
-                  className="w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/90 transition-colors hover:bg-[var(--code-tree-hover)]"
-                >
-                  {expandedFolders.has('src') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                  {expandedFolders.has('src') ? <FolderOpen size={16} /> : <Folder size={16} />}
-                  <span className="truncate">src</span>
-                </button>
-
-                {expandedFolders.has('src') && (
-                  <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
-                    {files.map((file) => {
-                      const isActive = file.id === activeFileId;
-                      const isOpen = openFileIds.includes(file.id);
-
-                      return (
-                        <button
-                          key={file.id}
-                          type="button"
-                          onClick={() => openFile(file.id)}
-                          className={`w-full h-7 pl-2 pr-2 flex items-center gap-2 rounded transition-colors ${
-                            isActive
-                              ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
-                              : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
-                          }`}
-                        >
-                          <FileCode2 size={15} className="text-[var(--code-accent)]" />
-                          <span className="truncate">{file.name}</span>
-                          {isOpen && <Circle size={6} fill="currentColor" className="ml-auto text-[var(--code-text-faint)]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => toggleFolder('pkg')}
-                  className="mt-1 w-full h-7 px-2 flex items-center gap-2 rounded text-[var(--code-text)]/80 transition-colors hover:bg-[var(--code-tree-hover)]"
-                >
-                  {expandedFolders.has('pkg') ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                  {expandedFolders.has('pkg') ? <FolderOpen size={16} /> : <Folder size={16} />}
-                  <span className="truncate">pkg</span>
-                </button>
-
-                {expandedFolders.has('pkg') && (
-                  <div className="ml-4 border-l border-[var(--code-border-soft)] pl-2">
-                    <div className="h-7 pl-2 pr-2 flex items-center gap-2 text-[var(--code-text-muted)]">
-                      <File size={15} className="text-[var(--code-text-faint)]" />
-                      <span className="truncate">go.mod</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </aside>
-      )}
-
-      <main className="flex-1 min-w-0 flex flex-col bg-[var(--code-bg)]">
-        <div className="h-11 bg-[var(--code-surface-soft)] border-b border-[var(--code-border)] flex items-end overflow-hidden">
-          <div className="h-full px-2 border-r border-[var(--code-border)] flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              className="w-8 h-8 rounded-md flex items-center justify-center text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-              aria-label="Back"
-              title="Back"
-            >
-              <ArrowLeft size={17} />
-            </button>
-            <button
-              type="button"
-              className="w-8 h-8 rounded-md flex items-center justify-center text-[var(--code-text-faint)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text-muted)]"
-              aria-label="Forward"
-              title="Forward"
-            >
-              <ArrowRight size={17} />
-            </button>
-          </div>
-
-          <div className="flex-1 min-w-0 flex overflow-x-auto">
-            {openFiles.length > 0 ? (
-              openFiles.map((file) => {
-                const isActive = file.id === activeFileId;
-
-                return (
-                  <div
-                    key={file.id}
-                    className={`h-11 min-w-[148px] max-w-[240px] px-3 border-r border-[var(--code-border)] flex items-center gap-2 text-sm transition-colors ${
-                      isActive
-                        ? 'bg-[var(--code-bg)] text-[var(--code-text)]'
-                        : 'bg-[var(--code-surface-soft)] text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveFileId(file.id);
-                        setCursor({ line: 1, col: 1 });
-                        setEditorScroll({ top: 0, left: 0 });
-                      }}
-                      className="min-w-0 flex-1 h-full flex items-center gap-2 text-left"
-                    >
-                      <FileCode2 size={15} className={isActive ? 'text-[var(--code-accent-strong)]' : 'text-[var(--code-text-faint)]'} />
-                      <span className="truncate">{file.name}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => closeFile(file.id, e)}
-                      className="ml-auto w-5 h-5 rounded flex items-center justify-center text-[var(--code-text-faint)] transition-colors hover:bg-[var(--code-tree-active)] hover:text-[var(--code-text)]"
-                      aria-label={`Close ${file.name}`}
-                      title={`Close ${file.name}`}
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="h-11 px-4 flex items-center text-sm text-[var(--code-text-faint)]">No file open</div>
-            )}
-          </div>
-        </div>
-
-        {activeFile && (
-          <div className="h-10 px-5 text-sm border-b border-[var(--code-border-soft)] bg-[var(--code-bg)] flex items-center gap-2 overflow-hidden">
-            {pathParts.map((part, index) => {
-              const isLast = index === pathParts.length - 1;
-              return (
-                <span key={`${part}-${index}`} className="flex items-center gap-2 min-w-0">
-                  <span className={isLast ? 'text-[var(--code-text)] truncate' : 'text-[var(--code-text-muted)] truncate'}>
-                    {part}
-                  </span>
-                  {!isLast && <ChevronRight size={14} className="text-[var(--code-text-faint)] shrink-0" />}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
-        {activeFile ? (
-          <div className="flex-1 min-h-0 flex overflow-hidden bg-[var(--code-bg)] font-mono text-[13px]">
-            <div
-              className="shrink-0 border-r border-[var(--code-border-soft)] bg-[var(--code-bg)] text-right text-[var(--code-text-faint)] overflow-hidden select-none"
-              style={{ width: EDITOR_GUTTER_WIDTH }}
-            >
-              <div
-                style={{
-                  paddingTop: EDITOR_PADDING_TOP,
-                  paddingLeft: EDITOR_GUTTER_PADDING_X,
-                  paddingRight: EDITOR_GUTTER_PADDING_X,
-                  transform: `translateY(${-editorScroll.top}px)`,
-                  lineHeight: `${LINE_HEIGHT}px`,
-                }}
-              >
-                {lines.map((line) => (
-                  <div
-                    key={line}
-                    className={`h-6 text-xs ${line === cursor.line ? 'text-[var(--code-accent-strong)]' : ''}`}
-                  >
-                    {line}
-                  </div>
-                ))}
-              </div>
+      <div className="flex min-h-0 flex-1">
+        {isExplorerOpen && (
+          <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[var(--code-border)] bg-[var(--code-surface)] md:flex">
+            <div className="border-b border-[var(--code-border)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--code-text-muted)]">
+              Explorer
             </div>
-
-            <div className="flex-1 min-w-0 relative overflow-hidden">
-              {activeLineTop > -LINE_HEIGHT && (
-                <div
-                  className="absolute left-0 right-0 h-6 bg-[var(--code-line-active)] pointer-events-none"
-                  style={{ top: activeLineTop }}
+            <div className="min-h-0 flex-1 overflow-auto p-2">
+              {tree.length > 0 ? (
+                <TreeRows
+                  nodes={tree}
+                  depth={0}
+                  activePath={activePath}
+                  expandedFolders={expandedFolders}
+                  onToggleFolder={toggleFolder}
+                  onOpenFile={openFile}
                 />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center px-5 text-center text-sm text-[var(--code-text-muted)]">
+                  <FileCode2 size={36} className="mb-3 opacity-70" />
+                  <span>No generated files yet.</span>
+                </div>
               )}
-
-              <pre
-                className="absolute inset-0 z-10 p-0 m-0 overflow-hidden whitespace-pre pointer-events-none code-editor"
-                aria-hidden="true"
-              >
-                <code
-                  className="block"
-                  style={{
-                    paddingTop: EDITOR_PADDING_TOP,
-                    paddingLeft: EDITOR_CONTENT_PADDING_X,
-                    paddingRight: EDITOR_CONTENT_PADDING_X,
-                    tabSize: 2,
-                    lineHeight: `${LINE_HEIGHT}px`,
-                    transform: `translate(${-editorScroll.left}px, ${-editorScroll.top}px)`,
-                    fontFamily:
-                      'JetBrains Mono, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: highlightedCode + '\n' }}
-                />
-              </pre>
-
-              <textarea
-                key={activeFile.id}
-                ref={textAreaRef}
-                value={activeFile.content}
-                onChange={(e) => updateActiveFile(e.target.value, e.target.selectionStart)}
-                onSelect={(e) => {
-                  const target = e.currentTarget;
-                  setCursor(getCursorInfo(target.value, target.selectionStart));
-                }}
-                onClick={(e) => {
-                  const target = e.currentTarget;
-                  setCursor(getCursorInfo(target.value, target.selectionStart));
-                }}
-                onKeyUp={(e) => {
-                  const target = e.currentTarget;
-                  setCursor(getCursorInfo(target.value, target.selectionStart));
-                }}
-                onScroll={(e) => {
-                  const target = e.currentTarget;
-                  setEditorScroll({ top: target.scrollTop, left: target.scrollLeft });
-                }}
-                spellCheck={false}
-                className="absolute inset-0 z-20 w-full h-full resize-none border-0 outline-none bg-transparent text-transparent caret-[var(--code-text)] selection:bg-[var(--code-selection)] selection:text-transparent overflow-auto whitespace-pre"
-                style={{
-                  paddingTop: EDITOR_PADDING_TOP,
-                  paddingLeft: EDITOR_CONTENT_PADDING_X,
-                  paddingRight: EDITOR_CONTENT_PADDING_X,
-                  tabSize: 2,
-                  lineHeight: `${LINE_HEIGHT}px`,
-                  fontFamily:
-                    'JetBrains Mono, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace',
-                }}
-              />
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 bg-[var(--code-bg)] flex items-center justify-center text-[var(--code-text-muted)]">
-            <div className="flex flex-col items-center gap-3">
-              <FileCode2 size={42} strokeWidth={1.4} className="text-[var(--code-text-faint)]" />
-              <p className="text-sm">Open a file from the project tree</p>
-            </div>
-          </div>
+          </aside>
         )}
 
-        <div className="h-7 bg-[var(--code-surface-muted)] border-t border-[var(--code-border)] text-[12px] text-[var(--code-text-muted)] px-3 flex items-center justify-between">
-          <div className="min-w-0 flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[var(--code-text)]">
-              <GitBranch size={14} />
-              main
-            </span>
-            {activeFile && (
-              <span className="hidden sm:inline truncate text-[var(--code-text-faint)]">{activeFile.path}</span>
+        <main className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-10 shrink-0 overflow-x-auto border-b border-[var(--code-border)] bg-[var(--code-surface)]">
+            {openFiles.length > 0 ? (
+              openFiles.map((file) => (
+                <div
+                  key={file.path}
+                  className={`group flex h-10 max-w-[240px] shrink-0 items-center border-r border-[var(--code-border)] text-sm transition-colors ${
+                    activePath === file.path
+                      ? 'bg-[var(--code-bg)] text-[var(--code-text)]'
+                      : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActivePath(file.path)}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-3"
+                  >
+                    <FileCode2 size={15} />
+                    <span className="truncate">{file.name}</span>
+                    <CodeStatus status={file.status} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => closeFile(file.path)}
+                    className="mr-2 rounded p-0.5 opacity-0 transition-opacity hover:bg-[var(--code-tree-hover)] group-hover:opacity-100"
+                    title="Close file"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center px-3 text-sm text-[var(--code-text-muted)]">No generated files</div>
             )}
           </div>
 
-          {activeFile && (
-            <div className="flex items-center gap-3 shrink-0">
-              <span>Ln {cursor.line}, Col {cursor.col}</span>
-              <span>Spaces: 2</span>
-              <span>UTF-8</span>
-              <span>{activeFile.language}</span>
+          {activeFile ? (
+            <>
+              <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-[var(--code-border)] px-3 text-xs text-[var(--code-text-muted)]">
+                <div className="min-w-0 truncate">{activeFile.path}</div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <CodeStatus status={activeFile.status} />
+                  <span>{statusLabel(activeFile.status)}</span>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1">
+                <Editor
+                  path={activeFile.path}
+                  value={displayContent}
+                  language={activeFile.language}
+                  theme={isDark ? 'vs-dark' : 'light'}
+                  onMount={handleMount}
+                  onChange={(value) => {
+                    if (activeFile.status !== 'streaming' && value !== undefined && value !== activeFile.content) {
+                      updateCodeFileContent(activeFile.path, value);
+                    }
+                  }}
+                  options={{
+                    automaticLayout: true,
+                    fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    fontSize: 13,
+                    lineHeight: 22,
+                    minimap: { enabled: true },
+                    padding: { top: 12, bottom: 12 },
+                    readOnly: activeFile.status === 'streaming',
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    wordWrap: 'off',
+                  }}
+                />
+              </div>
+              <div className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--code-border)] bg-[var(--code-surface)] px-3 text-xs text-[var(--code-text-muted)]">
+                <span className="truncate">{activeFile.workerRole || activeFile.managerRole || 'Worker output'}</span>
+                <span>
+                  Ln {cursor.line}, Col {cursor.column}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center text-[var(--code-text-muted)]">
+              <FileCode2 size={46} className="mb-4 opacity-70" />
+              <div className="max-w-sm text-sm leading-6">
+                No generated files yet.
+              </div>
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
-
-export default CodeViewer;

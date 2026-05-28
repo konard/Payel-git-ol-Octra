@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
-import type { AgentNode } from '../stores/taskStore';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
@@ -14,11 +13,6 @@ interface WebSocketMessage {
   is_clarification?: boolean;
   is_history?: boolean;
   sender?: 'boss' | 'user';
-}
-
-interface WebSocketHookProps {
-  onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void;
-  onProgressUpdate?: (progress: number, message?: string) => void;
 }
 
 interface WorkflowConfig {
@@ -45,6 +39,19 @@ interface CreateTaskPayload {
   workflow?: WorkflowConfig;
 }
 
+interface StreamedCodeFile {
+  path: string;
+  content: string;
+  language?: string;
+  worker_role?: string;
+  workerRole?: string;
+  manager_role?: string;
+  managerRole?: string;
+  status?: 'streaming' | 'ready';
+  updated_at?: number;
+  updatedAt?: number;
+}
+
 const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_DELAY = 15000;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
@@ -52,6 +59,25 @@ const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const isActiveTaskStatus = (status?: string | null) =>
   !!status &&
   ['creating', 'planning', 'executing', 'boss_planning', 'managers_assigned'].includes(status);
+
+function parseCodeFiles(data?: Record<string, any>): StreamedCodeFile[] {
+  const raw = data?.code_files;
+  if (!raw) return [];
+
+  try {
+    if (typeof raw === 'string') {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    if (Array.isArray(raw)) {
+      return raw;
+    }
+  } catch (err) {
+    console.warn('[WS] Failed to parse code_files payload:', err);
+  }
+
+  return [];
+}
 
 export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void, onProgressUpdate?: (progress: number, message?: string) => void) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -83,6 +109,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     addLog: useTaskStore((state) => state.addLog),
     setZipUrl: useTaskStore((state) => state.setZipUrl),
     setTokensUsed: useTaskStore((state) => state.setTokensUsed),
+    upsertCodeFiles: useTaskStore((state) => state.upsertCodeFiles),
+    completeCodeStreaming: useTaskStore((state) => state.completeCodeStreaming),
+    clearCodeFiles: useTaskStore((state) => state.clearCodeFiles),
     nodes: () => useTaskStore.getState().nodes,
   };
 
@@ -122,6 +151,33 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     }, HEARTBEAT_INTERVAL);
   };
 
+  const waitForOpen = useCallback(() => {
+    return new Promise<void>((resolve, reject) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
+      }
+
+      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+        reject(new Error('WebSocket closed'));
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        wsRef.current?.removeEventListener('open', onOpen);
+        reject(new Error('WebSocket connection timeout'));
+      }, 10000);
+
+      const onOpen = () => {
+        clearTimeout(timeout);
+        wsRef.current?.removeEventListener('open', onOpen);
+        resolve();
+      };
+
+      wsRef.current.addEventListener('open', onOpen);
+    });
+  }, []);
+
   const handleWebSocketMessage = (msg: WebSocketMessage) => {
     switch (msg.type) {
       case 'connected':
@@ -157,6 +213,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
       case 'progress':
       case 'processing':
+        handleCodeFilesMessage(msg);
         // Skip historical messages to avoid reprocessing
         if (!msg.is_history) {
           handleProgressMessage(msg);
@@ -164,7 +221,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         break;
 
       case 'success':
+        handleCodeFilesMessage(msg);
         storeActions.setTaskStatus('done');
+        storeActions.completeCodeStreaming();
         storeActions.addLog({
           message: msg.message || 'Project ready!',
           type: 'success',
@@ -239,6 +298,24 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         }
         break;
     }
+  };
+
+  const handleCodeFilesMessage = (msg: WebSocketMessage) => {
+    const codeFiles = parseCodeFiles(msg.data);
+    if (codeFiles.length === 0) return;
+
+    storeActions.upsertCodeFiles(codeFiles
+      .filter((file) => file.path && typeof file.content === 'string')
+      .map((file) => ({
+        path: file.path,
+        name: file.path.split('/').filter(Boolean).at(-1) || file.path,
+        language: file.language || 'plaintext',
+        content: file.content,
+        status: file.status || 'streaming',
+        workerRole: file.workerRole || file.worker_role,
+        managerRole: file.managerRole || file.manager_role,
+        updatedAt: file.updatedAt || file.updated_at || Date.now(),
+      })));
   };
 
   // Helper: capitalize first letter
@@ -621,32 +698,6 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       connect();
     }
 
-    const waitForOpen = () => {
-      return new Promise<void>((resolve, reject) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          resolve();
-          return;
-        }
-
-        if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-          reject(new Error('WebSocket closed'));
-          return;
-        }
-
-        const timeout = setTimeout(() => {
-          reject(new Error('WebSocket connection timeout'));
-        }, 10000);
-
-        const onOpen = () => {
-          clearTimeout(timeout);
-          wsRef.current?.removeEventListener('open', onOpen);
-          resolve();
-        };
-
-        wsRef.current?.addEventListener('open', onOpen);
-      });
-    };
-
     waitForOpen().then(() => {
       // Only send data if this is a new task creation, not a reconnect
       const isReconnect = activeTaskId.current !== null && isActiveTaskStatus(currentStatus);
@@ -657,6 +708,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         // Store the payload for potential reconnection
         lastTaskPayload.current = data;
         wsRef.current!.send(JSON.stringify(data));
+        storeActions.clearCodeFiles();
         storeActions.setTaskStatus('creating');
         storeActions.setTaskId(`task-${Date.now()}`);
         storeActions.addLog({
@@ -671,7 +723,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         type: 'error',
       });
     });
-  }, [connect, storeActions]);
+  }, [connect, storeActions, waitForOpen]);
 
   const disconnect = useCallback(() => {
     isManuallyClosed.current = true;
@@ -704,18 +756,30 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     };
   }, []);
 
-  const sendChat = useCallback((message: string, sender: 'boss' | 'user' = 'user') => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.error('[WS] Cannot send chat message: WebSocket not connected');
-      return;
+  const sendChat = useCallback(async (
+    message: string,
+    sender: 'boss' | 'user' = 'user',
+    taskPayload?: CreateTaskPayload | null,
+  ): Promise<boolean> => {
+    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || wsRef.current.readyState === WebSocket.CLOSING) {
+      isManuallyClosed.current = false;
+      connect();
     }
 
-    wsRef.current.send(JSON.stringify({
-      type: 'chat',
-      message,
-      sender,
-    }));
-  }, []);
+    try {
+      await waitForOpen();
+      wsRef.current!.send(JSON.stringify({
+        type: 'chat',
+        message,
+        sender,
+        taskPayload,
+      }));
+      return true;
+    } catch (err) {
+      console.error('[WS] Cannot send chat message:', err);
+      return false;
+    }
+  }, [connect, waitForOpen]);
 
   return { connect, send, sendChat, disconnect };
 }
