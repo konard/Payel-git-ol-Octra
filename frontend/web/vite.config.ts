@@ -24,6 +24,14 @@ export default defineConfig({
         target: 'http://localhost:3112',
         changeOrigin: true,
       },
+      '/custom-models': {
+        target: 'http://localhost:3112',
+        changeOrigin: true,
+      },
+      '/custom-providers': {
+        target: 'http://localhost:3112',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://localhost:3111',
         changeOrigin: true,

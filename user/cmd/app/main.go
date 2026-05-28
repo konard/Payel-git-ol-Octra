@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"user/internal/core/services"
 	"user/internal/fetcher/http/router"
 	"user/pkg/database"
 	"user/pkg/models"
@@ -14,6 +15,8 @@ import (
 func main() {
 	database.InitDb()
 	database.Db.AutoMigrate(&models.UserRegister{}, &models.Subscription{}, &models.PromoCode{}, &models.Workflow{}, &models.CustomProvider{}, &models.CustomModel{}, &models.Chat{}, &models.ChatMessage{})
+
+	services.InitDefaultPromoCodes()
 
 	r := gin.Default()
 

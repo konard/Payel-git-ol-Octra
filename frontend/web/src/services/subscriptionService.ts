@@ -4,6 +4,14 @@
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '';
 
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+}
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -45,8 +53,7 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
 export async function subscribeUser(userId: string, plan: string): Promise<void> {
   const response = await fetch(`${AUTH_API_URL}/subscribe`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+    headers: getAuthHeaders(),
     body: JSON.stringify({ user_id: userId, plan }),
   });
 
@@ -59,8 +66,7 @@ export async function subscribeUser(userId: string, plan: string): Promise<void>
 export async function activatePromoCode(userId: string, code: string): Promise<void> {
   const response = await fetch(`${AUTH_API_URL}/subscribe/promo`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+    headers: getAuthHeaders(),
     body: JSON.stringify({ user_id: userId, code }),
   });
 
@@ -82,8 +88,7 @@ export interface PaymentSession {
 export async function createPaymentSession(planId: string, returnUrl: string): Promise<PaymentSession> {
   const response = await fetch(`${AUTH_API_URL}/payments/create`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+    headers: getAuthHeaders(),
     body: JSON.stringify({ plan_id: planId, return_url: returnUrl }),
   });
 
@@ -115,8 +120,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
 export async function simulatePaymentSuccess(userId: string, planId: string): Promise<void> {
   const response = await fetch(`${AUTH_API_URL}/payments/simulate-success`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+    headers: getAuthHeaders(),
     body: JSON.stringify({ user_id: userId, plan_id: planId }),
   });
 

@@ -1,6 +1,6 @@
 import { CustomProvider, CustomModel } from '../stores/customProvidersStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/auth';
+const API_BASE_URL = import.meta.env.VITE_AUTH_URL || '';
 
 export interface CreateCustomProviderRequest {
   name: string;
