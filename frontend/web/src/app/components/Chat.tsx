@@ -1,172 +1,168 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { CheckCircle2, Circle, CircleDotDashed, Download, GitBranch, UserRound } from 'lucide-react';
 import octraMascot from '../../images/octra-mascot.png';
 import { useTaskStore } from '../../stores/taskStore';
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string;
   text: string;
   sender: 'boss' | 'user';
   timestamp: Date;
   read?: boolean;
   isClarification?: boolean;
-  progress?: number; // Progress percentage for progress messages
-  showProgress?: boolean; // Whether to show progress bar for this message
+  progress?: number;
+  showProgress?: boolean;
 }
 
 interface ChatProps {
   messages: ChatMessage[];
-  onSendMessage: (message: string) => void;
   onMarkAsRead: (messageId: string) => void;
 }
 
-export function Chat({ messages, onSendMessage, onMarkAsRead }: ChatProps) {
+function formatTime(date: Date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+export function Chat({ messages, onMarkAsRead }: ChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const nodes = useTaskStore((state) => state.nodes);
   const zipUrl = useTaskStore((state) => state.zipUrl);
+  const status = useTaskStore((state) => state.status);
+  const managers = nodes.filter((node) => node.type === 'manager');
+  const workers = nodes.filter((node) => node.type === 'worker');
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages, nodes]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Mark messages as read when they come into view
     const timer = setTimeout(() => {
-      messages.forEach(message => {
+      messages.forEach((message) => {
         if (message.sender === 'boss' && !message.read) {
           onMarkAsRead(message.id);
         }
       });
-    }, 100); // Small delay to ensure DOM is updated
+    }, 120);
     return () => clearTimeout(timer);
   }, [messages, onMarkAsRead]);
 
-  // Get managers and workers
-  const managers = nodes.filter(node => node.type === 'manager');
-  const workers = nodes.filter(node => node.type === 'worker');
-
   return (
-    <div className="flex flex-col h-full bg-[var(--background)]">
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <img
-                src={octraMascot}
-                alt="Octra Mascot"
-                className="w-28 h-28 rounded-lg object-contain mx-auto mb-6"
-              />
-              <h1 className="text-2xl font-bold text-[var(--text)] mb-2">
-                Добро пожаловать в Octra!
-              </h1>
-              <p className="text-[var(--text-muted)]">
-                Начните общение с вашим ИИ-ассистентом
-              </p>
+    <div className="flex h-full min-h-0 flex-col bg-[var(--background)]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+          {messages.length === 0 ? (
+            <div className="flex min-h-[55vh] items-center justify-center">
+              <div className="text-center">
+                <img
+                  src={octraMascot}
+                  alt="Octra Mascot"
+                  className="mx-auto mb-5 h-24 w-24 rounded-lg object-contain"
+                />
+                <h1 className="mb-2 text-2xl font-bold text-[var(--text)]">Octra Boss</h1>
+                <p className="text-sm text-[var(--text-muted)]">Ready.</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <div key={message.id} className="space-y-2">
-              {/* User message */}
-              {message.sender === 'user' && (
-                <div className="flex justify-end">
-                  <div className="bg-[var(--accent)] text-white rounded-lg px-4 py-2 max-w-[70%]">
-                    <div className="text-sm">{message.text}</div>
-                    <div className="text-xs mt-1 text-white/70">
-                      {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                    </div>
+          ) : (
+            messages.map((message) => (
+              <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex max-w-[82%] gap-3 ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] ${
+                    message.sender === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface)] text-[var(--text)]'
+                  }`}>
+                    {message.sender === 'user' ? (
+                      <UserRound size={18} />
+                    ) : (
+                      <img src={octraMascot} alt="Octra Mascot" className="h-7 w-7 object-contain" />
+                    )}
                   </div>
-                </div>
-              )}
 
-              {/* Boss message with progress */}
-              {message.sender === 'boss' && (
-                <div className="flex justify-start space-y-2">
-                  <div className="space-y-3 max-w-[70%]">
-                    {/* CrewAI mascot and progress bar */}
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={octraMascot}
-                        alt="Octra Mascot"
-                        className="w-12 h-12 rounded-lg object-contain"
-                      />
-                      <div className="flex-1">
-                        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-2">
+                  <div className={`min-w-0 rounded-lg border px-4 py-3 ${
+                    message.sender === 'user'
+                      ? 'border-transparent bg-[var(--accent)] text-white'
+                      : message.isClarification
+                        ? 'border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[var(--text)]'
+                        : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text)]'
+                  }`}>
+                    <div className="whitespace-pre-wrap text-sm leading-6">{message.text}</div>
+
+                    {message.showProgress && (
+                      <div className="mt-3">
+                        <div className="mb-1 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                          <span>{status === 'done' ? 'Workflow complete' : 'Workflow running'}</span>
+                          <span>{message.progress ?? 0}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-[var(--background)]">
                           <div
-                            className="w-full bg-[var(--accent)] rounded-lg h-2 transition-all duration-300"
-                            style={{ width: `${message.progress || 0}%` }}
-                          ></div>
+                            className="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
+                            style={{ width: `${Math.max(0, Math.min(100, message.progress ?? 0))}%` }}
+                          />
                         </div>
                       </div>
+                    )}
+
+                    {message.progress === 100 && zipUrl && (
+                      <a
+                        href={zipUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:underline"
+                      >
+                        <Download size={15} />
+                        Open result
+                      </a>
+                    )}
+
+                    <div className={`mt-2 text-xs ${
+                      message.sender === 'user' ? 'text-white/70' : 'text-[var(--text-muted)]'
+                    }`}>
+                      {formatTime(message.timestamp)}
                     </div>
-
-                    {/* Team status */}
-                    {(managers.length > 0 || workers.length > 0) && (
-                      <div className="space-y-1">
-                        {managers.map((manager) => (
-                          <div key={manager.id} className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              manager.status === 'done' ? 'bg-green-500' :
-                              manager.status === 'working' ? 'bg-blue-500' :
-                              'bg-gray-400'
-                            }`}></div>
-                            <span className="text-sm text-[var(--text)]">{manager.role}</span>
-                          </div>
-                        ))}
-                        {workers.map((worker) => (
-                          <div key={worker.id} className="flex items-center gap-2 ml-4">
-                            <div className={`w-2 h-2 rounded-full ${
-                              worker.status === 'done' ? 'bg-green-500' :
-                              worker.status === 'working' ? 'bg-blue-500' :
-                              'bg-gray-400'
-                            }`}></div>
-                            <span className="text-sm text-[var(--text)]">{worker.role}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Boss message text */}
-                    {message.text && (
-                      <div className={`rounded-lg px-4 py-2 ${
-                        message.isClarification
-                          ? 'bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 text-orange-900 dark:text-orange-100'
-                          : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]'
-                      }`}>
-                        <div className="text-sm">{message.text}</div>
-                        {message.progress === 100 && zipUrl && (
-                          <div className="mt-2 pt-2 border-t border-[var(--border)]">
-                            <a
-                              href={zipUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm text-[var(--accent)] hover:underline"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
-                                <path d="M9 18c-4.51 2-5-2-7-2"/>
-                              </svg>
-                              {zipUrl}
-                            </a>
-                          </div>
-                        )}
-                        <div className="text-xs mt-1 text-[var(--text-muted)]">
-                          {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
-              )}
+              </div>
+            ))
+          )}
+
+          {(managers.length > 0 || workers.length > 0) && (
+            <div className="ml-12 max-w-2xl border-l border-[var(--border)] pl-5">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+                <GitBranch size={16} />
+                Workflow activity
+              </div>
+              <div className="space-y-3">
+                {managers.map((manager) => (
+                  <div key={manager.id} className="flex items-center gap-3 text-sm">
+                    {manager.status === 'done' ? (
+                      <CheckCircle2 size={16} className="text-[var(--success)]" />
+                    ) : manager.status === 'working' || manager.status === 'reviewing' ? (
+                      <CircleDotDashed size={16} className="animate-spin text-[var(--accent)]" />
+                    ) : (
+                      <Circle size={16} className="text-[var(--text-muted)]" />
+                    )}
+                    <span className="text-[var(--text)]">{manager.role}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{manager.status}</span>
+                  </div>
+                ))}
+                {workers.map((worker) => (
+                  <div key={worker.id} className="ml-6 flex items-center gap-3 text-sm">
+                    {worker.status === 'done' ? (
+                      <CheckCircle2 size={16} className="text-[var(--success)]" />
+                    ) : worker.status === 'working' ? (
+                      <CircleDotDashed size={16} className="animate-spin text-[var(--accent)]" />
+                    ) : (
+                      <Circle size={16} className="text-[var(--text-muted)]" />
+                    )}
+                    <span className="text-[var(--text)]">{worker.role}</span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {worker.filesCount ? `${worker.filesCount} files` : worker.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
     </div>
   );

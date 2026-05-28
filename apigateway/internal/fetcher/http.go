@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"apigateway/internal/core/ratelimit"
@@ -58,6 +59,7 @@ func validateJWT(tokenString string) (string, string, error) {
 	}
 	return userID, username, nil
 }
+
 var rl *ratelimit.RateLimiter
 var db *gorm.DB
 
@@ -68,6 +70,13 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 	EnableCompression: true,
+}
+
+type chatWSMessage struct {
+	Type        string                      `json:"type"`
+	Message     string                      `json:"message"`
+	Sender      string                      `json:"sender"`
+	TaskPayload *requests.CreateTaskRequest `json:"taskPayload"`
 }
 
 // PingWriter periodically sends pings to keep connection alive
@@ -174,6 +183,20 @@ func handleTaskCreateWS(c *gin.Context) {
 		return
 	}
 
+	var envelope struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &envelope); err == nil && envelope.Type == "chat" {
+		conn.WriteJSON(gin.H{
+			"type":      "connected",
+			"task_id":   userID,
+			"message":   "Connected to boss chat",
+			"timestamp": time.Now().Unix(),
+		})
+		handleBossChatWS(conn, userID, username, data)
+		return
+	}
+
 	// Parse task request
 	var taskReq requests.CreateTaskRequest
 	if err := json.Unmarshal(data, &taskReq); err != nil {
@@ -211,7 +234,7 @@ func handleTaskCreateWS(c *gin.Context) {
 	done := make(chan struct{})
 	go PingWriter(conn, done)
 	defer close(done)
-	
+
 	// Keep reading to handle close/ping and messages
 	go func() {
 		defer conn.Close()
@@ -235,6 +258,158 @@ func handleTaskCreateWS(c *gin.Context) {
 			}
 		}
 	}()
+}
+
+func handleBossChatWS(conn *websocket.Conn, userID, username string, initial []byte) {
+	defer conn.Close()
+
+	done := make(chan struct{})
+	go PingWriter(conn, done)
+	defer close(done)
+
+	handleFrame := func(data []byte) bool {
+		if len(bytes.TrimSpace(data)) == 0 {
+			return false
+		}
+
+		var msg chatWSMessage
+		if err := json.Unmarshal(data, &msg); err != nil {
+			conn.WriteJSON(gin.H{
+				"type":    "error",
+				"message": "Invalid chat JSON: " + err.Error(),
+			})
+			return false
+		}
+
+		if msg.Type == "ping" {
+			conn.WriteJSON(gin.H{"type": "pong"})
+			return false
+		}
+		if msg.Type != "chat" {
+			return false
+		}
+
+		message := strings.TrimSpace(msg.Message)
+		if message == "" {
+			return false
+		}
+
+		if shouldLaunchWorkflowFromChat(message) {
+			if msg.TaskPayload == nil {
+				writeBossChatMessage(conn, userID, "I can start a workflow from chat, but I need your model settings first.", true)
+				return false
+			}
+
+			taskReq := *msg.TaskPayload
+			taskReq.UserID = userID
+			taskReq.Username = username
+			if taskReq.Title == "" {
+				taskReq.Title = message
+			}
+			if taskReq.Description == "" {
+				taskReq.Description = message
+			}
+			if taskReq.Meta == nil {
+				taskReq.Meta = map[string]interface{}{}
+			}
+
+			writeBossChatMessage(conn, userID, "I'll start the workflow for this request.", false)
+			processTaskStreamWS(conn, taskReq)
+			return true
+		}
+
+		writeBossChatMessage(conn, userID, buildBossChatReply(message), false)
+		return false
+	}
+
+	if handleFrame(initial) {
+		return
+	}
+
+	for {
+		msgType, data, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		switch msgType {
+		case websocket.CloseMessage:
+			return
+		case websocket.PingMessage:
+			conn.WriteMessage(websocket.PongMessage, nil)
+		case websocket.TextMessage:
+			if handleFrame(data) {
+				return
+			}
+		}
+	}
+}
+
+func writeBossChatMessage(conn *websocket.Conn, taskID, message string, clarification bool) {
+	conn.WriteJSON(gin.H{
+		"type":             "chat",
+		"task_id":          taskID,
+		"sender":           "boss",
+		"message":          message,
+		"is_clarification": clarification,
+		"timestamp":        time.Now().Unix(),
+	})
+}
+
+func shouldLaunchWorkflowFromChat(message string) bool {
+	words := normalizedWords(message)
+	triggers := []string{
+		"build", "building", "create", "creating", "develop", "fix", "generate", "generating",
+		"implement", "implementing", "launch", "make", "refactor", "run", "scaffold", "start", "write",
+	}
+	targets := []string{
+		"app", "application", "api", "backend", "bug", "code", "component", "feature", "frontend",
+		"integration", "page", "project", "service", "site", "tool", "webapp", "website", "workflow",
+	}
+	return hasAnyWord(words, triggers) && hasAnyWord(words, targets)
+}
+
+func buildBossChatReply(message string) string {
+	words := normalizedWords(message)
+	if hasAnyWord(words, []string{"hello", "hi", "hey"}) {
+		return "Hi, I'm here."
+	}
+	if hasAnyWord(words, []string{"thanks", "thank"}) {
+		return "You're welcome."
+	}
+	if hasAnyWord(words, []string{"help", "workflow", "build", "create"}) {
+		return "I can answer here, or start the workflow when you describe code you want built or changed."
+	}
+	return "I understand. Send the next detail when you are ready."
+}
+
+func normalizedWords(message string) map[string]bool {
+	cleaned := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z':
+			return r
+		case r >= 'A' && r <= 'Z':
+			return r + ('a' - 'A')
+		case r >= '0' && r <= '9':
+			return r
+		default:
+			return ' '
+		}
+	}, message)
+
+	words := make(map[string]bool)
+	for _, word := range strings.Fields(cleaned) {
+		words[word] = true
+	}
+	return words
+}
+
+func hasAnyWord(words map[string]bool, candidates []string) bool {
+	for _, candidate := range candidates {
+		if words[candidate] {
+			return true
+		}
+	}
+	return false
 }
 
 // processTaskStreamWS sends task to Boss and streams updates back via WebSocket

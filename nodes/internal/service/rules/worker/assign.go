@@ -65,6 +65,9 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 				"files":        strings.Join(fileList, ","),
 				"files_count":  strconv.Itoa(len(result.Files)),
 			}
+			if codeFiles := buildCodeFilesPayload(result.Files, wr.Role, req.ManagerRole); codeFiles != "" {
+				data["code_files"] = codeFiles
+			}
 			progress(p, fmt.Sprintf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), wr.Role, len(result.Files)), data)
 		}
 	}

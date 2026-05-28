@@ -8,7 +8,7 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectChat: (chatId: string) => void;
-  onNewChat: () => void;
+  onNewChat: (chatId?: string) => void;
 }
 
 export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarProps) {
@@ -60,7 +60,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
       const newChat = await createChat(user!.id, t('chatSidebar.newChat'));
       setChats(prev => [newChat, ...prev]);
       setSelectedChatId(newChat.id);
-      onNewChat();
+      onNewChat(newChat.id);
     } catch (error) {
       console.error('Failed to create chat:', error);
     }
@@ -72,6 +72,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
       await deleteChat(chatId);
       setChats(prev => prev.filter(c => c.id !== chatId));
       if (selectedChatId === chatId) {
+        setSelectedChatId(null);
         onNewChat();
       }
       setOpenMenuId(null);

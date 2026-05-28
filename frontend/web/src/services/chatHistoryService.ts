@@ -16,7 +16,8 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'boss';
   content: string;
-  timestamp: Date;
+  timestamp?: Date;
+  created_at?: Date | string;
 }
 
 function getAuthHeaders() {
@@ -45,7 +46,10 @@ export async function getChatHistory(userId: string): Promise<ChatHistoryItem[]>
 export async function getChat(chatId: string): Promise<ChatHistoryItem> {
   const response = await fetch(`${AUTH_API_URL}/chat/${chatId}`, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
     credentials: 'include',
   });
 
