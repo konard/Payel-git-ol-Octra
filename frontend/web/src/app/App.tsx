@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
 import { ConsolePanel } from './components/ConsolePanel';
 import { Canvas } from './components/Canvas';
-import { Chat } from './components/Chat';
+import { Chat, type ChatMessage } from './components/Chat';
 import { CodeViewer } from './components/CodeViewer';
 import { BottomInput } from './components/BottomInput';
 import { ChatInput } from './components/ChatInput';
@@ -14,12 +14,13 @@ import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
-import { getChat, updateChatWorkflow, createChat } from '../services/chatHistoryService';
+import { addMessage, getChat, updateChatWorkflow, createChat } from '../services/chatHistoryService';
 import { PaymentSuccess } from '../components/PaymentSuccess';
 import { Sidebar } from '../components/Sidebar';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import LandingPage from './components/LandingPage';
 
 const SHOW_STATUS_BAR = false;
@@ -31,21 +32,22 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<'canvas' | 'chat' | 'code'>('canvas');
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const currentChatIdRef = useRef<string | null>(null);
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<Array<{
-    id: string;
-    text: string;
-    sender: 'boss' | 'user';
-    timestamp: Date;
-    read?: boolean;
-    isClarification?: boolean;
-  }>>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
 
   const { language, changeLanguage } = useI18n();
   const { isAuthenticated, hasSubscription, isInTrial, checkAuth, setSubscription } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
+  const defaultToken = useSettingsStore((state) => state.defaultToken);
+  const defaultProvider = useSettingsStore((state) => state.defaultProvider);
+  const defaultModel = useSettingsStore((state) => state.defaultModel);
+
+  useEffect(() => {
+    currentChatIdRef.current = currentChatId;
+  }, [currentChatId]);
 
   // Определяем, показывать лендинг или приложение
   const isLandingPage = window.location.pathname === '/' && !isAuthenticated;
@@ -61,6 +63,76 @@ export default function App() {
     return <PaymentSuccess />;
   }
 
+  const persistChatMessage = (role: 'user' | 'boss', content: string) => {
+    const chatId = currentChatIdRef.current;
+    if (!chatId || !content.trim()) return;
+
+    addMessage(chatId, role, content, {
+      provider: defaultProvider,
+      model: defaultModel,
+    }).catch((error) => {
+      console.error('Failed to persist chat message:', error);
+    });
+  };
+
+  const ensureChatSession = async (title: string) => {
+    if (currentChatIdRef.current) {
+      return currentChatIdRef.current;
+    }
+
+    const authUser = useAuthStore.getState().user;
+    if (!authUser?.id) {
+      return null;
+    }
+
+    const newChat = await createChat(authUser.id, title);
+    setCurrentChatId(newChat.id);
+    currentChatIdRef.current = newChat.id;
+    return newChat.id;
+  };
+
+  const buildChatTaskPayload = (message: string) => {
+    const authUser = useAuthStore.getState().user;
+    if (!authUser || !isAuthenticated || (!hasSubscription && !isInTrial)) {
+      return null;
+    }
+
+    const customProviders = useCustomProvidersStore.getState().providers;
+    const customProvider = customProviders.find(p => p.id === defaultProvider);
+    const title = message.trim().slice(0, 60) || 'Chat workflow';
+
+    const taskPayload: any = {
+      username: authUser.username || 'user',
+      user_id: authUser.id,
+      title,
+      description: message,
+      meta: {
+        model: defaultModel,
+      },
+    };
+
+    if (customProvider) {
+      taskPayload.meta.provider = 'ollama';
+      taskPayload.tokens = {
+        ollama: defaultToken,
+        base_url: customProvider.base_url,
+      };
+    } else {
+      const tokenKey = defaultProvider === 'openrouter' ? 'openrouter'
+        : defaultProvider === 'gemini' ? 'gemini'
+        : defaultProvider === 'openai' ? 'openai'
+        : defaultProvider === 'zai' ? 'zai'
+        : 'claude';
+
+      taskPayload.tokens = {
+        [tokenKey]: defaultToken,
+      };
+      taskPayload.meta.provider = defaultProvider;
+    }
+
+    return taskPayload;
+  };
+
   const handleIncomingChatMessage = (message: string, sender: 'boss' | 'user', isClarification = false, progress?: number, showProgress?: boolean) => {
     const newMessage = {
       id: Date.now().toString(),
@@ -75,6 +147,7 @@ export default function App() {
     setChatMessages(prev => [...prev, newMessage]);
     if (sender === 'boss') {
       setHasUnreadMessages(true);
+      persistChatMessage('boss', message);
     }
   };
 
@@ -208,6 +281,7 @@ export default function App() {
         const newChat = await createChat(authUser.id, data.title);
         chatId = newChat.id;
         setCurrentChatId(chatId);
+        currentChatIdRef.current = chatId;
         // Update sidebar to reflect the new chat
         // Note: Sidebar will reload chats automatically when opened
       } catch (error) {
@@ -287,17 +361,35 @@ export default function App() {
     useTaskStore.getState().setStartTime(Date.now());
   };
 
-  const handleSendChatMessage = (message: string) => {
+  const handleSendChatMessage = async (message: string) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    try {
+      await ensureChatSession(message.slice(0, 60) || 'New Chat');
+    } catch (error) {
+      console.error('Failed to create chat session:', error);
+    }
+
     const newMessage = {
       id: Date.now().toString(),
       text: message,
       sender: 'user' as const,
       timestamp: new Date(),
+      read: true,
     };
     setChatMessages(prev => [...prev, newMessage]);
+    setMode('chat');
+    persistChatMessage('user', message);
 
-    // Send chat message via WebSocket
-    sendChat(message, 'user');
+    const taskPayload = buildChatTaskPayload(message);
+    const sent = await sendChat(message, 'user', taskPayload);
+
+    if (!sent) {
+      handleIncomingChatMessage('I cannot reach the boss service right now. Your message is saved in this chat.', 'boss');
+    }
   };
 
   const handleMarkChatMessageAsRead = (messageId: string) => {
@@ -347,16 +439,28 @@ export default function App() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleNewChat = () => {
-    setCurrentChatId(null);
+  const handleNewChat = (chatId?: string) => {
+    setCurrentChatId(chatId ?? null);
+    currentChatIdRef.current = chatId ?? null;
     setChatMessages([]);
     setMode('chat');
   };
 
   const handleSelectChat = async (chatId: string) => {
     setCurrentChatId(chatId);
+    currentChatIdRef.current = chatId;
+    setMode('chat');
+    setShowSidebar(false);
     try {
       const chat = await getChat(chatId);
+      setChatMessages((chat.messages || []).map((message) => ({
+        id: message.id,
+        text: message.content,
+        sender: message.role,
+        timestamp: new Date(message.created_at || message.timestamp || Date.now()),
+        read: true,
+      })));
+
       if (chat.workflow) {
         const workflowData = JSON.parse(chat.workflow);
         if (workflowData.nodes?.length || workflowData.edges?.length) {
@@ -415,7 +519,6 @@ export default function App() {
         ) : (
           <Chat
             messages={chatMessages}
-            onSendMessage={handleSendChatMessage}
             onMarkAsRead={handleMarkChatMessageAsRead}
           />
         )}

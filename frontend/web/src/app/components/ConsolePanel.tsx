@@ -63,23 +63,23 @@ export function ConsolePanel() {
       {/* Header — always visible */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="w-full flex items-center justify-between px-4 py-2 hover:bg-[var(--text-muted)]/10 transition-colors"
+        className="flex w-full min-w-0 items-center justify-between gap-3 px-4 py-2 hover:bg-[var(--text-muted)]/10 transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
-          <span className="text-sm font-medium text-[var(--text)]">
+          <span className="shrink-0 text-sm font-medium text-[var(--text)]">
             {t('console.title')}
             <span className="ml-2 text-xs text-[var(--text-muted)]">({logs.length})</span>
           </span>
           {!isCollapsed || (
             lastLog && (
-              <span className="text-xs text-[var(--text-muted)] truncate max-w-xs ml-2">
+              <span className="ml-2 min-w-0 truncate text-xs text-[var(--text-muted)]">
                 {lastLog.message}
               </span>
             )
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {lastLog && isCollapsed && (
             <span className={`text-xs ${getLogColor(lastLog.type)}`}>
               {getLogIcon(lastLog.type)}
@@ -107,7 +107,7 @@ export function ConsolePanel() {
                   {formatTime(log.timestamp)}
                 </span>
                 {getLogIcon(log.type)}
-                <span className={getLogColor(log.type)}>{log.message}</span>
+                <span className={`min-w-0 break-words ${getLogColor(log.type)}`}>{log.message}</span>
               </div>
             ))
           )}
