@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; height: 100%; background: #0f0f1a; overflow: hidden; }
+  .topbar { height: 56px; background: #1a1a2e; border-bottom: 1px solid #3a3a5c; }
+  .stage { position: relative; height: 100vh; }
+  /* ===== NEW (after) implementation ===== */
+  .ambient-glow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--ambient-opacity, 0.6);
+    transition: opacity 600ms ease, background 800ms ease;
+    /* Even, soft glow that hugs the whole window perimeter and blends the two
+       accent colors diagonally — top-left -> color-a, bottom-right -> color-b. */
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--ambient-color-a, #7c4dff) 60%, transparent) 0%,
+        color-mix(in srgb, var(--ambient-color-a, #7c4dff) 22%, transparent) 25%,
+        transparent 50%,
+        color-mix(in srgb, var(--ambient-color-b, #00e5ff) 22%, transparent) 75%,
+        color-mix(in srgb, var(--ambient-color-b, #00e5ff) 60%, transparent) 100%);
+    /* Feathered perimeter mask: bright at the very edges, smoothly fading to a
+       fully-transparent center. No hard seams, glows on all four sides. */
+    -webkit-mask:
+      linear-gradient(to right, #000 0%, transparent 28%, transparent 72%, #000 100%),
+      linear-gradient(to bottom, #000 0%, transparent 28%, transparent 72%, #000 100%);
+    -webkit-mask-composite: source-over;
+    mask:
+      linear-gradient(to right, #000 0%, transparent 28%, transparent 72%, #000 100%),
+      linear-gradient(to bottom, #000 0%, transparent 28%, transparent 72%, #000 100%);
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="topbar"></div>
+    <div class="ambient-glow" style="--ambient-color-a:#ec4899; --ambient-color-b:#7c4dff"></div>
+  </div>
+</body>
+</html>
