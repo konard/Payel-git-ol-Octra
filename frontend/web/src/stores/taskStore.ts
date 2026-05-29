@@ -22,8 +22,6 @@ export interface AgentNode {
   n8nPercentage?: number;
   n8nWorkflowId?: string;
   n8nWebhookUrl?: string;
-  // Custom prompt
-  customPrompt?: string;
   // Node scale
   scale?: number;
 }

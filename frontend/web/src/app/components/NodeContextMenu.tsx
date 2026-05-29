@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Brain, Bot, Cpu, Archive, Zap } from 'lucide-react';
+import { Brain, Bot, Cpu, Archive, Zap, Copy, Trash2 } from 'lucide-react';
 import { useTaskStore, type AgentNodeType } from '../../stores/taskStore';
 import { useIntegrationStore } from '../../stores/integrationStore';
 import { n8nService, type N8nWorkflow } from '../../services/n8nService';
 import { useI18n } from '../../hooks/useI18n';
-import octraMascot from '../../images/octra-mascot.png';
 
 
 const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string }>> = {
@@ -12,6 +11,14 @@ const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string 
   manager: Bot,
   worker: Cpu,
   zip: Archive,
+};
+
+// Accent colors mirror the redesigned nodes so the menu reads as the same object.
+const nodeAccents: Record<AgentNodeType, string> = {
+  boss: '#f97316',
+  manager: '#7c4dff',
+  worker: '#22c55e',
+  zip: '#6e7681',
 };
 
 interface ContextMenuProps {
@@ -30,6 +37,13 @@ const roleOptions: Record<AgentNodeType, string[]> = {
   zip: ['Archive'],
 };
 
+const SCALE_OPTIONS: { label: string; value: number }[] = [
+  { label: 'S', value: 0.75 },
+  { label: 'M', value: 1 },
+  { label: 'L', value: 1.25 },
+  { label: 'XL', value: 1.5 },
+];
+
 export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const updateNode = useTaskStore((state) => state.updateNode);
@@ -45,9 +59,11 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>(currentNode?.n8nWorkflowId || '');
   const [webhookUrl, setWebhookUrl] = useState<string>(currentNode?.n8nWebhookUrl || '');
   const [webhookUrlError, setWebhookUrlError] = useState<string>('');
-  const [customPrompt, setCustomPrompt] = useState<string>(currentNode?.customPrompt || '');
 
-  // Закрытие при клике вне меню
+  const accent = nodeAccents[nodeType] || nodeAccents.worker;
+  const IconComponent = nodeIcons[nodeType];
+
+  // Close on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -59,35 +75,40 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
-  // Расчёт позиции чтобы меню не выходило за экран
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  // Keep the menu inside the viewport
   useEffect(() => {
     if (!menuRef.current) return;
-    
+
     const menuWidth = menuRef.current.offsetWidth;
     const menuHeight = menuRef.current.offsetHeight;
     const padding = 10;
-    
+
     let newLeft = x;
     let newTop = y;
-    
-    // Проверяем правый край
+
     if (x + menuWidth > window.innerWidth - padding) {
       newLeft = window.innerWidth - menuWidth - padding;
     }
-    
-    // Проверяем нижний край
     if (y + menuHeight > window.innerHeight - padding) {
       newTop = window.innerHeight - menuHeight - padding;
     }
-    
-    // Не выходим за левый/верхний край
+
     newLeft = Math.max(padding, newLeft);
     newTop = Math.max(padding, newTop);
-    
+
     setPosition({ left: newLeft, top: newTop });
   }, [x, y]);
 
-  // Загрузка n8n workflow при открытии меню
+  // Load n8n workflows when the menu opens
   useEffect(() => {
     const loadWorkflows = async () => {
       if (n8nIntegration.connected && n8nIntegration.config.apiKey) {
@@ -122,17 +143,17 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
 
   const handleDuplicate = () => {
     const addNode = useTaskStore.getState().addNode;
-    const currentNode = useTaskStore.getState().nodes.find((n) => n.id === nodeId);
-    if (currentNode) {
+    const node = useTaskStore.getState().nodes.find((n) => n.id === nodeId);
+    if (node) {
       addNode({
         id: `node-${Date.now()}`,
-        type: currentNode.type,
-        role: currentNode.role,
-        status: currentNode.status,
+        type: node.type,
+        role: node.role,
+        status: node.status,
         progress: 0,
         position: {
-          x: (currentNode.position?.x || 0) + 50,
-          y: (currentNode.position?.y || 0) + 50,
+          x: (node.position?.x || 0) + 50,
+          y: (node.position?.y || 0) + 50,
         },
       });
     }
@@ -181,63 +202,83 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
     }
   };
 
-  const handleCustomPromptChange = (value: string) => {
-    setCustomPrompt(value);
-    updateNode(nodeId, { customPrompt: value });
-  };
+  const triggerOptions: { key: 'start' | 'middle' | 'end' | 'custom'; label: string }[] = [
+    { key: 'start', label: t('contextMenu.n8nAutomation.atStart') },
+    { key: 'middle', label: t('contextMenu.n8nAutomation.atMiddle') },
+    { key: 'end', label: t('contextMenu.n8nAutomation.atEnd') },
+    { key: 'custom', label: t('contextMenu.n8nAutomation.atCustom', { percentage: customPercentage } as any) },
+  ];
 
   return (
     <div
       ref={menuRef}
-      className="fixed z-[100] bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl min-w-[220px] overflow-hidden"
-      style={{ left: position.left, top: position.top }}
+      className="fixed z-[100] bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl w-[248px] overflow-hidden backdrop-blur-sm"
+      style={{ left: position.left, top: position.top, ['--node-accent' as any]: accent }}
     >
-      {/* Header с изображением */}
-      <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-          {(() => {
-            const IconComponent = nodeIcons[nodeType];
-            return <IconComponent className="w-6 h-6 text-white" />;
-          })()}
+      {/* Accent strip */}
+      <div className="h-1" style={{ backgroundColor: accent }} />
+
+      {/* Header */}
+      <div className="px-3 py-3 flex items-center gap-3 border-b border-[var(--border)]">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: accent, boxShadow: `0 2px 8px ${accent}66` }}
+        >
+          {IconComponent && <IconComponent className="w-5 h-5 text-white" />}
         </div>
-        <div className="text-sm font-semibold text-[var(--text)]">
-          {nodeType.toUpperCase()} — {nodeRole}
+        <div className="min-w-0">
+          <div className="text-[11px] font-bold tracking-wider text-[var(--text-muted)]">
+            {nodeType.toUpperCase()}
+          </div>
+          <div className="text-sm font-semibold text-[var(--text)] truncate">{nodeRole}</div>
         </div>
       </div>
 
-      {/* Смена роли */}
+      {/* Role */}
       <div className="p-2 border-b border-[var(--border)]">
-        <div className="text-xs text-[var(--text-muted)] mb-1 px-2">{t('contextMenu.changeRole')}</div>
-        {roleOptions[nodeType]?.map((role) => (
-          <button
-            key={role}
-            onClick={() => handleRoleChange(role)}
-            className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-              role === nodeRole
-                ? 'bg-[var(--accent)] text-white'
-                : 'hover:bg-[var(--background)] text-[var(--text)]'
-            }`}
-          >
-            {role}
-          </button>
-        ))}
+        <div className="text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)] mb-1.5 px-2">
+          {t('contextMenu.changeRole')}
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {roleOptions[nodeType]?.map((role) => {
+            const active = role === nodeRole;
+            return (
+              <button
+                key={role}
+                onClick={() => handleRoleChange(role)}
+                className="text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors truncate"
+                style={
+                  active
+                    ? { backgroundColor: accent, color: '#fff' }
+                    : undefined
+                }
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = 'var(--background)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = '';
+                }}
+              >
+                {role}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* N8n интеграция */}
+      {/* N8n integration */}
       {n8nIntegration.connected && (
         <div className="p-2 border-b border-[var(--border)]">
-          <div className="text-xs text-[var(--text-muted)] mb-2 px-2 flex items-center gap-1">
+          <div className="text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)] mb-2 px-2 flex items-center gap-1.5">
             <Zap className="w-3 h-3" />
             {t('contextMenu.n8nAutomation.title')}
           </div>
 
-          {/* Выбор workflow или webhook */}
-          <div className="px-2 mb-3">
-            <div className="text-xs font-medium text-[var(--text)] mb-1">{t('contextMenu.n8nAutomation.workflow')}</div>
+          <div className="px-2 mb-2">
             <select
               value={selectedWorkflowId}
               onChange={(e) => handleWorkflowSelect(e.target.value)}
-              className="w-full px-2 py-1 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)]"
+              className="w-full px-2 py-1.5 text-xs bg-[var(--background)] border border-[var(--border)] rounded-lg text-[var(--text)]"
             >
               <option value="">{t('contextMenu.n8nAutomation.selectWorkflow')}</option>
               {loadingWorkflows ? (
@@ -251,135 +292,88 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
               )}
             </select>
 
-            <div className="text-xs font-medium text-[var(--text)] mt-2 mb-1">{t('contextMenu.n8nAutomation.orWebhookUrl')}</div>
             <input
               type="url"
               value={webhookUrl}
               onChange={(e) => handleWebhookUrlChange(e.target.value)}
-              placeholder="https://your-n8n.com/webhook/..."
-              className={`w-full px-2 py-1 text-sm bg-[var(--background)] border rounded text-[var(--text)] placeholder-[var(--text-muted)] ${
+              placeholder={t('contextMenu.n8nAutomation.orWebhookUrl')}
+              className={`w-full mt-2 px-2 py-1.5 text-xs bg-[var(--background)] border rounded-lg text-[var(--text)] placeholder-[var(--text-muted)] ${
                 webhookUrlError ? 'border-red-500' : 'border-[var(--border)]'
               }`}
             />
-            {webhookUrlError && (
-              <div className="text-xs text-red-500 mt-1">{webhookUrlError}</div>
-            )}
+            {webhookUrlError && <div className="text-[11px] text-red-500 mt-1">{webhookUrlError}</div>}
           </div>
 
-          {/* Выбор триггера */}
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-[var(--text)] px-2 mb-1">{t('contextMenu.n8nAutomation.triggerWhen')}</div>
-            <button
-              onClick={() => handleN8nTriggerChange('start')}
-              className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                n8nTrigger === 'start'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-[var(--background)] text-[var(--text)]'
-              }`}
-            >
-              {t('contextMenu.n8nAutomation.atStart')}
-            </button>
-            <button
-              onClick={() => handleN8nTriggerChange('middle')}
-              className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                n8nTrigger === 'middle'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-[var(--background)] text-[var(--text)]'
-              }`}
-            >
-              {t('contextMenu.n8nAutomation.atMiddle')}
-            </button>
-            <button
-              onClick={() => handleN8nTriggerChange('end')}
-              className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                n8nTrigger === 'end'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-[var(--background)] text-[var(--text)]'
-              }`}
-            >
-              {t('contextMenu.n8nAutomation.atEnd')}
-            </button>
-            <button
-              onClick={() => handleN8nTriggerChange('custom')}
-              className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${
-                n8nTrigger === 'custom'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-[var(--background)] text-[var(--text)]'
-              }`}
-            >
-              {t('contextMenu.n8nAutomation.atCustom', { percentage: customPercentage })}
-            </button>
+          <div className="px-2">
+            <div className="text-[11px] text-[var(--text-muted)] mb-1.5">{t('contextMenu.n8nAutomation.triggerWhen')}</div>
+            <div className="grid grid-cols-2 gap-1">
+              {triggerOptions.map((opt) => {
+                const active = n8nTrigger === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => handleN8nTriggerChange(opt.key)}
+                    className={`px-2 py-1.5 text-[11px] rounded-lg transition-colors text-left ${
+                      active
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 font-medium'
+                        : 'hover:bg-[var(--background)] text-[var(--text)]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
             {n8nTrigger === 'custom' && (
-              <div className="px-3 py-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={customPercentage}
-                  onChange={(e) => handleCustomPercentageChange(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={customPercentage}
+                onChange={(e) => handleCustomPercentageChange(Number(e.target.value))}
+                className="w-full mt-2 accent-[var(--accent)]"
+              />
             )}
           </div>
         </div>
       )}
 
-      {/* Кастомный промт */}
-      <div className="p-2 border-b border-[var(--border)]">
-        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">{t('contextMenu.customPrompt')}</div>
-        <textarea
-          value={customPrompt}
-          onChange={(e) => handleCustomPromptChange(e.target.value)}
-          placeholder={t('contextMenu.customPromptPlaceholder')}
-          className="w-full px-3 py-2 text-sm bg-[var(--background)] border border-[var(--border)] rounded text-[var(--text)] placeholder-[var(--text-muted)] resize-none"
-          rows={4}
-        />
-      </div>
-
       {/* Scale */}
       <div className="p-2 border-b border-[var(--border)]">
-        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">{t('contextMenu.scale')}</div>
-        <div className="flex items-center gap-2 px-2">
-          <button
-            onClick={() => handleScaleChange(0.75)}
-            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 0.75 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
-          >
-            S
-          </button>
-          <button
-            onClick={() => handleScaleChange(1)}
-            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
-          >
-            M
-          </button>
-          <button
-            onClick={() => handleScaleChange(1.25)}
-            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1.25 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
-          >
-            L
-          </button>
-          <button
-            onClick={() => handleScaleChange(1.5)}
-            className={`px-2 py-1 text-xs rounded ${(currentNode?.scale || 1) === 1.5 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--background)] text-[var(--text)]'}`}
-          >
-            XL
-          </button>
+        <div className="text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)] mb-1.5 px-2">
+          {t('contextMenu.scale')}
+        </div>
+        <div className="flex items-center gap-1 px-2 p-1 bg-[var(--background)] rounded-lg">
+          {SCALE_OPTIONS.map((opt) => {
+            const active = (currentNode?.scale || 1) === opt.value;
+            return (
+              <button
+                key={opt.label}
+                onClick={() => handleScaleChange(opt.value)}
+                className="flex-1 py-1 text-xs font-medium rounded-md transition-colors"
+                style={active ? { backgroundColor: accent, color: '#fff' } : { color: 'var(--text-muted)' }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Действия */}
-      <div className="p-2">
+      {/* Actions */}
+      <div className="p-2 space-y-0.5">
         <button
           onClick={handleDuplicate}
-          className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-[var(--background)] text-[var(--text)] transition-colors flex items-center gap-2"
+          className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-[var(--background)] text-[var(--text)] transition-colors flex items-center gap-2.5"
         >
+          <Copy className="w-4 h-4 text-[var(--text-muted)]" />
           {t('contextMenu.duplicate')}
         </button>
         <button
           onClick={handleDelete}
-          className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-red-500/20 text-red-500 transition-colors flex items-center gap-2"
+          className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-2.5"
         >
+          <Trash2 className="w-4 h-4" />
           {t('contextMenu.delete')}
         </button>
       </div>
