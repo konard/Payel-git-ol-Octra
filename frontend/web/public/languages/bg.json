@@ -94,10 +94,7 @@
     "hideTokenField": "Скрий поле за въвеждане на токен",
     "hideTokenFieldHint": "Скрий полето за API ключ на главния екран",
     "save": "Запази",
-    "cancel": "Отказ",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Отказ"
   },
   "languages": {
     "en": "English",

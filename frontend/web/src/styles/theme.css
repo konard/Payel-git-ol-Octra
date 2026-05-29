@@ -418,34 +418,3 @@
     animation: none;
   }
 }
-
-/* ============================================================= */
-/* JetBrains-style ambient edge lighting                          */
-/* ============================================================= */
-.ambient-glow {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: var(--ambient-opacity, 0.6);
-  transition: opacity 600ms ease, background 800ms ease;
-  /* Even, soft glow that hugs the entire window perimeter and blends the two
-     accent colors diagonally (top-left -> color-a, bottom-right -> color-b).
-     A single diagonal gradient avoids the asymmetric two-corner blobs of the
-     previous radial approach. */
-  background:
-    linear-gradient(135deg,
-      color-mix(in srgb, var(--ambient-color-a, #7c4dff) 60%, transparent) 0%,
-      color-mix(in srgb, var(--ambient-color-a, #7c4dff) 22%, transparent) 25%,
-      transparent 50%,
-      color-mix(in srgb, var(--ambient-color-b, #00e5ff) 22%, transparent) 75%,
-      color-mix(in srgb, var(--ambient-color-b, #00e5ff) 60%, transparent) 100%);
-  /* Feathered perimeter mask: bright at the very edges, smoothly fading to a
-     fully-transparent center, so the glow lives on all four sides with no hard
-     rectangular seams. */
-  -webkit-mask-image: linear-gradient(to right, #000 0%, transparent 28%, transparent 72%, #000 100%),
-    linear-gradient(to bottom, #000 0%, transparent 28%, transparent 72%, #000 100%);
-  -webkit-mask-composite: source-over;
-  mask-image: linear-gradient(to right, #000 0%, transparent 28%, transparent 72%, #000 100%),
-    linear-gradient(to bottom, #000 0%, transparent 28%, transparent 72%, #000 100%);
-}

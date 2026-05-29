@@ -23,7 +23,6 @@ import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import LandingPage from './components/LandingPage';
 import { buildTaskProviderAuth } from './taskPayload';
-import { AmbientGlow } from './components/AmbientGlow';
 
 const SHOW_STATUS_BAR = false;
 
@@ -508,7 +507,6 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
-      <AmbientGlow />
       <div
         className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-200 ${showSidebar ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setShowSidebar(false)}

@@ -94,10 +94,7 @@
     "hideTokenField": "إخفاء حقل إدخال الرمز",
     "hideTokenFieldHint": "إخفاء حقل مفتاح API على الشاشة الرئيسية",
     "save": "حفظ",
-    "cancel": "إلغاء",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "إلغاء"
   },
   "languages": {
     "en": "English",

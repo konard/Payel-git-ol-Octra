@@ -14,7 +14,6 @@ interface SettingsState {
   hideConsole: boolean;
   defaultProvider: string;
   defaultModel: string;
-  ambientLighting: boolean;
 
   setDefaultToken: (token: string) => void;
   setHideApiKeyInput: (hide: boolean) => void;
@@ -22,7 +21,6 @@ interface SettingsState {
   setHideConsole: (hide: boolean) => void;
   setDefaultProvider: (provider: string) => void;
   setDefaultModel: (model: string) => void;
-  setAmbientLighting: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -34,7 +32,6 @@ export const useSettingsStore = create<SettingsState>()(
       hideConsole: false,
       defaultProvider: DEFAULT_PROVIDER,
       defaultModel: DEFAULT_MODEL,
-      ambientLighting: true,
 
       setDefaultToken: (token) => set({ defaultToken: token }),
       setHideApiKeyInput: (hide) => set({ hideApiKeyInput: hide }),
@@ -42,7 +39,6 @@ export const useSettingsStore = create<SettingsState>()(
       setHideConsole: (hide) => set({ hideConsole: hide }),
       setDefaultProvider: (provider) => set({ defaultProvider: provider }),
       setDefaultModel: (model) => set({ defaultModel: model }),
-      setAmbientLighting: (enabled) => set({ ambientLighting: enabled }),
     }),
     {
       name: 'crewai-settings',
