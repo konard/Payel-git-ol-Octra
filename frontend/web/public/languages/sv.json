@@ -56,7 +56,11 @@
     "ready": "Klar",
     "error": "Fel",
     "filesCount": "Filer",
-    "size": "Storlek"
+    "size": "Storlek",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Välj Modell",
@@ -90,7 +94,10 @@
     "hideTokenField": "Dölj token-inmatningsfält",
     "hideTokenFieldHint": "Dölj API-nyckelfält på huvudskärmen",
     "save": "Spara",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Duplicera nod",
     "delete": "Radera nod",
     "notConnected": "Inte ansluten",
-    "customPrompt": "Anpassad prompt",
-    "customPromptPlaceholder": "Ange en anpassad prompt för denna nod...",
     "scale": "Storlek"
   },
   "integrations": {

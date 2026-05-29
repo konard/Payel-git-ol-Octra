@@ -22,8 +22,6 @@ export interface AgentNode {
   n8nPercentage?: number;
   n8nWorkflowId?: string;
   n8nWebhookUrl?: string;
-  // Custom prompt
-  customPrompt?: string;
   // Node scale
   scale?: number;
 }
@@ -99,6 +97,7 @@ interface TaskState {
   setStartTime: (time: number) => void;
   getWorkflow: () => WorkflowConfig | null;
   setWorkflow: (workflow: WorkflowConfig | null) => void;
+  setGraph: (nodes: Array<Omit<AgentNode, 'progress'> & { progress?: number }>, edges: Edge[]) => void;
   resetTask: () => void;
   resetTaskExecution: () => void;
 }
@@ -229,6 +228,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   getWorkflow: () => get().workflow,
 
   setWorkflow: (workflow) => set({ workflow }),
+
+  // Fully replace the canvas graph (used when switching between chats so the
+  // previous chat's nodes never leak into the next one) and clear any task
+  // execution state tied to the old graph.
+  setGraph: (nodes, edges) => set({
+    nodes: nodes.map((node) => ({ ...node, progress: node.progress ?? 0 })),
+    edges,
+    taskId: null,
+    status: 'idle',
+    logs: [],
+    solutionZip: null,
+    zipUrl: null,
+    codeFiles: [],
+    latestCodeFilePath: null,
+    tokensUsed: 0,
+    startTime: null,
+  }),
 
   resetTask: () => set((state) => {
     // Keep user-created nodes (not auto-generated ones like boss-1, manager-*, worker-*)

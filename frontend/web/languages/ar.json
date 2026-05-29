@@ -56,7 +56,11 @@
     "ready": "جاهز",
     "error": "خطأ",
     "filesCount": "ملفات",
-    "size": "الحجم"
+    "size": "الحجم",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "اختيار النموذج",
@@ -90,7 +94,10 @@
     "hideTokenField": "إخفاء حقل إدخال الرمز",
     "hideTokenFieldHint": "إخفاء حقل مفتاح API على الشاشة الرئيسية",
     "save": "حفظ",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "تكرار العقدة",
     "delete": "حذف العقدة",
     "notConnected": "غير متصل",
-    "customPrompt": "موجه مخصص",
-    "customPromptPlaceholder": "أدخل موجه مخصص لهذه العقدة...",
     "scale": "الحجم"
   },
   "integrations": {

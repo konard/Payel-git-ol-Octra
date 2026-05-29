@@ -56,7 +56,11 @@
     "ready": "Valmis",
     "error": "Virhe",
     "filesCount": "Tiedostoa",
-    "size": "Koko"
+    "size": "Koko",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Valitse Malli",
@@ -90,7 +94,10 @@
     "hideTokenField": "Piilota tokenin syöttökenttä",
     "hideTokenFieldHint": "Piilota API-avain kenttä päänäytöstä",
     "save": "Tallenna",
-    "cancel": "Peruuta"
+    "cancel": "Peruuta",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Monista solmu",
     "delete": "Poista solmu",
     "notConnected": "Ei yhdistetty",
-    "customPrompt": "Mukautettu kehote",
-    "customPromptPlaceholder": "Syota mukautettu kehote tahan solmulle...",
     "scale": "Koko"
   },
   "integrations": {

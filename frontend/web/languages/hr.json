@@ -56,7 +56,11 @@
     "ready": "Spremno",
     "error": "Greška",
     "filesCount": "Datoteka",
-    "size": "Veličina"
+    "size": "Veličina",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Odabir Modela",
@@ -90,7 +94,10 @@
     "hideTokenField": "Sakrij polje za unos tokena",
     "hideTokenFieldHint": "Sakrij polje API ključa na glavnom zaslonu",
     "save": "Spremi",
-    "cancel": "Otkaži"
+    "cancel": "Otkaži",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Dupliciraj čvor",
     "delete": "Obriši čvor",
     "notConnected": "Nije povezano",
-    "customPrompt": "Prilagođeni prompt",
-    "customPromptPlaceholder": "Unesite prilagođeni prompt za ovaj čvor...",
     "scale": "Veličina"
   },
   "integrations": {

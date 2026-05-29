@@ -56,7 +56,11 @@
     "ready": "就绪",
     "error": "错误",
     "filesCount": "文件数",
-    "size": "大小"
+    "size": "大小",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "选择模型",
@@ -90,7 +94,10 @@
     "hideTokenField": "隐藏令牌输入框",
     "hideTokenFieldHint": "在主屏幕上隐藏API密钥字段",
     "save": "保存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "复制节点",
     "delete": "删除节点",
     "notConnected": "未连接",
-    "customPrompt": "自定义提示词",
-    "customPromptPlaceholder": "为此节点输入自定义提示词...",
     "scale": "大小",
     "n8nAutomation": {
       "title": "N8n 自动化",

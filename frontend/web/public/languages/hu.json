@@ -56,7 +56,11 @@
     "ready": "Kész",
     "error": "Hiba",
     "filesCount": "Fájlok",
-    "size": "Méret"
+    "size": "Méret",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Modell Kiválasztása",
@@ -90,7 +94,10 @@
     "hideTokenField": "Token beviteli mező elrejtése",
     "hideTokenFieldHint": "API kulcs mező elrejtése a főképernyőn",
     "save": "Mentés",
-    "cancel": "Mégse"
+    "cancel": "Mégse",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Csomópont másolása",
     "delete": "Csomópont törlése",
     "notConnected": "Nincs csatlakoztatva",
-    "customPrompt": "Egyéni prompt",
-    "customPromptPlaceholder": "Adjon meg egy egyéni promptot ehhez a csomóponthoz...",
     "scale": "Méret"
   },
   "integrations": {

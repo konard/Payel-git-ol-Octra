@@ -6,7 +6,10 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test:translations": "node scripts/check-custom-model-translations.cjs"
+    "test:settings": "node scripts/check-default-token-settings.mjs",
+    "test:translations": "node scripts/check-custom-model-translations.cjs",
+    "test:task-store": "node scripts/check-task-store-graph.mjs",
+    "test": "npm run test:settings && npm run test:task-store"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -56,7 +56,11 @@
     "ready": "Listo",
     "error": "Error",
     "filesCount": "Archivos",
-    "size": "Tamaño"
+    "size": "Tamaño",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Seleccionar Modelo",
@@ -90,7 +94,10 @@
     "hideTokenField": "Ocultar campo de entrada de token",
     "hideTokenFieldHint": "Ocultar campo de clave API en la pantalla principal",
     "save": "Guardar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Duplicar nodo",
     "delete": "Eliminar nodo",
     "notConnected": "No conectado",
-    "customPrompt": "Prompt personalizado",
-    "customPromptPlaceholder": "Ingrese un prompt personalizado para este nodo...",
     "scale": "Tamano",
     "n8nAutomation": {
       "title": "N8n Automation",

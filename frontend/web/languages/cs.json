@@ -56,7 +56,11 @@
     "ready": "Připraveno",
     "error": "Chyba",
     "filesCount": "Souborů",
-    "size": "Velikost"
+    "size": "Velikost",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Výběr Modelu",
@@ -90,7 +94,10 @@
     "hideTokenField": "Skrýt pole pro zadání tokenu",
     "hideTokenFieldHint": "Skrýt pole API klíče na hlavní obrazovce",
     "save": "Uložit",
-    "cancel": "Zrušit"
+    "cancel": "Zrušit",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Duplikovat uzel",
     "delete": "Smazat uzel",
     "notConnected": "Nepřipojeno",
-    "customPrompt": "Vlastní prompt",
-    "customPromptPlaceholder": "Zadejte vlastní prompt pro tento uzel...",
     "scale": "Velikost"
   },
   "integrations": {

@@ -9,4 +9,6 @@ TASK_FRONTEND.md
 .env.prod
 .env.local
 projects
-.github
+.github/*
+!.github/workflows
+!.github/workflows/**

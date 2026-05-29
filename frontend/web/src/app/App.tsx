@@ -22,8 +22,63 @@ import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import LandingPage from './components/LandingPage';
+import { buildTaskProviderAuth } from './taskPayload';
+import { AmbientGlow } from './components/AmbientGlow';
 
 const SHOW_STATUS_BAR = false;
+
+// Serialize the current canvas graph into the compact JSON shape stored per chat.
+function serializeCurrentWorkflow(): string {
+  const { nodes, edges } = useTaskStore.getState();
+  return JSON.stringify({
+    nodes: nodes.map((n) => ({
+      id: n.id,
+      type: n.type,
+      role: n.role,
+      status: n.status,
+      position: n.position,
+      filesCount: n.filesCount,
+      workerCount: n.workerCount,
+      techStack: n.techStack,
+      scale: n.scale,
+      repoUrl: n.repoUrl,
+    })),
+    edges: edges.map((e) => ({ from: e.from, to: e.to })),
+  });
+}
+
+// Persist the current canvas graph to the given chat so it can be restored later.
+function persistWorkflow(chatId: string | null) {
+  if (!chatId) return;
+  updateChatWorkflow(chatId, serializeCurrentWorkflow()).catch((error) => {
+    console.error('Failed to persist chat workflow:', error);
+  });
+}
+
+// Parse a stored chat workflow string into store-ready nodes and edges.
+function parseChatWorkflow(raw?: string): { nodes: any[]; edges: any[] } {
+  if (!raw) return { nodes: [], edges: [] };
+  try {
+    const data = JSON.parse(raw);
+    const nodes = (data.nodes || []).map((node: any) => ({
+      id: node.id,
+      type: node.type,
+      role: node.role,
+      status: node.status || 'done',
+      position: node.position,
+      filesCount: node.filesCount,
+      workerCount: node.workerCount,
+      techStack: node.techStack,
+      scale: node.scale,
+      repoUrl: node.repoUrl,
+    }));
+    const edges = (data.edges || []).map((edge: any) => ({ from: edge.from, to: edge.to }));
+    return { nodes, edges };
+  } catch (error) {
+    console.error('Failed to parse chat workflow:', error);
+    return { nodes: [], edges: [] };
+  }
+}
 
 export default function App() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -111,24 +166,14 @@ export default function App() {
       },
     };
 
-    if (customProvider) {
-      taskPayload.meta.provider = 'ollama';
-      taskPayload.tokens = {
-        ollama: defaultToken,
-        base_url: customProvider.base_url,
-      };
-    } else {
-      const tokenKey = defaultProvider === 'openrouter' ? 'openrouter'
-        : defaultProvider === 'gemini' ? 'gemini'
-        : defaultProvider === 'openai' ? 'openai'
-        : defaultProvider === 'zai' ? 'zai'
-        : 'claude';
+    const providerAuth = buildTaskProviderAuth({
+      provider: defaultProvider,
+      defaultToken,
+      customProvider,
+    });
 
-      taskPayload.tokens = {
-        [tokenKey]: defaultToken,
-      };
-      taskPayload.meta.provider = defaultProvider;
-    }
+    taskPayload.tokens = providerAuth.tokens;
+    taskPayload.meta.provider = providerAuth.provider;
 
     return taskPayload;
   };
@@ -188,26 +233,10 @@ export default function App() {
   const status = useTaskStore((state) => state.status);
   const isSubmitting = status === 'creating' || status === 'planning' || status === 'executing';
 
-  // Сохранять workflow в чат при завершении таски
+  // Persist the workflow to the chat whenever a task finishes.
   useEffect(() => {
     if (status === 'done' && currentChatId) {
-      const nodes = useTaskStore.getState().nodes;
-      const edges = useTaskStore.getState().edges;
-      if (nodes.length > 0) {
-        const workflowData = JSON.stringify({
-          nodes: nodes.map(n => ({
-            id: n.id,
-            type: n.type,
-            role: n.role,
-            status: n.status,
-            position: n.position,
-            filesCount: n.filesCount,
-            workerCount: n.workerCount,
-          })),
-          edges: edges.map(e => ({ from: e.from, to: e.to })),
-        });
-        updateChatWorkflow(currentChatId, workflowData).catch(console.error);
-      }
+      persistWorkflow(currentChatId);
     }
   }, [status, currentChatId]);
 
@@ -334,27 +363,15 @@ export default function App() {
       };
     }
 
-    if (customProvider) {
-      // For custom providers, send base_url in tokens for the custom provider
-      taskPayload.meta.provider = 'ollama';
-      taskPayload.tokens = {
-        ollama: data.apiKey,
-        base_url: customProvider.base_url,
-      };
-      console.log('Custom provider tokens:', taskPayload.tokens);
-    } else {
-      // For standard providers, use existing logic
-      const tokenKey = data.provider === 'openrouter' ? 'openrouter'
-        : data.provider === 'gemini' ? 'gemini'
-        : data.provider === 'openai' ? 'openai'
-        : data.provider === 'zai' ? 'zai'
-        : 'claude';
+    const providerAuth = buildTaskProviderAuth({
+      provider: data.provider,
+      apiKey: data.apiKey,
+      defaultToken,
+      customProvider,
+    });
 
-      taskPayload.tokens = {
-        [tokenKey]: data.apiKey,
-      };
-      taskPayload.meta.provider = data.provider;
-    }
+    taskPayload.tokens = providerAuth.tokens;
+    taskPayload.meta.provider = providerAuth.provider;
 
     console.log('Sending task payload:', JSON.stringify(taskPayload, null, 2));
     send(taskPayload);
@@ -440,17 +457,37 @@ export default function App() {
   };
 
   const handleNewChat = (chatId?: string) => {
+    // Save the workflow of the chat we are leaving before clearing the canvas.
+    const prevChatId = currentChatIdRef.current;
+    if (prevChatId && prevChatId !== chatId) {
+      persistWorkflow(prevChatId);
+    }
+
     setCurrentChatId(chatId ?? null);
     currentChatIdRef.current = chatId ?? null;
     setChatMessages([]);
     setMode('chat');
+    // Start every chat from a clean canvas so nodes never leak across chats.
+    useTaskStore.getState().setGraph([], []);
   };
 
   const handleSelectChat = async (chatId: string) => {
+    // Save the workflow we are leaving so it is restored next time it is opened.
+    const prevChatId = currentChatIdRef.current;
+    if (prevChatId && prevChatId !== chatId) {
+      persistWorkflow(prevChatId);
+    }
+
     setCurrentChatId(chatId);
     currentChatIdRef.current = chatId;
     setMode('chat');
     setShowSidebar(false);
+
+    const store = useTaskStore.getState();
+    // Clear the previous chat's graph immediately to avoid cross-chat contamination
+    // while the selected chat loads asynchronously.
+    store.setGraph([], []);
+
     try {
       const chat = await getChat(chatId);
       setChatMessages((chat.messages || []).map((message) => ({
@@ -461,36 +498,18 @@ export default function App() {
         read: true,
       })));
 
-      if (chat.workflow) {
-        const workflowData = JSON.parse(chat.workflow);
-        if (workflowData.nodes?.length || workflowData.edges?.length) {
-          // Clear current workflow state but preserve task execution state
-          const store = useTaskStore.getState();
-          store.resetTask(); // This preserves user workflows but clears auto-generated nodes
-
-          // Load the saved workflow
-          workflowData.nodes?.forEach((node: any) => {
-            store.addNode({
-              id: node.id,
-              type: node.type,
-              role: node.role,
-              status: node.status || 'done',
-              position: node.position,
-            });
-          });
-          workflowData.edges?.forEach((edge: any) => {
-            store.addEdge(edge);
-          });
-        }
-      }
+      // Restore this chat's saved workflow (a full graph swap, empty if none).
+      const { nodes, edges } = parseChatWorkflow(chat.workflow);
+      useTaskStore.getState().setGraph(nodes, edges);
     } catch (err) {
-      console.error('Failed to load chat workflow:', err);
+      console.error('Failed to load chat:', err);
     }
   };
 
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
-      <div 
+      <AmbientGlow />
+      <div
         className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-200 ${showSidebar ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setShowSidebar(false)}
       />
