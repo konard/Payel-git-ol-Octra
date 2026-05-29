@@ -56,7 +56,11 @@
     "ready": "Hazır",
     "error": "Hata",
     "filesCount": "Dosya",
-    "size": "Boyut"
+    "size": "Boyut",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Model Seç",
@@ -165,8 +169,6 @@
     "duplicate": "Düğümü çoğalt",
     "delete": "Düğümü sil",
     "notConnected": "Bağlı değil",
-    "customPrompt": "Özel istem",
-    "customPromptPlaceholder": "Bu düğüm için özel istem girin...",
     "scale": "Boyut"
   },
   "integrations": {

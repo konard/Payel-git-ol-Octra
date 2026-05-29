@@ -56,7 +56,11 @@
     "ready": "Spremno",
     "error": "Greška",
     "filesCount": "Datoteka",
-    "size": "Veličina"
+    "size": "Veličina",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Odabir Modela",
@@ -165,8 +169,6 @@
     "duplicate": "Dupliciraj čvor",
     "delete": "Obriši čvor",
     "notConnected": "Nije povezano",
-    "customPrompt": "Prilagođeni prompt",
-    "customPromptPlaceholder": "Unesite prilagođeni prompt za ovaj čvor...",
     "scale": "Veličina"
   },
   "integrations": {

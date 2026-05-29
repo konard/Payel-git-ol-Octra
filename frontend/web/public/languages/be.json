@@ -56,7 +56,11 @@
     "ready": "Гатова",
     "error": "Памылка",
     "filesCount": "Файлаў",
-    "size": "Памер"
+    "size": "Памер",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Выбар мадэлі",
@@ -165,8 +169,6 @@
     "duplicate": "Дубляваць ноду",
     "delete": "Выдаліць ноду",
     "notConnected": "Не падключана",
-    "customPrompt": "Карыстальніцкі запыт",
-    "customPromptPlaceholder": "Увядзіце карыстальніцкі запыт для гэтай ноды...",
     "scale": "Памер"
   },
   "integrations": {

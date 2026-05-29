@@ -56,7 +56,11 @@
     "ready": "Připraveno",
     "error": "Chyba",
     "filesCount": "Souborů",
-    "size": "Velikost"
+    "size": "Velikost",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Výběr Modelu",
@@ -165,8 +169,6 @@
     "duplicate": "Duplikovat uzel",
     "delete": "Smazat uzel",
     "notConnected": "Nepřipojeno",
-    "customPrompt": "Vlastní prompt",
-    "customPromptPlaceholder": "Zadejte vlastní prompt pro tento uzel...",
     "scale": "Velikost"
   },
   "integrations": {

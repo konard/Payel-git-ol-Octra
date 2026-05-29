@@ -56,7 +56,11 @@
     "ready": "Prêt",
     "error": "Erreur",
     "filesCount": "Fichiers",
-    "size": "Taille"
+    "size": "Taille",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Sélectionner un modèle",
@@ -139,8 +143,6 @@
     "duplicate": "Dupliquer le nœud",
     "delete": "Supprimer le nœud",
     "notConnected": "Non connecté",
-    "customPrompt": "Invite personnalisée",
-    "customPromptPlaceholder": "Entrez une invite personnalisée pour ce nœud...",
     "scale": "Taille",
     "n8nAutomation": {
       "title": "Automatisation N8n",

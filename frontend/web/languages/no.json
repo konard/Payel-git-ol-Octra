@@ -56,7 +56,11 @@
     "ready": "Klar",
     "error": "Feil",
     "filesCount": "Filer",
-    "size": "Størrelse"
+    "size": "Størrelse",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Velg Modell",
@@ -165,8 +169,6 @@
     "duplicate": "Dupliser node",
     "delete": "Slett node",
     "notConnected": "Ikke tilkoblet",
-    "customPrompt": "Egendefinert prompt",
-    "customPromptPlaceholder": "Skriv en egendefinert prompt for denne noden...",
     "scale": "Storrelse"
   },
   "integrations": {

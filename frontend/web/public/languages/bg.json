@@ -56,7 +56,11 @@
     "ready": "Готово",
     "error": "Грешка",
     "filesCount": "Файла",
-    "size": "Размер"
+    "size": "Размер",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Избор на Модел",
@@ -165,8 +169,6 @@
     "duplicate": "Дублирай възел",
     "delete": "Изтрий възел",
     "notConnected": "Не е свързано",
-    "customPrompt": "Персонализирана подкана",
-    "customPromptPlaceholder": "Въведете персонализирана подкана за този възел...",
     "scale": "Размер"
   },
   "integrations": {

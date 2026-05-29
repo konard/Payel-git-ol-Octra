@@ -56,7 +56,11 @@
     "ready": "준비됨",
     "error": "오류",
     "filesCount": "파일 수",
-    "size": "크기"
+    "size": "크기",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "모델 선택",
@@ -165,8 +169,6 @@
     "duplicate": "노드 복제",
     "delete": "노드 삭제",
     "notConnected": "연결되지 않음",
-    "customPrompt": "사용자 정의 프롬프트",
-    "customPromptPlaceholder": "이 노드에 대한 사용자 정의 프롬프트 입력...",
     "scale": "크기"
   },
   "integrations": {

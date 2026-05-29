@@ -56,7 +56,11 @@
     "ready": "Klaar",
     "error": "Fout",
     "filesCount": "Bestanden",
-    "size": "Grootte"
+    "size": "Grootte",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Model Selecteren",
@@ -165,8 +169,6 @@
     "duplicate": "Knooppunt dupliceren",
     "delete": "Knooppunt verwijderen",
     "notConnected": "Niet verbonden",
-    "customPrompt": "Aangepaste prompt",
-    "customPromptPlaceholder": "Voer een aangepaste prompt in voor dit knooppunt...",
     "scale": "Grootte"
   },
   "integrations": {

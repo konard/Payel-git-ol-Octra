@@ -56,7 +56,11 @@
     "ready": "Pregătit",
     "error": "Eroare",
     "filesCount": "Fișiere",
-    "size": "Dimensiune"
+    "size": "Dimensiune",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Selectare Model",
@@ -165,8 +169,6 @@
     "duplicate": "Duplicare nod",
     "delete": "Ștergere nod",
     "notConnected": "Nu este conectat",
-    "customPrompt": "Prompt personalizat",
-    "customPromptPlaceholder": "Introduceți un prompt personalizat pentru acest nod...",
     "scale": "Dimensiune"
   },
   "integrations": {

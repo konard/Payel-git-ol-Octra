@@ -56,7 +56,11 @@
     "ready": "Pripravené",
     "error": "Chyba",
     "filesCount": "Súborov",
-    "size": "Veľkosť"
+    "size": "Veľkosť",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Výber Modelu",
@@ -165,8 +169,6 @@
     "duplicate": "Duplikovať uzol",
     "delete": "Odstrániť uzol",
     "notConnected": "Nepripojené",
-    "customPrompt": "Vlastný prompt",
-    "customPromptPlaceholder": "Zadajte vlastný prompt pre tento uzol...",
     "scale": "Velkost"
   },
   "integrations": {

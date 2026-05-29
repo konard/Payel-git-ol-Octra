@@ -56,7 +56,11 @@
     "ready": "Дайын",
     "error": "Қате",
     "filesCount": "Файлдар",
-    "size": "Өлшем"
+    "size": "Өлшем",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Модель таңдау",
@@ -138,8 +142,6 @@
     "duplicate": "Түйінді көшіру",
     "delete": "Түйінді жою",
     "notConnected": "Қосылмаған",
-    "customPrompt": "Жеке сұрау",
-    "customPromptPlaceholder": "Осы түйінге жеке сұрауды енгізіңіз...",
     "scale": "Өлшем"
   },
   "integrations": {

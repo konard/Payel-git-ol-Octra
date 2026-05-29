@@ -56,7 +56,11 @@
     "ready": "Klar",
     "error": "Fejl",
     "filesCount": "Filer",
-    "size": "Størrelse"
+    "size": "Størrelse",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Vælg Model",
@@ -165,8 +169,6 @@
     "duplicate": "Dupliker node",
     "delete": "Slet node",
     "notConnected": "Ikke forbundet",
-    "customPrompt": "Brugerdefineret prompt",
-    "customPromptPlaceholder": "Indtast en brugerdefineret prompt til denne node...",
     "scale": "Storrelse"
   },
   "integrations": {

@@ -56,7 +56,11 @@
     "ready": "Pripravljeno",
     "error": "Napaka",
     "filesCount": "Datotek",
-    "size": "Velikost"
+    "size": "Velikost",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Izbira Modela",
@@ -165,8 +169,6 @@
     "duplicate": "Podvoji vozel",
     "delete": "Izbriši vozel",
     "notConnected": "Ni povezano",
-    "customPrompt": "Poljuben poziv",
-    "customPromptPlaceholder": "Vnesite poljuben poziv za ta vozel...",
     "scale": "Velikost"
   },
   "integrations": {

@@ -56,7 +56,11 @@
     "ready": "Готово",
     "error": "Помилка",
     "filesCount": "Файлів",
-    "size": "Розмір"
+    "size": "Розмір",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Вибір моделі",
@@ -165,8 +169,6 @@
     "duplicate": "Дублювати ноду",
     "delete": "Видалити ноду",
     "notConnected": "Не підключено",
-    "customPrompt": "Власний промпт",
-    "customPromptPlaceholder": "Введіть власний промпт для цієї ноди...",
     "scale": "Розмір"
   },
   "integrations": {

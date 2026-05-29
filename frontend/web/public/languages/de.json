@@ -56,7 +56,11 @@
     "ready": "Bereit",
     "error": "Fehler",
     "filesCount": "Dateien",
-    "size": "Große"
+    "size": "Große",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Modell auswahlen",
@@ -139,8 +143,6 @@
     "duplicate": "Knoten duplizieren",
     "delete": "Knoten loschen",
     "notConnected": "Nicht verbunden",
-    "customPrompt": "Benutzerdefinierte Eingabe",
-    "customPromptPlaceholder": "Geben Sie eine benutzerdefinierte Eingabe fur diesen Knoten ein...",
     "scale": "Grosse",
     "n8nAutomation": {
       "title": "N8n Automatisierung",

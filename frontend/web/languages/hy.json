@@ -56,7 +56,11 @@
     "ready": "Պատրաստ է",
     "error": "Սխալ",
     "filesCount": "Ֆայլեր",
-    "size": "Չափ"
+    "size": "Չափ",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Մոդելի ընտրություն",
@@ -138,8 +142,6 @@
     "duplicate": "Կրկնօրինակել նոդը",
     "delete": "Ջնջել նոդը",
     "notConnected": "Միացված չէ",
-    "customPrompt": "Անհատական հարցում",
-    "customPromptPlaceholder": "Մուտքագրեք դեպի այս նոդը հարցում...",
     "scale": "Չափ"
   },
   "integrations": {

@@ -56,7 +56,11 @@
     "ready": "Έτοιμο",
     "error": "Σφάλμα",
     "filesCount": "Αρχεία",
-    "size": "Μέγεθος"
+    "size": "Μέγεθος",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Επιλογή Μοντέλου",
@@ -165,8 +169,6 @@
     "duplicate": "Διπλότυπος κόμβος",
     "delete": "Διαγραφή κόμβου",
     "notConnected": "Δεν συνδέθηκε",
-    "customPrompt": "Προσαρμοσμένη εντολή",
-    "customPromptPlaceholder": "Εισαγωγή προσαρμοσμένης εντολής για αυτόν τον κόμβο...",
     "scale": "Μέγεθος"
   },
   "integrations": {

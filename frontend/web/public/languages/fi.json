@@ -56,7 +56,11 @@
     "ready": "Valmis",
     "error": "Virhe",
     "filesCount": "Tiedostoa",
-    "size": "Koko"
+    "size": "Koko",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Valitse Malli",
@@ -165,8 +169,6 @@
     "duplicate": "Monista solmu",
     "delete": "Poista solmu",
     "notConnected": "Ei yhdistetty",
-    "customPrompt": "Mukautettu kehote",
-    "customPromptPlaceholder": "Syota mukautettu kehote tahan solmulle...",
     "scale": "Koko"
   },
   "integrations": {

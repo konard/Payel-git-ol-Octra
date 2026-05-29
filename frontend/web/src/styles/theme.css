@@ -176,3 +176,249 @@
 .react-flow__controls-button:disabled svg {
   fill: var(--text-muted) !important;
 }
+
+/* ============================================================= */
+/* Agent nodes — n8n-inspired clean cards                         */
+/* ============================================================= */
+.agent-node {
+  --node-accent: var(--accent);
+  position: relative;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--node-accent);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: box-shadow 200ms ease, transform 120ms ease, border-color 200ms ease;
+}
+
+.agent-node:hover {
+  border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.agent-node--disconnected {
+  opacity: 0.55;
+  border-left-style: dashed;
+}
+
+/* Soft glow ring while the node is actively working */
+.agent-node--active {
+  border-color: var(--node-accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--node-accent) 60%, transparent),
+    0 0 18px color-mix(in srgb, var(--node-accent) 45%, transparent);
+  animation: agent-node-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes agent-node-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--node-accent) 60%, transparent),
+      0 0 16px color-mix(in srgb, var(--node-accent) 35%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--node-accent) 70%, transparent),
+      0 0 26px color-mix(in srgb, var(--node-accent) 60%, transparent);
+  }
+}
+
+.agent-node__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--node-accent) 8%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-node__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--node-accent) 45%, transparent);
+}
+
+.agent-node__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-node__status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.agent-node__status-dot--pulse {
+  animation: agent-node-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes agent-node-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.agent-node__body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.agent-node__role {
+  font-size: 13px;
+}
+
+.agent-node__role-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.agent-node__role-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.agent-node__warning {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  padding: 3px 8px;
+  border-radius: 6px;
+  align-self: flex-start;
+}
+
+.agent-node__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.agent-node__meta-label {
+  margin-right: 4px;
+}
+
+.agent-node__meta-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.agent-node__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-node__progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.agent-node__progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms ease;
+}
+
+.agent-node__progress-value {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-node__resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.agent-node:hover .agent-node__resize {
+  opacity: 0.6;
+}
+
+.agent-node__resize:hover {
+  opacity: 1 !important;
+}
+
+.agent-node__handle {
+  width: 9px !important;
+  height: 9px !important;
+  background: var(--node-accent) !important;
+  border: 2px solid var(--surface) !important;
+}
+
+/* ============================================================= */
+/* Canvas — diagonal "wave" of dots while a task is running       */
+/* ============================================================= */
+.canvas-wave .react-flow__background {
+  animation: canvas-dot-wave 4s linear infinite;
+}
+
+@keyframes canvas-dot-wave {
+  0% {
+    -webkit-mask-position: -140% 0;
+    mask-position: -140% 0;
+  }
+  100% {
+    -webkit-mask-position: 140% 0;
+    mask-position: 140% 0;
+  }
+}
+
+.canvas-wave .react-flow__background {
+  -webkit-mask-image: linear-gradient(115deg, transparent 0%, rgba(0, 0, 0, 0.25) 30%, #000 50%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
+  mask-image: linear-gradient(115deg, transparent 0%, rgba(0, 0, 0, 0.25) 30%, #000 50%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
+  -webkit-mask-size: 250% 100%;
+  mask-size: 250% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-wave .react-flow__background,
+  .agent-node--active,
+  .agent-node__status-dot--pulse {
+    animation: none;
+  }
+}
+
+/* ============================================================= */
+/* JetBrains-style ambient edge lighting                          */
+/* ============================================================= */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--ambient-opacity, 0.5);
+  transition: opacity 600ms ease;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ambient-color-a, #7c4dff) 55%, transparent) 0%, transparent 45%),
+    radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, var(--ambient-color-b, #00e5ff) 55%, transparent) 0%, transparent 45%);
+  -webkit-mask-image: linear-gradient(to right, #000 0 14%, transparent 14% 86%, #000 86% 100%),
+    linear-gradient(to bottom, #000 0 16%, transparent 16% 84%, #000 84% 100%);
+  -webkit-mask-composite: source-over;
+  mask-image: linear-gradient(to right, #000 0 14%, transparent 14% 86%, #000 86% 100%),
+    linear-gradient(to bottom, #000 0 16%, transparent 16% 84%, #000 84% 100%);
+}

@@ -56,7 +56,11 @@
     "ready": "جاهز",
     "error": "خطأ",
     "filesCount": "ملفات",
-    "size": "الحجم"
+    "size": "الحجم",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "اختيار النموذج",
@@ -165,8 +169,6 @@
     "duplicate": "تكرار العقدة",
     "delete": "حذف العقدة",
     "notConnected": "غير متصل",
-    "customPrompt": "موجه مخصص",
-    "customPromptPlaceholder": "أدخل موجه مخصص لهذه العقدة...",
     "scale": "الحجم"
   },
   "integrations": {

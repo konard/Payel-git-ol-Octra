@@ -56,7 +56,11 @@
     "ready": "Pronto",
     "error": "Erro",
     "filesCount": "Arquivos",
-    "size": "Tamanho"
+    "size": "Tamanho",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Selecionar Modelo",
@@ -165,8 +169,6 @@
     "duplicate": "Duplicar nó",
     "delete": "Excluir nó",
     "notConnected": "Não conectado",
-    "customPrompt": "Prompt personalizado",
-    "customPromptPlaceholder": "Digite um prompt personalizado para este nó...",
     "scale": "Tamanho"
   },
   "integrations": {

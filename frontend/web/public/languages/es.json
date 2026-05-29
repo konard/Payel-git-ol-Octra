@@ -56,7 +56,11 @@
     "ready": "Listo",
     "error": "Error",
     "filesCount": "Archivos",
-    "size": "Tamaño"
+    "size": "Tamaño",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Seleccionar Modelo",
@@ -165,8 +169,6 @@
     "duplicate": "Duplicar nodo",
     "delete": "Eliminar nodo",
     "notConnected": "No conectado",
-    "customPrompt": "Prompt personalizado",
-    "customPromptPlaceholder": "Ingrese un prompt personalizado para este nodo...",
     "scale": "Tamano",
     "n8nAutomation": {
       "title": "N8n Automation",

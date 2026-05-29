@@ -56,7 +56,11 @@
     "ready": "Kész",
     "error": "Hiba",
     "filesCount": "Fájlok",
-    "size": "Méret"
+    "size": "Méret",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Modell Kiválasztása",
@@ -165,8 +169,6 @@
     "duplicate": "Csomópont másolása",
     "delete": "Csomópont törlése",
     "notConnected": "Nincs csatlakoztatva",
-    "customPrompt": "Egyéni prompt",
-    "customPromptPlaceholder": "Adjon meg egy egyéni promptot ehhez a csomóponthoz...",
     "scale": "Méret"
   },
   "integrations": {

@@ -56,7 +56,11 @@
     "ready": "Klar",
     "error": "Fel",
     "filesCount": "Filer",
-    "size": "Storlek"
+    "size": "Storlek",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Välj Modell",
@@ -165,8 +169,6 @@
     "duplicate": "Duplicera nod",
     "delete": "Radera nod",
     "notConnected": "Inte ansluten",
-    "customPrompt": "Anpassad prompt",
-    "customPromptPlaceholder": "Ange en anpassad prompt för denna nod...",
     "scale": "Storlek"
   },
   "integrations": {
