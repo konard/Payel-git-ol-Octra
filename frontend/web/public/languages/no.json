@@ -94,10 +94,7 @@
     "hideTokenField": "Skjul token-inntastingsfelt",
     "hideTokenFieldHint": "Skjul API-nøkkelfelt på hovedskjermen",
     "save": "Lagre",
-    "cancel": "Avbryt",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Avbryt"
   },
   "languages": {
     "en": "English",

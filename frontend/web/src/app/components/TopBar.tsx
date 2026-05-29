@@ -16,7 +16,6 @@ import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
 import n8nIcon from '../../images/n8n-color.png';
 import octraMascot from '../../images/octra-mascot.png';
-import { rerollAmbientGlow } from './AmbientGlow';
 
 type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations';
 
@@ -137,12 +136,10 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const hideServerStatus = useSettingsStore((state) => state.hideServerStatus);
   const hideConsole = useSettingsStore((state) => state.hideConsole);
-  const ambientLighting = useSettingsStore((state) => state.ambientLighting);
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
   const setHideServerStatus = useSettingsStore((state) => state.setHideServerStatus);
   const setHideConsole = useSettingsStore((state) => state.setHideConsole);
-  const setAmbientLighting = useSettingsStore((state) => state.setAmbientLighting);
   const { language, changeLanguage, t, loading: translationsLoading } = useI18n();
    const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
    const { isDark, toggleTheme } = useThemeStore();
@@ -684,39 +681,6 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                           }`}
                         />
                       </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text)]">
-                          {t('settings.ambientLighting')}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {t('settings.ambientLightingHint')}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {ambientLighting && (
-                          <button
-                            onClick={() => rerollAmbientGlow()}
-                            className="px-3 py-1.5 text-xs font-medium bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] hover:border-[var(--accent)] transition-colors"
-                          >
-                            {t('settings.ambientLightingReroll')}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setAmbientLighting(!ambientLighting)}
-                          className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
-                            ambientLighting ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
-                              ambientLighting ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
                     </div>
                   </div>
                 )}

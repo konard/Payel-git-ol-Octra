@@ -94,10 +94,7 @@
     "hideTokenField": "Token-invoerveld verbergen",
     "hideTokenFieldHint": "API-sleutel veld op hoofdscherm verbergen",
     "save": "Opslaan",
-    "cancel": "Annuleren",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Annuleren"
   },
   "languages": {
     "en": "English",

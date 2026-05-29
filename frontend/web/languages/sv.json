@@ -94,10 +94,7 @@
     "hideTokenField": "Dölj token-inmatningsfält",
     "hideTokenFieldHint": "Dölj API-nyckelfält på huvudskärmen",
     "save": "Spara",
-    "cancel": "Avbryt",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Avbryt"
   },
   "languages": {
     "en": "English",
