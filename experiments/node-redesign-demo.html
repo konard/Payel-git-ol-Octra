@@ -1,0 +1,346 @@
+<!doctype html>
+<html class="dark">
+<head>
+<meta charset="utf-8">
+<title>Octra node redesign demo</title>
+<style>
+:root{
+  --background:#ffffff;--surface:#f5f5f5;--accent:#f97316;--accent-hover:#ea580c;
+  --text:#111111;--text-muted:#6b7280;--success:#22c55e;--error:#ef4444;--warning:#eab308;
+  --border:rgba(0,0,0,0.12);--bg-canvas:#ffffff;
+}
+.dark{
+  --background:#111111;--surface:#1a1a1a;--accent:#f97316;--accent-hover:#fb923c;
+  --text:#e5e5e5;--text-muted:#a3a3a3;--success:#22c55e;--error:#ef4444;--warning:#eab308;
+  --border:rgba(255,255,255,0.1);--bg-canvas:#111111;
+}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--background);color:var(--text);}
+.canvas{position:relative;width:100%;height:520px;overflow:hidden;
+  background-color:var(--bg-canvas);
+  background-image:radial-gradient(circle, #6b7280 1px, transparent 1.4px);
+  background-size:16px 16px;}
+.nodes{position:relative;z-index:2;display:flex;gap:40px;flex-wrap:wrap;padding:48px;align-items:flex-start;}
+.badge-svg{width:16px;height:16px;color:#fff;}
+/* ============================================================= */
+/* Agent nodes — n8n-inspired clean cards                         */
+/* ============================================================= */
+.agent-node {
+  --node-accent: var(--accent);
+  position: relative;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--node-accent);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: box-shadow 200ms ease, transform 120ms ease, border-color 200ms ease;
+}
+
+.agent-node:hover {
+  border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.agent-node--disconnected {
+  opacity: 0.55;
+  border-left-style: dashed;
+}
+
+/* Soft glow ring while the node is actively working */
+.agent-node--active {
+  border-color: var(--node-accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--node-accent) 60%, transparent),
+    0 0 18px color-mix(in srgb, var(--node-accent) 45%, transparent);
+  animation: agent-node-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes agent-node-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--node-accent) 60%, transparent),
+      0 0 16px color-mix(in srgb, var(--node-accent) 35%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--node-accent) 70%, transparent),
+      0 0 26px color-mix(in srgb, var(--node-accent) 60%, transparent);
+  }
+}
+
+.agent-node__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--node-accent) 8%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-node__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--node-accent) 45%, transparent);
+}
+
+.agent-node__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-node__status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.agent-node__status-dot--pulse {
+  animation: agent-node-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes agent-node-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.agent-node__body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.agent-node__role {
+  font-size: 13px;
+}
+
+.agent-node__role-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.agent-node__role-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.agent-node__warning {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  padding: 3px 8px;
+  border-radius: 6px;
+  align-self: flex-start;
+}
+
+.agent-node__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.agent-node__meta-label {
+  margin-right: 4px;
+}
+
+.agent-node__meta-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.agent-node__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-node__progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.agent-node__progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms ease;
+}
+
+.agent-node__progress-value {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-node__resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.agent-node:hover .agent-node__resize {
+  opacity: 0.6;
+}
+
+.agent-node__resize:hover {
+  opacity: 1 !important;
+}
+
+.agent-node__handle {
+  width: 9px !important;
+  height: 9px !important;
+  background: var(--node-accent) !important;
+  border: 2px solid var(--surface) !important;
+}
+
+/* ============================================================= */
+/* Canvas — diagonal "wave" of dots while a task is running       */
+/* ============================================================= */
+/*
+ * A non-destructive overlay of accent-colored dots (matching the React
+ * Flow background pitch of 16px) is masked by a soft diagonal band that
+ * travels from the top-left corner to the bottom-right corner. The base
+ * gray dots always stay visible; only a glowing band of accent dots
+ * sweeps across. The overlay is a ::before so it paints behind the React
+ * Flow viewport (i.e. behind the nodes) and never blocks interaction.
+ */
+.canvas-wave {
+  position: relative;
+}
+
+.canvas-wave::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--accent) 1.2px, transparent 1.6px);
+  background-size: 16px 16px;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(115deg, transparent 38%, #000 50%, transparent 62%);
+  mask-image: linear-gradient(115deg, transparent 38%, #000 50%, transparent 62%);
+  -webkit-mask-size: 250% 250%;
+  mask-size: 250% 250%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: canvas-dot-wave 3.5s linear infinite;
+}
+
+@keyframes canvas-dot-wave {
+  0% {
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
+  }
+  100% {
+    -webkit-mask-position: 100% 100%;
+    mask-position: 100% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-wave::before,
+  .agent-node--active,
+  .agent-node__status-dot--pulse {
+    animation: none;
+  }
+}
+
+/* ============================================================= */
+/* JetBrains-style ambient edge lighting                          */
+/* ============================================================= */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--ambient-opacity, 0.45);
+  transition: opacity 600ms ease, background 800ms ease;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ambient-color-a, #7c4dff) 55%, transparent) 0%, transparent 45%),
+    radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, var(--ambient-color-b, #00e5ff) 55%, transparent) 0%, transparent 45%);
+  -webkit-mask-image: linear-gradient(to right, #000 0 14%, transparent 14% 86%, #000 86% 100%),
+    linear-gradient(to bottom, #000 0 16%, transparent 16% 84%, #000 84% 100%);
+  -webkit-mask-composite: source-over;
+  mask-image: linear-gradient(to right, #000 0 14%, transparent 14% 86%, #000 86% 100%),
+    linear-gradient(to bottom, #000 0 16%, transparent 16% 84%, #000 84% 100%);
+}
+</style>
+</head>
+<body>
+<div class="ambient-glow" aria-hidden="true" style="--ambient-color-a:#7c4dff;--ambient-color-b:#00e5ff;"></div>
+<div class="canvas canvas-wave">
+  <div class="nodes">
+    <!-- Boss -->
+    <div class="agent-node agent-node--active" style="--node-accent:#f97316;min-width:220px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#f97316;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v1a4 4 0 0 0 0 8 4 4 0 0 0 8 0 4 4 0 0 0 0-8V7a5 5 0 0 0-3-5z"/></svg></div>
+        <div class="agent-node__title">BOSS</div>
+        <span class="agent-node__status-dot agent-node__status-dot--pulse" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Orchestrator</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Managers</span><span class="agent-node__meta-value">2</span></div>
+      </div>
+    </div>
+    <!-- Manager -->
+    <div class="agent-node agent-node--active" style="--node-accent:#7c4dff;min-width:200px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#7c4dff;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="6" width="16" height="12" rx="3"/></svg></div>
+        <div class="agent-node__title">MANAGER</div>
+        <span class="agent-node__status-dot agent-node__status-dot--pulse" style="background:#a855f7;box-shadow:0 0 6px #a855f7;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Backend lead</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Workers</span><span class="agent-node__meta-value">3</span></div>
+        <div class="agent-node__progress">
+          <div class="agent-node__progress-track"><div class="agent-node__progress-fill" style="width:64%;background:#7c4dff;"></div></div>
+          <div class="agent-node__progress-value">64%</div>
+        </div>
+      </div>
+    </div>
+    <!-- Worker -->
+    <div class="agent-node" style="--node-accent:#22c55e;min-width:180px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#22c55e;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></div>
+        <div class="agent-node__title">WORKER</div>
+        <span class="agent-node__status-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">API endpoints</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Files</span><span class="agent-node__meta-value">5</span></div>
+      </div>
+    </div>
+    <!-- Disconnected worker -->
+    <div class="agent-node agent-node--disconnected" style="--node-accent:#6e7681;min-width:180px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#6e7681;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg></div>
+        <div class="agent-node__title">GITHUB</div>
+        <span class="agent-node__status-dot" style="background:#9ca3af;box-shadow:0 0 6px #9ca3af;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Publish PR</span></div>
+        <div class="agent-node__warning">Not connected</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
