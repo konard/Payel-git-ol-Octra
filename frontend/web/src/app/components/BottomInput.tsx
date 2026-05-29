@@ -29,7 +29,6 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   const providerBtnRef = useRef<HTMLButtonElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
-  const defaultToken = useSettingsStore((state) => state.defaultToken);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
   const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
@@ -133,12 +132,10 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
 
     const title = formData.title.trim() || formData.description.trim().slice(0, 50);
 
-    const apiKey = hideApiKeyInput ? defaultToken : formData.apiKey;
-
     await onSubmit({
       ...formData,
       title,
-      apiKey,
+      apiKey: formData.apiKey.trim(),
     });
 
     setFormData({
