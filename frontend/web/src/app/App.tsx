@@ -22,6 +22,7 @@ import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import LandingPage from './components/LandingPage';
+import { buildTaskProviderAuth } from './taskPayload';
 
 const SHOW_STATUS_BAR = false;
 
@@ -111,24 +112,14 @@ export default function App() {
       },
     };
 
-    if (customProvider) {
-      taskPayload.meta.provider = 'ollama';
-      taskPayload.tokens = {
-        ollama: defaultToken,
-        base_url: customProvider.base_url,
-      };
-    } else {
-      const tokenKey = defaultProvider === 'openrouter' ? 'openrouter'
-        : defaultProvider === 'gemini' ? 'gemini'
-        : defaultProvider === 'openai' ? 'openai'
-        : defaultProvider === 'zai' ? 'zai'
-        : 'claude';
+    const providerAuth = buildTaskProviderAuth({
+      provider: defaultProvider,
+      defaultToken,
+      customProvider,
+    });
 
-      taskPayload.tokens = {
-        [tokenKey]: defaultToken,
-      };
-      taskPayload.meta.provider = defaultProvider;
-    }
+    taskPayload.tokens = providerAuth.tokens;
+    taskPayload.meta.provider = providerAuth.provider;
 
     return taskPayload;
   };
@@ -334,27 +325,15 @@ export default function App() {
       };
     }
 
-    if (customProvider) {
-      // For custom providers, send base_url in tokens for the custom provider
-      taskPayload.meta.provider = 'ollama';
-      taskPayload.tokens = {
-        ollama: data.apiKey,
-        base_url: customProvider.base_url,
-      };
-      console.log('Custom provider tokens:', taskPayload.tokens);
-    } else {
-      // For standard providers, use existing logic
-      const tokenKey = data.provider === 'openrouter' ? 'openrouter'
-        : data.provider === 'gemini' ? 'gemini'
-        : data.provider === 'openai' ? 'openai'
-        : data.provider === 'zai' ? 'zai'
-        : 'claude';
+    const providerAuth = buildTaskProviderAuth({
+      provider: data.provider,
+      apiKey: data.apiKey,
+      defaultToken,
+      customProvider,
+    });
 
-      taskPayload.tokens = {
-        [tokenKey]: data.apiKey,
-      };
-      taskPayload.meta.provider = data.provider;
-    }
+    taskPayload.tokens = providerAuth.tokens;
+    taskPayload.meta.provider = providerAuth.provider;
 
     console.log('Sending task payload:', JSON.stringify(taskPayload, null, 2));
     send(taskPayload);
