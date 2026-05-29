@@ -94,10 +94,7 @@
     "hideTokenField": "Piilota tokenin syöttökenttä",
     "hideTokenFieldHint": "Piilota API-avain kenttä päänäytöstä",
     "save": "Tallenna",
-    "cancel": "Peruuta",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Peruuta"
   },
   "languages": {
     "en": "English",

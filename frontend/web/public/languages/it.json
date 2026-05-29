@@ -94,10 +94,7 @@
     "hideTokenField": "Nascondi campo input token",
     "hideTokenFieldHint": "Nascondi campo chiave API nella schermata principale",
     "save": "Salva",
-    "cancel": "Annulla",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Annulla"
   },
   "languages": {
     "en": "English",

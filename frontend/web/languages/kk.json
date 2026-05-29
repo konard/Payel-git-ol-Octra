@@ -94,10 +94,7 @@
     "hideTokenField": "Токен енгізу жолағын жасыру",
     "hideTokenFieldHint": "Негізгі экранда API кілт жолағын жасыру",
     "save": "Сақтау",
-    "cancel": "Болдырмау",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Болдырмау"
   },
   "languages": {
     "en": "English",

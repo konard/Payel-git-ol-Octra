@@ -94,10 +94,7 @@
     "hideTokenField": "トークン入力フィールドを非表示",
     "hideTokenFieldHint": "メイン画面でAPIキーフィールドを非表示",
     "save": "保存",
-    "cancel": "キャンセル",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "キャンセル"
   },
   "languages": {
     "en": "English",

@@ -94,10 +94,7 @@
     "hideTokenField": "Masquer le champ de saisie du token",
     "hideTokenFieldHint": "Masquer le champ de clé API sur l'écran principal",
     "save": "Enregistrer",
-    "cancel": "Annuler",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "Annuler"
   },
   "languages": {
     "en": "English",

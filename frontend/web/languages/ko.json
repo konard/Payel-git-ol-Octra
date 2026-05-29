@@ -94,10 +94,7 @@
     "hideTokenField": "토큰 입력 필드 숨기기",
     "hideTokenFieldHint": "기본 화면에서 API 키 필드 숨기기",
     "save": "저장",
-    "cancel": "취소",
-    "ambientLighting": "Ambient lighting",
-    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
-    "ambientLightingReroll": "New colors"
+    "cancel": "취소"
   },
   "languages": {
     "en": "English",
