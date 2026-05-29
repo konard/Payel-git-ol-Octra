@@ -56,7 +56,11 @@
     "ready": "Պատրաստ է",
     "error": "Սխալ",
     "filesCount": "Ֆայլեր",
-    "size": "Չափ"
+    "size": "Չափ",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Մոդելի ընտրություն",
@@ -90,7 +94,10 @@
     "hideTokenField": "Թաքցնել թոքենի դաշտը",
     "hideTokenFieldHint": "Թաքցնել API բանալի դաշտը գլխավոր էկրանից",
     "save": "Պահպանել",
-    "cancel": "Չեղարկել"
+    "cancel": "Չեղարկել",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -138,8 +145,6 @@
     "duplicate": "Կրկնօրինակել նոդը",
     "delete": "Ջնջել նոդը",
     "notConnected": "Միացված չէ",
-    "customPrompt": "Անհատական հարցում",
-    "customPromptPlaceholder": "Մուտքագրեք դեպի այս նոդը հարցում...",
     "scale": "Չափ"
   },
   "integrations": {

@@ -46,6 +46,7 @@ interface CanvasProps {
 export function Canvas({ mode }: CanvasProps) {
   const nodes = useTaskStore((state) => state.nodes);
   const edges = useTaskStore((state) => state.edges);
+  const taskStatus = useTaskStore((state) => state.status);
   const addEdgeToStore = useTaskStore((state) => state.addEdge);
   const addNodeToStore = useTaskStore((state) => state.addNode);
   const updateNode = useTaskStore((state) => state.updateNode);
@@ -236,6 +237,10 @@ export function Canvas({ mode }: CanvasProps) {
     });
   }, []);
 
+  // A task is "running" while it's being created, planned or executed.
+  // The canvas dots animate as a diagonal wave during this time.
+  const isTaskRunning = taskStatus === 'creating' || taskStatus === 'planning' || taskStatus === 'executing';
+
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -320,7 +325,7 @@ export function Canvas({ mode }: CanvasProps) {
         </button>
       )}
 
-      <div ref={reactFlowWrapper} className="w-full h-full"
+      <div ref={reactFlowWrapper} className={`w-full h-full ${isTaskRunning ? 'canvas-wave' : ''}`}
         onDragOver={onDragOver}
         onDrop={onCanvasDrop}
       >

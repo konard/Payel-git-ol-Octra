@@ -55,7 +55,11 @@
     "ready": "Tayyor",
     "error": "Xato",
     "filesCount": "Fayllar",
-    "size": "Hajm"
+    "size": "Hajm",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Model tanlash",
@@ -89,7 +93,10 @@
     "hideTokenField": "Token kiritish maydonini yashirish",
     "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
     "save": "Saqlash",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -137,8 +144,6 @@
     "duplicate": "Tugunni nusxalash",
     "delete": "Tugunni o'chirish",
     "notConnected": "Ulanmagan",
-    "customPrompt": "Maxsus so'rov",
-    "customPromptPlaceholder": "Ushbu tugun uchun maxsus so'rov kiriting...",
     "scale": "Hajm",
     "n8nAutomation": {
       "title": "N8n avtomatizatsiya",

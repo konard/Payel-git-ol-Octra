@@ -56,7 +56,11 @@
     "ready": "Hazır",
     "error": "Hata",
     "filesCount": "Dosya",
-    "size": "Boyut"
+    "size": "Boyut",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Model Seç",
@@ -90,7 +94,10 @@
     "hideTokenField": "Jeton giriş alanını gizle",
     "hideTokenFieldHint": "Ana ekranda API anahtarı alanını gizle",
     "save": "Kaydet",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Düğümü çoğalt",
     "delete": "Düğümü sil",
     "notConnected": "Bağlı değil",
-    "customPrompt": "Özel istem",
-    "customPromptPlaceholder": "Bu düğüm için özel istem girin...",
     "scale": "Boyut"
   },
   "integrations": {

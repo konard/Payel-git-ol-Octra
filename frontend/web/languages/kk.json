@@ -56,7 +56,11 @@
     "ready": "Дайын",
     "error": "Қате",
     "filesCount": "Файлдар",
-    "size": "Өлшем"
+    "size": "Өлшем",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Модель таңдау",
@@ -90,7 +94,10 @@
     "hideTokenField": "Токен енгізу жолағын жасыру",
     "hideTokenFieldHint": "Негізгі экранда API кілт жолағын жасыру",
     "save": "Сақтау",
-    "cancel": "Болдырмау"
+    "cancel": "Болдырмау",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -138,8 +145,6 @@
     "duplicate": "Түйінді көшіру",
     "delete": "Түйінді жою",
     "notConnected": "Қосылмаған",
-    "customPrompt": "Жеке сұрау",
-    "customPromptPlaceholder": "Осы түйінге жеке сұрауды енгізіңіз...",
     "scale": "Өлшем"
   },
   "integrations": {

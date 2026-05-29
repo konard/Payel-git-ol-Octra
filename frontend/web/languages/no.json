@@ -56,7 +56,11 @@
     "ready": "Klar",
     "error": "Feil",
     "filesCount": "Filer",
-    "size": "Størrelse"
+    "size": "Størrelse",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Velg Modell",
@@ -90,7 +94,10 @@
     "hideTokenField": "Skjul token-inntastingsfelt",
     "hideTokenFieldHint": "Skjul API-nøkkelfelt på hovedskjermen",
     "save": "Lagre",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Dupliser node",
     "delete": "Slett node",
     "notConnected": "Ikke tilkoblet",
-    "customPrompt": "Egendefinert prompt",
-    "customPromptPlaceholder": "Skriv en egendefinert prompt for denne noden...",
     "scale": "Storrelse"
   },
   "integrations": {

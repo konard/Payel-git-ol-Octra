@@ -56,7 +56,11 @@
     "ready": "Спремно",
     "error": "Грешка",
     "filesCount": "Фајлова",
-    "size": "Величина"
+    "size": "Величина",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Избор Модела",
@@ -90,7 +94,10 @@
     "hideTokenField": "Сакриј поље за унос токена",
     "hideTokenFieldHint": "Сакриј поље API кључа на главном екрану",
     "save": "Сачувај",
-    "cancel": "Откажи"
+    "cancel": "Откажи",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Дуплирај чвор",
     "delete": "Обриши чвор",
     "notConnected": "Није повезано",
-    "customPrompt": "Прилагођени подстицај",
-    "customPromptPlaceholder": "Унесите прилагођени подстицај за овај чвор...",
     "scale": "Величина"
   },
   "integrations": {

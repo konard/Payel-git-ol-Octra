@@ -56,7 +56,11 @@
     "ready": "Pronto",
     "error": "Erro",
     "filesCount": "Arquivos",
-    "size": "Tamanho"
+    "size": "Tamanho",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Selecionar Modelo",
@@ -90,7 +94,10 @@
     "hideTokenField": "Ocultar campo de entrada de token",
     "hideTokenFieldHint": "Ocultar campo de chave API na tela principal",
     "save": "Salvar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Duplicar nó",
     "delete": "Excluir nó",
     "notConnected": "Não conectado",
-    "customPrompt": "Prompt personalizado",
-    "customPromptPlaceholder": "Digite um prompt personalizado para este nó...",
     "scale": "Tamanho"
   },
   "integrations": {

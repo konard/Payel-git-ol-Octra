@@ -1,182 +1,26 @@
-@custom-variant dark (&:is(.dark *));
-
-:root {
-  /* Light theme — default */
-  --background: #ffffff;
-  --surface: #f5f5f5;
-  --accent: #f97316;
-  --accent-hover: #ea580c;
-  --text: #111111;
-  --text-muted: #6b7280;
-  --success: #22c55e;
-  --error: #ef4444;
-  --warning: #eab308;
-  --border: rgba(0, 0, 0, 0.12);
-
-  /* React Flow variables */
-  --bg-canvas: #ffffff;
-  --bg-node: #f5f5f5;
-  --text-node: #111111;
-  --edge-color: #9ca3af;
-  --edge-active: #f97316;
+<!doctype html>
+<html class="dark">
+<head>
+<meta charset="utf-8">
+<title>Octra node redesign demo</title>
+<style>
+:root{
+  --background:#ffffff;--surface:#f5f5f5;--accent:#f97316;--accent-hover:#ea580c;
+  --text:#111111;--text-muted:#6b7280;--success:#22c55e;--error:#ef4444;--warning:#eab308;
+  --border:rgba(0,0,0,0.12);--bg-canvas:#ffffff;
 }
-
-.dark {
-  /* Dark theme — dark gray / black */
-  --background: #111111;
-  --surface: #1a1a1a;
-  --accent: #f97316;
-  --accent-hover: #fb923c;
-  --text: #e5e5e5;
-  --text-muted: #a3a3a3;
-  --success: #22c55e;
-  --error: #ef4444;
-  --warning: #eab308;
-  --border: rgba(255, 255, 255, 0.1);
-
-  /* React Flow variables */
-  --bg-canvas: #111111;
-  --bg-node: #1a1a1a;
-  --text-node: #e5e5e5;
-  --edge-color: #525252;
-  --edge-active: #f97316;
+.dark{
+  --background:#111111;--surface:#1a1a1a;--accent:#f97316;--accent-hover:#fb923c;
+  --text:#e5e5e5;--text-muted:#a3a3a3;--success:#22c55e;--error:#ef4444;--warning:#eab308;
+  --border:rgba(255,255,255,0.1);--bg-canvas:#111111;
 }
-
-@theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-success: var(--success);
-  --color-error: var(--error);
-  --color-warning: var(--warning);
-  --color-border: var(--border);
-  
-  /* React Flow */
-  --color-bg-canvas: var(--bg-canvas);
-  --color-bg-node: var(--bg-node);
-  --color-text-node: var(--text-node);
-  --color-edge: var(--edge-color);
-  --color-edge-active: var(--edge-active);
-}
-
-@layer base {
-  * {
-    border-color: var(--border);
-  }
-
-  body {
-    background-color: var(--background);
-    color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-
-  /* Custom scrollbars - Light theme */
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--surface);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-    border-radius: 5px;
-    border: 2px solid var(--surface);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-  }
-  ::-webkit-scrollbar-corner {
-    background: var(--surface);
-  }
-
-  /* Firefox scrollbar support */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-muted) var(--surface);
-  }
-}
-
-/* Dark theme scrollbars */
-.dark {
-  ::-webkit-scrollbar-track {
-    background: var(--surface);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-    border: 2px solid var(--surface);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-  }
-  ::-webkit-scrollbar-corner {
-    background: var(--surface);
-  }
-}
-
-@layer utilities {
-  /* Node appear animation */
-  @keyframes nodeAppear {
-    from {
-      opacity: 0;
-      transform: scale(0.8) translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  /* Pulse animation for active nodes */
-  @keyframes pulse-shadow {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
-    }
-  }
-
-  .animate-node-appear {
-    animation: nodeAppear 0.3s ease-out;
-  }
-
-  .animate-node-pulse {
-    animation: pulse-shadow 2s infinite;
-  }
-}
-
-/* React Flow Controls — theme adaptation */
-.react-flow__controls {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  left: auto !important;
-  right: 8px !important;
-}
-
-.react-flow__controls-button {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-.react-flow__controls-button:hover {
-  background-color: var(--text-muted) !important;
-  background-opacity: 0.1 !important;
-}
-
-.react-flow__controls-button svg {
-  fill: var(--text) !important;
-}
-
-.react-flow__controls-button:disabled svg {
-  fill: var(--text-muted) !important;
-}
-
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--background);color:var(--text);}
+.canvas{position:relative;width:100%;height:520px;overflow:hidden;
+  background-color:var(--bg-canvas);
+  background-image:radial-gradient(circle, #6b7280 1px, transparent 1.4px);
+  background-size:16px 16px;}
+.nodes{position:relative;z-index:2;display:flex;gap:40px;flex-wrap:wrap;padding:48px;align-items:flex-start;}
+.badge-svg{width:16px;height:16px;color:#fff;}
 /* ============================================================= */
 /* Agent nodes — n8n-inspired clean cards                         */
 /* ============================================================= */
@@ -438,3 +282,65 @@
   mask-image: linear-gradient(to right, #000 0 14%, transparent 14% 86%, #000 86% 100%),
     linear-gradient(to bottom, #000 0 16%, transparent 16% 84%, #000 84% 100%);
 }
+</style>
+</head>
+<body>
+<div class="ambient-glow" aria-hidden="true" style="--ambient-color-a:#7c4dff;--ambient-color-b:#00e5ff;"></div>
+<div class="canvas canvas-wave">
+  <div class="nodes">
+    <!-- Boss -->
+    <div class="agent-node agent-node--active" style="--node-accent:#f97316;min-width:220px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#f97316;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v1a4 4 0 0 0 0 8 4 4 0 0 0 8 0 4 4 0 0 0 0-8V7a5 5 0 0 0-3-5z"/></svg></div>
+        <div class="agent-node__title">BOSS</div>
+        <span class="agent-node__status-dot agent-node__status-dot--pulse" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Orchestrator</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Managers</span><span class="agent-node__meta-value">2</span></div>
+      </div>
+    </div>
+    <!-- Manager -->
+    <div class="agent-node agent-node--active" style="--node-accent:#7c4dff;min-width:200px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#7c4dff;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="6" width="16" height="12" rx="3"/></svg></div>
+        <div class="agent-node__title">MANAGER</div>
+        <span class="agent-node__status-dot agent-node__status-dot--pulse" style="background:#a855f7;box-shadow:0 0 6px #a855f7;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Backend lead</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Workers</span><span class="agent-node__meta-value">3</span></div>
+        <div class="agent-node__progress">
+          <div class="agent-node__progress-track"><div class="agent-node__progress-fill" style="width:64%;background:#7c4dff;"></div></div>
+          <div class="agent-node__progress-value">64%</div>
+        </div>
+      </div>
+    </div>
+    <!-- Worker -->
+    <div class="agent-node" style="--node-accent:#22c55e;min-width:180px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#22c55e;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></div>
+        <div class="agent-node__title">WORKER</div>
+        <span class="agent-node__status-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">API endpoints</span></div>
+        <div class="agent-node__meta"><span class="agent-node__meta-label">Files</span><span class="agent-node__meta-value">5</span></div>
+      </div>
+    </div>
+    <!-- Disconnected worker -->
+    <div class="agent-node agent-node--disconnected" style="--node-accent:#6e7681;min-width:180px;">
+      <div class="agent-node__header">
+        <div class="agent-node__badge" style="background:#6e7681;"><svg class="badge-svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg></div>
+        <div class="agent-node__title">GITHUB</div>
+        <span class="agent-node__status-dot" style="background:#9ca3af;box-shadow:0 0 6px #9ca3af;"></span>
+      </div>
+      <div class="agent-node__body">
+        <div class="agent-node__role"><span class="agent-node__role-label">Role</span><span class="agent-node__role-value">Publish PR</span></div>
+        <div class="agent-node__warning">Not connected</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

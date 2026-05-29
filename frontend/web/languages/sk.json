@@ -56,7 +56,11 @@
     "ready": "Pripravené",
     "error": "Chyba",
     "filesCount": "Súborov",
-    "size": "Veľkosť"
+    "size": "Veľkosť",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Výber Modelu",
@@ -90,7 +94,10 @@
     "hideTokenField": "Skryť pole na zadanie tokenu",
     "hideTokenFieldHint": "Skryť pole API kľúča na hlavnej obrazovke",
     "save": "Uložiť",
-    "cancel": "Zrušiť"
+    "cancel": "Zrušiť",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Duplikovať uzol",
     "delete": "Odstrániť uzol",
     "notConnected": "Nepripojené",
-    "customPrompt": "Vlastný prompt",
-    "customPromptPlaceholder": "Zadajte vlastný prompt pre tento uzol...",
     "scale": "Velkost"
   },
   "integrations": {

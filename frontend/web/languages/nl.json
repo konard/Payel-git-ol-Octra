@@ -56,7 +56,11 @@
     "ready": "Klaar",
     "error": "Fout",
     "filesCount": "Bestanden",
-    "size": "Grootte"
+    "size": "Grootte",
+    "role": "Role",
+    "stack": "Stack:",
+    "managers": "Managers",
+    "workers": "Workers"
   },
   "modelSelector": {
     "title": "Model Selecteren",
@@ -90,7 +94,10 @@
     "hideTokenField": "Token-invoerveld verbergen",
     "hideTokenFieldHint": "API-sleutel veld op hoofdscherm verbergen",
     "save": "Opslaan",
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
@@ -165,8 +172,6 @@
     "duplicate": "Knooppunt dupliceren",
     "delete": "Knooppunt verwijderen",
     "notConnected": "Niet verbonden",
-    "customPrompt": "Aangepaste prompt",
-    "customPromptPlaceholder": "Voer een aangepaste prompt in voor dit knooppunt...",
     "scale": "Grootte"
   },
   "integrations": {
