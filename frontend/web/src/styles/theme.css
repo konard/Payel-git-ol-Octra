@@ -371,32 +371,48 @@
 /* ============================================================= */
 /* Canvas — diagonal "wave" of dots while a task is running       */
 /* ============================================================= */
-.canvas-wave .react-flow__background {
-  animation: canvas-dot-wave 4s linear infinite;
+/*
+ * A non-destructive overlay of accent-colored dots (matching the React
+ * Flow background pitch of 16px) is masked by a soft diagonal band that
+ * travels from the top-left corner to the bottom-right corner. The base
+ * gray dots always stay visible; only a glowing band of accent dots
+ * sweeps across. The overlay is a ::before so it paints behind the React
+ * Flow viewport (i.e. behind the nodes) and never blocks interaction.
+ */
+.canvas-wave {
+  position: relative;
+}
+
+.canvas-wave::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--accent) 1.2px, transparent 1.6px);
+  background-size: 16px 16px;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(115deg, transparent 38%, #000 50%, transparent 62%);
+  mask-image: linear-gradient(115deg, transparent 38%, #000 50%, transparent 62%);
+  -webkit-mask-size: 250% 250%;
+  mask-size: 250% 250%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: canvas-dot-wave 3.5s linear infinite;
 }
 
 @keyframes canvas-dot-wave {
   0% {
-    -webkit-mask-position: -140% 0;
-    mask-position: -140% 0;
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
   }
   100% {
-    -webkit-mask-position: 140% 0;
-    mask-position: 140% 0;
+    -webkit-mask-position: 100% 100%;
+    mask-position: 100% 100%;
   }
-}
-
-.canvas-wave .react-flow__background {
-  -webkit-mask-image: linear-gradient(115deg, transparent 0%, rgba(0, 0, 0, 0.25) 30%, #000 50%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
-  mask-image: linear-gradient(115deg, transparent 0%, rgba(0, 0, 0, 0.25) 30%, #000 50%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
-  -webkit-mask-size: 250% 100%;
-  mask-size: 250% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .canvas-wave .react-flow__background,
+  .canvas-wave::before,
   .agent-node--active,
   .agent-node__status-dot--pulse {
     animation: none;
