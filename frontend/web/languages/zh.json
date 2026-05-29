@@ -94,7 +94,10 @@
     "hideTokenField": "隐藏令牌输入框",
     "hideTokenFieldHint": "在主屏幕上隐藏API密钥字段",
     "save": "保存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

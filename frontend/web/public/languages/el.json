@@ -94,7 +94,10 @@
     "hideTokenField": "Απόκρυψη πεδίου εισαγωγής token",
     "hideTokenFieldHint": "Απόκρυψη πεδίου κλειδιού API στην κύρια οθόνη",
     "save": "Αποθήκευση",
-    "cancel": "Ακύρωση"
+    "cancel": "Ακύρωση",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

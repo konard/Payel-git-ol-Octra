@@ -94,7 +94,10 @@
     "hideTokenField": "Token beviteli mező elrejtése",
     "hideTokenFieldHint": "API kulcs mező elrejtése a főképernyőn",
     "save": "Mentés",
-    "cancel": "Mégse"
+    "cancel": "Mégse",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

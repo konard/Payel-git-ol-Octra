@@ -94,7 +94,10 @@
     "hideTokenField": "Skrij polje za vnos žetona",
     "hideTokenFieldHint": "Skrij polje API ključa na glavnem zaslonu",
     "save": "Shrani",
-    "cancel": "Prekliči"
+    "cancel": "Prekliči",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

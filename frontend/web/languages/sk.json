@@ -94,7 +94,10 @@
     "hideTokenField": "Skryť pole na zadanie tokenu",
     "hideTokenFieldHint": "Skryť pole API kľúča na hlavnej obrazovke",
     "save": "Uložiť",
-    "cancel": "Zrušiť"
+    "cancel": "Zrušiť",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

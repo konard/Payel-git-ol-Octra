@@ -94,7 +94,10 @@
     "hideTokenField": "Token-Eingabefeld ausblenden",
     "hideTokenFieldHint": "API-Schlussel-Feld auf dem Hauptbildschirm ausblenden",
     "save": "Speichern",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

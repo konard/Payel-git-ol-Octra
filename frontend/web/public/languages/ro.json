@@ -94,7 +94,10 @@
     "hideTokenField": "Ascunde câmpul de introducere a tokenului",
     "hideTokenFieldHint": "Ascunde câmpul cheie API pe ecranul principal",
     "save": "Salvează",
-    "cancel": "Anulează"
+    "cancel": "Anulează",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

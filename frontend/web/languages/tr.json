@@ -94,7 +94,10 @@
     "hideTokenField": "Jeton giriş alanını gizle",
     "hideTokenFieldHint": "Ana ekranda API anahtarı alanını gizle",
     "save": "Kaydet",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

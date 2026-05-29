@@ -94,7 +94,10 @@
     "hideTokenField": "Nie pokazuj pola wprowadzania tokena",
     "hideTokenFieldHint": "Ukryj pole klucza API na ekranie głównym",
     "save": "Zapisz",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

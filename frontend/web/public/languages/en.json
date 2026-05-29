@@ -97,7 +97,10 @@
     "hideTokenField": "Hide token input field",
     "hideTokenFieldHint": "Hide API key field on main screen",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "providers": {
     "title": "Custom Providers",

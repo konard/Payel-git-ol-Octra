@@ -426,9 +426,9 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
-  opacity: var(--ambient-opacity, 0.5);
-  transition: opacity 600ms ease;
+  z-index: 9999;
+  opacity: var(--ambient-opacity, 0.45);
+  transition: opacity 600ms ease, background 800ms ease;
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ambient-color-a, #7c4dff) 55%, transparent) 0%, transparent 45%),
     radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, var(--ambient-color-b, #00e5ff) 55%, transparent) 0%, transparent 45%);

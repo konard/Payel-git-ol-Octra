@@ -94,7 +94,10 @@
     "hideTokenField": "Сакриј поље за унос токена",
     "hideTokenFieldHint": "Сакриј поље API кључа на главном екрану",
     "save": "Сачувај",
-    "cancel": "Откажи"
+    "cancel": "Откажи",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

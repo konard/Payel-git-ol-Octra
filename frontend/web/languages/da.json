@@ -94,7 +94,10 @@
     "hideTokenField": "Skjul token-indtastningsfelt",
     "hideTokenFieldHint": "Skjul API-nøglefelt på hovedskærmen",
     "save": "Gem",
-    "cancel": "Annuller"
+    "cancel": "Annuller",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",

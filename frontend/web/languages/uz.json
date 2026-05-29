@@ -93,7 +93,10 @@
     "hideTokenField": "Token kiritish maydonini yashirish",
     "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
     "save": "Saqlash",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "ambientLighting": "Ambient lighting",
+    "ambientLightingHint": "Soft colored glow along the screen edges (JetBrains-style)",
+    "ambientLightingReroll": "New colors"
   },
   "languages": {
     "en": "English",
