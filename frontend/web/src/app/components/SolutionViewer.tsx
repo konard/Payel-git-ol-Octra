@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleDotDashed,
+  Code2,
+  Eye,
   FileCode2,
+  FileText,
   Files,
   Folder,
   FolderOpen,
@@ -16,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useTaskStore, type CodeFile } from '../../stores/taskStore';
 import { useThemeStore } from '../../stores/themeStore';
+import { isMarkdownPath } from '../../lib/markdown';
+import '../../styles/markdown.css';
 
 interface TreeNode {
   name: string;
@@ -159,7 +166,7 @@ function TreeRows({
             }`}
             style={{ paddingLeft }}
           >
-            <FileCode2 size={15} />
+            {isMarkdownPath(node.path) ? <FileText size={15} /> : <FileCode2 size={15} />}
             <span className="min-w-0 flex-1 truncate">{node.name}</span>
             {node.file && <CodeStatus status={node.file.status} />}
           </button>
@@ -169,7 +176,7 @@ function TreeRows({
   );
 }
 
-export function CodeViewer() {
+export function SolutionViewer() {
   const codeFiles = useTaskStore((state) => state.codeFiles);
   const latestCodeFilePath = useTaskStore((state) => state.latestCodeFilePath);
   const updateCodeFileContent = useTaskStore((state) => state.updateCodeFileContent);
@@ -180,10 +187,14 @@ export function CodeViewer() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [displayContent, setDisplayContent] = useState('');
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const [showSource, setShowSource] = useState(false);
   const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const filesByPath = useMemo(() => new Map(codeFiles.map((file) => [file.path, file])), [codeFiles]);
   const activeFile = activePath ? filesByPath.get(activePath) ?? null : null;
+  const activeIsMarkdown = activeFile ? isMarkdownPath(activeFile.path) : false;
+  // Markdown documents default to the rendered preview; users can flip to source.
+  const renderAsPreview = activeIsMarkdown && !showSource;
   const openFiles = openFilePaths
     .map((path) => filesByPath.get(path))
     .filter((file): file is CodeFile => Boolean(file));
@@ -265,6 +276,11 @@ export function CodeViewer() {
     };
   }, [activeFile?.content, activeFile?.path, activeFile?.status]);
 
+  // Reset to the preferred view (preview for Markdown) whenever the file changes.
+  useEffect(() => {
+    setShowSource(false);
+  }, [activePath]);
+
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
@@ -311,7 +327,7 @@ export function CodeViewer() {
             {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
           </button>
           <Files size={16} className="text-[var(--code-text-muted)]" />
-          <span className="truncate text-sm font-medium">Generated files</span>
+          <span className="truncate text-sm font-medium">Solution files</span>
         </div>
         <div className="text-xs text-[var(--code-text-muted)]">
           {codeFiles.length} {codeFiles.length === 1 ? 'file' : 'files'}
@@ -385,40 +401,57 @@ export function CodeViewer() {
               <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-[var(--code-border)] px-3 text-xs text-[var(--code-text-muted)]">
                 <div className="min-w-0 truncate">{activeFile.path}</div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {activeIsMarkdown && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSource((value) => !value)}
+                      className="flex items-center gap-1 rounded-md border border-[var(--code-border)] px-2 py-0.5 text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+                      title={showSource ? 'Show rendered preview' : 'Show Markdown source'}
+                    >
+                      {showSource ? <Eye size={13} /> : <Code2 size={13} />}
+                      <span>{showSource ? 'Preview' : 'Source'}</span>
+                    </button>
+                  )}
                   <CodeStatus status={activeFile.status} />
                   <span>{statusLabel(activeFile.status)}</span>
                 </div>
               </div>
               <div className="min-h-0 flex-1">
-                <Editor
-                  path={activeFile.path}
-                  value={displayContent}
-                  language={activeFile.language}
-                  theme={isDark ? 'vs-dark' : 'light'}
-                  onMount={handleMount}
-                  onChange={(value) => {
-                    if (activeFile.status !== 'streaming' && value !== undefined && value !== activeFile.content) {
-                      updateCodeFileContent(activeFile.path, value);
-                    }
-                  }}
-                  options={{
-                    automaticLayout: true,
-                    fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: 13,
-                    lineHeight: 22,
-                    minimap: { enabled: true },
-                    padding: { top: 12, bottom: 12 },
-                    readOnly: activeFile.status === 'streaming',
-                    scrollBeyondLastLine: false,
-                    smoothScrolling: true,
-                    wordWrap: 'off',
-                  }}
-                />
+                {renderAsPreview ? (
+                  <div className="markdown-preview h-full overflow-auto px-6 py-5">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <Editor
+                    path={activeFile.path}
+                    value={displayContent}
+                    language={activeFile.language}
+                    theme={isDark ? 'vs-dark' : 'light'}
+                    onMount={handleMount}
+                    onChange={(value) => {
+                      if (activeFile.status !== 'streaming' && value !== undefined && value !== activeFile.content) {
+                        updateCodeFileContent(activeFile.path, value);
+                      }
+                    }}
+                    options={{
+                      automaticLayout: true,
+                      fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontSize: 13,
+                      lineHeight: 22,
+                      minimap: { enabled: true },
+                      padding: { top: 12, bottom: 12 },
+                      readOnly: activeFile.status === 'streaming',
+                      scrollBeyondLastLine: false,
+                      smoothScrolling: true,
+                      wordWrap: activeIsMarkdown ? 'on' : 'off',
+                    }}
+                  />
+                )}
               </div>
               <div className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--code-border)] bg-[var(--code-surface)] px-3 text-xs text-[var(--code-text-muted)]">
                 <span className="truncate">{activeFile.workerRole || activeFile.managerRole || 'Worker output'}</span>
                 <span>
-                  Ln {cursor.line}, Col {cursor.column}
+                  {renderAsPreview ? 'Markdown preview' : `Ln ${cursor.line}, Col ${cursor.column}`}
                 </span>
               </div>
             </>
