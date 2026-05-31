@@ -284,4 +284,10 @@ REDIS_URL=redis://redis:6379/0
 
 # GitHub token (for publishing generated code)
 GITHUB_TOKEN=ghp_...
+
+# Web search (research tasks)
+# Research workers perform a real, keyless web search (DuckDuckGo HTML) and
+# re-rank results with BM25. Set to 1 to disable web search; workers then fall
+# back to LLM-only research. Default: enabled.
+WEB_SEARCH_DISABLED=0
 ```
