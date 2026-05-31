@@ -1,73 +1,33 @@
 import octraMascot from '../../../images/octra-mascot.png';
-import { useI18n } from '../../../hooks/useI18n';
+
+const links = [
+  { href: '#showcase', label: 'Showcase' },
+  { href: '#audiences', label: 'Audiences' },
+  { href: '#providers', label: 'Models' },
+  { href: '/app', label: 'Open app' },
+];
 
 export function FooterSection() {
-  const { t } = useI18n();
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--background)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <img
-                src={octraMascot}
-                alt="Octra Mascot"
-                className="w-10 h-10 rounded-lg object-contain"
-              />
-              <span className="text-lg font-semibold text-[var(--text)]">Octra</span>
-            </div>
-            <p className="text-sm text-[var(--text-muted)]">
-              {t('landing.footer.tagline')}
-            </p>
+    <footer className="border-t border-white/10 bg-black px-4 py-10 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-md">
+          <div className="mb-4 flex items-center gap-3">
+            <img src={octraMascot} alt="Octra Mascot" className="h-9 w-9 rounded-md object-contain" />
+            <span className="text-lg font-semibold">Octra</span>
           </div>
-
-          {/* Links */}
-          <div>
-            <h4 className="text-sm font-semibold text-[var(--text)] mb-4">{t('landing.footer.product')}</h4>
-            <ul className="space-y-2">
-              <li><a href="#workflow" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Workflow</a></li>
-              <li><a href="#agents" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Агенты</a></li>
-              <li><a href="#providers" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Провайдеры</a></li>
-              <li><a href="#models" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Модели</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-[var(--text)] mb-4">Ресурсы</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Документация</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Руководства</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">API Reference</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Примеры</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-[var(--text)] mb-4">Компания</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">О нас</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Блог</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Карьера</a></li>
-              <li><a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Контакты</a></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom */}
-        <div className="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-[var(--text-muted)]">
-            © {new Date().getFullYear()} Octra. Все права защищены.
+          <p className="text-sm leading-6 text-white/58">
+            AI task execution for code, research, text documents, and presentations.
           </p>
-          <div className="flex gap-6">
-            <a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-              Политика конфиденциальности
-            </a>
-            <a href="#" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-              Условия использования
-            </a>
-          </div>
         </div>
+
+        <nav className="flex flex-wrap gap-x-6 gap-y-3">
+          {links.map((link) => (
+            <a key={link.href} href={link.href} className="text-sm font-medium text-white/58 transition-colors hover:text-white">
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   );

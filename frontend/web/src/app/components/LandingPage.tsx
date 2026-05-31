@@ -1,102 +1,72 @@
-import { useState, useEffect } from 'react';
-import { useThemeStore } from '../../stores/themeStore';
-import { useAuthStore } from '../../stores/authStore';
-import { useI18n } from '../../hooks/useI18n';
+import { useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { HeroSection } from './landing/HeroSection';
 import { WorkflowDemo } from './landing/WorkflowDemo';
 import { ProvidersSection } from './landing/ProvidersSection';
 import { AgentsSection } from './landing/AgentsSection';
-import { ModelsSection } from './landing/ModelsSection';
-import { SettingsSection } from './landing/SettingsSection';
 import { FooterSection } from './landing/FooterSection';
 import octraMascot from '../../images/octra-mascot.png';
 
 export default function LandingPage() {
-  const { isDark } = useThemeStore();
-  const { isAuthenticated } = useAuthStore();
-  const { t } = useI18n();
-
   useEffect(() => {
-    // Scroll to top on mount
     window.scrollTo(0, 0);
-    
-    // Force dark theme on landing page
     document.documentElement.classList.add('dark');
   }, []);
 
+  const navItems = [
+    { href: '#showcase', label: 'Showcase' },
+    { href: '#audiences', label: 'Audiences' },
+    { href: '#providers', label: 'Models' },
+  ];
+
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]">
+    <div className="min-h-screen bg-[#050505] text-white">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/78 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
             <div className="flex items-center gap-3">
               <img
                 src={octraMascot}
                 alt="Octra Mascot"
-                className="w-10 h-10 rounded-lg object-contain"
+                className="w-9 h-9 rounded-md object-contain"
               />
-              <span className="text-lg font-semibold text-[var(--text)]">Octra</span>
+              <span className="text-lg font-semibold">Octra</span>
             </div>
 
-            {/* Links */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#workflow" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                {t('landing.nav.workflow')}
-              </a>
-              <a href="#agents" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                {t('landing.nav.agents')}
-              </a>
-              <a href="#providers" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                {t('landing.nav.providers')}
-              </a>
-              <a href="#models" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                {t('landing.nav.models')}
-              </a>
-              <a href="#settings" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
-                {t('landing.nav.settings')}
-              </a>
+            <div className="hidden md:flex items-center gap-7">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm font-medium text-white/62 transition-colors hover:text-white"
+                >
+                  {item.label}
+                </a>
+              ))}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-3">
               <a
                 href="/app"
-                className="px-4 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface)] rounded-md transition-colors"
+                className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-white/78 transition-colors hover:text-white"
               >
-                {t('landing.nav.login')}
+                Sign in
               </a>
               <a
                 href="/app"
-                className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-md transition-all shadow-md hover:shadow-lg"
+                className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-white/88"
               >
-                {t('landing.nav.start')}
+                Start <ArrowRight className="h-4 w-4" />
               </a>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
       <HeroSection />
-
-      {/* Workflow Demo Section */}
       <WorkflowDemo />
-
-      {/* Agents Section */}
       <AgentsSection />
-
-      {/* Providers Section */}
       <ProvidersSection />
-
-      {/* Models Section */}
-      <ModelsSection />
-
-      {/* Settings Section */}
-      <SettingsSection />
-
-      {/* Footer */}
       <FooterSection />
     </div>
   );

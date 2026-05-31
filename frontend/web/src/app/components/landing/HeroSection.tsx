@@ -1,11 +1,9 @@
 import octraVideo from '../../../images/main/video/octra-animation-landing.mp4';
-import { useI18n } from '../../../hooks/useI18n';
+import { ArrowRight, FileText, Presentation, Search } from 'lucide-react';
 
 export function HeroSection() {
-  const { t } = useI18n();
   return (
-    <section className="relative min-h-[100dvh] flex items-center pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#0a0a0f]">
-      {/* Video Background - Raycast style */}
+    <section className="relative flex min-h-[86dvh] items-center overflow-hidden bg-black px-4 pb-14 pt-24 sm:px-6 lg:px-8">
       <div className="absolute inset-0 z-0">
         <video
           autoPlay
@@ -16,46 +14,52 @@ export function HeroSection() {
         >
           <source src={octraVideo} type="video/mp4" />
         </video>
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/60" />
-        {/* Subtle gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/70" />
+        <div className="absolute inset-0 bg-black/68" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,rgba(0,0,0,0.18)_42%,#050505_100%)]" />
       </div>
 
-      <div className="max-w-5xl mx-auto relative z-10 text-center pt-16">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-medium text-white/90 mb-8">
-          <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse" />
-          {t('landing.hero.badge')}
+      <div className="relative z-10 mx-auto max-w-5xl pt-8 text-center">
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-white/70">
+          <span className="inline-flex items-center gap-2">
+            <Search className="h-4 w-4 text-cyan-300" />
+            Research
+          </span>
+          <span className="h-1 w-1 rounded-full bg-white/34" />
+          <span className="inline-flex items-center gap-2">
+            <FileText className="h-4 w-4 text-emerald-300" />
+            Text documents
+          </span>
+          <span className="h-1 w-1 rounded-full bg-white/34" />
+          <span className="inline-flex items-center gap-2">
+            <Presentation className="h-4 w-4 text-violet-300" />
+            Presentations
+          </span>
         </div>
 
-        {/* Headline */}
-        <h1 
-          className="text-6xl sm:text-7xl lg:text-8xl font-semibold tracking-tighter text-white mb-6 leading-none"
-          dangerouslySetInnerHTML={{ __html: t('landing.hero.title') }} 
-        />
+        <h1 className="mb-6 text-5xl font-semibold leading-none text-white sm:text-6xl lg:text-7xl">
+          Octra
+        </h1>
 
-        <p className="text-xl text-white/70 max-w-xl mx-auto mb-10">
-          {t('landing.hero.subtitle')}
+        <p className="mx-auto mb-10 max-w-3xl text-xl leading-8 text-white/76">
+          AI teams for developers, regular users, research, text documents, and slide decks.
+          Describe the result you need and follow the work from first plan to finished output.
         </p>
 
-        {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/app"
-            className="inline-flex items-center justify-center gap-2 px-9 py-3.5 text-base font-semibold bg-white text-black rounded-xl hover:bg-white/90 active:scale-[0.985] transition-all"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-8 py-3 text-base font-semibold text-black transition-colors hover:bg-white/88"
           >
-            {t('landing.hero.ctaStart')}
+            Start a task <ArrowRight className="h-5 w-5" />
           </a>
           <a
-            href="#workflow"
-            className="inline-flex items-center justify-center gap-2 px-9 py-3.5 text-base font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/15 rounded-xl transition-all"
+            href="#showcase"
+            className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/8 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-white/13"
           >
-            {t('landing.hero.ctaDemo')}
+            View workflows
           </a>
         </div>
       </div>
     </section>
   );
 }
-
