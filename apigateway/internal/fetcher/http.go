@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"apigateway/internal/core/ratelimit"
 	"apigateway/internal/core/redis"
@@ -357,6 +358,10 @@ func writeBossChatMessage(conn *websocket.Conn, taskID, message string, clarific
 
 func shouldLaunchWorkflowFromChat(message string) bool {
 	words := normalizedWords(message)
+	if shouldLaunchSearchWorkflowFromChat(words) {
+		return true
+	}
+
 	triggers := []string{
 		"build", "building", "create", "creating", "develop", "fix", "generate", "generating",
 		"implement", "implementing", "launch", "make", "refactor", "run", "scaffold", "start", "write",
@@ -366,6 +371,30 @@ func shouldLaunchWorkflowFromChat(message string) bool {
 		"integration", "page", "project", "service", "site", "tool", "webapp", "website", "workflow",
 	}
 	return hasAnyWord(words, triggers) && hasAnyWord(words, targets)
+}
+
+func shouldLaunchSearchWorkflowFromChat(words map[string]bool) bool {
+	searchTriggers := []string{
+		"find", "google", "lookup", "research", "search",
+		"найди", "погугли", "поиск", "поищи",
+	}
+	if hasAnyWord(words, searchTriggers) || (words["look"] && words["up"]) {
+		return true
+	}
+
+	searchTargets := []string{
+		"configure", "docs", "documentation", "install", "latest", "links", "news", "reference", "setup",
+		"документация", "документацию", "настроить", "новости", "ссылки", "установить",
+	}
+	if hasAnyWord(words, []string{"how", "как"}) && hasAnyWord(words, searchTargets) {
+		return true
+	}
+
+	if len(words) > 1 && hasAnyWord(words, searchTargets) {
+		return true
+	}
+
+	return false
 }
 
 func buildBossChatReply(message string) string {
@@ -384,16 +413,10 @@ func buildBossChatReply(message string) string {
 
 func normalizedWords(message string) map[string]bool {
 	cleaned := strings.Map(func(r rune) rune {
-		switch {
-		case r >= 'a' && r <= 'z':
-			return r
-		case r >= 'A' && r <= 'Z':
-			return r + ('a' - 'A')
-		case r >= '0' && r <= '9':
-			return r
-		default:
-			return ' '
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return unicode.ToLower(r)
 		}
+		return ' '
 	}, message)
 
 	words := make(map[string]bool)

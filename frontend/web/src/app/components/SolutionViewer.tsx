@@ -31,6 +31,7 @@ import {
   isDocumentSolution,
   paginateMarkdown,
 } from '../../lib/markdown';
+import { choosePreferredCodeFilePath } from '../../lib/solutionFiles';
 import '../../styles/markdown.css';
 
 interface TreeNode {
@@ -259,11 +260,11 @@ export function SolutionViewer() {
       return;
     }
 
-    const preferredPath = latestCodeFilePath && filesByPath.has(latestCodeFilePath)
-      ? latestCodeFilePath
-      : activePath && filesByPath.has(activePath)
-        ? activePath
-        : codeFiles[0].path;
+    const preferredPath = choosePreferredCodeFilePath(
+      codeFiles.map((file) => file.path),
+      activePath,
+      latestCodeFilePath,
+    ) ?? codeFiles[0].path;
 
     setActivePath(preferredPath);
     setOpenFilePaths((prev) => {

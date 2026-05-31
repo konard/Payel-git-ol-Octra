@@ -9,10 +9,11 @@
     "test:settings": "node scripts/check-default-token-settings.mjs",
     "test:translations": "node scripts/check-custom-model-translations.cjs",
     "test:task-store": "node scripts/check-task-store-graph.mjs",
+    "test:task-payload": "node scripts/check-task-payload-workflow.mjs",
     "test:solution-viewer": "node scripts/check-solution-viewer.mjs",
     "test:search-steps": "node scripts/check-search-steps.mjs",
     "test:sidebar-auth": "node scripts/check-sidebar-unauthenticated.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth"
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
