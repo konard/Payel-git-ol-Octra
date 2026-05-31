@@ -30,6 +30,10 @@ const viewer = read('src/app/components/SolutionViewer.tsx');
 assert.match(viewer, /export function SolutionViewer\(/, 'SolutionViewer must be exported');
 assert.match(viewer, /react-markdown/, 'SolutionViewer must use react-markdown');
 assert.match(viewer, /remark-gfm/, 'SolutionViewer must use remark-gfm (tables, task lists)');
+// Binary documents (e.g. generated .pptx presentations) must not be dumped into
+// the Monaco editor — the viewer shows a placeholder instead.
+assert.match(viewer, /isBinaryPath/, 'SolutionViewer must guard binary files with isBinaryPath');
+assert.match(viewer, /binaryFileLabel/, 'SolutionViewer must label binary files');
 
 const pkg = JSON.parse(read('package.json'));
 assert.ok(pkg.dependencies['react-markdown'], 'react-markdown must be a dependency');
@@ -47,7 +51,7 @@ const server = await createServer({
 });
 
 try {
-  const { isMarkdownPath } = await server.ssrLoadModule('/src/lib/markdown.ts');
+  const { isMarkdownPath, isBinaryPath, binaryFileLabel } = await server.ssrLoadModule('/src/lib/markdown.ts');
 
   for (const path of ['report.md', 'docs/Research.MARKDOWN', 'a/b/notes.mdx', 'README.md']) {
     assert.equal(isMarkdownPath(path), true, `${path} should be detected as Markdown`);
@@ -55,6 +59,16 @@ try {
   for (const path of ['main.go', 'src/index.ts', 'style.css', 'noextension', 'mdfile']) {
     assert.equal(isMarkdownPath(path), false, `${path} should NOT be detected as Markdown`);
   }
+
+  // --- 3. Binary-document detection (presentations, documents, assets). -----
+  for (const path of ['solution/deck.pptx', 'a/b/Report.DOCX', 'sheet.xlsx', 'paper.pdf', 'img.png', 'photo.JPEG', 'bundle.zip']) {
+    assert.equal(isBinaryPath(path), true, `${path} should be detected as binary`);
+  }
+  for (const path of ['report.md', 'main.go', 'notes.txt', 'data.json']) {
+    assert.equal(isBinaryPath(path), false, `${path} should NOT be detected as binary`);
+  }
+  assert.equal(binaryFileLabel('solution/deck.pptx'), 'PowerPoint presentation', 'pptx label');
+  assert.equal(binaryFileLabel('report.docx'), 'Word document', 'docx label');
 
   console.log('check-solution-viewer: all assertions passed');
 } finally {

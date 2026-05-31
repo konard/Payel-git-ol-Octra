@@ -13,15 +13,17 @@ import {
   FileCode2,
   FileText,
   Files,
+  FileBox,
   Folder,
   FolderOpen,
   PanelLeftClose,
   PanelLeftOpen,
+  Presentation,
   X,
 } from 'lucide-react';
 import { useTaskStore, type CodeFile } from '../../stores/taskStore';
 import { useThemeStore } from '../../stores/themeStore';
-import { isMarkdownPath } from '../../lib/markdown';
+import { isMarkdownPath, isBinaryPath, binaryFileLabel } from '../../lib/markdown';
 import '../../styles/markdown.css';
 
 interface TreeNode {
@@ -166,7 +168,15 @@ function TreeRows({
             }`}
             style={{ paddingLeft }}
           >
-            {isMarkdownPath(node.path) ? <FileText size={15} /> : <FileCode2 size={15} />}
+            {node.path.toLowerCase().endsWith('.pptx') ? (
+              <Presentation size={15} />
+            ) : isBinaryPath(node.path) ? (
+              <FileBox size={15} />
+            ) : isMarkdownPath(node.path) ? (
+              <FileText size={15} />
+            ) : (
+              <FileCode2 size={15} />
+            )}
             <span className="min-w-0 flex-1 truncate">{node.name}</span>
             {node.file && <CodeStatus status={node.file.status} />}
           </button>
@@ -193,6 +203,7 @@ export function SolutionViewer() {
   const filesByPath = useMemo(() => new Map(codeFiles.map((file) => [file.path, file])), [codeFiles]);
   const activeFile = activePath ? filesByPath.get(activePath) ?? null : null;
   const activeIsMarkdown = activeFile ? isMarkdownPath(activeFile.path) : false;
+  const activeIsBinary = activeFile ? isBinaryPath(activeFile.path) : false;
   // Markdown documents default to the rendered preview; users can flip to source.
   const renderAsPreview = activeIsMarkdown && !showSource;
   const openFiles = openFilePaths
@@ -377,7 +388,15 @@ export function SolutionViewer() {
                     onClick={() => setActivePath(file.path)}
                     className="flex min-w-0 flex-1 items-center gap-2 px-3"
                   >
-                    <FileCode2 size={15} />
+                    {file.path.toLowerCase().endsWith('.pptx') ? (
+                      <Presentation size={15} />
+                    ) : isBinaryPath(file.path) ? (
+                      <FileBox size={15} />
+                    ) : isMarkdownPath(file.path) ? (
+                      <FileText size={15} />
+                    ) : (
+                      <FileCode2 size={15} />
+                    )}
                     <span className="truncate">{file.name}</span>
                     <CodeStatus status={file.status} />
                   </button>
@@ -417,7 +436,23 @@ export function SolutionViewer() {
                 </div>
               </div>
               <div className="min-h-0 flex-1">
-                {renderAsPreview ? (
+                {activeIsBinary ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-[var(--code-text-muted)]">
+                    {activeFile.path.toLowerCase().endsWith('.pptx') ? (
+                      <Presentation size={48} className="opacity-80 text-[var(--code-accent)]" />
+                    ) : (
+                      <FileBox size={48} className="opacity-80" />
+                    )}
+                    <div className="text-sm font-medium text-[var(--code-text)]">
+                      {binaryFileLabel(activeFile.path)}
+                    </div>
+                    <p className="max-w-sm text-xs leading-5">
+                      This file was generated on the server and is stored in the
+                      project repository. Binary documents can't be previewed in the
+                      browser — open the downloaded project to view or edit it.
+                    </p>
+                  </div>
+                ) : renderAsPreview ? (
                   <div className="markdown-preview h-full overflow-auto px-6 py-5">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
                   </div>
@@ -451,7 +486,11 @@ export function SolutionViewer() {
               <div className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--code-border)] bg-[var(--code-surface)] px-3 text-xs text-[var(--code-text-muted)]">
                 <span className="truncate">{activeFile.workerRole || activeFile.managerRole || 'Worker output'}</span>
                 <span>
-                  {renderAsPreview ? 'Markdown preview' : `Ln ${cursor.line}, Col ${cursor.column}`}
+                  {activeIsBinary
+                    ? binaryFileLabel(activeFile.path)
+                    : renderAsPreview
+                      ? 'Markdown preview'
+                      : `Ln ${cursor.line}, Col ${cursor.column}`}
                 </span>
               </div>
             </>
