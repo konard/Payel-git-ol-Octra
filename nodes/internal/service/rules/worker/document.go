@@ -18,7 +18,7 @@ import (
 // с той же сигнатурой, что и generateCode, чтобы легко встроиться в runOneWorker.
 func (s *Service) generateDocument(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskType, role, description, topic, extCtx string,
+	taskType, role, description, topic, extCtx, workerID string,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -29,6 +29,12 @@ func (s *Service) generateDocument(
 	slug := slugify(role)
 	if slug == "" {
 		slug = "result"
+	}
+	// Несколько воркеров часто получают одинаковую роль (например, "analyst"),
+	// поэтому добавляем короткий уникальный суффикс из workerID, чтобы документы
+	// разных воркеров не перезаписывали друг друга и все попали в синтез менеджера.
+	if suffix := shortID(workerID); suffix != "" {
+		slug = slug + "-" + suffix
 	}
 
 	switch taskType {
@@ -95,6 +101,21 @@ func detectDocType(text string) string {
 	default:
 		return "document"
 	}
+}
+
+// shortID — короткий стабильный суффикс из UUID воркера (первый сегмент).
+func shortID(id string) string {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return ""
+	}
+	if i := strings.IndexByte(id, '-'); i > 0 {
+		return id[:i]
+	}
+	if len(id) > 8 {
+		return id[:8]
+	}
+	return id
 }
 
 var nonSlug = regexp.MustCompile(`[^a-z0-9]+`)

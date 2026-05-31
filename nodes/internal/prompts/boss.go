@@ -41,30 +41,43 @@ Reply ONLY with JSON:
 }`
 }
 
-// ValidateSolution — промпт для босса: проверить итоговое решение
-func ValidateSolution(title, tech, stack, archNotes, summary, fileCount, fileList string) string {
-	return `You are the CTO (Chief Technology Officer) reviewing the final deliverable.
+// ValidateSolution — промпт для босса: проверить итоговое решение.
+// Учитывает task_type: код проверяется как код, а ресёрч/документы/презентации —
+// по полноте, достоверности и оформлению результата.
+func ValidateSolution(title, tech, stack, archNotes, summary, fileCount, fileList, taskType string) string {
+	checklist := `1. Does the solution meet the requirements?
+2. Is the architecture followed?
+3. Are all managers completed their work?
+4. Is the file structure reasonable?
+5. Any critical issues?`
+	role := "the CTO (Chief Technology Officer)"
+	switch taskType {
+	case "research", "document", "presentation":
+		role = "the editor-in-chief"
+		checklist = `1. Does the deliverable fully answer the user's request?
+2. Is the content accurate, well-structured and free of placeholders?
+3. Did the managers merge and fact-check the workers' results?
+4. Is it delivered in the right format (Markdown, plus PPTX for presentations)?
+5. Any critical gaps or quality issues?`
+	}
+	return `You are ` + role + ` reviewing the final deliverable.
 
 ORIGINAL TASK:
 Title: ` + title + `
 
-ARCHITECTURE DECISION:
+PLAN / DECISION:
 Technical: ` + tech + `
-Stack: ` + stack + `
+Output format: ` + stack + `
 ` + archNotes + `
 
 MANAGERS RESULTS:
 ` + summary + `
 
-GENERATED FILES (` + fileCount + ` total):
+PRODUCED FILES (` + fileCount + ` total):
 ` + fileList + `
 
 Review:
-1. Does the solution meet the requirements?
-2. Is the architecture followed?
-3. Are all managers completed their work?
-4. Is the file structure reasonable?
-5. Any critical issues?
+` + checklist + `
 
 Reply ONLY with JSON:
 {

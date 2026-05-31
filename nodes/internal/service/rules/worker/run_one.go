@@ -49,7 +49,7 @@ func (s *Service) runOneWorker(
 		}
 	}
 
-	taskMD, err := s.createTaskMD(ctx, meta.provider, meta.model, meta.tokens, role, description, req.TaskMd, accumulatedContext)
+	taskMD, err := s.createTaskMD(ctx, meta.provider, meta.model, meta.tokens, role, description, req.TaskMd, accumulatedContext, meta.taskType)
 	if err != nil {
 		workerModel.Status = "error"
 		database.Db.Save(workerModel)
@@ -67,7 +67,7 @@ func (s *Service) runOneWorker(
 		if strings.TrimSpace(topic) == "" {
 			topic = req.TaskMd
 		}
-		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext)
+		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String())
 	} else {
 		workerMode := os.Getenv("WORKER_MODE")
 		if workerMode == "" {

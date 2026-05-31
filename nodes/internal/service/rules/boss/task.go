@@ -138,7 +138,16 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 
 	emit(progress, 90, "Packaging project", nil)
-	repoURL := s.pushToGitHub(ctx, task, projectPath, issueTarget)
+	// Для не-кодовых задач (research/document/presentation) публикация в GitHub
+	// не требуется (см. issue): результат отдаётся во вкладку Solution и в чат.
+	// Исключение — задача привязана к конкретному GitHub issue.
+	repoURL := ""
+	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
+	if isCodeTask || issueTarget != nil {
+		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget)
+	} else {
+		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
+	}
 
 	task.Status = "done"
 	database.Db.Save(task)

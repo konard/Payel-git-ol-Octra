@@ -16,11 +16,12 @@ func (s *Service) reviewAll(
 	req *rules.AssignManagerRequest,
 	provider, model string,
 	tokens map[string]string,
+	taskType string,
 	results []*rules.WorkerResult,
 ) string {
 	summary := ""
 	for _, wr := range results {
-		review, err := s.reviewWorkerResult(ctx, provider, model, tokens, req.Role, wr)
+		review, err := s.reviewWorkerResult(ctx, provider, model, tokens, req.Role, taskType, wr)
 		if err != nil {
 			log.Printf("Review of worker %s failed: %v", wr.Role, err)
 			summary += fmt.Sprintf("\n%s: review_error - %v", wr.Role, err)

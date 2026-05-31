@@ -116,7 +116,7 @@ func (s *Service) validateSolution(
 		tokens["title"], decision.TechnicalDescription,
 		strings.Join(decision.TechStack, ", "),
 		decision.ArchitectureNotes, summary,
-		fmt.Sprintf("%d", fileCount), fileList,
+		fmt.Sprintf("%d", fileCount), fileList, decision.TaskType,
 	)
 	resp, err := s.agentsClient.GenerateFromTask(ctx, provider, model, prompt, tokens)
 	if err != nil {
