@@ -36,18 +36,29 @@ function getStoredRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
+function setAccessTokenCookie(token: string): void {
+  document.cookie = `${ACCESS_TOKEN_KEY}=${token}; path=/; SameSite=Lax`;
+}
+
+function removeAccessTokenCookie(): void {
+  document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; SameSite=Lax; Max-Age=0`;
+}
+
 function storeTokens(accessToken: string, refreshToken: string): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  setAccessTokenCookie(accessToken);
 }
 
 function storeAccessToken(token: string): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  setAccessTokenCookie(token);
 }
 
 function removeTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  removeAccessTokenCookie();
 }
 
 interface AuthState {
@@ -70,11 +81,16 @@ interface AuthState {
   clearError: () => void;
 }
 
+const initialToken = getStoredAccessToken();
+if (initialToken) {
+  setAccessTokenCookie(initialToken);
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  accessToken: getStoredAccessToken(),
+  accessToken: initialToken,
   refreshToken: getStoredRefreshToken(),
-  isAuthenticated: !!getStoredAccessToken(),
+  isAuthenticated: !!initialToken,
   hasSubscription: false,
   subscriptionEnd: null,
   isInTrial: false,

@@ -90,12 +90,15 @@ services:
       context: ./apigateway
       dockerfile: Dockerfile
     container_name: crewai-apigateway
+    env_file:
+      - .env
     environment:
       - BOSS_SERVICE_HOST=nodes:50051
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
       - AUTH_SERVICE_HOST=user:3112
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       # Rate Limiting
       - RATE_LIMIT_ENABLED=true
       - RATE_LIMIT_TASK_CREATE=${RATE_LIMIT_TASK_CREATE:-10/60}

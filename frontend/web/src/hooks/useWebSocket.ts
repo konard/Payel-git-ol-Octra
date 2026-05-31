@@ -154,28 +154,47 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
   const waitForOpen = useCallback(() => {
     return new Promise<void>((resolve, reject) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        resolve();
-        return;
-      }
-
-      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState === WebSocket.CLOSED) {
         reject(new Error('WebSocket closed'));
         return;
       }
 
-      const timeout = setTimeout(() => {
-        wsRef.current?.removeEventListener('open', onOpen);
-        reject(new Error('WebSocket connection timeout'));
-      }, 10000);
+      if (ws.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
+      }
 
       const onOpen = () => {
-        clearTimeout(timeout);
-        wsRef.current?.removeEventListener('open', onOpen);
+        cleanup();
         resolve();
       };
 
-      wsRef.current.addEventListener('open', onOpen);
+      const onClose = () => {
+        cleanup();
+        reject(new Error('WebSocket closed before opening'));
+      };
+
+      const onError = () => {
+        cleanup();
+        reject(new Error('WebSocket connection failed'));
+      };
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('WebSocket connection timeout'));
+      }, 10000);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        ws.removeEventListener('open', onOpen);
+        ws.removeEventListener('close', onClose);
+        ws.removeEventListener('error', onError);
+      };
+
+      ws.addEventListener('open', onOpen);
+      ws.addEventListener('close', onClose);
+      ws.addEventListener('error', onError);
     });
   }, []);
 
@@ -672,7 +691,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       }, delay);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (event) => {
+      console.error('[WS] WebSocket error:', event);
       storeActions.setConnectionStatus(false);
     };
 
@@ -696,14 +716,19 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
   }, [url, storeActions]);
 
   const send = useCallback((data: CreateTaskPayload) => {
-    // Don't send if we have an active task that's not completed
+    // Clear any stale task identifiers to prevent blocking new sends
+    activeTaskId.current = null;
+    taskStartTime.current = 0;
+    hasApiConfigError.current = false;
+
     const currentStatus = useTaskStore.getState().status;
-    if (currentStatus && !['done', 'error', 'cancelled'].includes(currentStatus) && activeTaskId.current) {
-      storeActions.addLog({
-        message: 'Task is already running, cannot create new task',
-        type: 'warning',
-      });
-      return;
+    // If status is stuck at a non-terminal state (e.g. from a previous failed
+    // send that set status to 'creating' before the error), force it back to
+    // idle so the user can retry.
+    if (currentStatus !== 'idle') {
+      if (!['done', 'error', 'cancelled'].includes(currentStatus)) {
+        storeActions.setTaskStatus('idle');
+      }
     }
 
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || wsRef.current.readyState === WebSocket.CLOSING) {
@@ -716,8 +741,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     }
 
     waitForOpen().then(() => {
-      // Only send data if this is a new task creation, not a reconnect
-      const isReconnect = activeTaskId.current !== null && isActiveTaskStatus(currentStatus);
+      const freshStatus = useTaskStore.getState().status;
+      const isReconnect = activeTaskId.current !== null && isActiveTaskStatus(freshStatus);
 
       if (!isReconnect) {
         // Reset API config error flag for new tasks

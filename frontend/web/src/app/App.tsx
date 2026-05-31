@@ -263,6 +263,7 @@ export default function App() {
     if (oauthToken) {
       // Save the access token
       localStorage.setItem('access_token', oauthToken);
+      document.cookie = `access_token=${oauthToken}; path=/; SameSite=Lax`;
       
       // Clean the URL
       window.history.replaceState({}, document.title, window.location.pathname);
