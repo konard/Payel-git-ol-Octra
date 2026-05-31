@@ -12,20 +12,36 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarProps) {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, accessToken, refreshToken } = useAuthStore();
   const [chats, setChats] = useState<ChatHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+  const hasAuthSession = isAuthenticated || Boolean(accessToken || refreshToken);
+  const notLoggedInLabel = t('chatSidebar.notLoggedIn');
+  const notLoggedInMessage = notLoggedInLabel === 'chatSidebar.notLoggedIn'
+    ? 'Вы не вошли в аккаунт'
+    : notLoggedInLabel;
 
   useEffect(() => {
-    if (user?.id && isOpen) {
-      loadChats();
+    if (!isOpen) return;
+
+    if (!hasAuthSession) {
+      setChats([]);
+      setIsLoading(false);
+      return;
     }
-  }, [user?.id, isOpen]);
+
+    if (user?.id) {
+      loadChats(user.id);
+      return;
+    }
+
+    setIsLoading(true);
+  }, [hasAuthSession, user?.id, isOpen]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -37,10 +53,10 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadChats = async () => {
+  const loadChats = async (userId: string) => {
     try {
       setIsLoading(true);
-      const history = await getChatHistory(user!.id);
+      const history = await getChatHistory(userId);
       setChats(history);
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -56,8 +72,15 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
   };
 
   const handleNewChat = async () => {
+    if (!user?.id) {
+      setSelectedChatId(null);
+      setOpenMenuId(null);
+      onNewChat();
+      return;
+    }
+
     try {
-      const newChat = await createChat(user!.id, t('chatSidebar.newChat'));
+      const newChat = await createChat(user.id, t('chatSidebar.newChat'));
       setChats(prev => [newChat, ...prev]);
       setSelectedChatId(newChat.id);
       onNewChat(newChat.id);
@@ -174,7 +197,11 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto px-2.5 pb-4" ref={menuRef}>
-        {isLoading ? (
+        {!hasAuthSession ? (
+          <div className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+            {notLoggedInMessage}
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin w-5 h-5 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
           </div>

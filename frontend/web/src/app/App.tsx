@@ -22,7 +22,7 @@ import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import LandingPage from './components/LandingPage';
-import { buildTaskProviderAuth } from './taskPayload';
+import { buildTaskProviderAuth, buildWorkflowConfigFromGraph } from './taskPayload';
 
 const SHOW_STATUS_BAR = false;
 
@@ -174,6 +174,14 @@ export default function App() {
     taskPayload.tokens = providerAuth.tokens;
     taskPayload.meta.provider = providerAuth.provider;
 
+    const workflow = buildWorkflowConfigFromGraph(
+      useTaskStore.getState().nodes,
+      useTaskStore.getState().edges,
+    );
+    if (workflow) {
+      taskPayload.workflow = workflow;
+    }
+
     return taskPayload;
   };
 
@@ -319,17 +327,7 @@ export default function App() {
     }
 
     const store = useTaskStore.getState();
-    const userNodes = store.nodes.filter(node =>
-      !node.id.startsWith('boss-') &&
-      !node.id.startsWith('manager-') &&
-      !node.id.startsWith('worker-') &&
-      node.id !== 'github-archive' &&
-      node.id !== 'zip-archive'
-    );
-    const userEdges = store.edges.filter(edge =>
-      userNodes.some(n => n.id === edge.from) && userNodes.some(n => n.id === edge.to)
-    );
-    const hasUserDefinedWorkflow = userNodes.length > 0;
+    const workflow = buildWorkflowConfigFromGraph(store.nodes, store.edges);
 
     // Reset only task execution state, keep user workflow
     store.resetTaskExecution();
@@ -348,18 +346,9 @@ export default function App() {
       },
     };
 
-    // Send user workflow as nodes and edges
-    if (hasUserDefinedWorkflow) {
-      taskPayload.workflow = {
-        nodes: userNodes.map(n => ({
-          id: n.id,
-          type: n.type,
-          role: n.role,
-          status: n.status,
-          position: n.position,
-        })),
-        edges: userEdges,
-      };
+    // Send user workflow in the backend's predefined manager/worker shape.
+    if (workflow) {
+      taskPayload.workflow = workflow;
     }
 
     const providerAuth = buildTaskProviderAuth({

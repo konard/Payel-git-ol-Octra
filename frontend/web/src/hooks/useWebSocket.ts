@@ -112,6 +112,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     upsertCodeFiles: useTaskStore((state) => state.upsertCodeFiles),
     completeCodeStreaming: useTaskStore((state) => state.completeCodeStreaming),
     clearCodeFiles: useTaskStore((state) => state.clearCodeFiles),
+    recordSearchStep: useTaskStore((state) => state.recordSearchStep),
     nodes: () => useTaskStore.getState().nodes,
   };
 
@@ -383,6 +384,17 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       message: `${message} (${progress}%)`,
       type: 'info',
     });
+
+    // === WEB SEARCH STEPS — research workers stream their search progress ===
+    // The worker sends data.search_phase ('searching' | 'done') with an optional
+    // data.search_step line and a final data.search_steps_count. These drive the
+    // collapsible "Searching the web" panel in the chat.
+    const searchPhase = msg.data?.search_phase;
+    if (searchPhase === 'searching' || searchPhase === 'done') {
+      const step = typeof msg.data?.search_step === 'string' ? msg.data.search_step : '';
+      const count = Number.parseInt(String(msg.data?.search_steps_count ?? ''), 10);
+      storeActions.recordSearchStep(step, searchPhase, Number.isNaN(count) ? 0 : count);
+    }
 
     // Update progress in chat if this is a boss progress message
     if (onProgressUpdate && (message.includes('AI is planning') ||

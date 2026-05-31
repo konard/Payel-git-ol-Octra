@@ -7,12 +7,32 @@ package prompts
 
 // ResearchWorker — промпт для воркера-ресёрчера.
 // Каждый воркер исследует тему под своим углом и своим способом поиска.
-func ResearchWorker(role, angle, topic, context string) string {
+// searchResults — это блок реальных результатов веб-поиска (заголовок, URL,
+// сниппет), уже переранжированных алгоритмом BM25. Если он пуст, воркер
+// опирается только на собственные знания и честно это отмечает.
+func ResearchWorker(role, angle, topic, context, searchResults string) string {
+	sourcesSection := ""
+	if searchResults != "" {
+		sourcesSection = `
+
+WEB SEARCH RESULTS (ranked by relevance — use these as your primary sources):
+` + searchResults + `
+
+Ground your report in these results. Cite the specific [number] and the URL of each
+source you rely on. Do NOT invent URLs or facts that are not supported by the results
+above or by well-established knowledge.`
+	} else {
+		sourcesSection = `
+
+NOTE: No live web search results are available. Rely on your own knowledge and clearly
+state that the findings are not backed by a fresh web search.`
+	}
+
 	return `You are a research analyst on a multi-agent research team. Your role: ` + role + `.
 Your search angle / method: ` + angle + `
 
 RESEARCH TOPIC:
-` + topic + context + `
+` + topic + context + sourcesSection + `
 
 Investigate the topic from YOUR angle only. Be specific, factual and cite concrete
 facts, figures, dates and named sources whenever possible. Distinguish clearly between
@@ -21,7 +41,7 @@ established facts and your own inferences.
 Return a well-structured Markdown report with:
 - A short "## Key findings" section (3-7 bullet points).
 - A "## Details" section with supporting evidence.
-- A "## Sources" section listing the sources or reasoning you relied on.
+- A "## Sources" section listing the URLs/sources you relied on.
 
 Return ONLY GitHub-Flavored Markdown. No code fences around the whole answer.`
 }

@@ -28,6 +28,12 @@ IMPORTANT (for code tasks):
 
 For research/document/presentation tasks: tech_stack should describe the output format
 (e.g. ["markdown"], ["markdown","pptx"]) and roles should be writers/researchers, not developers.
+
+For "research" tasks (web search): EXPAND and clarify the user's request into a precise topic,
+then create one or more SEARCH MANAGERS. Each search manager leads analysts that run a real
+web search; in "description" state the slice of the topic that manager owns so their teams
+cover different SEARCH RANGES (links, tags/keywords, news, general information).
+
 ALWAYS create at least 1 manager (even for simple tasks). Only use 0 in extremely trivial cases.
 
 Reply ONLY with JSON:
