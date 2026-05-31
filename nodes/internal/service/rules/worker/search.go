@@ -28,6 +28,7 @@ func (e searchEmitter) emit(step, phase string, count int) {
 //   - search_step  — текст пункта («Searching the web for …»),
 //   - search_phase — "searching" пока идёт поиск, "done" по завершении,
 //   - search_steps_count — итоговое число шагов (для строки «Completed N steps»).
+//
 // Фронтенд читает эти ключи и рисует сворачиваемый блок «Searching the web».
 // Если progress == nil (например, в тестах), возвращается nil-эмиттер, безопасный
 // к вызовам через метод emit.
@@ -56,8 +57,8 @@ func (s *Service) searchEmitterFor(progress rules.ProgressFunc, basePct int32, r
 	}
 }
 
-// gatherSearch выполняет реальный веб-поиск для ресёрч-воркера в рамках
-// диапазона (angle), заданного менеджером, и возвращает:
+// gatherSearch выполняет реальный веб-поиск для документ-воркера в рамках
+// диапазона или визуального направления (angle), заданного менеджером, и возвращает:
 //   - block: отформатированные результаты для вставки в LLM-промпт,
 //   - sources: Markdown-список источников для файла solution/sources-*.md,
 //   - n: число найденных источников.
@@ -95,8 +96,8 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 }
 
 // buildSearchQueries формирует набор поисковых запросов из темы и диапазона
-// (angle) воркера. Тема даёт базовый запрос, а ключевые слова диапазона —
-// уточняющий, чтобы аналитики искали в разных «диапазонах», как требует issue.
+// или визуального направления (angle) воркера. Тема даёт базовый запрос,
+// а ключевые слова диапазона — уточняющий.
 func buildSearchQueries(topic, angle string) []string {
 	base := cleanQuery(topic)
 	if base == "" {

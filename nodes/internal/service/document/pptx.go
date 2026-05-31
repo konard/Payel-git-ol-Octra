@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -17,6 +18,8 @@ type Slide struct {
 	Title   string
 	Bullets []string
 	Notes   string
+	Visual  string
+	Sources []string
 }
 
 // Deck — презентация целиком.
@@ -40,29 +43,34 @@ func BuildPPTX(deck Deck) ([]byte, error) {
 	zw := zip.NewWriter(&buf)
 
 	parts := map[string]string{
-		"[Content_Types].xml":                      contentTypes(len(deck.Slides)),
-		"_rels/.rels":                              rootRels(),
-		"ppt/presentation.xml":                     presentationXML(len(deck.Slides)),
-		"ppt/_rels/presentation.xml.rels":          presentationRels(len(deck.Slides)),
-		"ppt/presProps.xml":                        presProps(),
-		"ppt/theme/theme1.xml":                     themeXML(),
-		"ppt/slideMasters/slideMaster1.xml":        slideMasterXML(),
+		"[Content_Types].xml":                          contentTypes(len(deck.Slides)),
+		"_rels/.rels":                                  rootRels(),
+		"ppt/presentation.xml":                         presentationXML(len(deck.Slides)),
+		"ppt/_rels/presentation.xml.rels":              presentationRels(len(deck.Slides)),
+		"ppt/presProps.xml":                            presProps(),
+		"ppt/theme/theme1.xml":                         themeXML(),
+		"ppt/slideMasters/slideMaster1.xml":            slideMasterXML(),
 		"ppt/slideMasters/_rels/slideMaster1.xml.rels": slideMasterRels(),
-		"ppt/slideLayouts/slideLayout1.xml":        slideLayoutXML(),
+		"ppt/slideLayouts/slideLayout1.xml":            slideLayoutXML(),
 		"ppt/slideLayouts/_rels/slideLayout1.xml.rels": slideLayoutRels(),
 	}
 	for i, s := range deck.Slides {
 		n := i + 1
-		parts[fmt.Sprintf("ppt/slides/slide%d.xml", n)] = slideXML(s)
+		parts[fmt.Sprintf("ppt/slides/slide%d.xml", n)] = slideXML(s, deck.Title, n, len(deck.Slides))
 		parts[fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", n)] = slideRels()
 	}
 
-	for name, content := range parts {
+	names := make([]string, 0, len(parts))
+	for name := range parts {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
 		w, err := zw.Create(name)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := w.Write([]byte(content)); err != nil {
+		if _, err := w.Write([]byte(parts[name])); err != nil {
 			return nil, err
 		}
 	}
@@ -116,7 +124,7 @@ func presentationXML(slides int) string {
 		b.WriteString(fmt.Sprintf(`<p:sldId id="%d" r:id="rId%d"/>`, 256+i, i+2))
 	}
 	b.WriteString(`</p:sldIdLst>`)
-	b.WriteString(`<p:sldSz cx="9144000" cy="6858000" type="screen4x3"/>`)
+	b.WriteString(`<p:sldSz cx="12192000" cy="6858000" type="screen16x9"/>`)
 	b.WriteString(`<p:notesSz cx="6858000" cy="9144000"/>`)
 	b.WriteString(`</p:presentation>`)
 	return b.String()
@@ -191,34 +199,308 @@ func slideLayoutXML() string {
 		`</p:sldLayout>`
 }
 
-func slideXML(s Slide) string {
-	var body strings.Builder
-	bullets := s.Bullets
-	if len(bullets) == 0 {
-		bullets = []string{""}
-	}
-	for _, line := range bullets {
-		body.WriteString(`<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>`)
-		body.WriteString(esc(line))
-		body.WriteString(`</a:t></a:r></a:p>`)
+const (
+	slideW = 12192000
+	slideH = 6858000
+
+	colorBackground = "F6F4EF"
+	colorInk        = "0B1F28"
+	colorMuted      = "5D6970"
+	colorTeal       = "0A4B5A"
+	colorBlue       = "1E6F91"
+	colorCoral      = "D45D3A"
+	colorGold       = "E6A23C"
+	colorGreen      = "3D6B5B"
+	colorCard       = "FFFFFF"
+	colorPale       = "E9F2F0"
+	colorLine       = "D9DFDA"
+)
+
+var accentColors = []string{colorTeal, colorCoral, colorGold, colorBlue, colorGreen}
+
+type textOptions struct {
+	Size   int
+	Color  string
+	Bold   bool
+	Italic bool
+	Align  string
+	Fill   string
+	Line   string
+	Shape  string
+	LIns   int
+	TIns   int
+	RIns   int
+	BIns   int
+}
+
+func slideXML(s Slide, deckTitle string, n, total int) string {
+	if strings.TrimSpace(s.Title) == "" {
+		s.Title = fallbackSlideTitle(deckTitle, n)
 	}
 
-	return xmlHeader +
-		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
-		`<p:cSld><p:spTree>` +
-		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
-		`<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>` +
-		// Title shape
-		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>` +
-		`<p:spPr><a:xfrm><a:off x="685800" y="457200"/><a:ext cx="7772400" cy="1143000"/></a:xfrm></p:spPr>` +
-		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>` + esc(s.Title) + `</a:t></a:r></a:p></p:txBody></p:sp>` +
-		// Body shape
-		`<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>` +
-		`<p:spPr><a:xfrm><a:off x="685800" y="1600200"/><a:ext cx="7772400" cy="4525963"/></a:xfrm></p:spPr>` +
-		`<p:txBody><a:bodyPr/><a:lstStyle/>` + body.String() + `</p:txBody></p:sp>` +
-		`</p:spTree></p:cSld>` +
-		`<p:clrMapOvr><a:overrideClrMapping bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:clrMapOvr>` +
-		`</p:sld>`
+	id := 2
+	accent := accentColors[(n-1)%len(accentColors)]
+	var b strings.Builder
+	b.WriteString(xmlHeader)
+	b.WriteString(`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`)
+	b.WriteString(`<p:cSld><p:spTree>`)
+	b.WriteString(`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>`)
+	b.WriteString(`<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>`)
+	b.WriteString(shape(&id, "Canvas", "rect", 0, 0, slideW, slideH, colorBackground, ""))
+	b.WriteString(shape(&id, "Top Accent", "rect", 0, 0, slideW, 152400, colorTeal, ""))
+	b.WriteString(shape(&id, "Side Accent", "rect", slideW-228600, 0, 228600, slideH, accent, ""))
+
+	switch {
+	case n == 1:
+		b.WriteString(titleSlide(&id, s, deckTitle, total, accent))
+	case isClosingSlide(s):
+		b.WriteString(closingSlide(&id, s, n, total, accent))
+	default:
+		b.WriteString(contentSlide(&id, s, n, total, accent))
+	}
+
+	b.WriteString(`</p:spTree></p:cSld>`)
+	b.WriteString(`<p:clrMapOvr><a:overrideClrMapping bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:clrMapOvr>`)
+	b.WriteString(`</p:sld>`)
+	return b.String()
+}
+
+func titleSlide(id *int, s Slide, deckTitle string, total int, accent string) string {
+	title := strings.TrimSpace(deckTitle)
+	if title == "" {
+		title = s.Title
+	}
+	subtitle := "A structured deck with sourced visual direction"
+	if len(s.Bullets) > 0 {
+		subtitle = strings.Join(limitStrings(s.Bullets, 2, 88), " / ")
+	}
+	if slideTitle := strings.TrimSpace(s.Title); slideTitle != "" && !strings.EqualFold(slideTitle, title) {
+		subtitle = slideTitle + " / " + subtitle
+	}
+
+	var b strings.Builder
+	b.WriteString(shape(id, "Title Panel", "rect", 0, 152400, 8200000, slideH-152400, "FDFCF8", ""))
+	b.WriteString(shape(id, "Title Accent Line", "rect", 685800, 3950000, 3657600, 76200, accent, ""))
+	b.WriteString(textBox(id, "Deck Title", 650000, 1420000, 7200000, 1780000, []string{title}, textOptions{Size: 4300, Color: colorInk, Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(textBox(id, "Deck Subtitle", 700000, 3280000, 6200000, 700000, []string{subtitle}, textOptions{Size: 1800, Color: colorMuted, LIns: 0, TIns: 0}))
+	b.WriteString(textBox(id, "Deck Meta", 700000, 5180000, 5600000, 500000, []string{fmt.Sprintf("%d-slide presentation", total)}, textOptions{Size: 1200, Color: colorMuted, LIns: 0, TIns: 0}))
+
+	visual := s.Visual
+	if visual == "" {
+		visual = "Use a hero image or clean diagram that introduces the deck topic."
+	}
+	b.WriteString(shape(id, "Visual Panel", "roundRect", 8400000, 870000, 3000000, 4950000, colorTeal, ""))
+	b.WriteString(textBox(id, "Visual Label", 8720000, 1280000, 2300000, 350000, []string{"Visual direction"}, textOptions{Size: 1050, Color: "BFE3DC", Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(textBox(id, "Visual Text", 8720000, 1740000, 2300000, 2500000, []string{truncateText(visual, 170)}, textOptions{Size: 1900, Color: "FFFFFF", Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(shape(id, "Visual Rule", "rect", 8720000, 4520000, 1500000, 50800, colorGold, ""))
+	b.WriteString(textBox(id, "Visual Hint", 8720000, 4760000, 2300000, 680000, []string{"Search-backed image, chart, or screenshot ideas are rendered on content slides."}, textOptions{Size: 1000, Color: "E9F2F0", LIns: 0, TIns: 0}))
+	return b.String()
+}
+
+func contentSlide(id *int, s Slide, n, total int, accent string) string {
+	var b strings.Builder
+	b.WriteString(textBox(id, "Slide Number", 650000, 430000, 700000, 350000, []string{fmt.Sprintf("%02d", n)}, textOptions{Size: 1300, Color: accent, Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(textBox(id, "Slide Title", 1350000, 350000, 7500000, 760000, []string{truncateText(s.Title, 72)}, textOptions{Size: 2750, Color: colorInk, Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(shape(id, "Title Rule", "rect", 1350000, 1120000, 2200000, 50800, accent, ""))
+
+	bullets := limitStrings(s.Bullets, 5, 115)
+	if len(bullets) == 0 {
+		bullets = []string{"Use this slide to explain the key message clearly."}
+	}
+	cardY := 1520000
+	cardH := 760000
+	gap := 130000
+	if len(bullets) >= 5 {
+		cardH = 650000
+		gap = 90000
+	}
+	for i, bullet := range bullets {
+		y := cardY + i*(cardH+gap)
+		b.WriteString(shape(id, fmt.Sprintf("Point Card %d", i+1), "roundRect", 650000, y, 7150000, cardH, colorCard, colorLine))
+		b.WriteString(shape(id, fmt.Sprintf("Point Accent %d", i+1), "rect", 650000, y, 76200, cardH, accent, ""))
+		b.WriteString(textBox(id, fmt.Sprintf("Point Text %d", i+1), 900000, y+90000, 6500000, cardH-120000, []string{bullet}, textOptions{Size: 1550, Color: colorInk, LIns: 0, TIns: 0}))
+	}
+
+	b.WriteString(visualPanel(id, s, accent))
+	b.WriteString(footer(id, n, total, accent))
+	return b.String()
+}
+
+func closingSlide(id *int, s Slide, n, total int, accent string) string {
+	title := s.Title
+	if title == "" {
+		title = "Closing"
+	}
+	bullets := limitStrings(s.Bullets, 3, 92)
+	if len(bullets) == 0 {
+		bullets = []string{"Align on next steps", "Use the deck as a working artifact"}
+	}
+
+	var b strings.Builder
+	b.WriteString(shape(id, "Closing Panel", "roundRect", 1050000, 1050000, 9850000, 4750000, colorTeal, ""))
+	b.WriteString(shape(id, "Closing Accent", "rect", 1050000, 1050000, 9850000, 152400, accent, ""))
+	b.WriteString(textBox(id, "Closing Title", 1550000, 1750000, 8200000, 900000, []string{truncateText(title, 72)}, textOptions{Size: 3400, Color: "FFFFFF", Bold: true, Align: "ctr", LIns: 0, TIns: 0}))
+	y := 3050000
+	for i, bullet := range bullets {
+		b.WriteString(textBox(id, fmt.Sprintf("Closing Point %d", i+1), 2150000, y+i*620000, 7000000, 420000, []string{bullet}, textOptions{Size: 1650, Color: "E9F2F0", Align: "ctr", LIns: 0, TIns: 0}))
+	}
+	b.WriteString(footer(id, n, total, accent))
+	return b.String()
+}
+
+func visualPanel(id *int, s Slide, accent string) string {
+	visual := strings.TrimSpace(s.Visual)
+	if visual == "" {
+		visual = `Use a clean supporting image, chart, or diagram for "` + s.Title + `".`
+	}
+
+	var b strings.Builder
+	b.WriteString(shape(id, "Visual Card", "roundRect", 8350000, 1500000, 3000000, 3750000, colorPale, "B8CDC8"))
+	b.WriteString(shape(id, "Visual Card Accent", "rect", 8350000, 1500000, 3000000, 101600, accent, ""))
+	b.WriteString(textBox(id, "Visual Label", 8650000, 1840000, 2350000, 360000, []string{"Visual direction"}, textOptions{Size: 1050, Color: colorTeal, Bold: true, LIns: 0, TIns: 0}))
+	b.WriteString(textBox(id, "Visual Body", 8650000, 2300000, 2350000, 1250000, []string{truncateText(visual, 145)}, textOptions{Size: 1350, Color: colorInk, Bold: true, LIns: 0, TIns: 0}))
+	if len(s.Sources) > 0 {
+		b.WriteString(shape(id, "Source Divider", "rect", 8650000, 3780000, 2050000, 38100, "B8CDC8", ""))
+		b.WriteString(textBox(id, "Source Label", 8650000, 3960000, 2350000, 300000, []string{"Source"}, textOptions{Size: 900, Color: colorMuted, Bold: true, LIns: 0, TIns: 0}))
+		b.WriteString(textBox(id, "Source Text", 8650000, 4260000, 2350000, 650000, []string{truncateText(s.Sources[0], 118)}, textOptions{Size: 900, Color: colorMuted, LIns: 0, TIns: 0}))
+	}
+	return b.String()
+}
+
+func footer(id *int, n, total int, accent string) string {
+	return shape(id, "Footer Rule", "rect", 650000, 6350000, 4200000, 25400, accent, "") +
+		textBox(id, "Footer Brand", 650000, 6420000, 3000000, 260000, []string{"Octra presentation"}, textOptions{Size: 850, Color: colorMuted, LIns: 0, TIns: 0}) +
+		textBox(id, "Footer Page", 9750000, 6420000, 1400000, 260000, []string{fmt.Sprintf("Slide %d of %d", n, total)}, textOptions{Size: 850, Color: colorMuted, Align: "r", LIns: 0, TIns: 0})
+}
+
+func shape(id *int, name, prst string, x, y, cx, cy int, fill, line string) string {
+	cur := *id
+	*id = *id + 1
+	if prst == "" {
+		prst = "rect"
+	}
+	return fmt.Sprintf(
+		`<p:sp><p:nvSpPr><p:cNvPr id="%d" name="%s"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="%s"><a:avLst/></a:prstGeom>%s%s</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>`,
+		cur, esc(name), x, y, cx, cy, prst, fillXML(fill), lineXML(line),
+	)
+}
+
+func textBox(id *int, name string, x, y, cx, cy int, paragraphs []string, opt textOptions) string {
+	cur := *id
+	*id = *id + 1
+	if opt.Shape == "" {
+		opt.Shape = "rect"
+	}
+	if opt.Color == "" {
+		opt.Color = colorInk
+	}
+	if opt.Size == 0 {
+		opt.Size = 1400
+	}
+	if opt.LIns == 0 {
+		opt.LIns = 91440
+	}
+	if opt.RIns == 0 {
+		opt.RIns = 91440
+	}
+	if opt.TIns == 0 {
+		opt.TIns = 45720
+	}
+	if opt.BIns == 0 {
+		opt.BIns = 45720
+	}
+	var body strings.Builder
+	if len(paragraphs) == 0 {
+		paragraphs = []string{""}
+	}
+	for _, p := range paragraphs {
+		body.WriteString(paragraphXML(p, opt))
+	}
+	return fmt.Sprintf(
+		`<p:sp><p:nvSpPr><p:cNvPr id="%d" name="%s"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="%s"><a:avLst/></a:prstGeom>%s%s</p:spPr><p:txBody><a:bodyPr wrap="square" lIns="%d" tIns="%d" rIns="%d" bIns="%d"/><a:lstStyle/>%s</p:txBody></p:sp>`,
+		cur, esc(name), x, y, cx, cy, opt.Shape, fillXML(opt.Fill), lineXML(opt.Line), opt.LIns, opt.TIns, opt.RIns, opt.BIns, body.String(),
+	)
+}
+
+func paragraphXML(text string, opt textOptions) string {
+	align := ""
+	if opt.Align != "" {
+		align = fmt.Sprintf(` algn="%s"`, opt.Align)
+	}
+	bold := ""
+	if opt.Bold {
+		bold = ` b="1"`
+	}
+	italic := ""
+	if opt.Italic {
+		italic = ` i="1"`
+	}
+	return fmt.Sprintf(
+		`<a:p><a:pPr%s/><a:r><a:rPr lang="en-US" sz="%d"%s%s dirty="0"><a:solidFill><a:srgbClr val="%s"/></a:solidFill><a:latin typeface="Aptos"/></a:rPr><a:t>%s</a:t></a:r></a:p>`,
+		align, opt.Size, bold, italic, opt.Color, esc(text),
+	)
+}
+
+func fillXML(color string) string {
+	if color == "" {
+		return `<a:noFill/>`
+	}
+	return `<a:solidFill><a:srgbClr val="` + esc(color) + `"/></a:solidFill>`
+}
+
+func lineXML(color string) string {
+	if color == "" {
+		return `<a:ln><a:noFill/></a:ln>`
+	}
+	return `<a:ln w="12700"><a:solidFill><a:srgbClr val="` + esc(color) + `"/></a:solidFill></a:ln>`
+}
+
+func fallbackSlideTitle(deckTitle string, n int) string {
+	if n == 1 && strings.TrimSpace(deckTitle) != "" {
+		return deckTitle
+	}
+	return fmt.Sprintf("Slide %d", n)
+}
+
+func isClosingSlide(s Slide) bool {
+	t := strings.ToLower(s.Title)
+	for _, token := range []string{"closing", "conclusion", "summary", "next steps", "thank", "wrap up", "final"} {
+		if strings.Contains(t, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func limitStrings(in []string, max, maxLen int) []string {
+	out := make([]string, 0, max)
+	for _, s := range in {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		out = append(out, truncateText(s, maxLen))
+		if len(out) >= max {
+			break
+		}
+	}
+	return out
+}
+
+func truncateText(s string, max int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if max <= 0 || len([]rune(s)) <= max {
+		return s
+	}
+	runes := []rune(s)
+	cut := max - 1
+	for cut > max-24 && cut > 0 && runes[cut] != ' ' {
+		cut--
+	}
+	if cut <= 0 {
+		cut = max - 1
+	}
+	return strings.TrimSpace(string(runes[:cut])) + "..."
 }
 
 func themeXML() string {
