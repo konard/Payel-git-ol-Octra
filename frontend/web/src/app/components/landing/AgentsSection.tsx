@@ -1,108 +1,68 @@
+import { Code2, FileText, Presentation, Search, Users } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useThemeStore } from '../../../stores/themeStore';
-import { useI18n } from '../../../hooks/useI18n';
-import workflowFull from '../../../images/main/dark/workfloy/workflow_dark_theme.png';
-import workflowFullLight from '../../../images/main/light/main_screen.png';
+
+const audiences = [
+  {
+    title: 'Developers',
+    description: 'Plan features, generate files, review implementation steps, and publish the resulting codebase.',
+    icon: Code2,
+  },
+  {
+    title: 'Researchers',
+    description: 'Ask for topic briefs, compare sources, and turn search work into a concise written answer.',
+    icon: Search,
+  },
+  {
+    title: 'Document users',
+    description: 'Create reports, summaries, specifications, and working notes without dealing with code views.',
+    icon: FileText,
+  },
+  {
+    title: 'Presentation teams',
+    description: 'Draft slide structure and PPTX outputs for updates, classes, pitches, and internal reviews.',
+    icon: Presentation,
+  },
+];
 
 export function AgentsSection() {
-  const { isDark } = useThemeStore();
-  const { t } = useI18n();
-
   return (
-    <section id="agents" className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Image */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative"
-          >
-            <div className="relative rounded-xl overflow-hidden shadow-2xl border border-[var(--border)] bg-[var(--surface)]">
-              <img
-                src={isDark ? workflowFull : workflowFullLight}
-                alt="Octra Full Workflow"
-                className="w-full h-auto"
-              />
-            </div>
-          </motion.div>
-
-          {/* Text content */}
+    <section id="audiences" className="bg-[#0b0b0c] px-4 py-20 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
-            >
-              {t('landing.agents.badge')}
-            </motion.div>
-
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
-            >
-              {t('landing.agents.title')}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.agents.titleAccent')}</span>
-            </motion.h2>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg text-[var(--text-muted)] mb-8"
-            >
-              {t('landing.agents.description')}
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="space-y-6"
-            >
-              {/* Boss */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                  B
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Boss</h3>
-                  <p className="text-[var(--text-muted)]">{t('landing.agents.boss')}</p>
-                </div>
-              </div>
-
-              {/* Manager */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-                <div className="flex-shrink-0 w-12 h-12 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-lg flex items-center justify-center text-[var(--accent)] font-bold text-lg">
-                  M
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Manager</h3>
-                  <p className="text-[var(--text-muted)]">{t('landing.agents.manager')}</p>
-                </div>
-              </div>
-
-              {/* Worker */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-                <div className="flex-shrink-0 w-12 h-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg flex items-center justify-center text-[var(--text)] font-bold text-lg">
-                  W
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Worker</h3>
-                  <p className="text-[var(--text-muted)]">{t('landing.agents.worker')}</p>
-                </div>
-              </div>
-            </motion.div>
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/7">
+              <Users className="h-6 w-6 text-cyan-300" />
+            </div>
+            <h2 className="text-4xl font-semibold leading-tight sm:text-5xl">
+              Regular users and technical teams work in the same system.
+            </h2>
           </div>
+          <p className="max-w-2xl text-lg leading-8 text-white/66 lg:justify-self-end">
+            Octra is still useful for developers, but the landing page now reflects the broader product:
+            regular users can ask for research, text documents, and presentations without translating
+            their request into engineering language.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {audiences.map((audience, index) => {
+            const Icon = audience.icon;
+
+            return (
+              <motion.article
+                key={audience.title}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: index * 0.04 }}
+                className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+              >
+                <Icon className="mb-8 h-6 w-6 text-orange-300" />
+                <h3 className="text-lg font-semibold text-white">{audience.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-white/62">{audience.description}</p>
+              </motion.article>
+            );
+          })}
         </div>
       </div>
     </section>
