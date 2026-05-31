@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight } from 'lucide-react';
+import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight, Puzzle } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS, getProviderById } from '../../config/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -83,12 +83,16 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
 
     // Add custom providers with their models
     customProviders.forEach(customProvider => {
+      if (!customProvider.id || !customProvider.name) {
+        return;
+      }
+
       const customProviderWithModels = {
         id: customProvider.id,
         name: customProvider.name,
         color: '#8b5cf6', // Purple color for custom providers
         bgColor: 'rgba(139, 92, 246, 0.15)',
-        icon: '', // Custom providers don't have specific icons
+        icon: '', // Custom providers use a rendered fallback icon.
         description: `Custom provider: ${customProvider.base_url}`,
         defaultModel: customModels.find(m => m.provider_id === customProvider.id)?.name || '',
         pricing: 'Custom',
@@ -157,7 +161,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       setDefaultModel(provider.defaultModel);
     }
     setShowProviderDropdown(false);
-  }, [setDefaultProvider, setDefaultModel]);
+  }, [allProviders, setDefaultProvider, setDefaultModel]);
 
   const handleModelSelect = useCallback((modelId: string) => {
     setFormData((prev) => ({ ...prev, model: modelId }));
@@ -198,7 +202,11 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
               >
                 {selectedProvider && (
                   <div className="w-5 h-5 flex items-center justify-center overflow-hidden">
-                    <img src={selectedProvider.icon} alt={selectedProvider.name} className="w-5 h-5 object-contain" />
+                    {selectedProvider.icon ? (
+                      <img src={selectedProvider.icon} alt={selectedProvider.name} className="w-5 h-5 object-contain" />
+                    ) : (
+                      <Puzzle size={14} className="text-[var(--accent)]" />
+                    )}
                   </div>
                 )}
                 <span className="flex-1 text-left truncate">{selectedProvider?.name || formData.provider}</span>
@@ -223,7 +231,11 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-[var(--background)]"
                         >
-                          <img src={provider.icon} alt={provider.name} className="w-6 h-6 object-contain" />
+                          {provider.icon ? (
+                            <img src={provider.icon} alt={provider.name} className="w-6 h-6 object-contain" />
+                          ) : (
+                            <Puzzle size={16} className="text-[var(--accent)]" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm text-[var(--text)] font-medium">{provider.name}</div>
@@ -303,7 +315,11 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
             </button>
             <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
               {selectedProvider && (
-                <img src={selectedProvider.icon} alt="" className="w-3.5 h-3.5 object-contain" />
+                selectedProvider.icon ? (
+                  <img src={selectedProvider.icon} alt="" className="w-3.5 h-3.5 object-contain" />
+                ) : (
+                  <Puzzle size={12} className="text-[var(--accent)]" />
+                )
               )}
               {formData.provider} • {formData.model}
             </span>

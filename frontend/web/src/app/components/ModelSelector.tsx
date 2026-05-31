@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Star, Check, Loader2 } from 'lucide-react';
+import { X, Star, Check, Loader2, Puzzle } from 'lucide-react';
 import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel, type ProviderConfig } from '../../config/providers';
 import { useCustomProvidersStore, type CustomModel } from '../../stores/customProvidersStore';
 import { t } from '../../hooks/useI18n';
@@ -182,7 +182,11 @@ export function ModelSelector({
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-[var(--background)]"
                   >
-                    <img src={model.icon} alt={model.name} className="w-6 h-6 object-contain" />
+                    {model.icon ? (
+                      <img src={model.icon} alt={model.name} className="w-6 h-6 object-contain" />
+                    ) : (
+                      <Puzzle size={16} className="text-[var(--accent)]" />
+                    )}
                   </div>
 
                   {/* Info */}
