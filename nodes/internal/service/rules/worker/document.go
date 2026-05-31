@@ -39,7 +39,15 @@ func (s *Service) generateDocument(
 
 	switch taskType {
 	case "presentation":
-		prompt := prompts.PresentationWorker(role, topic, contextSection)
+		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, "visual references images charts diagrams screenshots examples")
+		if sourcesMd != "" {
+			files["solution/visual-sources-"+slug+".md"] = sourcesMd
+		}
+		presentationContext := contextSection
+		if searchBlock != "" {
+			presentationContext += "\n\nWEB SEARCH RESULTS FOR PRESENTATION SOURCES AND VISUAL IDEAS:\n" + searchBlock
+		}
+		prompt := prompts.PresentationWorker(role, topic, presentationContext)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("presentation generation failed: %w", err)
@@ -55,7 +63,7 @@ func (s *Service) generateDocument(
 		}
 		files["solution/"+slug+".md"] = md
 		files["solution/"+slug+".pptx"] = string(pptxBytes)
-		log.Printf("[Worker] Presentation generated: %d slides, %d bytes pptx", len(deck.Slides), len(pptxBytes))
+		log.Printf("[Worker] Presentation generated: %d slides, %d bytes pptx, %d web sources", len(deck.Slides), len(pptxBytes), n)
 
 	case "research":
 		angle := description

@@ -45,6 +45,8 @@ Octra revolutionizes software development by creating an AI-powered development 
 - **Iterative Code Review** - Automated code validation and improvement cycles
 - **GitHub Integration** - Direct publishing of generated codebases to GitHub repositories
 - **Multi-Provider LLM Support** - Access to OpenRouter, Gemini, OpenAI, Claude, DeepSeek, and Grok models
+- **Research, Documents, and Presentations** - Non-code tasks can produce Markdown reports and designed PPTX slide decks
+- **Presentation Visual Guidance** - Presentation workers can use web search results to add source links and image/chart directions to slides
 - **Real-time Web Interface** - Live progress updates and interactive development canvas
 - **Professional Code Quality** - Production-ready code with proper structure and documentation
 
@@ -285,9 +287,10 @@ REDIS_URL=redis://redis:6379/0
 # GitHub token (for publishing generated code)
 GITHUB_TOKEN=ghp_...
 
-# Web search (research tasks)
-# Research workers perform a real, keyless web search (DuckDuckGo HTML) and
-# re-rank results with BM25. Set to 1 to disable web search; workers then fall
-# back to LLM-only research. Default: enabled.
+# Web search (research and presentation tasks)
+# Research workers use keyless web search (DuckDuckGo HTML) and BM25 re-ranking.
+# Presentation workers reuse the same search path for source-backed facts and
+# image/chart/screenshot directions. Set to 1 to disable web search; workers
+# then fall back to LLM-only generation. Default: enabled.
 WEB_SEARCH_DISABLED=0
 ```

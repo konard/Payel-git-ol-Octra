@@ -171,8 +171,9 @@ func documentReviewWork(managerRole, workerRole, taskType, task, solution, files
 	if taskType == "presentation" {
 		criteria = `1. Does the deck cover the topic with a logical slide flow (title → content → closing)?
 2. Are the slides accurate, concise and free of placeholders?
-3. Is the slide Markdown well-formed (one "# " deck title, "## " per slide, "- " bullets)?
-4. Is the number of slides reasonable (roughly 6-12)?`
+3. Does each content slide include a useful visual direction and source URL when web sources are available?
+4. Is the slide Markdown well-formed (one "# " deck title, "## " per slide, "- " bullets, optional "Visual:"/"Source:" lines)?
+5. Is the number of slides reasonable (roughly 6-12)?`
 	}
 	return `You are a ` + managerRole + ` manager reviewing a ` + taskType + ` produced by a ` + workerRole + `.
 

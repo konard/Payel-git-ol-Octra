@@ -40,7 +40,7 @@ func TestBuildPPTXProducesValidPackage(t *testing.T) {
 	deck := Deck{
 		Title: "Quarterly Report",
 		Slides: []Slide{
-			{Title: "Overview", Bullets: []string{"Revenue up 12%", "New markets"}},
+			{Title: "Overview", Bullets: []string{"Revenue up 12%", "New markets"}, Visual: "Regional growth map"},
 			{Title: "Risks", Bullets: []string{"Supply chain"}},
 		},
 	}
@@ -76,6 +76,40 @@ func TestBuildPPTXProducesValidPackage(t *testing.T) {
 	s1 := readPart(t, r, "ppt/slides/slide1.xml")
 	if !strings.Contains(s1, "Overview") || !strings.Contains(s1, "Revenue up 12%") {
 		t.Errorf("slide1 missing expected content: %s", s1)
+	}
+}
+
+func TestBuildPPTXUsesDesignedWidescreenSlides(t *testing.T) {
+	deck := Deck{
+		Title: "Launch Plan",
+		Slides: []Slide{
+			{Title: "Launch Plan", Bullets: []string{"Position the release", "Coordinate teams"}},
+			{Title: "Market Signal", Bullets: []string{"Analysts expect higher demand"}, Visual: "Show a simple demand curve", Sources: []string{"Example Market Report — https://example.com/report"}},
+		},
+	}
+	data, err := BuildPPTX(deck)
+	if err != nil {
+		t.Fatalf("BuildPPTX error: %v", err)
+	}
+	r := openZip(t, data)
+
+	pres := readPart(t, r, "ppt/presentation.xml")
+	if !strings.Contains(pres, `type="screen16x9"`) || !strings.Contains(pres, `cx="12192000"`) {
+		t.Fatalf("presentation must use a 16:9 widescreen canvas, got: %s", pres)
+	}
+
+	slide2 := readPart(t, r, "ppt/slides/slide2.xml")
+	for _, want := range []string{
+		"Visual direction",
+		"Show a simple demand curve",
+		"Example Market Report",
+		"Slide 2 of 2",
+		`prst="roundRect"`,
+		`val="0A4B5A"`,
+	} {
+		if !strings.Contains(slide2, want) {
+			t.Fatalf("designed slide missing %q:\n%s", want, slide2)
+		}
 	}
 }
 
@@ -115,6 +149,8 @@ func TestParseSlideMarkdown(t *testing.T) {
 ## Intro
 - first point
 - second point
+Visual: Product screenshot over a workflow diagram
+Source: Product docs — https://example.com/docs
 > remember to smile
 
 ## Conclusion
@@ -133,8 +169,38 @@ func TestParseSlideMarkdown(t *testing.T) {
 	if deck.Slides[0].Notes != "remember to smile" {
 		t.Errorf("notes = %q", deck.Slides[0].Notes)
 	}
+	if deck.Slides[0].Visual != "Product screenshot over a workflow diagram" {
+		t.Errorf("visual = %q", deck.Slides[0].Visual)
+	}
+	if len(deck.Slides[0].Sources) != 1 || !strings.Contains(deck.Slides[0].Sources[0], "https://example.com/docs") {
+		t.Errorf("sources = %#v", deck.Slides[0].Sources)
+	}
 	if deck.Slides[1].Title != "Conclusion" || deck.Slides[1].Bullets[0] != "wrap up" {
 		t.Errorf("slide1 = %+v", deck.Slides[1])
+	}
+}
+
+func TestParseSlideMarkdownCapturesBulletStructuredLines(t *testing.T) {
+	deck := ParseSlideMarkdown(`# Visual Deck
+
+## Proof
+- Insight one
+- Visual: customer photo next to adoption chart
+- Source: Case study — https://example.com/case
+- Insight two
+`)
+	if len(deck.Slides) != 1 {
+		t.Fatalf("slides = %d, want 1", len(deck.Slides))
+	}
+	s := deck.Slides[0]
+	if s.Visual != "customer photo next to adoption chart" {
+		t.Fatalf("visual = %q", s.Visual)
+	}
+	if len(s.Sources) != 1 || !strings.Contains(s.Sources[0], "https://example.com/case") {
+		t.Fatalf("sources = %#v", s.Sources)
+	}
+	if len(s.Bullets) != 2 {
+		t.Fatalf("structured lines should not become bullets: %#v", s.Bullets)
 	}
 }
 
