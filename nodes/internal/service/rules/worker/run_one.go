@@ -58,16 +58,26 @@ func (s *Service) runOneWorker(
 	workerModel.Status = "coding"
 	database.Db.Save(workerModel)
 
-	workerMode := os.Getenv("WORKER_MODE")
-	if workerMode == "" {
-		workerMode = "multypass"
-	}
 	var files map[string]string
 	var commands []string
-	if workerMode == "multypass" {
-		files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+	if meta.taskType != "" && meta.taskType != "code" {
+		// Не-кодовые задачи (research/document/presentation) идут по документному пути:
+		// результат — Markdown (и .pptx для презентаций) в папке solution/.
+		topic := strings.TrimSpace(meta.title + "\n\n" + meta.description)
+		if strings.TrimSpace(topic) == "" {
+			topic = req.TaskMd
+		}
+		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext)
 	} else {
-		files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+		workerMode := os.Getenv("WORKER_MODE")
+		if workerMode == "" {
+			workerMode = "multypass"
+		}
+		if workerMode == "multypass" {
+			files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+		} else {
+			files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+		}
 	}
 	if err != nil {
 		workerModel.Status = "error"

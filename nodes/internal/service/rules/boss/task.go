@@ -146,9 +146,28 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	data := map[string]string{
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"techStack": util_stack(decision.TechStack),
+		"taskType":  decision.TaskType,
 	}
 	if validation != nil && validation.Feedback != "" {
 		data["bossReview"] = validation.Feedback
+	}
+
+	// Для не-кодовых задач (research/document/presentation) босс отдаёт короткий
+	// ответ в чат, а полный результат уже лежит в папке solution/ (вкладка Solution).
+	if decision.TaskType != "" && decision.TaskType != TaskTypeCode {
+		fullDoc, docCount := collectSolutionMarkdown(managerResults)
+		// Когда воркеров несколько, менеджерский синтез сливает их результаты
+		// в один документ, проверяя факты (как описано в issue: «менеджер
+		// объединяет результаты, делает свой ресёрч и проверяет достоверность»).
+		if docCount > 1 {
+			if synth := s.synthesizeSolution(ctx, provider, model, tokens, decision, req.Title+"\n"+req.Description, fullDoc); synth != "" {
+				fullDoc = synth
+			}
+		}
+		if fullDoc != "" {
+			data["solutionMarkdown"] = fullDoc
+			data["chatSummary"] = s.buildChatSummary(ctx, provider, model, tokens, decision.TaskType, req.Title+"\n"+req.Description, fullDoc)
+		}
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL
@@ -188,6 +207,7 @@ func (s *Service) saveBossDecision(taskID uuid.UUID, decision *DecisionResult) {
 		ID:                   uuid.New(),
 		TaskID:               taskID,
 		Status:               "planning",
+		TaskType:             decision.TaskType,
 		ManagersCount:        decision.ManagersCount,
 		TechnicalDescription: decision.TechnicalDescription,
 		ArchitectureNotes:    decision.ArchitectureNotes,

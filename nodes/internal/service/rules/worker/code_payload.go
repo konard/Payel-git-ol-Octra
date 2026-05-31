@@ -25,9 +25,12 @@ func buildCodeFilesPayload(files map[string]string, workerRole, managerRole stri
 
 	paths := make([]string, 0, len(files))
 	for path := range files {
-		if strings.TrimSpace(path) != "" {
+		if strings.TrimSpace(path) != "" && !isBinaryPath(path) {
 			paths = append(paths, path)
 		}
+	}
+	if len(paths) == 0 {
+		return ""
 	}
 	sort.Strings(paths)
 
@@ -50,6 +53,16 @@ func buildCodeFilesPayload(files map[string]string, workerRole, managerRole stri
 		return ""
 	}
 	return string(data)
+}
+
+// isBinaryPath — файлы, которые нельзя стримить как текст в редактор (например, .pptx).
+func isBinaryPath(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
+		return true
+	default:
+		return false
+	}
 }
 
 func languageForPath(path string) string {
