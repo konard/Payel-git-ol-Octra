@@ -25,11 +25,13 @@ func classifyTaskType(title, description string) string {
 		return TaskTypePresentation
 	}
 
-	// Ресёрч — поиск/сбор информации.
+	// Ресёрч — поиск/сбор информации в вебе.
 	research := []string{
 		"research", "investigate", "find information", "gather information",
-		"search the internet", "literature review", "market analysis", "fact-check",
+		"search the internet", "search the web", "web search", "search online",
+		"look up", "google", "literature review", "market analysis", "fact-check",
 		"ресёрч", "ресерч", "исследова", "поиск информаци", "найди информаци", "собери информаци",
+		"поиск в интернете", "найди в интернете", "погугли", "поищи в интернете", "поиск в сети",
 	}
 	if containsAny(text, research) {
 		return TaskTypeResearch

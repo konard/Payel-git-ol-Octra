@@ -63,6 +63,15 @@ export interface LogEntry {
   type: 'info' | 'warning' | 'error' | 'success';
 }
 
+export type SearchPhase = 'idle' | 'searching' | 'done';
+
+// SearchStep — один пункт в блоке «Searching the web» в чате. text — человекочитаемая
+// строка шага (например, «Searching the web for «httpx install python»»).
+export interface SearchStep {
+  id: string;
+  text: string;
+}
+
 interface TaskState {
   taskId: string | null;
   status: TaskStatus;
@@ -77,7 +86,10 @@ interface TaskState {
   isConnected: boolean;
   tokensUsed: number;
   startTime: number | null;
-  
+  searchSteps: SearchStep[];
+  searchPhase: SearchPhase;
+  searchStepsCount: number;
+
   // Actions
   setTaskId: (taskId: string) => void;
   setTaskStatus: (status: TaskStatus) => void;
@@ -93,6 +105,8 @@ interface TaskState {
   completeCodeStreaming: () => void;
   clearCodeFiles: () => void;
   setConnectionStatus: (connected: boolean) => void;
+  recordSearchStep: (step: string, phase: SearchPhase, count: number) => void;
+  clearSearchSteps: () => void;
   setTokensUsed: (tokens: number) => void;
   setStartTime: (time: number) => void;
   getWorkflow: () => WorkflowConfig | null;
@@ -151,6 +165,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   isConnected: false,
   tokensUsed: 0,
   startTime: null,
+  searchSteps: [],
+  searchPhase: 'idle',
+  searchStepsCount: 0,
 
   setTaskId: (taskId) => set({ taskId }),
   
@@ -217,10 +234,33 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     )),
   })),
 
-  clearCodeFiles: () => set({ codeFiles: [], latestCodeFilePath: null }),
+  clearCodeFiles: () => set({
+    codeFiles: [],
+    latestCodeFilePath: null,
+    searchSteps: [],
+    searchPhase: 'idle',
+    searchStepsCount: 0,
+  }),
   
   setConnectionStatus: (connected) => set({ isConnected: connected }),
-  
+
+  // recordSearchStep — накапливает шаги веб-поиска для блока «Searching the web».
+  // Воркеры присылают шаги по мере поиска (phase='searching') и финальное событие
+  // завершения (phase='done', count = число выполненных шагов). Несколько воркеров
+  // могут искать последовательно: новый шаг после 'done' снова переводит блок в
+  // активное состояние, поэтому в конце пользователь видит «Completed N steps».
+  recordSearchStep: (step, phase, count) => set((state) => {
+    let steps = state.searchSteps;
+    if (step && !steps.some((s) => s.text === step)) {
+      steps = [...steps, { id: `search-${steps.length}-${Date.now()}`, text: step }];
+    }
+    const searchPhase: SearchPhase = phase === 'done' ? 'done' : 'searching';
+    const searchStepsCount = count > 0 ? Math.max(state.searchStepsCount, count) : state.searchStepsCount;
+    return { searchSteps: steps, searchPhase, searchStepsCount };
+  }),
+
+  clearSearchSteps: () => set({ searchSteps: [], searchPhase: 'idle', searchStepsCount: 0 }),
+
   setTokensUsed: (tokens) => set({ tokensUsed: tokens }),
 
   setStartTime: (time) => set({ startTime: time }),
@@ -244,6 +284,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     latestCodeFilePath: null,
     tokensUsed: 0,
     startTime: null,
+    searchSteps: [],
+    searchPhase: 'idle',
+    searchStepsCount: 0,
   }),
 
   resetTask: () => set((state) => {
@@ -275,6 +318,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       latestCodeFilePath: null,
       tokensUsed: 0,
       startTime: null,
+      searchSteps: [],
+      searchPhase: 'idle',
+      searchStepsCount: 0,
     };
   }),
 
@@ -289,6 +335,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     latestCodeFilePath: null,
     tokensUsed: 0,
     startTime: null,
+    searchSteps: [],
+    searchPhase: 'idle',
+    searchStepsCount: 0,
     // Keep nodes, edges, and workflow
   })),
 }));

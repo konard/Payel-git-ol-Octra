@@ -18,7 +18,7 @@ import (
 // с той же сигнатурой, что и generateCode, чтобы легко встроиться в runOneWorker.
 func (s *Service) generateDocument(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskType, role, description, topic, extCtx, workerID string,
+	taskType, role, description, topic, extCtx, workerID string, emit searchEmitter,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -62,13 +62,19 @@ func (s *Service) generateDocument(
 		if angle == "" {
 			angle = "general web research"
 		}
-		prompt := prompts.ResearchWorker(role, angle, topic, contextSection)
+		// Воркер сначала выполняет реальный веб-поиск в своём диапазоне, затем
+		// LLM пишет отчёт, опираясь на найденные источники (а не выдумывая их).
+		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, angle)
+		if sourcesMd != "" {
+			files["solution/sources-"+slug+".md"] = sourcesMd
+		}
+		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("research generation failed: %w", err)
 		}
 		files["solution/"+slug+".md"] = util.StripMarkdownCodeBlock(resp)
-		log.Printf("[Worker] Research document generated: %d chars", len(resp))
+		log.Printf("[Worker] Research document generated: %d chars, %d web sources", len(resp), n)
 
 	default: // "document"
 		docType := detectDocType(topic + " " + description)

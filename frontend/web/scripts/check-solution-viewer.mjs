@@ -38,6 +38,7 @@ assert.match(viewer, /binaryFileLabel/, 'SolutionViewer must label binary files'
 assert.match(viewer, /isDocumentSolution/, 'SolutionViewer must detect document solutions');
 assert.match(viewer, /paginateMarkdown/, 'SolutionViewer must paginate document reader pages');
 assert.match(viewer, /documentMode/, 'SolutionViewer must branch on documentMode for the reader');
+assert.match(viewer, /choosePreferredCodeFilePath/, 'SolutionViewer must preserve the user-selected document');
 
 const pkg = JSON.parse(read('package.json'));
 assert.ok(pkg.dependencies['react-markdown'], 'react-markdown must be a dependency');
@@ -57,6 +58,7 @@ const server = await createServer({
 try {
   const { isMarkdownPath, isBinaryPath, binaryFileLabel, isDocumentSolution, paginateMarkdown } =
     await server.ssrLoadModule('/src/lib/markdown.ts');
+  const { choosePreferredCodeFilePath } = await server.ssrLoadModule('/src/lib/solutionFiles.ts');
 
   for (const path of ['report.md', 'docs/Research.MARKDOWN', 'a/b/notes.mdx', 'README.md']) {
     assert.equal(isMarkdownPath(path), true, `${path} should be detected as Markdown`);
@@ -98,6 +100,26 @@ try {
   assert.ok(paginateMarkdown(longDoc).length > 1, 'long documents paginate by length');
   // Empty content still yields one (empty) page.
   assert.deepEqual(paginateMarkdown(''), [''], 'empty content yields a single page');
+
+  // --- 6. Document selection priority. --------------------------------------
+  // When a workflow writes multiple Markdown files, selecting a document in the
+  // Solution tab must not snap back to the latest generated file.
+  assert.equal(
+    choosePreferredCodeFilePath(['solution/httpx-install.md', 'solution/sources.md'], 'solution/httpx-install.md', 'solution/sources.md'),
+    'solution/httpx-install.md',
+    'active file should remain selected over latest',
+  );
+  assert.equal(
+    choosePreferredCodeFilePath(['solution/httpx-install.md', 'solution/sources.md'], 'missing.md', 'solution/sources.md'),
+    'solution/sources.md',
+    'latest file should be the fallback when active file is unavailable',
+  );
+  assert.equal(
+    choosePreferredCodeFilePath(['solution/httpx-install.md', 'solution/sources.md'], null, null),
+    'solution/httpx-install.md',
+    'first file should be the fallback when active and latest are unavailable',
+  );
+  assert.equal(choosePreferredCodeFilePath([], null, null), null, 'empty file list should return null');
 
   console.log('check-solution-viewer: all assertions passed');
 } finally {

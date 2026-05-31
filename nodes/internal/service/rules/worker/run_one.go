@@ -18,10 +18,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// runOneWorker — обработка одного воркера: TASK.md → код → файлы → коммит
+// runOneWorker — обработка одного воркера: TASK.md → код → файлы → коммит.
+// progress/basePct используются, чтобы ресёрч-воркер мог транслировать шаги
+// веб-поиска в чат (блок «Searching the web»).
 func (s *Service) runOneWorker(
 	ctx context.Context, req *rules.AssignWorkersRequest, wr *rules.WorkerRole,
 	meta workerMeta, basePath, accumulatedContext string,
+	progress rules.ProgressFunc, basePct int32,
 ) (*rules.WorkerResult, error) {
 	role := wr.Role
 	description := wr.Description
@@ -67,7 +70,8 @@ func (s *Service) runOneWorker(
 		if strings.TrimSpace(topic) == "" {
 			topic = req.TaskMd
 		}
-		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String())
+		emit := s.searchEmitterFor(progress, basePct, req, role)
+		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit)
 	} else {
 		workerMode := os.Getenv("WORKER_MODE")
 		if workerMode == "" {

@@ -42,7 +42,10 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 		accumulatedContext := buildAccumulatedContext(workerResults, contextSummary)
 		s.mu.Unlock()
 
-		result, err := s.runOneWorker(ctx, req, wr, meta, basePath, accumulatedContext)
+		// basePct — текущий прогресс воркера; шаги веб-поиска транслируются в чат
+		// под этим значением, чтобы не «прыгать» по шкале прогресса.
+		basePct := int32(10 + (i * 80 / max1(len(req.WorkerRoles))))
+		result, err := s.runOneWorker(ctx, req, wr, meta, basePath, accumulatedContext, progress, basePct)
 		if err != nil {
 			log.Printf("Worker %s error: %v", wr.Role, err)
 			continue

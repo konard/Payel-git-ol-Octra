@@ -52,10 +52,16 @@ RESEARCH TOPIC:
 
 Task complexity (grade_weight): ` + gradeWeight + `/100
 
-Decide how many research analysts to hire and give EACH a DISTINCT search angle / method,
-so their findings complement (not duplicate) each other. Examples of angles:
-academic & scientific sources, news & current events, statistics & data, expert opinions,
-historical background, opposing viewpoints, primary sources.
+Decide how many research analysts to hire and give EACH a DISTINCT search range / method,
+so their findings complement (not duplicate) each other. As the manager you MUST define the
+SEARCH RANGE for every analyst — the kind of material they should look for, expressed in terms of:
+- links / web pages (official docs, reference sites),
+- tags / keywords to query,
+- news & current events,
+- general information & background.
+
+Examples of distinct ranges: official documentation & links, news & current events,
+statistics & data, expert opinions, academic sources, opposing viewpoints, primary sources.
 
 Use this formula for the number of analysts:
 - grade 1-20: 1 analyst
@@ -63,11 +69,12 @@ Use this formula for the number of analysts:
 - grade 41-70: 3 analysts
 - grade 71-100: 4 analysts
 
-The "description" field MUST state the unique angle/method for that analyst.
+The "description" field MUST state the unique SEARCH RANGE (links/tags/news/information) and
+method for that analyst, because the worker will run a real web search within that range.
 
 Reply ONLY with JSON:
 {
-  "worker_roles": [{"role": "analyst", "description": "Investigate via academic and scientific sources"}]
+  "worker_roles": [{"role": "analyst", "description": "Search official documentation links and reference pages"}]
 }`
 }
 
