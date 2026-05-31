@@ -1,0 +1,43 @@
+name: Nodes CI
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'nodes/**'
+      - '.github/workflows/nodes-ci.yml'
+  pull_request:
+    paths:
+      - 'nodes/**'
+      - '.github/workflows/nodes-ci.yml'
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: nodes-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & test (nodes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nodes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.4'
+          cache-dependency-path: nodes/go.sum
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...

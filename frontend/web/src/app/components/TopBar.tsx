@@ -119,8 +119,8 @@ interface TopBarProps {
   hasSubscription: boolean;
   onShowAuth: () => void;
   onShowSubscription: () => void;
-  mode: 'canvas' | 'chat' | 'code';
-  onModeChange: (mode: 'canvas' | 'chat' | 'code') => void;
+  mode: 'canvas' | 'chat' | 'solution';
+  onModeChange: (mode: 'canvas' | 'chat' | 'solution') => void;
   hasUnreadMessages: boolean;
   onToggleSidebar?: () => void;
 }
@@ -293,14 +293,14 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
               Chat
             </button>
             <button
-              onClick={() => onModeChange('code')}
+              onClick={() => onModeChange('solution')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'code'
+                mode === 'solution'
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
               }`}
             >
-              Code
+              Solution
             </button>
           </div>
         </div>

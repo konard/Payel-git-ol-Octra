@@ -67,7 +67,13 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 		log.Printf("Boss JSON parse error: %v; raw: %s", err, resp)
 		return nil, err
 	}
-	log.Printf("Boss decision: managers=%d stack=%v", decision.ManagersCount, decision.TechStack)
+	// Normalize / fall back the task type. The deterministic classifier guarantees a
+	// sane value even when the AI omits it or the JSON fails to parse.
+	decision.TaskType = normalizeTaskType(decision.TaskType)
+	if decision.TaskType == "" {
+		decision.TaskType = classifyTaskType(req.Title, req.Description)
+	}
+	log.Printf("Boss decision: type=%s managers=%d stack=%v", decision.TaskType, decision.ManagersCount, decision.TechStack)
 
 	// Final safeguard inside thinkOnce
 	if decision.ManagersCount <= 0 {
@@ -110,7 +116,7 @@ func (s *Service) validateSolution(
 		tokens["title"], decision.TechnicalDescription,
 		strings.Join(decision.TechStack, ", "),
 		decision.ArchitectureNotes, summary,
-		fmt.Sprintf("%d", fileCount), fileList,
+		fmt.Sprintf("%d", fileCount), fileList, decision.TaskType,
 	)
 	resp, err := s.agentsClient.GenerateFromTask(ctx, provider, model, prompt, tokens)
 	if err != nil {

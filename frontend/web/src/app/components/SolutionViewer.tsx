@@ -1,21 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CircleDotDashed,
+  Code2,
+  Eye,
   FileCode2,
+  FileText,
   Files,
+  FileBox,
   Folder,
   FolderOpen,
   PanelLeftClose,
   PanelLeftOpen,
+  Presentation,
   X,
 } from 'lucide-react';
 import { useTaskStore, type CodeFile } from '../../stores/taskStore';
 import { useThemeStore } from '../../stores/themeStore';
+import {
+  isMarkdownPath,
+  isBinaryPath,
+  binaryFileLabel,
+  isDocumentSolution,
+  paginateMarkdown,
+} from '../../lib/markdown';
+import '../../styles/markdown.css';
 
 interface TreeNode {
   name: string;
@@ -99,6 +115,25 @@ function CodeStatus({ status }: { status: CodeFile['status'] }) {
   return <CheckCircle2 size={14} className="text-[var(--success)]" />;
 }
 
+function BinaryPlaceholder({ path }: { path: string }) {
+  const isPptx = path.toLowerCase().endsWith('.pptx');
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-[var(--code-text-muted)]">
+      {isPptx ? (
+        <Presentation size={48} className="opacity-80 text-[var(--code-accent)]" />
+      ) : (
+        <FileBox size={48} className="opacity-80" />
+      )}
+      <div className="text-sm font-medium text-[var(--code-text)]">{binaryFileLabel(path)}</div>
+      <p className="max-w-sm text-xs leading-5">
+        This file was generated on the server and is stored in the project
+        repository. Binary documents can't be previewed in the browser — open the
+        downloaded project to view or edit it.
+      </p>
+    </div>
+  );
+}
+
 function TreeRows({
   nodes,
   depth,
@@ -159,7 +194,15 @@ function TreeRows({
             }`}
             style={{ paddingLeft }}
           >
-            <FileCode2 size={15} />
+            {node.path.toLowerCase().endsWith('.pptx') ? (
+              <Presentation size={15} />
+            ) : isBinaryPath(node.path) ? (
+              <FileBox size={15} />
+            ) : isMarkdownPath(node.path) ? (
+              <FileText size={15} />
+            ) : (
+              <FileCode2 size={15} />
+            )}
             <span className="min-w-0 flex-1 truncate">{node.name}</span>
             {node.file && <CodeStatus status={node.file.status} />}
           </button>
@@ -169,7 +212,7 @@ function TreeRows({
   );
 }
 
-export function CodeViewer() {
+export function SolutionViewer() {
   const codeFiles = useTaskStore((state) => state.codeFiles);
   const latestCodeFilePath = useTaskStore((state) => state.latestCodeFilePath);
   const updateCodeFileContent = useTaskStore((state) => state.updateCodeFileContent);
@@ -180,14 +223,33 @@ export function CodeViewer() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [displayContent, setDisplayContent] = useState('');
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const [showSource, setShowSource] = useState(false);
   const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [pageIndex, setPageIndex] = useState(0);
+  const readerRef = useRef<HTMLDivElement | null>(null);
 
   const filesByPath = useMemo(() => new Map(codeFiles.map((file) => [file.path, file])), [codeFiles]);
   const activeFile = activePath ? filesByPath.get(activePath) ?? null : null;
+  const activeIsMarkdown = activeFile ? isMarkdownPath(activeFile.path) : false;
+  const activeIsBinary = activeFile ? isBinaryPath(activeFile.path) : false;
+  // A document solution (research report, generated document, presentation) gets
+  // a clean reader — no explorer or tabs — so a regular user just reads the text.
+  const documentMode = useMemo(() => isDocumentSolution(codeFiles.map((file) => file.path)), [codeFiles]);
+  // Markdown documents default to the rendered preview; users can flip to source.
+  const renderAsPreview = activeIsMarkdown && !showSource;
   const openFiles = openFilePaths
     .map((path) => filesByPath.get(path))
     .filter((file): file is CodeFile => Boolean(file));
   const tree = useMemo(() => buildFileTree(codeFiles), [codeFiles]);
+
+  // In reader mode large Markdown documents are split into pages so the user can
+  // flip through them with the bottom page switcher.
+  const pages = useMemo(
+    () => (documentMode && activeIsMarkdown ? paginateMarkdown(displayContent) : [displayContent]),
+    [documentMode, activeIsMarkdown, displayContent],
+  );
+  const currentPage = Math.min(pageIndex, Math.max(0, pages.length - 1));
 
   useEffect(() => {
     if (codeFiles.length === 0) {
@@ -265,6 +327,17 @@ export function CodeViewer() {
     };
   }, [activeFile?.content, activeFile?.path, activeFile?.status]);
 
+  // Reset to the preferred view (preview for Markdown) whenever the file changes.
+  useEffect(() => {
+    setShowSource(false);
+    setPageIndex(0);
+  }, [activePath]);
+
+  // Scroll the reader back to the top whenever the visible page changes.
+  useEffect(() => {
+    readerRef.current?.scrollTo({ top: 0 });
+  }, [currentPage, activePath]);
+
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
@@ -298,6 +371,89 @@ export function CodeViewer() {
     });
   };
 
+  // Reader mode: a single, beautifully formatted document with no file explorer
+  // or tabs. Multiple documents get a minimal centered switcher; large documents
+  // get a bottom page switcher.
+  if (documentMode) {
+    return (
+      <div
+        className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]"
+        style={CODE_VIEW_THEME}
+      >
+        {codeFiles.length > 1 && (
+          <div className="flex shrink-0 flex-wrap items-center justify-center gap-2 border-b border-[var(--code-border)] bg-[var(--code-surface)] px-4 py-2">
+            {codeFiles.map((file) => (
+              <button
+                key={file.path}
+                type="button"
+                onClick={() => setActivePath(file.path)}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                  activePath === file.path
+                    ? 'border-transparent bg-[var(--code-tree-active)] text-[var(--code-text)]'
+                    : 'border-[var(--code-border)] text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
+                }`}
+              >
+                {file.path.toLowerCase().endsWith('.pptx') ? (
+                  <Presentation size={13} />
+                ) : isBinaryPath(file.path) ? (
+                  <FileBox size={13} />
+                ) : (
+                  <FileText size={13} />
+                )}
+                <span className="max-w-[160px] truncate">{file.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div ref={readerRef} className="min-h-0 flex-1 overflow-auto">
+          {activeFile ? (
+            activeIsBinary ? (
+              <BinaryPlaceholder path={activeFile.path} />
+            ) : (
+              <article className="markdown-preview mx-auto w-full max-w-[820px] px-6 py-10 sm:px-10">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{pages[currentPage] ?? ''}</ReactMarkdown>
+              </article>
+            )
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-[var(--code-text-muted)]">
+              <FileText size={46} className="mb-4 opacity-70" />
+              <div className="max-w-sm text-sm leading-6">No document yet.</div>
+            </div>
+          )}
+        </div>
+
+        {activeFile && !activeIsBinary && pages.length > 1 && (
+          <div className="flex h-14 shrink-0 items-center justify-center border-t border-[var(--code-border)] bg-[var(--code-surface)]">
+            <div className="flex items-center gap-2 rounded-full border border-[var(--code-border)] bg-[var(--code-bg)] px-2 py-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
+                disabled={currentPage <= 0}
+                aria-label="Previous page"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="min-w-[64px] text-center text-sm font-medium tabular-nums text-[var(--code-text)]">
+                {currentPage + 1} / {pages.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPageIndex((value) => Math.min(pages.length - 1, value + 1))}
+                disabled={currentPage >= pages.length - 1}
+                aria-label="Next page"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">
@@ -311,7 +467,7 @@ export function CodeViewer() {
             {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
           </button>
           <Files size={16} className="text-[var(--code-text-muted)]" />
-          <span className="truncate text-sm font-medium">Generated files</span>
+          <span className="truncate text-sm font-medium">Solution files</span>
         </div>
         <div className="text-xs text-[var(--code-text-muted)]">
           {codeFiles.length} {codeFiles.length === 1 ? 'file' : 'files'}
@@ -361,7 +517,15 @@ export function CodeViewer() {
                     onClick={() => setActivePath(file.path)}
                     className="flex min-w-0 flex-1 items-center gap-2 px-3"
                   >
-                    <FileCode2 size={15} />
+                    {file.path.toLowerCase().endsWith('.pptx') ? (
+                      <Presentation size={15} />
+                    ) : isBinaryPath(file.path) ? (
+                      <FileBox size={15} />
+                    ) : isMarkdownPath(file.path) ? (
+                      <FileText size={15} />
+                    ) : (
+                      <FileCode2 size={15} />
+                    )}
                     <span className="truncate">{file.name}</span>
                     <CodeStatus status={file.status} />
                   </button>
@@ -385,40 +549,63 @@ export function CodeViewer() {
               <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-[var(--code-border)] px-3 text-xs text-[var(--code-text-muted)]">
                 <div className="min-w-0 truncate">{activeFile.path}</div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {activeIsMarkdown && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSource((value) => !value)}
+                      className="flex items-center gap-1 rounded-md border border-[var(--code-border)] px-2 py-0.5 text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+                      title={showSource ? 'Show rendered preview' : 'Show Markdown source'}
+                    >
+                      {showSource ? <Eye size={13} /> : <Code2 size={13} />}
+                      <span>{showSource ? 'Preview' : 'Source'}</span>
+                    </button>
+                  )}
                   <CodeStatus status={activeFile.status} />
                   <span>{statusLabel(activeFile.status)}</span>
                 </div>
               </div>
               <div className="min-h-0 flex-1">
-                <Editor
-                  path={activeFile.path}
-                  value={displayContent}
-                  language={activeFile.language}
-                  theme={isDark ? 'vs-dark' : 'light'}
-                  onMount={handleMount}
-                  onChange={(value) => {
-                    if (activeFile.status !== 'streaming' && value !== undefined && value !== activeFile.content) {
-                      updateCodeFileContent(activeFile.path, value);
-                    }
-                  }}
-                  options={{
-                    automaticLayout: true,
-                    fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: 13,
-                    lineHeight: 22,
-                    minimap: { enabled: true },
-                    padding: { top: 12, bottom: 12 },
-                    readOnly: activeFile.status === 'streaming',
-                    scrollBeyondLastLine: false,
-                    smoothScrolling: true,
-                    wordWrap: 'off',
-                  }}
-                />
+                {activeIsBinary ? (
+                  <BinaryPlaceholder path={activeFile.path} />
+                ) : renderAsPreview ? (
+                  <div className="markdown-preview h-full overflow-auto px-6 py-5">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <Editor
+                    path={activeFile.path}
+                    value={displayContent}
+                    language={activeFile.language}
+                    theme={isDark ? 'vs-dark' : 'light'}
+                    onMount={handleMount}
+                    onChange={(value) => {
+                      if (activeFile.status !== 'streaming' && value !== undefined && value !== activeFile.content) {
+                        updateCodeFileContent(activeFile.path, value);
+                      }
+                    }}
+                    options={{
+                      automaticLayout: true,
+                      fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontSize: 13,
+                      lineHeight: 22,
+                      minimap: { enabled: true },
+                      padding: { top: 12, bottom: 12 },
+                      readOnly: activeFile.status === 'streaming',
+                      scrollBeyondLastLine: false,
+                      smoothScrolling: true,
+                      wordWrap: activeIsMarkdown ? 'on' : 'off',
+                    }}
+                  />
+                )}
               </div>
               <div className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--code-border)] bg-[var(--code-surface)] px-3 text-xs text-[var(--code-text-muted)]">
                 <span className="truncate">{activeFile.workerRole || activeFile.managerRole || 'Worker output'}</span>
                 <span>
-                  Ln {cursor.line}, Col {cursor.column}
+                  {activeIsBinary
+                    ? binaryFileLabel(activeFile.path)
+                    : renderAsPreview
+                      ? 'Markdown preview'
+                      : `Ln ${cursor.line}, Col ${cursor.column}`}
                 </span>
               </div>
             </>

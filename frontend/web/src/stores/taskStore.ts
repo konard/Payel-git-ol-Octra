@@ -292,3 +292,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     // Keep nodes, edges, and workflow
   })),
 }));
+
+// Dev-only handle to inspect/seed the task store from the browser console
+// (e.g. window.octraTaskStore.getState().upsertCodeFiles([...])). Off in prod.
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as Window & { octraTaskStore?: typeof useTaskStore }).octraTaskStore = useTaskStore;
+}

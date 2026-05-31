@@ -46,11 +46,11 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 	}
 	emit(progress, 5, fmt.Sprintf("Manager %s initialized", req.Role), nil)
 
-	provider, model, tokens, gradeWeight := parseMetadata(req.Metadata)
+	provider, model, tokens, gradeWeight, taskType := parseMetadata(req.Metadata)
 
 	emit(progress, 10, fmt.Sprintf("Manager %s thinking about workers...", req.Role), nil)
 
-	workerRolesList, err := s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight)
+	workerRolesList, err := s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight, taskType)
 	if err != nil {
 		manager.Status = "error"
 		database.Db.Save(manager)
@@ -112,7 +112,7 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 	}
 
 	emit(progress, 95, fmt.Sprintf("Manager %s reviewing workers...", req.Role), nil)
-	reviewSummary := s.reviewAll(ctx, req, provider, model, tokens, workerResp.WorkerResults)
+	reviewSummary := s.reviewAll(ctx, req, provider, model, tokens, taskType, workerResp.WorkerResults)
 
 	manager.Status = "done"
 	database.Db.Save(manager)
@@ -136,7 +136,7 @@ func emit(progress rules.ProgressFunc, p int32, msg string, data map[string]stri
 }
 
 // parseMetadata — стандартный парсинг metadata менеджера
-func parseMetadata(metadata map[string]string) (provider, model string, tokens map[string]string, gradeWeight string) {
+func parseMetadata(metadata map[string]string) (provider, model string, tokens map[string]string, gradeWeight, taskType string) {
 	tokens = make(map[string]string)
 	if tokensJSON, ok := metadata["tokens"]; ok {
 		json.Unmarshal([]byte(tokensJSON), &tokens)
@@ -152,6 +152,10 @@ func parseMetadata(metadata map[string]string) (provider, model string, tokens m
 	gradeWeight = "10"
 	if gw, ok := metadata["grade_weight"]; ok && gw != "" {
 		gradeWeight = gw
+	}
+	taskType = metadata["task_type"]
+	if taskType == "" {
+		taskType = "code"
 	}
 	return
 }

@@ -4,12 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"nodes/internal/prompts"
 	"nodes/internal/service/rules"
 	"nodes/internal/service/util"
 )
+
+// isBinaryReviewPath — файлы, которые нельзя показывать ревьюеру/чинить как текст
+// (например, .pptx собирается из Markdown билдером, а не правится построчно).
+func isBinaryReviewPath(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
+		return true
+	default:
+		return false
+	}
+}
 
 // reviewResult — внутренний результат ревью
 type reviewResult struct {
@@ -18,9 +31,15 @@ type reviewResult struct {
 }
 
 // reviewWorkerResult — менеджер ревьюит работу одного воркера через LLM
-func (s *Service) reviewWorkerResult(ctx context.Context, provider, model string, tokens map[string]string, managerRole string, wr *rules.WorkerResult) (*reviewResult, error) {
+func (s *Service) reviewWorkerResult(ctx context.Context, provider, model string, tokens map[string]string, managerRole, taskType string, wr *rules.WorkerResult) (*reviewResult, error) {
 	filesList := ""
 	for path, content := range wr.Files {
+		// Бинарные артефакты (например, .pptx) не показываем ревьюеру как текст —
+		// он оценивает исходный Markdown, а не байты презентации.
+		if isBinaryReviewPath(path) {
+			filesList += fmt.Sprintf("\n--- %s (binary artifact, not shown) ---\n", path)
+			continue
+		}
 		preview := content
 		if len(preview) > 500 {
 			preview = preview[:500] + "..."
@@ -28,7 +47,7 @@ func (s *Service) reviewWorkerResult(ctx context.Context, provider, model string
 		filesList += fmt.Sprintf("\n--- %s ---\n%s\n", path, preview)
 	}
 
-	prompt := prompts.ManagerReviewWork(managerRole, wr.Role, wr.TaskMd, wr.SolutionMd, filesList)
+	prompt := prompts.ManagerReviewWork(managerRole, wr.Role, wr.TaskMd, wr.SolutionMd, filesList, taskType)
 
 	genCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()

@@ -1,0 +1,142 @@
+/**
+ * Styling for the rendered Markdown preview in the Solution tab.
+ * Scoped under `.markdown-preview` so it never leaks into the code editor.
+ * Colors come from the CSS variables set on the Solution viewer container.
+ */
+.markdown-preview {
+  color: var(--code-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  word-wrap: break-word;
+}
+
+.markdown-preview > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-preview > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin: 1.6em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.markdown-preview h1 {
+  font-size: 1.9em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--code-border);
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--code-border);
+}
+
+.markdown-preview h3 { font-size: 1.25em; }
+.markdown-preview h4 { font-size: 1.1em; }
+.markdown-preview h5 { font-size: 1em; }
+.markdown-preview h6 { font-size: 0.9em; color: var(--code-text-muted); }
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol,
+.markdown-preview blockquote,
+.markdown-preview table,
+.markdown-preview pre {
+  margin: 0 0 1em;
+}
+
+.markdown-preview a {
+  color: var(--code-accent);
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 1.6em;
+}
+
+.markdown-preview li {
+  margin: 0.25em 0;
+}
+
+.markdown-preview li > input[type='checkbox'] {
+  margin-right: 0.4em;
+}
+
+.markdown-preview blockquote {
+  padding: 0.2em 1em;
+  color: var(--code-text-muted);
+  border-left: 3px solid var(--code-border);
+}
+
+.markdown-preview code {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--code-tree-hover);
+}
+
+.markdown-preview pre {
+  padding: 0.9em 1em;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid var(--code-border);
+  background: var(--code-surface);
+}
+
+.markdown-preview pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.85em;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow: auto;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  padding: 0.5em 0.85em;
+  border: 1px solid var(--code-border);
+  text-align: left;
+}
+
+.markdown-preview th {
+  font-weight: 600;
+  background: var(--code-surface);
+}
+
+.markdown-preview tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--code-surface) 50%, transparent);
+}
+
+.markdown-preview hr {
+  height: 1px;
+  margin: 1.6em 0;
+  border: 0;
+  background: var(--code-border);
+}
+
+.markdown-preview img {
+  max-width: 100%;
+  border-radius: 6px;
+}
