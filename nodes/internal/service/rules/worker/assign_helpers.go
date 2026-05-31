@@ -11,18 +11,27 @@ import (
 
 // parseWorkerMetadata — извлекает provider/model/tokens/tech_stack из metadata
 type workerMeta struct {
-	provider  string
-	model     string
-	tokens    map[string]string
-	techStack string
+	provider    string
+	model       string
+	tokens      map[string]string
+	techStack   string
+	taskType    string
+	title       string
+	description string
 }
 
 func parseWorkerMetadata(metadata map[string]string) workerMeta {
 	m := workerMeta{
-		provider:  metadata["provider"],
-		model:     metadata["model"],
-		techStack: metadata["tech_stack"],
-		tokens:    map[string]string{},
+		provider:    metadata["provider"],
+		model:       metadata["model"],
+		techStack:   metadata["tech_stack"],
+		taskType:    metadata["task_type"],
+		title:       metadata["title"],
+		description: metadata["description"],
+		tokens:      map[string]string{},
+	}
+	if m.taskType == "" {
+		m.taskType = "code"
 	}
 	if m.provider == "" {
 		m.provider = "openai"

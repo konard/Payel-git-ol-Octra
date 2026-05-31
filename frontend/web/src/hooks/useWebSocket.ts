@@ -228,6 +228,11 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           message: msg.message || 'Project ready!',
           type: 'success',
         });
+        // Non-code tasks (research/document/presentation): Boss posts a short
+        // text answer in chat; the full result lives in the Solution tab.
+        if (msg.data?.chatSummary && onChatMessage) {
+          onChatMessage(msg.data.chatSummary, 'boss', false);
+        }
         if (msg.data?.repoUrl) {
           storeActions.setZipUrl(msg.data.repoUrl);
           // Update GitHub node with the repository URL

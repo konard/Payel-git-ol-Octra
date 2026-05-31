@@ -36,6 +36,7 @@ type BossDecision struct {
 	TaskID               uuid.UUID `gorm:"type:uuid;not null;index"`
 	Task                 Task      `gorm:"foreignKey:TaskID"`
 	Status               string    `gorm:"default:'planning'"`
+	TaskType             string    `gorm:"size:32;default:'code'"`
 	ManagersCount        int32
 	ManagerRoles         string `gorm:"type:jsonb"`
 	TechnicalDescription string `gorm:"type:text"`

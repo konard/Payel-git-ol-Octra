@@ -82,6 +82,9 @@ type CreateTaskRequest struct {
 
 // DecisionResult — итог boss-планирования
 type DecisionResult struct {
+	// TaskType — вид результата: "code" | "research" | "document" | "presentation".
+	// json-тег нужен, потому что AI возвращает snake_case ключ.
+	TaskType             string `json:"task_type"`
 	ManagersCount        int32
 	ManagerRoles         []models.ManagerRole
 	TechnicalDescription string
