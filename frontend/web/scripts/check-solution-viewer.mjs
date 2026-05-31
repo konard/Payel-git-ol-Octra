@@ -34,6 +34,10 @@ assert.match(viewer, /remark-gfm/, 'SolutionViewer must use remark-gfm (tables, 
 // the Monaco editor — the viewer shows a placeholder instead.
 assert.match(viewer, /isBinaryPath/, 'SolutionViewer must guard binary files with isBinaryPath');
 assert.match(viewer, /binaryFileLabel/, 'SolutionViewer must label binary files');
+// Document solutions get a clean reader (no explorer/tabs) with a page switcher.
+assert.match(viewer, /isDocumentSolution/, 'SolutionViewer must detect document solutions');
+assert.match(viewer, /paginateMarkdown/, 'SolutionViewer must paginate document reader pages');
+assert.match(viewer, /documentMode/, 'SolutionViewer must branch on documentMode for the reader');
 
 const pkg = JSON.parse(read('package.json'));
 assert.ok(pkg.dependencies['react-markdown'], 'react-markdown must be a dependency');
@@ -51,7 +55,8 @@ const server = await createServer({
 });
 
 try {
-  const { isMarkdownPath, isBinaryPath, binaryFileLabel } = await server.ssrLoadModule('/src/lib/markdown.ts');
+  const { isMarkdownPath, isBinaryPath, binaryFileLabel, isDocumentSolution, paginateMarkdown } =
+    await server.ssrLoadModule('/src/lib/markdown.ts');
 
   for (const path of ['report.md', 'docs/Research.MARKDOWN', 'a/b/notes.mdx', 'README.md']) {
     assert.equal(isMarkdownPath(path), true, `${path} should be detected as Markdown`);
@@ -69,6 +74,30 @@ try {
   }
   assert.equal(binaryFileLabel('solution/deck.pptx'), 'PowerPoint presentation', 'pptx label');
   assert.equal(binaryFileLabel('report.docx'), 'Word document', 'docx label');
+
+  // --- 4. Document-solution detection (reader mode, no file explorer). -------
+  // Pure documents / presentations → reader mode.
+  assert.equal(isDocumentSolution(['solution/report.md']), true, 'single Markdown is a document solution');
+  assert.equal(isDocumentSolution(['solution/report.md', 'solution/deck.pptx']), true, 'md + pptx is a document solution');
+  assert.equal(isDocumentSolution(['a.md', 'b.markdown', 'c.mdx']), true, 'all-Markdown is a document solution');
+  // Anything with real source code (or plain text/JSON) keeps the IDE view.
+  assert.equal(isDocumentSolution(['src/main.go', 'README.md']), false, 'code projects are NOT document solutions');
+  assert.equal(isDocumentSolution(['notes.txt']), false, 'plain text is NOT a document solution');
+  assert.equal(isDocumentSolution([]), false, 'empty solution is NOT a document solution');
+
+  // --- 5. Markdown pagination for the bottom page switcher. ------------------
+  assert.deepEqual(paginateMarkdown('Just one short paragraph.'), ['Just one short paragraph.'], 'short doc is a single page');
+  // Explicit thematic breaks (`---`) act as page boundaries.
+  const paged = paginateMarkdown('# Page one\n\nIntro.\n\n---\n\n# Page two\n\nMore.');
+  assert.equal(paged.length, 2, 'thematic breaks split into pages');
+  assert.match(paged[0], /Page one/, 'first page keeps its content');
+  assert.match(paged[1], /Page two/, 'second page keeps its content');
+  assert.ok(paged.every((page) => !/^\s*---\s*$/m.test(page)), 'page-break markers are stripped');
+  // Long break-free documents auto-paginate by length.
+  const longDoc = Array.from({ length: 90 }, (_, i) => `Paragraph number ${i} with enough text to add up over many blocks.`).join('\n\n');
+  assert.ok(paginateMarkdown(longDoc).length > 1, 'long documents paginate by length');
+  // Empty content still yields one (empty) page.
+  assert.deepEqual(paginateMarkdown(''), [''], 'empty content yields a single page');
 
   console.log('check-solution-viewer: all assertions passed');
 } finally {
