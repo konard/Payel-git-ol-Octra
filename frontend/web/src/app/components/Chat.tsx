@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { CheckCircle2, Circle, CircleDotDashed, Download, GitBranch, UserRound } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, CircleDotDashed, Download, GitBranch, Globe, Loader2, UserRound } from 'lucide-react';
 import octraMascot from '../../images/octra-mascot.png';
 import { useTaskStore } from '../../stores/taskStore';
 
@@ -28,12 +28,18 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
   const nodes = useTaskStore((state) => state.nodes);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const status = useTaskStore((state) => state.status);
+  const searchSteps = useTaskStore((state) => state.searchSteps);
+  const searchPhase = useTaskStore((state) => state.searchPhase);
+  const searchStepsCount = useTaskStore((state) => state.searchStepsCount);
   const managers = nodes.filter((node) => node.type === 'manager');
   const workers = nodes.filter((node) => node.type === 'worker');
+  const [searchCollapsed, setSearchCollapsed] = useState(false);
+  const isSearching = searchPhase === 'searching';
+  const completedSteps = searchStepsCount || searchSteps.length;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, nodes]);
+  }, [messages, nodes, searchSteps]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,6 +127,45 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
                 </div>
               </div>
             ))
+          )}
+
+          {searchSteps.length > 0 && (
+            <div className="ml-12 max-w-2xl">
+              <button
+                type="button"
+                onClick={() => setSearchCollapsed((v) => !v)}
+                className="flex w-full items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--background)]"
+              >
+                <Globe size={16} className="shrink-0 text-[var(--accent)]" />
+                {isSearching ? (
+                  <>
+                    <span>Searching the web</span>
+                    <Loader2 size={14} className="animate-spin text-[var(--accent)]" />
+                  </>
+                ) : (
+                  <span>{`Completed ${completedSteps} step${completedSteps === 1 ? '' : 's'}`}</span>
+                )}
+                {searchCollapsed ? (
+                  <ChevronRight size={16} className="ml-auto text-[var(--text-muted)]" />
+                ) : (
+                  <ChevronDown size={16} className="ml-auto text-[var(--text-muted)]" />
+                )}
+              </button>
+              {!searchCollapsed && (
+                <div className="mt-2 space-y-2 border-l border-[var(--border)] pl-5">
+                  {searchSteps.map((step) => (
+                    <div key={step.id} className="flex items-start gap-2 text-sm text-[var(--text-muted)]">
+                      {isSearching ? (
+                        <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin text-[var(--accent)]" />
+                      ) : (
+                        <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[var(--success)]" />
+                      )}
+                      <span>{step.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {(managers.length > 0 || workers.length > 0) && (

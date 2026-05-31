@@ -10,7 +10,8 @@
     "test:translations": "node scripts/check-custom-model-translations.cjs",
     "test:task-store": "node scripts/check-task-store-graph.mjs",
     "test:solution-viewer": "node scripts/check-solution-viewer.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:solution-viewer"
+    "test:search-steps": "node scripts/check-search-steps.mjs",
+    "test": "npm run test:settings && npm run test:task-store && npm run test:solution-viewer && npm run test:search-steps"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

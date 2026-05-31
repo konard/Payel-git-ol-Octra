@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  Visual mock of the chat "Searching the web" panel added for issue #19.
+  It reproduces the real component's look (Chat.tsx) with the same dark-theme
+  tokens, so we can capture a screenshot for the PR without standing up the
+  full backend + websocket pipeline. Two states are shown side by side:
+  (1) in progress with a spinner, (2) completed with "Completed N steps".
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Searching the web — panel</title>
+    <style>
+      :root {
+        --background: #0f1115;
+        --surface: #171a21;
+        --border: #262b36;
+        --text: #e6e9ef;
+        --text-muted: #8b93a3;
+        --accent: #6c8cff;
+        --success: #3ecf8e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        padding: 28px;
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+      }
+      .col { width: 430px; }
+      .label { color: var(--text-muted); font-size: 12px; margin: 0 0 10px 4px; text-transform: uppercase; letter-spacing: .04em; }
+      .panel { }
+      .head {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 14px; font-weight: 600;
+        cursor: pointer;
+      }
+      .steps { margin-top: 8px; padding-left: 20px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+      .step { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--text-muted); }
+      .accent { color: var(--accent); }
+      .success { color: var(--success); }
+      .muted { color: var(--text-muted); }
+      .ml-auto { margin-left: auto; }
+      .spin { animation: spin 1s linear infinite; transform-origin: 50% 50%; display: inline-flex; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      svg { display: block; }
+    </style>
+  </head>
+  <body>
+    <!-- ICONS (lucide): globe, loader, check-circle, chevron-down -->
+    <template id="globe">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+    </template>
+    <template id="loader">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    </template>
+    <template id="check">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
+    </template>
+    <template id="chevron">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </template>
+
+    <div class="col">
+      <p class="label">In progress</p>
+      <div class="panel">
+        <div class="head">
+          <span class="accent" data-icon="globe"></span>
+          <span>Searching the web</span>
+          <span class="accent spin" data-icon="loader"></span>
+          <span class="ml-auto muted" data-icon="chevron"></span>
+        </div>
+        <div class="steps">
+          <div class="step"><span class="accent spin" data-icon="loader"></span><span>Searching the web for «httpx install python»</span></div>
+          <div class="step"><span class="accent spin" data-icon="loader"></span><span>Searching the web for «httpx documentation reference»</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p class="label">Completed</p>
+      <div class="panel">
+        <div class="head">
+          <span class="accent" data-icon="globe"></span>
+          <span>Completed 2 steps</span>
+          <span class="ml-auto muted" data-icon="chevron"></span>
+        </div>
+        <div class="steps">
+          <div class="step"><span class="success" data-icon="check"></span><span>Searching the web for «httpx install python»</span></div>
+          <div class="step"><span class="success" data-icon="check"></span><span>Searching the web for «httpx documentation reference»</span></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Inline the templated SVGs into every placeholder.
+      document.querySelectorAll('[data-icon]').forEach((el) => {
+        const tpl = document.getElementById(el.getAttribute('data-icon'));
+        el.appendChild(tpl.content.cloneNode(true));
+      });
+    </script>
+  </body>
+</html>
