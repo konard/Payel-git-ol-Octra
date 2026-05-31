@@ -1,5 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  normalizeCustomModel,
+  normalizeCustomModelList,
+  normalizeCustomProvider,
+  normalizeCustomProviderList,
+  normalizeCustomProvidersState,
+  type CustomModelInput,
+  type CustomProviderInput,
+  upsertCustomModel,
+  upsertCustomProvider,
+} from '../utils/customProviders';
 
 export interface CustomProvider {
   id: string;
@@ -26,15 +37,19 @@ interface CustomProvidersState {
   models: CustomModel[];
 
   // Actions
-  addProvider: (provider: Omit<CustomProvider, 'id' | 'createdAt'>) => void;
-  updateProvider: (id: string, updates: Partial<CustomProvider>) => void;
+  addProvider: (provider: CustomProviderInput) => void;
+  updateProvider: (id: string, updates: CustomProviderInput) => void;
   deleteProvider: (id: string) => void;
   getProvider: (id: string) => CustomProvider | undefined;
 
-  addModel: (model: Omit<CustomModel, 'id' | 'createdAt'>) => void;
-  updateModel: (id: string, updates: Partial<CustomModel>) => void;
+  addModel: (model: CustomModelInput) => void;
+  updateModel: (id: string, updates: CustomModelInput) => void;
   deleteModel: (id: string) => void;
   getModel: (id: string) => CustomModel | undefined;
+}
+
+function createLocalId(): string {
+  return globalThis.crypto?.randomUUID?.() || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export const useCustomProvidersStore = create<CustomProvidersState>()(
@@ -44,65 +59,76 @@ export const useCustomProvidersStore = create<CustomProvidersState>()(
       models: [],
 
       addProvider: (providerData) => {
-        const newProvider: CustomProvider = {
-          ...providerData,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        };
+        const newProvider = normalizeCustomProvider(providerData, { fallbackId: createLocalId() });
+        if (!newProvider) {
+          return;
+        }
+
         set((state) => ({
-          providers: [...state.providers, newProvider],
+          providers: upsertCustomProvider(state.providers, newProvider),
         }));
       },
 
       updateProvider: (id, updates) => {
         set((state) => ({
-          providers: state.providers.map((p) =>
-            p.id === id ? { ...p, ...updates } : p
+          providers: normalizeCustomProviderList(state.providers).map((provider) =>
+            provider.id === id
+              ? normalizeCustomProvider({ ...provider, ...updates }, { fallbackId: provider.id }) || provider
+              : provider
           ),
         }));
       },
 
       deleteProvider: (id) => {
         set((state) => ({
-          providers: state.providers.filter((p) => p.id !== id),
+          providers: normalizeCustomProviderList(state.providers).filter((p) => p.id !== id),
         }));
       },
 
       getProvider: (id) => {
-        return get().providers.find((p) => p.id === id);
+        return normalizeCustomProviderList(get().providers).find((p) => p.id === id);
       },
 
       addModel: (modelData) => {
-        const newModel: CustomModel = {
-          ...modelData,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        };
+        const newModel = normalizeCustomModel(modelData, { fallbackId: createLocalId() });
+        if (!newModel) {
+          return;
+        }
+
         set((state) => ({
-          models: [...state.models, newModel],
+          models: upsertCustomModel(state.models, newModel),
         }));
       },
 
       updateModel: (id, updates) => {
         set((state) => ({
-          models: state.models.map((m) =>
-            m.id === id ? { ...m, ...updates } : m
+          models: normalizeCustomModelList(state.models).map((model) =>
+            model.id === id
+              ? normalizeCustomModel({ ...model, ...updates }, { fallbackId: model.id }) || model
+              : model
           ),
         }));
       },
 
       deleteModel: (id) => {
         set((state) => ({
-          models: state.models.filter((m) => m.id !== id),
+          models: normalizeCustomModelList(state.models).filter((m) => m.id !== id),
         }));
       },
 
       getModel: (id) => {
-        return get().models.find((m) => m.id === id);
+        return normalizeCustomModelList(get().models).find((m) => m.id === id);
       },
     }),
     {
       name: 'crewai-custom-providers',
+      version: 1,
+      migrate: (persistedState) =>
+        normalizeCustomProvidersState(persistedState) as CustomProvidersState,
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...normalizeCustomProvidersState(persistedState),
+      }),
     }
   )
 );

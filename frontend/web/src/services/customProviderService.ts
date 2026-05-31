@@ -1,4 +1,10 @@
-import { CustomProvider, CustomModel } from '../stores/customProvidersStore';
+import type { CustomProvider, CustomModel } from '../stores/customProvidersStore';
+import {
+  normalizeCustomModel,
+  normalizeCustomModelList,
+  normalizeCustomProvider,
+  normalizeCustomProviderList,
+} from '../utils/customProviders';
 
 const API_BASE_URL = import.meta.env.VITE_AUTH_URL || '';
 
@@ -18,12 +24,12 @@ export interface UpdateCustomProviderRequest {
 
 export interface CreateCustomModelRequest {
   name: string;
-  provider_id?: string;
+  provider_id?: string | null;
 }
 
 export interface UpdateCustomModelRequest {
   name?: string;
-  provider_id?: string;
+  provider_id?: string | null;
 }
 
 class CustomProviderService {
@@ -47,7 +53,7 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data || [];
+    return normalizeCustomProviderList(data.data);
   }
 
   async createCustomProvider(provider: CreateCustomProviderRequest): Promise<CustomProvider> {
@@ -62,7 +68,11 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data;
+    const customProvider = normalizeCustomProvider(data.data);
+    if (!customProvider) {
+      throw new Error('Invalid custom provider response');
+    }
+    return customProvider;
   }
 
   async updateCustomProvider(id: string, updates: UpdateCustomProviderRequest): Promise<CustomProvider> {
@@ -77,7 +87,11 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data;
+    const provider = normalizeCustomProvider(data.data);
+    if (!provider) {
+      throw new Error('Invalid custom provider response');
+    }
+    return provider;
   }
 
   async deleteCustomProvider(id: string): Promise<void> {
@@ -102,7 +116,7 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data || [];
+    return normalizeCustomModelList(data.data);
   }
 
   async createCustomModel(model: CreateCustomModelRequest): Promise<CustomModel> {
@@ -117,7 +131,11 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data;
+    const customModel = normalizeCustomModel(data.data);
+    if (!customModel) {
+      throw new Error('Invalid custom model response');
+    }
+    return customModel;
   }
 
   async updateCustomModel(id: string, updates: UpdateCustomModelRequest): Promise<CustomModel> {
@@ -132,7 +150,11 @@ class CustomProviderService {
     }
 
     const data = await response.json();
-    return data.data;
+    const model = normalizeCustomModel(data.data);
+    if (!model) {
+      throw new Error('Invalid custom model response');
+    }
+    return model;
   }
 
   async deleteCustomModel(id: string): Promise<void> {

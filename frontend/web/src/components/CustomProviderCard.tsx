@@ -8,7 +8,7 @@ interface CustomProviderCardProps {
   provider?: CustomProvider;
   isNew?: boolean;
   isEditing?: boolean;
-  onSave: (provider: Omit<CustomProvider, 'id' | 'createdAt' | 'requires_api_key'>) => void;
+  onSave: (provider: CustomProvider) => void;
   onCancel: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -102,6 +102,7 @@ export function CustomProviderCard({
             name: formData.name,
             base_url: formData.baseUrl,
             api_key: formData.apiKey,
+            requires_api_key: formData.requiresApiKey,
           });
           onSave(updated);
         } catch (apiError) {
@@ -111,6 +112,7 @@ export function CustomProviderCard({
             name: formData.name,
             base_url: formData.baseUrl,
             api_key: formData.apiKey,
+            requires_api_key: formData.requiresApiKey,
             updated_at: new Date().toISOString(),
           };
           onSave(updatedProvider);
