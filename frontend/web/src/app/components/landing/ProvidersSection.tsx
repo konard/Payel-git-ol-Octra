@@ -1,6 +1,4 @@
 import { motion } from 'motion/react';
-import { useThemeStore } from '../../../stores/themeStore';
-import { useI18n } from '../../../hooks/useI18n';
 import openaiIcon from '../../../images/icon.png';
 import geminiIcon from '../../../images/gemini-color.png';
 import claudeIcon from '../../../images/Claude_AI_symbol.svg';
@@ -9,18 +7,11 @@ import zaiIcon from '../../../images/zai.png';
 import grokIcon from '../../../images/grok.png';
 import qwenIcon from '../../../images/qwen-color.png';
 import deepseekIcon from '../../../images/deepseek-color.png';
-import providersDark from '../../../images/main/dark/providers/providers.png';
-import providersLight from '../../../images/main/light/providers/providers.png';
 
-interface Provider {
-  name: string;
-  icon: string;
-}
-
-const providers: Provider[] = [
+const providers = [
   { name: 'OpenAI', icon: openaiIcon },
-  { name: 'Google Gemini', icon: geminiIcon },
-  { name: 'Anthropic Claude', icon: claudeIcon },
+  { name: 'Gemini', icon: geminiIcon },
+  { name: 'Claude', icon: claudeIcon },
   { name: 'OpenRouter', icon: openrouterIcon },
   { name: 'Zhipu AI', icon: zaiIcon },
   { name: 'Grok', icon: grokIcon },
@@ -29,85 +20,37 @@ const providers: Provider[] = [
 ];
 
 export function ProvidersSection() {
-  const { isDark } = useThemeStore();
-  const { t } = useI18n();
-
   return (
-    <section id="providers" className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--surface)]">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-sm font-medium text-[var(--accent)] mb-6"
-          >
-            {t('landing.providers.badge')}
-          </motion.div>
+    <section id="providers" className="bg-[#050505] px-4 py-20 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <p className="mb-4 text-sm font-semibold text-emerald-300">Model choice stays flexible</p>
+            <h2 className="text-4xl font-semibold leading-tight sm:text-5xl">
+              Use the provider that fits the task.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-white/66">
+              A developer task can use a coding model, a research task can use a search-oriented setup,
+              and document work can use the model your team already trusts.
+            </p>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
-          >
-            {t('landing.providers.title')}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.providers.titleAccent')}</span>
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-xl text-[var(--text-muted)] max-w-3xl mx-auto"
-          >
-            {t('landing.providers.description')}
-          </motion.p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {providers.map((provider, index) => (
+              <motion.div
+                key={provider.name}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: index * 0.035 }}
+                className="rounded-lg border border-white/10 bg-white/[0.035] p-4"
+              >
+                <img src={provider.icon} alt={provider.name} className="mb-4 h-10 w-10 object-contain" />
+                <h3 className="text-sm font-semibold text-white">{provider.name}</h3>
+              </motion.div>
+            ))}
+          </div>
         </div>
-
-        {/* Providers grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {providers.map((provider, index) => (
-            <motion.div
-              key={provider.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="p-6 bg-[var(--background)] border border-[var(--border)] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center"
-            >
-              <div className="w-16 h-16 mb-4 rounded-lg flex items-center justify-center overflow-hidden">
-                <img
-                  src={provider.icon}
-                  alt={provider.name}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <h3 className="text-base font-semibold text-[var(--text)] text-center">
-                {provider.name}
-              </h3>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Providers interface image */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="relative rounded-xl overflow-hidden shadow-2xl border border-[var(--border)] bg-[var(--background)]"
-        >
-          <img
-            src={isDark ? providersDark : providersLight}
-            alt="Providers Interface"
-            className="w-full h-auto"
-          />
-        </motion.div>
       </div>
     </section>
   );
