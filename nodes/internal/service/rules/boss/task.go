@@ -67,9 +67,17 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		log.Printf("Boss: Applied fallback - created default 'development' manager")
 	}
 
-	emit(progress, 30, "Architecture planned by AI", map[string]string{
-		"managers": strconv.Itoa(int(decision.ManagersCount)),
-	})
+	architectureData := map[string]string{
+		"managers":  strconv.Itoa(int(decision.ManagersCount)),
+		"task_type": decision.TaskType,
+		"taskType":  decision.TaskType,
+		"techStack": util_stack(decision.TechStack),
+	}
+	if issueTarget != nil {
+		architectureData["githubMode"] = "pull_request"
+		architectureData["githubIssueUrl"] = issueTarget.IssueURL
+	}
+	emit(progress, 30, "Architecture planned by AI", architectureData)
 	s.saveBossDecision(task.ID, decision)
 
 	projectPath, err := s.setupProject(ctx, taskID.String(), req.Title, issueTarget)
@@ -113,7 +121,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return err
 	}
 	if len(managerResults) == 0 {
-		log.Printf("Boss: No manager results. decision.ManagersCount=%d, ManagerRoles=%v", 
+		log.Printf("Boss: No manager results. decision.ManagersCount=%d, ManagerRoles=%v",
 			decision.ManagersCount, decision.ManagerRoles)
 		task.Status = "error"
 		database.Db.Save(task)
@@ -156,9 +164,14 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"techStack": util_stack(decision.TechStack),
 		"taskType":  decision.TaskType,
+		"task_type": decision.TaskType,
 	}
 	if validation != nil && validation.Feedback != "" {
 		data["bossReview"] = validation.Feedback
+	}
+	if codeFiles, filesCount := collectCodeFilesPayload(managerResults); codeFiles != "" {
+		data["code_files"] = codeFiles
+		data["filesCount"] = strconv.Itoa(filesCount)
 	}
 
 	// Для не-кодовых задач (research/document/presentation) босс отдаёт короткий

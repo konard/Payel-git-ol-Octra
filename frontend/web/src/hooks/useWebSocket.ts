@@ -79,6 +79,38 @@ function parseCodeFiles(data?: Record<string, any>): StreamedCodeFile[] {
   return [];
 }
 
+function normalizeTaskType(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function normalizeRoleKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9а-яё]+/gi, '');
+}
+
+function solutionMarkdownFile(data: Record<string, any> | undefined, currentTaskType: string): StreamedCodeFile | null {
+  if (!data) return null;
+
+  const taskType = normalizeTaskType(data.taskType || data.task_type) || currentTaskType;
+  const content = typeof data.solutionMarkdown === 'string'
+    ? data.solutionMarkdown
+    : typeof data.solution_markdown === 'string'
+      ? data.solution_markdown
+      : taskType && taskType !== 'code' && typeof data.response === 'string'
+        ? data.response
+        : '';
+
+  if (!content.trim()) return null;
+
+  const safeTaskType = taskType && taskType !== 'code' ? taskType : 'result';
+  return {
+    path: `solution/final-${safeTaskType}.md`,
+    content,
+    language: 'markdown',
+    status: 'ready',
+    updated_at: Date.now(),
+  };
+}
+
 export function useWebSocket(url: string, onChatMessage?: (message: string, sender: 'boss' | 'user', isClarification?: boolean, progress?: number, showProgress?: boolean) => void, onProgressUpdate?: (progress: number, message?: string) => void) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,7 +129,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
   const zipNodeAdded = useRef(false);
   const workerCounters = useRef<Record<string, number>>({});
   const workersByManager = useRef<Record<string, string[]>>({});
+  const workerIdsByManager = useRef<Record<string, string[]>>({});
   const currentManagerRole = useRef<string>('');
+  const currentTaskType = useRef<string>('');
 
   const storeActions = {
     setConnectionStatus: useTaskStore((state) => state.setConnectionStatus),
@@ -116,15 +150,26 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     nodes: () => useTaskStore.getState().nodes,
   };
 
-  // Check if there are user-created nodes (not auto-generated)
+  const isGeneratedNode = (node: { id: string }) =>
+    node.id.startsWith('boss-') ||
+    node.id.startsWith('manager-') ||
+    node.id.startsWith('worker-') ||
+    node.id === 'github-archive' ||
+    node.id === 'zip-archive';
+
   const hasUserNodes = () => {
     const nodes = storeActions.nodes();
-    return nodes.some(node =>
-      !node.id.startsWith('boss-') &&
-      !node.id.startsWith('manager-') &&
-      !node.id.startsWith('worker-') &&
-      node.id !== 'zip-archive'
-    );
+    return nodes.some(node => !isGeneratedNode(node));
+  };
+
+  const findReusableWorkerNode = (role: string) => {
+    const roleKey = normalizeRoleKey(role);
+    if (!roleKey) return null;
+    return storeActions.nodes().find((node) =>
+      node.type === 'worker' &&
+      !isGeneratedNode(node) &&
+      normalizeRoleKey(node.role) === roleKey,
+    ) || null;
   };
 
   const clearReconnectTimer = () => {
@@ -255,8 +300,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         }
         if (msg.data?.repoUrl) {
           storeActions.setZipUrl(msg.data.repoUrl);
-          // Update GitHub node with the repository URL
-          storeActions.updateNode('github-archive', { repoUrl: msg.data.repoUrl });
+          addGitHubNode(msg.data.repoUrl);
         } else if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
         }
@@ -327,6 +371,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
   const handleCodeFilesMessage = (msg: WebSocketMessage) => {
     const codeFiles = parseCodeFiles(msg.data);
+    const finalSolution = solutionMarkdownFile(msg.data, currentTaskType.current);
+    if (finalSolution) {
+      codeFiles.push(finalSolution);
+    }
     if (codeFiles.length === 0) return;
 
     storeActions.upsertCodeFiles(codeFiles
@@ -359,9 +407,13 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     });
   };
 
-  // Helper: add GitHub node with edges from all workers
-  const addGitHubNode = () => {
-    if (zipNodeAdded.current || hasUserNodes()) return;
+  // Helper: add GitHub node only when a real repository or pull request URL exists.
+  const addGitHubNode = (repoUrl: string) => {
+    if (!repoUrl) return;
+    if (zipNodeAdded.current) {
+      storeActions.updateNode('github-archive', { repoUrl, status: 'done' });
+      return;
+    }
     zipNodeAdded.current = true;
 
     // Find all worker nodes
@@ -377,8 +429,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       id: 'github-archive',
       type: 'github',
       role: 'GitHub',
-      status: 'pending',
-      repoUrl: '',
+      status: 'done',
+      repoUrl,
       position: { x: centerX, y: 520 },
     });
 
@@ -398,6 +450,11 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const message = msg.message || '';
 
     console.log('[WS] handleProgressMessage:', message, 'progress:', progress);
+
+    const taskType = normalizeTaskType(msg.data?.taskType || msg.data?.task_type);
+    if (taskType) {
+      currentTaskType.current = taskType;
+    }
 
     storeActions.addLog({
       message: `${message} (${progress}%)`,
@@ -433,6 +490,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       zipNodeAdded.current = false;
       workerCounters.current = {};
       workersByManager.current = {};
+      workerIdsByManager.current = {};
+      currentTaskType.current = taskType || currentTaskType.current;
 
       // Only add auto-generated boss if no user nodes exist
       if (!hasUserNodes()) {
@@ -521,6 +580,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       if (!workersByManager.current[managerRole]) {
         workersByManager.current[managerRole] = [];
       }
+      if (!workerIdsByManager.current[managerRole]) {
+        workerIdsByManager.current[managerRole] = [];
+      }
       if (!workerCounters.current[managerRole]) {
         workerCounters.current[managerRole] = 0;
       }
@@ -529,29 +591,34 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       if (!workersByManager.current[managerRole].includes(role)) {
         const wIdx = workerCounters.current[managerRole]++;
         workersByManager.current[managerRole].push(role);
-        const workerId = `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
+        const reusableWorker = findReusableWorkerNode(role);
+        const workerId = reusableWorker?.id || `worker-${managerRole.replace(/[^a-zA-Z0-9]/g, '')}-${wIdx}`;
+        workerIdsByManager.current[managerRole].push(workerId);
 
-        // Always add workers - they should appear on canvas regardless of user nodes
-        const mgrPosition = managerIdx >= 0 ?
-          (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
-        const workerX = mgrPosition + (wIdx - 1) * 120;
-        const workerY = 370;
+        if (reusableWorker) {
+          console.log('[WS] => Reusing custom worker:', workerId);
+          storeActions.updateNode(workerId, { status: 'working' });
+        } else {
+          // Add generated workers when the user did not already place a matching one.
+          const mgrPosition = managerIdx >= 0 ?
+            (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200) : 200;
+          const workerX = mgrPosition + (wIdx - 1) * 120;
+          const workerY = 370;
 
-        console.log('[WS] => Adding worker:', workerId, 'at position:', workerX, workerY);
-        storeActions.addNode({
-          id: workerId,
-          type: 'worker',
-          role: capitalizeRole(role),
-          status: 'working',
-          position: { x: workerX, y: workerY },
-        });
+          console.log('[WS] => Adding worker:', workerId, 'at position:', workerX, workerY);
+          storeActions.addNode({
+            id: workerId,
+            type: 'worker',
+            role: capitalizeRole(role),
+            status: 'working',
+            position: { x: workerX, y: workerY },
+          });
 
-        // Edge from manager to worker
-        if (managerIdx >= 0) {
-          storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+          // Edge from manager to worker
+          if (managerIdx >= 0) {
+            storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+          }
         }
-
-
       }
     }
 
@@ -568,7 +635,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         const wIdx = workersByManager.current[managerRole].indexOf(role);
         if (wIdx >= 0) {
           const sanitizedManagerRole = managerRole.replace(/[^a-zA-Z0-9]/g, '');
-          const workerId = `worker-${sanitizedManagerRole}-${wIdx}`;
+          const workerId = workerIdsByManager.current[managerRole]?.[wIdx] || `worker-${sanitizedManagerRole}-${wIdx}`;
 
           console.log('[WS] => Worker completed:', workerId, 'files:', filesCount);
           storeActions.updateNode(workerId, {
@@ -589,30 +656,26 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         }
       });
 
-      // Add GitHub node
-      addGitHubNode();
     }
 
     // === BOSS VALIDATING ===
     if (message.includes('Boss validating')) {
       storeActions.updateNode('boss-1', { status: 'reviewing' });
 
-      // Ensure GitHub node exists (if not added by "All managers completed")
-      addGitHubNode();
     }
 
     // === PACKAGING ===
     if (message.includes('Packaging')) {
       storeActions.updateNode('boss-1', { status: 'done' });
 
-      // Update GitHub node to done (packaging means publishing to GitHub)
-      storeActions.updateNode('github-archive', { status: 'done' });
+      // If a GitHub URL appears later, the success handler will add the output node.
+      storeActions.updateNode('github-archive', { status: 'working' });
     }
 
     // === PROJECT READY (progress 100) ===
     if (progress === 100 && msg.data?.repoUrl) {
       storeActions.setZipUrl(msg.data.repoUrl);
-      storeActions.updateNode('github-archive', { repoUrl: msg.data.repoUrl, status: 'done' });
+      addGitHubNode(msg.data.repoUrl);
     }
   };
 
@@ -720,6 +783,11 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     activeTaskId.current = null;
     taskStartTime.current = 0;
     hasApiConfigError.current = false;
+    currentTaskType.current = '';
+    zipNodeAdded.current = false;
+    workerCounters.current = {};
+    workersByManager.current = {};
+    workerIdsByManager.current = {};
 
     const currentStatus = useTaskStore.getState().status;
     // If status is stuck at a non-terminal state (e.g. from a previous failed

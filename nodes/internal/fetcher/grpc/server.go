@@ -37,13 +37,35 @@ func (s *Server) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.B
 	progress := sender.asProgressFunc()
 
 	bossReq := &boss.CreateTaskRequest{
-		UserId:        req.UserId,
-		Username:      req.Username,
-		Title:         req.Title,
-		Description:   req.Description,
-		Tokens:        req.Tokens,
-		Meta:          req.Meta,
-		UseAiPlanning: req.UseAiPlanning,
+		UserId:                 req.UserId,
+		Username:               req.Username,
+		Title:                  req.Title,
+		Description:            req.Description,
+		Tokens:                 req.Tokens,
+		Meta:                   req.Meta,
+		UseAiPlanning:          req.UseAiPlanning,
+		PredefinedArchitecture: req.PredefinedArchitecture,
+		PredefinedTechStack:    req.PredefinedTechStack,
+	}
+	for _, manager := range req.PredefinedManagers {
+		if manager == nil {
+			continue
+		}
+		workflowManager := boss.ManagerWorkflow{
+			Role:        manager.Role,
+			Description: manager.Description,
+			Priority:    manager.Priority,
+		}
+		for _, worker := range manager.Workers {
+			if worker == nil {
+				continue
+			}
+			workflowManager.Workers = append(workflowManager.Workers, boss.WorkerWorkflow{
+				Role:        worker.Role,
+				Description: worker.Description,
+			})
+		}
+		bossReq.PredefinedManagers = append(bossReq.PredefinedManagers, workflowManager)
 	}
 
 	if err := s.boss.ExecuteTask(ctx, bossReq, progress); err != nil {

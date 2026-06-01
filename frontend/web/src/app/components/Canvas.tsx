@@ -23,6 +23,7 @@ import { NodeContextMenu } from './NodeContextMenu';
 import { WorkflowLibrary } from '../../components/WorkflowLibrary';
 import { WorkflowExport } from '../../components/WorkflowExport';
 import { useI18n } from '../../hooks/useI18n';
+import { buildWorkflowConfigFromGraph } from '../taskPayload';
 
 const nodeTypes = {
   boss: BossNode,
@@ -268,47 +269,7 @@ export function Canvas({ mode }: CanvasProps) {
       return;
     }
 
-    // Строим workflow из текущего канваса
-    const managerNodes = nodes.filter((n) => n.type === 'manager');
-    const bossNodes = nodes.filter((n) => n.type === 'boss');
-    const workerNodes = nodes.filter((n) => n.type === 'worker');
-
-    // Определяем есть ли pre-defined workflow (если есть ноды на канвасе)
-    const managers = managerNodes.map((mgr, idx) => {
-      // Находим воркеров этого менеджера
-      const mgrWorkers = workerNodes.filter((w) =>
-        edges.some((e) => e.from === mgr.id && e.to === w.id)
-      );
-
-      return {
-        role: mgr.role || 'Manager',
-        description: `${mgr.role} manager for task execution`,
-        priority: idx + 1,
-        workers: mgrWorkers.map((w) => ({
-          role: w.role || 'Developer',
-          description: `${w.role} worker`,
-        })),
-      };
-    });
-
-    // Boss connection check
-    const hasBoss = bossNodes.length > 0;
-    const hasManagers = managerNodes.length > 0;
-
-    // Если есть ноды — используем predefined workflow
-    // Если нет — AI planning (useAiPlanning = true)
-    const usePredefined = hasManagers;
-
-    const workflow = usePredefined ? {
-      useAiPlanning: false,
-      managers,
-      architecture: hasBoss
-        ? `Custom workflow with ${bossNodes[0]?.role || 'Boss'} and ${managerNodes.length} managers`
-        : `Custom workflow with ${managerNodes.length} managers`,
-      techStack: bossNodes[0]?.techStack || [],
-    } : null;
-
-    useTaskStore.getState().setWorkflow(workflow);
+    useTaskStore.getState().setWorkflow(buildWorkflowConfigFromGraph(nodes, edges));
   }, [nodes, edges]);
 
   return (

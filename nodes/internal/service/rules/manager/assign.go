@@ -50,11 +50,30 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 
 	emit(progress, 10, fmt.Sprintf("Manager %s thinking about workers...", req.Role), nil)
 
-	workerRolesList, err := s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight, taskType)
-	if err != nil {
-		manager.Status = "error"
-		database.Db.Save(manager)
-		return nil, fmt.Errorf("manager think failed: %w", err)
+	var workerRolesList []models.WorkerRole
+	if len(req.PredefinedWorkers) > 0 {
+		for _, worker := range req.PredefinedWorkers {
+			if worker == nil || worker.Role == "" {
+				continue
+			}
+			description := worker.Description
+			if description == "" {
+				description = worker.Role + " worker"
+			}
+			workerRolesList = append(workerRolesList, models.WorkerRole{
+				Role:         worker.Role,
+				Description:  description,
+				CustomPrompt: worker.CustomPrompt,
+			})
+		}
+	} else {
+		var err error
+		workerRolesList, err = s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight, taskType)
+		if err != nil {
+			manager.Status = "error"
+			database.Db.Save(manager)
+			return nil, fmt.Errorf("manager think failed: %w", err)
+		}
 	}
 
 	emit(progress, 20, fmt.Sprintf("Manager %s decided to hire %d workers", req.Role, len(workerRolesList)), nil)

@@ -30,6 +30,7 @@ type AssignManagerRequest struct {
 	ProjectPath          string
 	Metadata             map[string]string
 	OtherWorkersResults  []*WorkerResult
+	PredefinedWorkers    []*WorkerRole
 }
 
 // AssignWorkersRequest — задание для группы воркеров от менеджера

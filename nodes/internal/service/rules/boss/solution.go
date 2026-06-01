@@ -2,12 +2,25 @@ package boss
 
 import (
 	"context"
+	"encoding/json"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"nodes/internal/prompts"
 	"nodes/internal/service/rules"
 )
+
+type streamedSolutionFile struct {
+	Path        string `json:"path"`
+	Content     string `json:"content"`
+	Language    string `json:"language"`
+	WorkerRole  string `json:"worker_role"`
+	ManagerRole string `json:"manager_role"`
+	Status      string `json:"status"`
+	UpdatedAt   int64  `json:"updated_at"`
+}
 
 // collectSolutionMarkdown — собирает Markdown-документы из папки solution/,
 // произведённые воркерами не-кодовых задач, в один текст. Возвращает также
@@ -44,6 +57,106 @@ func collectSolutionMarkdown(results []*rules.ManagerResult) (string, int) {
 		b.WriteString(d.content)
 	}
 	return b.String(), len(docs)
+}
+
+func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
+	type fileEntry struct {
+		path        string
+		content     string
+		workerRole  string
+		managerRole string
+	}
+
+	var files []fileEntry
+	seen := map[string]bool{}
+	totalFiles := 0
+	for _, mr := range results {
+		for _, wr := range mr.WorkerResults {
+			for path, content := range wr.Files {
+				if strings.TrimSpace(path) == "" || seen[path] {
+					continue
+				}
+				seen[path] = true
+				totalFiles++
+				if isBinarySolutionPath(path) {
+					continue
+				}
+				files = append(files, fileEntry{
+					path:        path,
+					content:     content,
+					workerRole:  wr.Role,
+					managerRole: mr.Role,
+				})
+			}
+		}
+	}
+	if len(files) == 0 {
+		return "", totalFiles
+	}
+
+	sort.Slice(files, func(i, j int) bool { return files[i].path < files[j].path })
+	now := time.Now().Unix()
+	payload := make([]streamedSolutionFile, 0, len(files))
+	for _, file := range files {
+		payload = append(payload, streamedSolutionFile{
+			Path:        file.path,
+			Content:     file.content,
+			Language:    languageForSolutionPath(file.path),
+			WorkerRole:  file.workerRole,
+			ManagerRole: file.managerRole,
+			Status:      "ready",
+			UpdatedAt:   now,
+		})
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return "", totalFiles
+	}
+	return string(data), totalFiles
+}
+
+func isBinarySolutionPath(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
+		return true
+	default:
+		return false
+	}
+}
+
+func languageForSolutionPath(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".go":
+		return "go"
+	case ".js", ".mjs", ".cjs", ".jsx":
+		return "javascript"
+	case ".ts", ".tsx":
+		return "typescript"
+	case ".py":
+		return "python"
+	case ".java":
+		return "java"
+	case ".c":
+		return "c"
+	case ".cc", ".cpp", ".cxx", ".hpp", ".hxx":
+		return "cpp"
+	case ".css":
+		return "css"
+	case ".html", ".htm":
+		return "html"
+	case ".json":
+		return "json"
+	case ".md", ".markdown":
+		return "markdown"
+	case ".yml", ".yaml":
+		return "yaml"
+	case ".sh", ".bash":
+		return "shell"
+	case ".sql":
+		return "sql"
+	default:
+		return "plaintext"
+	}
 }
 
 // synthesizeSolution — менеджерский синтез: сливает Markdown-результаты
