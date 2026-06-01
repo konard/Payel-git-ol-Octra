@@ -45,7 +45,24 @@ export function buildWorkflowConfigFromGraph(nodes: AgentNode[], edges: Edge[]):
   const workerNodes = customNodes.filter((node) => node.type === 'worker');
 
   if (managerNodes.length === 0) {
-    return null;
+    if (workerNodes.length === 0) {
+      return null;
+    }
+
+    return {
+      useAiPlanning: false,
+      managers: [{
+        role: 'Direct Worker',
+        description: 'Run selected workers directly for this task',
+        priority: 1,
+        workers: workerNodes.map((worker) => ({
+          role: worker.role || 'Worker',
+          description: `${worker.role || 'Worker'} worker`,
+        })),
+      }],
+      architecture: `Custom workflow with ${workerNodes.length} direct worker${workerNodes.length === 1 ? '' : 's'}`,
+      techStack: bossNodes[0]?.techStack || [],
+    };
   }
 
   const managers = managerNodes.map((manager, index) => {

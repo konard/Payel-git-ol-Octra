@@ -3,6 +3,7 @@ package boss
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,7 +40,7 @@ func (s *Service) assignManagersParallel(
 		wg.Add(1)
 		go func(idx int, role models.ManagerRole) {
 			defer wg.Done()
-			bridged(role.Role, 40+idx*5, "Starting manager: "+role.Role)
+			bridged(role.Role, 40+idx*5, "Starting manager: "+role.Role, map[string]string{"task_type": decision.TaskType})
 
 			if idx > 0 {
 				select {
@@ -66,6 +67,7 @@ func (s *Service) assignManagersParallel(
 				ProjectPath:          projectPath,
 				Metadata:             metadata,
 				OtherWorkersResults:  contextResults,
+				PredefinedWorkers:    predefinedWorkersFor(decision, idx, role.Role),
 			}
 
 			managerCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
@@ -73,7 +75,7 @@ func (s *Service) assignManagersParallel(
 
 			managerProgress := func(p int32, msg string, data map[string]string) {
 				scaled := 40 + idx*10 + int(p)*30/100
-				bridged(role.Role, scaled, msg)
+				bridged(role.Role, scaled, msg, data)
 			}
 
 			log.Printf("Calling Manager #%d: %s", idx+1, role.Role)
@@ -90,7 +92,7 @@ func (s *Service) assignManagersParallel(
 			mu.Lock()
 			allResults = append(allResults, result)
 			mu.Unlock()
-			bridged(role.Role, 70, "Manager completed: "+role.Role)
+			bridged(role.Role, 70, "Manager completed: "+role.Role, map[string]string{"task_type": decision.TaskType})
 		}(i, role)
 	}
 
@@ -99,6 +101,48 @@ func (s *Service) assignManagersParallel(
 		return nil, firstErr
 	}
 	return allResults, nil
+}
+
+func predefinedWorkersFor(decision *DecisionResult, idx int, role string) []*rules.WorkerRole {
+	if decision == nil || len(decision.ManagerWorkflows) == 0 {
+		return nil
+	}
+
+	var workflow *ManagerWorkflow
+	if idx >= 0 && idx < len(decision.ManagerWorkflows) {
+		workflow = &decision.ManagerWorkflows[idx]
+	}
+	if workflow == nil || !sameWorkflowRole(workflow.Role, role) {
+		for i := range decision.ManagerWorkflows {
+			if sameWorkflowRole(decision.ManagerWorkflows[i].Role, role) {
+				workflow = &decision.ManagerWorkflows[i]
+				break
+			}
+		}
+	}
+	if workflow == nil {
+		return nil
+	}
+
+	workers := make([]*rules.WorkerRole, 0, len(workflow.Workers))
+	for _, worker := range workflow.Workers {
+		if worker.Role == "" {
+			continue
+		}
+		workers = append(workers, &rules.WorkerRole{
+			Role:         worker.Role,
+			Description:  worker.Description,
+			CustomPrompt: worker.CustomPrompt,
+		})
+	}
+	return workers
+}
+
+func sameWorkflowRole(a, b string) bool {
+	normalize := func(v string) string {
+		return strings.ToLower(strings.Join(strings.Fields(v), " "))
+	}
+	return normalize(a) == normalize(b)
 }
 
 // buildManagerMetadata — формирует метадату для менеджеров

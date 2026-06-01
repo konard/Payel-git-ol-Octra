@@ -10,10 +10,15 @@ import (
 	"nodes/internal/prompts"
 	"nodes/internal/service/rules"
 	"nodes/internal/service/util"
+	"nodes/pkg/models"
 )
 
 // thinkAboutTask — boss решает архитектуру через AI (с fallback'ом по провайдерам)
 func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, req *CreateTaskRequest) (*DecisionResult, error) {
+	if len(req.PredefinedManagers) > 0 {
+		return decisionFromPredefinedWorkflow(req), nil
+	}
+
 	providers := []struct{ provider, model string }{
 		{provider, model},
 		{"openai", "gpt-4o-mini"},
@@ -81,6 +86,49 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 	}
 
 	return &decision, nil
+}
+
+func decisionFromPredefinedWorkflow(req *CreateTaskRequest) *DecisionResult {
+	managerRoles := make([]models.ManagerRole, 0, len(req.PredefinedManagers))
+	for i, manager := range req.PredefinedManagers {
+		role := strings.TrimSpace(manager.Role)
+		if role == "" {
+			role = fmt.Sprintf("manager-%d", i+1)
+		}
+		description := strings.TrimSpace(manager.Description)
+		if description == "" {
+			description = role + " manager for task execution"
+		}
+		priority := manager.Priority
+		if priority <= 0 {
+			priority = int32(i + 1)
+		}
+		managerRoles = append(managerRoles, models.ManagerRole{
+			Role:         role,
+			Description:  description,
+			Priority:     priority,
+			CustomPrompt: manager.CustomPrompt,
+		})
+	}
+
+	taskType := normalizeTaskType(req.Meta["task_type"])
+	if taskType == "" {
+		taskType = classifyTaskType(req.Title, req.Description)
+	}
+	architecture := strings.TrimSpace(req.PredefinedArchitecture)
+	if architecture == "" {
+		architecture = "User-defined workflow"
+	}
+
+	return &DecisionResult{
+		TaskType:             taskType,
+		ManagersCount:        int32(len(managerRoles)),
+		ManagerRoles:         managerRoles,
+		ManagerWorkflows:     req.PredefinedManagers,
+		TechnicalDescription: firstNonEmpty(architecture, req.Title+"\n"+req.Description),
+		TechStack:            append([]string(nil), req.PredefinedTechStack...),
+		ArchitectureNotes:    architecture,
+	}
 }
 
 // validationResult — внутренний результат валидации боссом

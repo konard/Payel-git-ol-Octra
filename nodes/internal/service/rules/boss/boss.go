@@ -75,9 +75,27 @@ type CreateTaskRequest struct {
 	UseAiPlanning bool
 	Grade         int // model-predicted complexity 1-10
 
+	PredefinedManagers     []ManagerWorkflow
+	PredefinedArchitecture string
+	PredefinedTechStack    []string
+
 	// Для доработок существующего проекта
 	ExistingRepoUrl string // если есть — продолжаем работу над этим репозиторием
 	IsRefinement    bool   // если true — не восстанавливаем проект, а продолжаем
+}
+
+type WorkerWorkflow struct {
+	Role         string
+	Description  string
+	CustomPrompt string
+}
+
+type ManagerWorkflow struct {
+	Role         string
+	Description  string
+	Priority     int32
+	CustomPrompt string
+	Workers      []WorkerWorkflow
 }
 
 // DecisionResult — итог boss-планирования
@@ -90,14 +108,20 @@ type DecisionResult struct {
 	TechnicalDescription string
 	TechStack            []string
 	ArchitectureNotes    string
+	ManagerWorkflows     []ManagerWorkflow
 }
 
 // progressBridge — переходник между rules.ProgressFunc и progressCallback менеджеров
-func (s *Service) bridge(progress rules.ProgressFunc) func(role string, p int, msg string) {
+func (s *Service) bridge(progress rules.ProgressFunc) func(role string, p int, msg string, data map[string]string) {
 	if progress == nil {
-		return func(string, int, string) {}
+		return func(string, int, string, map[string]string) {}
 	}
-	return func(role string, p int, msg string) {
-		progress(int32(p), msg, map[string]string{"current_role": role})
+	return func(role string, p int, msg string, data map[string]string) {
+		payload := make(map[string]string, len(data)+1)
+		for k, v := range data {
+			payload[k] = v
+		}
+		payload["current_role"] = role
+		progress(int32(p), msg, payload)
 	}
 }

@@ -52,6 +52,20 @@ try {
   );
   assert.equal(noWorkflow, null, 'a graph without custom managers should not force an empty predefined workflow');
 
+  const directWorkerWorkflow = buildWorkflowConfigFromGraph(
+    [{ id: 'canvas-worker-solo', type: 'worker', role: 'Research Worker', status: 'pending', position: { x: 0, y: 0 } }],
+    [],
+  );
+  assert.ok(directWorkerWorkflow, 'a single custom worker must still produce an executable workflow');
+  assert.equal(directWorkerWorkflow.useAiPlanning, false);
+  assert.equal(directWorkerWorkflow.architecture, 'Custom workflow with 1 direct worker');
+  assert.equal(directWorkerWorkflow.managers.length, 1, 'worker-only graphs use one internal direct runner');
+  assert.equal(directWorkerWorkflow.managers[0].role, 'Direct Worker');
+  assert.deepEqual(
+    directWorkerWorkflow.managers[0].workers.map((worker) => worker.role),
+    ['Research Worker'],
+  );
+
   console.log('check-task-payload-workflow: all assertions passed');
 } finally {
   await server.close();
