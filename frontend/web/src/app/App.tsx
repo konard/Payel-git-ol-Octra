@@ -303,6 +303,7 @@ export default function App() {
   };
 
   const handleCreateTask = async (data: TaskData) => {
+    await checkAuth();
     const { isAuthenticated, hasSubscription, isInTrial } = useAuthStore.getState();
 
     if (!isAuthenticated) {
@@ -375,6 +376,8 @@ export default function App() {
   };
 
   const handleSendChatMessage = async (message: string) => {
+    await checkAuth();
+    const { isAuthenticated } = useAuthStore.getState();
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;

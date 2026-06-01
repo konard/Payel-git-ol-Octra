@@ -61,14 +61,41 @@ export async function getChat(chatId: string): Promise<ChatHistoryItem> {
   return data.data;
 }
 
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const response = await fetch(url, { ...options, credentials: 'include' });
+  if (response.status === 401) {
+    const rt = localStorage.getItem('refresh_token');
+    if (rt) {
+      try {
+        const { refreshToken: doRefresh } = await import('./authService');
+        const res = await doRefresh(rt);
+        localStorage.setItem('access_token', res.data.access_token);
+        localStorage.setItem('refresh_token', res.data.refresh_token);
+        document.cookie = `access_token=${res.data.access_token}; path=/; SameSite=Lax`;
+        const { headers: _, ...rest } = options;
+        return fetch(url, {
+          ...rest,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${res.data.access_token}`,
+          },
+          credentials: 'include',
+        });
+      } catch {
+        // refresh failed, return original 401
+      }
+    }
+  }
+  return response;
+}
+
 export async function createChat(userId: string, title: string): Promise<ChatHistoryItem> {
-  const response = await fetch(`${AUTH_API_URL}/chat/create`, {
+  const response = await authFetch(`${AUTH_API_URL}/chat/create`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
     },
-    credentials: 'include',
     body: JSON.stringify({ user_id: userId, title }),
   });
 
