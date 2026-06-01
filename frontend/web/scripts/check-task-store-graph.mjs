@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createServer } from 'vite';
 
 // Regression test for issue #13: switching between chats used to leak the
 // previous chat's nodes onto the canvas. `resetTask()` preserved "user" nodes,
 // so the next chat's saved workflow was appended on top of the old one. The
 // fix introduces `setGraph()`, a full graph swap, used when switching chats.
+const websocketSource = readFileSync(resolve(process.cwd(), 'src/hooks/useWebSocket.ts'), 'utf8');
+assert.match(websocketSource, /addGitHubNode\(\)/, 'code packaging should add the GitHub sink before the final URL arrives');
+assert.match(websocketSource, /currentTaskType\.current === 'code'/, 'GitHub sink should be limited to code tasks');
 
 const server = await createServer({
   root: process.cwd(),

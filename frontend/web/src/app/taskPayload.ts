@@ -75,8 +75,8 @@ export function buildWorkflowConfigFromGraph(nodes: AgentNode[], edges: Edge[]):
       description: `${manager.role || 'Manager'} manager for task execution`,
       priority: index + 1,
       workers: managerWorkers.map((worker) => ({
-        role: worker.role || 'Developer',
-        description: `${worker.role || 'Developer'} worker`,
+        role: worker.role || 'Specialist',
+        description: `${worker.role || 'Specialist'} worker`,
       })),
     };
   });

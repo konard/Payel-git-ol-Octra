@@ -43,6 +43,7 @@ interface StreamedCodeFile {
   path: string;
   content: string;
   language?: string;
+  encoding?: string;
   worker_role?: string;
   workerRole?: string;
   manager_role?: string;
@@ -383,6 +384,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         path: file.path,
         name: file.path.split('/').filter(Boolean).at(-1) || file.path,
         language: file.language || 'plaintext',
+        encoding: file.encoding,
         content: file.content,
         status: file.status || 'streaming',
         workerRole: file.workerRole || file.worker_role,
@@ -407,11 +409,15 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     });
   };
 
-  // Helper: add GitHub node only when a real repository or pull request URL exists.
-  const addGitHubNode = (repoUrl: string) => {
-    if (!repoUrl) return;
+  // Helper: add the publishing sink during code packaging, then attach the
+  // repository URL when the backend returns one.
+  const addGitHubNode = (repoUrl?: string) => {
+    const nodeStatus: 'working' | 'done' = repoUrl ? 'done' : 'working';
     if (zipNodeAdded.current) {
-      storeActions.updateNode('github-archive', { repoUrl, status: 'done' });
+      storeActions.updateNode('github-archive', {
+        ...(repoUrl ? { repoUrl } : {}),
+        status: nodeStatus,
+      });
       return;
     }
     zipNodeAdded.current = true;
@@ -429,8 +435,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       id: 'github-archive',
       type: 'github',
       role: 'GitHub',
-      status: 'done',
-      repoUrl,
+      status: nodeStatus,
+      ...(repoUrl ? { repoUrl } : {}),
       position: { x: centerX, y: 520 },
     });
 
@@ -668,8 +674,9 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     if (message.includes('Packaging')) {
       storeActions.updateNode('boss-1', { status: 'done' });
 
-      // If a GitHub URL appears later, the success handler will add the output node.
-      storeActions.updateNode('github-archive', { status: 'working' });
+      if (currentTaskType.current === '' || currentTaskType.current === 'code') {
+        addGitHubNode();
+      }
     }
 
     // === PROJECT READY (progress 100) ===

@@ -47,11 +47,13 @@ function serializeCurrentWorkflow(): string {
 }
 
 // Persist the current canvas graph to the given chat so it can be restored later.
-function persistWorkflow(chatId: string | null) {
+async function persistWorkflow(chatId: string | null) {
   if (!chatId) return;
-  updateChatWorkflow(chatId, serializeCurrentWorkflow()).catch((error) => {
+  try {
+    await updateChatWorkflow(chatId, serializeCurrentWorkflow());
+  } catch (error) {
     console.error('Failed to persist chat workflow:', error);
-  });
+  }
 }
 
 // Parse a stored chat workflow string into store-ready nodes and edges.
@@ -243,7 +245,7 @@ export default function App() {
   // Persist the workflow to the chat whenever a task finishes.
   useEffect(() => {
     if (status === 'done' && currentChatId) {
-      persistWorkflow(currentChatId);
+      void persistWorkflow(currentChatId);
     }
   }, [status, currentChatId]);
 
@@ -256,13 +258,17 @@ export default function App() {
   }, [isDark]);
 
   useEffect(() => {
-    // Handle OAuth callback token from Google
+    // Handle OAuth callback tokens
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
+    const oauthRefreshToken = urlParams.get('refresh_token');
 
     if (oauthToken) {
       // Save the access token
       localStorage.setItem('access_token', oauthToken);
+      if (oauthRefreshToken) {
+        localStorage.setItem('refresh_token', oauthRefreshToken);
+      }
       document.cookie = `access_token=${oauthToken}; path=/; SameSite=Lax`;
       
       // Clean the URL
@@ -271,6 +277,7 @@ export default function App() {
       // Update store with token
       useAuthStore.setState({
         accessToken: oauthToken,
+        refreshToken: oauthRefreshToken || useAuthStore.getState().refreshToken,
         isAuthenticated: true,
       });
 
@@ -445,11 +452,11 @@ export default function App() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleNewChat = (chatId?: string) => {
+  const handleNewChat = async (chatId?: string) => {
     // Save the workflow of the chat we are leaving before clearing the canvas.
     const prevChatId = currentChatIdRef.current;
     if (prevChatId && prevChatId !== chatId) {
-      persistWorkflow(prevChatId);
+      await persistWorkflow(prevChatId);
     }
 
     setCurrentChatId(chatId ?? null);
@@ -464,7 +471,7 @@ export default function App() {
     // Save the workflow we are leaving so it is restored next time it is opened.
     const prevChatId = currentChatIdRef.current;
     if (prevChatId && prevChatId !== chatId) {
-      persistWorkflow(prevChatId);
+      await persistWorkflow(prevChatId);
     }
 
     setCurrentChatId(chatId);

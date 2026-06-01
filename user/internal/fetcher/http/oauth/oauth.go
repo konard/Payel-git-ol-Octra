@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -15,6 +17,16 @@ import (
 
 	"user/internal/core/services"
 )
+
+func frontendAppRedirectURL(frontendURL, accessToken, refreshToken string) string {
+	appURL := strings.TrimRight(frontendURL, "/") + "/app"
+	values := url.Values{}
+	values.Set("token", accessToken)
+	if refreshToken != "" {
+		values.Set("refresh_token", refreshToken)
+	}
+	return appURL + "?" + values.Encode()
+}
 
 func GetGoogleOauthConfig() *oauth2.Config {
 	return &oauth2.Config{
@@ -102,8 +114,7 @@ func RegisterGoogleRoutes(r *gin.Engine) {
 		if frontendURL == "" {
 			frontendURL = "https://octra.env.pm"
 		}
-		redirectURL := fmt.Sprintf("%s/app?token=%s", frontendURL, accessToken)
-		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		c.Redirect(http.StatusTemporaryRedirect, frontendAppRedirectURL(frontendURL, accessToken, refreshToken))
 	})
 }
 
@@ -176,7 +187,6 @@ func RegisterGithubRoutes(r *gin.Engine) {
 		if frontendURL == "" {
 			frontendURL = "https://octra.env.pm"
 		}
-		redirectURL := fmt.Sprintf("%s/app?token=%s", frontendURL, accessToken)
-		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		c.Redirect(http.StatusTemporaryRedirect, frontendAppRedirectURL(frontendURL, accessToken, refreshToken))
 	})
 }

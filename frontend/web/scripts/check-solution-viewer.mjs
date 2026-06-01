@@ -34,6 +34,8 @@ assert.match(viewer, /remark-gfm/, 'SolutionViewer must use remark-gfm (tables, 
 // the Monaco editor — the viewer shows a placeholder instead.
 assert.match(viewer, /isBinaryPath/, 'SolutionViewer must guard binary files with isBinaryPath');
 assert.match(viewer, /binaryFileLabel/, 'SolutionViewer must label binary files');
+assert.match(viewer, /Download/, 'SolutionViewer must offer generated binary files as downloads');
+assert.match(viewer, /displayedContentByPathRef/, 'SolutionViewer must cache streaming text per file path');
 // Document solutions get a clean reader (no explorer/tabs) with a page switcher.
 assert.match(viewer, /isDocumentSolution/, 'SolutionViewer must detect document solutions');
 assert.match(viewer, /paginateMarkdown/, 'SolutionViewer must paginate document reader pages');
@@ -113,6 +115,11 @@ try {
     choosePreferredCodeFilePath(['solution/httpx-install.md', 'solution/sources.md'], 'missing.md', 'solution/sources.md'),
     'solution/sources.md',
     'latest file should be the fallback when active file is unavailable',
+  );
+  assert.equal(
+    choosePreferredCodeFilePath(['solution/deck.md', 'solution/deck.pptx', 'solution/final-presentation.md'], null, 'solution/final-presentation.md'),
+    'solution/deck.pptx',
+    'presentation workflows should open the generated pptx instead of the final markdown summary',
   );
   assert.equal(
     choosePreferredCodeFilePath(['solution/httpx-install.md', 'solution/sources.md'], null, null),

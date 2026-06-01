@@ -1,6 +1,7 @@
 package boss
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"testing"
 
@@ -58,16 +59,44 @@ func TestCollectCodeFilesPayloadIncludesWorkerFiles(t *testing.T) {
 	if err := json.Unmarshal([]byte(payload), &files); err != nil {
 		t.Fatalf("payload is not valid JSON: %v", err)
 	}
-	if len(files) != 1 {
-		t.Fatalf("payload files = %d, want 1 non-binary file", len(files))
+	if len(files) != 2 {
+		t.Fatalf("payload files = %d, want 2 including binary presentation", len(files))
 	}
-	if files[0].Path != "solution/report.md" {
-		t.Fatalf("path = %q, want solution/report.md", files[0].Path)
+
+	byPath := map[string]streamedSolutionFile{}
+	for _, file := range files {
+		byPath[file.Path] = file
 	}
-	if files[0].Language != "markdown" {
-		t.Fatalf("language = %q, want markdown", files[0].Language)
+
+	report, ok := byPath["solution/report.md"]
+	if !ok {
+		t.Fatalf("solution/report.md missing from payload: %#v", files)
 	}
-	if files[0].ManagerRole != "Research Manager" || files[0].WorkerRole != "Research Worker" {
-		t.Fatalf("roles = manager %q worker %q, want Research Manager/Research Worker", files[0].ManagerRole, files[0].WorkerRole)
+	if report.Language != "markdown" {
+		t.Fatalf("report language = %q, want markdown", report.Language)
+	}
+	if report.Encoding != "" {
+		t.Fatalf("report encoding = %q, want empty text encoding", report.Encoding)
+	}
+	if report.ManagerRole != "Research Manager" || report.WorkerRole != "Research Worker" {
+		t.Fatalf("roles = manager %q worker %q, want Research Manager/Research Worker", report.ManagerRole, report.WorkerRole)
+	}
+
+	deck, ok := byPath["solution/deck.pptx"]
+	if !ok {
+		t.Fatalf("solution/deck.pptx missing from payload: %#v", files)
+	}
+	if deck.Language != "binary" {
+		t.Fatalf("deck language = %q, want binary", deck.Language)
+	}
+	if deck.Encoding != "base64" {
+		t.Fatalf("deck encoding = %q, want base64", deck.Encoding)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(deck.Content)
+	if err != nil {
+		t.Fatalf("deck content is not base64: %v", err)
+	}
+	if string(decoded) != "binary" {
+		t.Fatalf("decoded deck = %q, want original binary content", string(decoded))
 	}
 }

@@ -90,22 +90,30 @@ RULES:
 // parseMultiFileResponse — разбор формата `=== FILE: path === ... === COMMANDS === ...`
 func parseMultiFileResponse(content string) (map[string]string, []string) {
 	files := make(map[string]string)
+	commandsMarker := "=== COMMANDS ==="
+	filesSection := content
+	commandsSection := ""
+	if idx := strings.Index(content, commandsMarker); idx != -1 {
+		filesSection = content[:idx]
+		commandsSection = content[idx+len(commandsMarker):]
+	}
+
 	re := regexp.MustCompile(`(?m)^=== FILE:\s+(.+?)\s+===\s*$`)
-	matches := re.FindAllStringSubmatchIndex(content, -1)
+	matches := re.FindAllStringSubmatchIndex(filesSection, -1)
 	if len(matches) == 0 {
 		return files, []string{}
 	}
 	for i, match := range matches {
-		path := strings.TrimSpace(content[match[2]:match[3]])
+		path := strings.TrimSpace(filesSection[match[2]:match[3]])
 		if path == "" {
 			continue
 		}
 		start := match[1]
-		end := len(content)
+		end := len(filesSection)
 		if i+1 < len(matches) {
 			end = matches[i+1][0]
 		}
-		fileContent := strings.TrimSpace(content[start:end])
+		fileContent := strings.TrimSpace(filesSection[start:end])
 		if fileContent == "" {
 			continue
 		}
@@ -113,14 +121,11 @@ func parseMultiFileResponse(content string) (map[string]string, []string) {
 		files[path] = fileContent
 	}
 	commands := []string{}
-	commandsMarker := "=== COMMANDS ==="
-	if idx := strings.Index(content, commandsMarker); idx != -1 {
-		commandsText := strings.TrimSpace(content[idx+len(commandsMarker):])
-		if commandsText != "" {
-			commands = strings.Split(commandsText, "\n")
-			for i, cmd := range commands {
-				commands[i] = strings.TrimSpace(cmd)
-			}
+	commandsText := strings.TrimSpace(commandsSection)
+	if commandsText != "" {
+		commands = strings.Split(commandsText, "\n")
+		for i, cmd := range commands {
+			commands[i] = strings.TrimSpace(cmd)
 		}
 	}
 	return files, commands

@@ -365,10 +365,15 @@ func shouldLaunchWorkflowFromChat(message string) bool {
 	triggers := []string{
 		"build", "building", "create", "creating", "develop", "fix", "generate", "generating",
 		"implement", "implementing", "launch", "make", "refactor", "run", "scaffold", "start", "write",
+		"введи", "добавь", "запусти", "исправь", "напиши", "подготовь", "разработай",
+		"сгенерируй", "сделай", "создай", "создать", "собери",
 	}
 	targets := []string{
-		"app", "application", "api", "backend", "bug", "code", "component", "feature", "frontend",
+		"app", "application", "api", "backend", "bug", "code", "component", "feature", "frontend", "proxy",
 		"integration", "page", "project", "service", "site", "tool", "webapp", "website", "workflow",
+		"бот", "доклад", "документ", "код", "презентацией", "презентации", "презентацию",
+		"презентация", "приложение", "проект", "прокси", "сайт", "сервис", "слайд", "слайдами",
+		"слайды", "функцию",
 	}
 	return hasAnyWord(words, triggers) && hasAnyWord(words, targets)
 }

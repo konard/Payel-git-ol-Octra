@@ -131,4 +131,14 @@ func RegisterRoutes(r *gin.Engine) {
 		}
 		c.JSON(200, gin.H{"status": "success"})
 	})
+
+	// Workflow library and saved workflow routes.
+	r.POST("/workflows", middleware.AuthMiddleware(), WorkflowsPost)
+	r.GET("/workflows/library", WorkflowsLibrary)
+	r.GET("/workflows/categories", WorkflowsCategories)
+	r.GET("/workflows/my", middleware.AuthMiddleware(), WorkflowsMy)
+	r.GET("/workflows/:id", GetWorkflowsId)
+	r.POST("/workflows/:id/download", WorkflowsIdDownloadPost)
+	r.PUT("/workflows/:id", middleware.AuthMiddleware(), WorkflowsIdPut)
+	r.DELETE("/workflows/:id", middleware.AuthMiddleware(), WorkflowsIdDelete)
 }

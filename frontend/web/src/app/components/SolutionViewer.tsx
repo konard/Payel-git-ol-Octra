@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleDotDashed,
   Code2,
+  Download,
   Eye,
   FileCode2,
   FileText,
@@ -116,8 +117,62 @@ function CodeStatus({ status }: { status: CodeFile['status'] }) {
   return <CheckCircle2 size={14} className="text-[var(--success)]" />;
 }
 
-function BinaryPlaceholder({ path }: { path: string }) {
+function binaryMimeType(path: string): string {
+  const ext = path.toLowerCase().split('.').at(-1);
+  switch (ext) {
+    case 'pptx':
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'pdf':
+      return 'application/pdf';
+    case 'png':
+      return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'gif':
+      return 'image/gif';
+    case 'zip':
+      return 'application/zip';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+function createBinaryDownloadUrl(file: CodeFile): string | null {
+  if (file.encoding !== 'base64' || !file.content || typeof window === 'undefined' || typeof window.atob !== 'function') {
+    return null;
+  }
+
+  try {
+    const binary = window.atob(file.content);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return URL.createObjectURL(new Blob([bytes], { type: binaryMimeType(file.path) }));
+  } catch {
+    return null;
+  }
+}
+
+function BinaryPlaceholder({ file }: { file: CodeFile }) {
+  const path = file.path;
   const isPptx = path.toLowerCase().endsWith('.pptx');
+  const downloadUrl = useMemo(() => createBinaryDownloadUrl(file), [file.content, file.encoding, file.path]);
+  const downloadName = file.name || path.split('/').filter(Boolean).at(-1) || 'download';
+
+  useEffect(() => {
+    return () => {
+      if (downloadUrl) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+    };
+  }, [downloadUrl]);
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-[var(--code-text-muted)]">
       {isPptx ? (
@@ -127,10 +182,19 @@ function BinaryPlaceholder({ path }: { path: string }) {
       )}
       <div className="text-sm font-medium text-[var(--code-text)]">{binaryFileLabel(path)}</div>
       <p className="max-w-sm text-xs leading-5">
-        This file was generated on the server and is stored in the project
-        repository. Binary documents can't be previewed in the browser — open the
-        downloaded project to view or edit it.
+        This binary document can't be previewed in the browser.
+        Download it to view or edit it locally.
       </p>
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download={downloadName}
+          className="mt-1 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--code-border)] px-3 text-sm font-medium text-[var(--code-text)] transition-colors hover:bg-[var(--code-tree-hover)]"
+        >
+          <Download size={15} />
+          Download
+        </a>
+      )}
     </div>
   );
 }
@@ -226,6 +290,7 @@ export function SolutionViewer() {
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [showSource, setShowSource] = useState(false);
   const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const displayedContentByPathRef = useRef<Record<string, string>>({});
 
   const [pageIndex, setPageIndex] = useState(0);
   const readerRef = useRef<HTMLDivElement | null>(null);
@@ -254,6 +319,7 @@ export function SolutionViewer() {
 
   useEffect(() => {
     if (codeFiles.length === 0) {
+      displayedContentByPathRef.current = {};
       setActivePath(null);
       setOpenFilePaths([]);
       setExpandedFolders(new Set());
@@ -298,25 +364,38 @@ export function SolutionViewer() {
       return;
     }
 
+    const path = activeFile.path;
     if (activeFile.status !== 'streaming') {
+      displayedContentByPathRef.current[path] = target;
       setDisplayContent(target);
       return;
     }
 
-    setDisplayContent((prev) => (target.startsWith(prev) ? prev : ''));
+    const cached = displayedContentByPathRef.current[path] ?? '';
+    setDisplayContent((prev) => {
+      const candidate = target.startsWith(prev) ? prev : cached;
+      const next = target.startsWith(candidate) ? candidate : '';
+      displayedContentByPathRef.current[path] = next;
+      return next;
+    });
     animationRef.current = window.setInterval(() => {
       setDisplayContent((prev) => {
-        if (prev.length >= target.length) {
+        const cachedValue = displayedContentByPathRef.current[path] ?? '';
+        const current = target.startsWith(cachedValue) && cachedValue.length > prev.length ? cachedValue : prev;
+        if (current.length >= target.length) {
           if (animationRef.current) {
             clearInterval(animationRef.current);
             animationRef.current = null;
           }
+          displayedContentByPathRef.current[path] = target;
           return target;
         }
 
-        const remaining = target.length - prev.length;
+        const remaining = target.length - current.length;
         const step = Math.max(12, Math.ceil(target.length / 90));
-        return target.slice(0, prev.length + Math.min(step, remaining));
+        const next = target.slice(0, current.length + Math.min(step, remaining));
+        displayedContentByPathRef.current[path] = next;
+        return next;
       });
     }, 18);
 
@@ -410,7 +489,7 @@ export function SolutionViewer() {
         <div ref={readerRef} className="min-h-0 flex-1 overflow-auto">
           {activeFile ? (
             activeIsBinary ? (
-              <BinaryPlaceholder path={activeFile.path} />
+              <BinaryPlaceholder file={activeFile} />
             ) : (
               <article className="markdown-preview mx-auto w-full max-w-[820px] px-6 py-10 sm:px-10">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{pages[currentPage] ?? ''}</ReactMarkdown>
@@ -567,7 +646,7 @@ export function SolutionViewer() {
               </div>
               <div className="min-h-0 flex-1">
                 {activeIsBinary ? (
-                  <BinaryPlaceholder path={activeFile.path} />
+                  <BinaryPlaceholder file={activeFile} />
                 ) : renderAsPreview ? (
                   <div className="markdown-preview h-full overflow-auto px-6 py-5">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>

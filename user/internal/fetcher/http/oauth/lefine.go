@@ -175,7 +175,6 @@ func RegisterLeFineRoutes(r *gin.Engine) {
 		if frontendURL == "" {
 			frontendURL = "https://octra.env.pm"
 		}
-		redirectURL := fmt.Sprintf("%s/app?token=%s", frontendURL, accessToken)
-		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		c.Redirect(http.StatusTemporaryRedirect, frontendAppRedirectURL(frontendURL, accessToken, refreshToken))
 	})
 }

@@ -33,6 +33,21 @@ func TestShouldLaunchWorkflowFromChatSearchRequests(t *testing.T) {
 			message: "How are you?",
 			want:    false,
 		},
+		{
+			name:    "Russian presentation change request launches workflow",
+			message: "Введи в презентацию 3 самых высоких горы в мире и когда их покорили",
+			want:    true,
+		},
+		{
+			name:    "Russian code generation launches workflow",
+			message: "Сделай мини прокси на Go",
+			want:    true,
+		},
+		{
+			name:    "Russian casual message stays in chat",
+			message: "Спасибо, понял",
+			want:    false,
+		},
 	}
 
 	for _, tt := range tests {

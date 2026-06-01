@@ -41,3 +41,27 @@ func TestDecisionFromPredefinedWorkflow(t *testing.T) {
 		t.Fatalf("tech stack = %#v, want [web search]", decision.TechStack)
 	}
 }
+
+func TestFallbackManagerRoleMatchesTaskType(t *testing.T) {
+	cases := []struct {
+		taskType string
+		wantRole string
+	}{
+		{TaskTypePresentation, "presentation"},
+		{TaskTypeResearch, "research"},
+		{TaskTypeDocument, "document"},
+		{TaskTypeCode, "development"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.taskType, func(t *testing.T) {
+			role := fallbackManagerRole(tc.taskType)
+			if role.Role != tc.wantRole {
+				t.Fatalf("fallbackManagerRole(%q).Role = %q, want %q", tc.taskType, role.Role, tc.wantRole)
+			}
+			if role.Description == "" {
+				t.Fatalf("fallbackManagerRole(%q) returned empty description", tc.taskType)
+			}
+		})
+	}
+}
