@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"nodes/internal/service/git"
@@ -29,11 +28,14 @@ func (s *Service) pushToGitHub(ctx context.Context, task *models.Task, projectPa
 	}
 
 	log.Printf("Pushing results to GitHub...")
-	// For refinement: if .git exists (cloned existing repo), push directly to its remote
-	if _, err := os.Stat(filepath.Join(projectPath, ".git")); err == nil {
+	// If the repo already has an "origin" remote (cloned or refinement), push update.
+	// NOTE: we check for the remote, not just .git — initGitRepo also creates .git
+	// for new projects but doesn't configure a remote.
+	existingRemote := extractRemoteURL(projectPath)
+	if existingRemote != "" {
 		repoURL := task.ProjectJSON
 		if repoURL == "" {
-			repoURL = extractRemoteURL(projectPath)
+			repoURL = existingRemote
 		}
 		if err := s.githubClient.PushToRepository(ctx, task, projectPath, repoURL); err != nil {
 			log.Printf("Failed to push update to existing: %v", err)

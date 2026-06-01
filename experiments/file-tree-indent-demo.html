@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>File tree nesting — before / after (issue #31)</title>
+<style>
+  :root {
+    --background: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #2f81f7;
+    --code-tree-hover: rgba(230, 237, 243, 0.08);
+    --code-tree-guide: rgba(230, 237, 243, 0.20);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px; background: #010409;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text); display: flex; gap: 32px;
+  }
+  .panel {
+    background: var(--background); border: 1px solid var(--border);
+    border-radius: 12px; width: 320px; overflow: hidden;
+  }
+  .panel h2 {
+    margin: 0; padding: 12px 16px; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--border); color: var(--text-muted);
+    letter-spacing: .03em; text-transform: uppercase;
+  }
+  .tree { padding: 8px; }
+  .row {
+    display: flex; align-items: center; gap: 8px; height: 32px;
+    padding: 0 8px; border-radius: 6px; font-size: 14px;
+    color: var(--text-muted); cursor: pointer; white-space: nowrap;
+  }
+  .row.folder { gap: 6px; }
+  .row:hover { background: var(--code-tree-hover); color: var(--text); }
+  .row.active { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text); }
+  /* AFTER: vertical guide lines, one per nesting level */
+  .indent { display: flex; align-self: stretch; flex-shrink: 0; }
+  .indent > span { width: 16px; border-left: 1px solid var(--code-tree-guide); }
+  .ico { width: 15px; height: 15px; flex-shrink: 0; }
+  .name { overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Before — flat padding</h2>
+    <div class="tree" id="before"></div>
+  </div>
+  <div class="panel">
+    <h2>After — indent guides</h2>
+    <div class="tree" id="after"></div>
+  </div>
+
+<script>
+const folder = (n) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
+const chev = (open) => open
+  ? `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`
+  : `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>`;
+const file = () => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+
+// name, depth, type, active
+const rows = [
+  ['src', 0, 'folder'],
+  ['components', 1, 'folder'],
+  ['Button.tsx', 2, 'file'],
+  ['Modal.tsx', 2, 'file', true],
+  ['utils', 1, 'folder'],
+  ['format.ts', 2, 'file'],
+  ['index.ts', 1, 'file'],
+  ['package.json', 0, 'file'],
+  ['README.md', 0, 'file'],
+];
+
+function renderBefore(el) {
+  el.innerHTML = rows.map(([name, depth, type, active]) => {
+    const pad = 10 + depth * 16;
+    const icon = type === 'folder' ? chev(true) + folder() : file();
+    return `<div class="row ${type} ${active ? 'active' : ''}" style="padding-left:${pad}px">${icon}<span class="name">${name}</span></div>`;
+  }).join('');
+}
+
+function renderAfter(el) {
+  el.innerHTML = rows.map(([name, depth, type, active]) => {
+    const indent = depth > 0
+      ? `<span class="indent">${'<span></span>'.repeat(depth)}</span>` : '';
+    const icon = type === 'folder' ? chev(true) + folder() : file();
+    return `<div class="row ${type} ${active ? 'active' : ''}">${indent}${icon}<span class="name">${name}</span></div>`;
+  }).join('');
+}
+
+renderBefore(document.getElementById('before'));
+renderAfter(document.getElementById('after'));
+</script>
+</body>
+</html>

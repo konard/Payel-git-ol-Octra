@@ -22,10 +22,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+// newStreamID returns a unique identifier for a single task/chat WebSocket
+// stream. It is used as the Redis key (STREAM:<id>) and PubSub channel so that
+// concurrent streams belonging to the same user (e.g. two browser tabs) never
+// share state. The user id is kept as a prefix only for debugging/ownership
+// readability; uniqueness comes from the appended UUID.
+func newStreamID(userID string) string {
+	return userID + ":" + uuid.NewString()
+}
 
 var bossClient *boss.Client
 var wsHub *services.Hub
@@ -188,13 +198,15 @@ func handleTaskCreateWS(c *gin.Context) {
 		Type string `json:"type"`
 	}
 	if err := json.Unmarshal(data, &envelope); err == nil && envelope.Type == "chat" {
+		// Unique per-connection stream id keeps each tab/chat isolated in Redis.
+		streamID := newStreamID(userID)
 		conn.WriteJSON(gin.H{
 			"type":      "connected",
-			"task_id":   userID,
+			"task_id":   streamID,
 			"message":   "Connected to boss chat",
 			"timestamp": time.Now().Unix(),
 		})
-		handleBossChatWS(conn, userID, username, data)
+		handleBossChatWS(conn, streamID, userID, username, data)
 		return
 	}
 
@@ -220,16 +232,20 @@ func handleTaskCreateWS(c *gin.Context) {
 
 	log.Printf("✅ Authenticated user: %s (%s)", taskReq.Username, taskReq.UserID)
 
+	// Unique per-connection stream id keeps each tab/task isolated in Redis so
+	// that history from one tab never leaks into another tab on reconnect.
+	streamID := newStreamID(userID)
+
 	// Send confirmation
 	conn.WriteJSON(gin.H{
 		"type":      "connected",
-		"task_id":   taskReq.UserID,
+		"task_id":   streamID,
 		"message":   "Connected to task creation service",
 		"timestamp": time.Now().Unix(),
 	})
 
 	// Process task stream in background
-	go processTaskStreamWS(conn, taskReq)
+	go processTaskStreamWS(conn, taskReq, streamID)
 
 	// Keep connection alive with periodic pings
 	done := make(chan struct{})
@@ -261,7 +277,7 @@ func handleTaskCreateWS(c *gin.Context) {
 	}()
 }
 
-func handleBossChatWS(conn *websocket.Conn, userID, username string, initial []byte) {
+func handleBossChatWS(conn *websocket.Conn, streamID, userID, username string, initial []byte) {
 	defer conn.Close()
 
 	done := make(chan struct{})
@@ -297,7 +313,7 @@ func handleBossChatWS(conn *websocket.Conn, userID, username string, initial []b
 
 		if shouldLaunchWorkflowFromChat(message) {
 			if msg.TaskPayload == nil {
-				writeBossChatMessage(conn, userID, "I can start a workflow from chat, but I need your model settings first.", true)
+				writeBossChatMessage(conn, streamID, "I can start a workflow from chat, but I need your model settings first.", true)
 				return false
 			}
 
@@ -314,12 +330,12 @@ func handleBossChatWS(conn *websocket.Conn, userID, username string, initial []b
 				taskReq.Meta = map[string]interface{}{}
 			}
 
-			writeBossChatMessage(conn, userID, "I'll start the workflow for this request.", false)
-			processTaskStreamWS(conn, taskReq)
+			writeBossChatMessage(conn, streamID, "I'll start the workflow for this request.", false)
+			processTaskStreamWS(conn, taskReq, streamID)
 			return true
 		}
 
-		writeBossChatMessage(conn, userID, buildBossChatReply(message), false)
+		writeBossChatMessage(conn, streamID, buildBossChatReply(message), false)
 		return false
 	}
 
@@ -440,8 +456,11 @@ func hasAnyWord(words map[string]bool, candidates []string) bool {
 	return false
 }
 
-// processTaskStreamWS sends task to Boss and streams updates back via WebSocket
-func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskRequest) {
+// processTaskStreamWS sends task to Boss and streams updates back via WebSocket.
+// streamID is the unique per-connection identifier used for Redis stream state,
+// the updates history list and the PubSub channel, so concurrent streams from
+// the same user stay isolated.
+func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskRequest, streamID string) {
 	defer conn.Close()
 
 	// Convert Meta from map[string]interface{} to map[string]string
@@ -493,9 +512,9 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 	defer cancel()
 
 	// Initial progress
-	wsWriteJSON(conn, taskReq.UserID, gin.H{
+	wsWriteJSON(conn, streamID, gin.H{
 		"type":      "progress",
-		"task_id":   taskReq.UserID,
+		"task_id":   streamID,
 		"message":   "Connecting to Boss service...",
 		"progress":  5,
 		"timestamp": time.Now().Unix(),
@@ -547,10 +566,10 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 			wsUpdate["sender"] = "boss"
 		}
 
-		wsWriteJSONWithRedis(conn, taskReq.UserID, wsUpdate)
+		wsWriteJSONWithRedis(conn, streamID, wsUpdate)
 
 		if update.Status == "success" || update.Status == "error" {
-			wsHub.Broadcast(taskReq.UserID, wsUpdate)
+			wsHub.Broadcast(streamID, wsUpdate)
 			return
 		}
 	}

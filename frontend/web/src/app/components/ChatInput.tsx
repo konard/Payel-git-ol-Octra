@@ -8,11 +8,25 @@ interface ChatInputProps {
 export function ChatInput({ onSendMessage }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitMessage = () => {
     if (inputValue.trim()) {
       onSendMessage(inputValue.trim());
       setInputValue('');
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMessage();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter sends the message; Shift+Enter inserts a newline. This matches the
+    // behaviour users expect from a chat input — without it pressing Enter only
+    // added newlines and the message was never sent (issue #31).
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      submitMessage();
     }
   };
 
@@ -23,6 +37,7 @@ export function ChatInput({ onSendMessage }: ChatInputProps) {
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             rows={2}
             className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl text-[var(--text)] text-sm resize-none placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             placeholder="Введите сообщение..."
