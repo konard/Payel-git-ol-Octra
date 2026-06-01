@@ -54,7 +54,32 @@ const CODE_VIEW_THEME = {
   '--code-line-active': 'color-mix(in srgb, var(--accent) 10%, transparent)',
   '--code-tree-active': 'color-mix(in srgb, var(--accent) 16%, transparent)',
   '--code-tree-hover': 'color-mix(in srgb, var(--text) 8%, transparent)',
+  '--code-tree-guide': 'color-mix(in srgb, var(--text) 20%, transparent)',
 } as CSSProperties & Record<string, string>;
+
+// Width in pixels of one nesting level in the file tree. Each level draws a
+// vertical guide line so it is obvious which files sit inside a folder.
+const TREE_INDENT_WIDTH = 16;
+
+// TreeIndent renders one vertical guide line per nesting level, making the
+// folder hierarchy visually unambiguous (issue #31: nesting looked flat with no
+// spacing, so it was unclear whether a file was inside a folder).
+function TreeIndent({ depth }: { depth: number }) {
+  if (depth <= 0) {
+    return null;
+  }
+  return (
+    <span className="flex flex-shrink-0 self-stretch" aria-hidden="true">
+      {Array.from({ length: depth }).map((_, level) => (
+        <span
+          key={level}
+          className="border-l border-[var(--code-tree-guide)]"
+          style={{ width: TREE_INDENT_WIDTH }}
+        />
+      ))}
+    </span>
+  );
+}
 
 function buildFileTree(files: CodeFile[]): TreeNode[] {
   const root: TreeNode[] = [];
@@ -352,7 +377,6 @@ function TreeRows({
     <>
       {nodes.map((node) => {
         const isExpanded = expandedFolders.has(node.path);
-        const paddingLeft = 10 + depth * 16;
 
         if (node.type === 'folder') {
           return (
@@ -360,9 +384,9 @@ function TreeRows({
               <button
                 type="button"
                 onClick={() => onToggleFolder(node.path)}
-                className="flex h-8 w-full items-center gap-1.5 rounded-md pr-2 text-left text-sm text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-                style={{ paddingLeft }}
+                className="flex h-8 w-full items-center gap-1.5 rounded-md pl-2 pr-2 text-left text-sm text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
               >
+                <TreeIndent depth={depth} />
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 {isExpanded ? <FolderOpen size={15} /> : <Folder size={15} />}
                 <span className="truncate">{node.name}</span>
@@ -386,13 +410,13 @@ function TreeRows({
             key={node.path}
             type="button"
             onClick={() => onOpenFile(node.path)}
-            className={`flex h-8 w-full items-center gap-2 rounded-md pr-2 text-left text-sm transition-colors ${
+            className={`flex h-8 w-full items-center gap-2 rounded-md pl-2 pr-2 text-left text-sm transition-colors ${
               activePath === node.path
                 ? 'bg-[var(--code-tree-active)] text-[var(--code-text)]'
                 : 'text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
             }`}
-            style={{ paddingLeft }}
           >
+            <TreeIndent depth={depth} />
             {node.path.toLowerCase().endsWith('.pptx') ? (
               <Presentation size={15} />
             ) : isBinaryPath(node.path) ? (
