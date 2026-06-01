@@ -31,7 +31,7 @@ function BossNodeComponent({ id, data }: NodeProps<{ data: BossNodeData }>) {
       scale={scale}
       minWidth={220}
     >
-      {techStack && techStack.length > 0 && (
+      {Array.isArray(techStack) && techStack.length > 0 && (
         <div className="agent-node__meta">
           <span className="agent-node__meta-label">{t('nodes.stack')}</span>
           <span className="agent-node__meta-value">{techStack.join(', ')}</span>

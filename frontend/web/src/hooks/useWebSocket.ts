@@ -501,12 +501,19 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
       // Only add auto-generated boss if no user nodes exist
       if (!hasUserNodes()) {
+        const rawTechStack = msg.data?.techStack;
+        const techStack: string[] = Array.isArray(rawTechStack)
+          ? rawTechStack
+          : typeof rawTechStack === 'string' && rawTechStack !== 'null' && rawTechStack.trim()
+            ? rawTechStack.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : [];
+
         storeActions.addNode({
           id: 'boss-1',
           type: 'boss',
           role: 'CEO',
           status: 'working',
-          techStack: msg.data?.techStack || [],
+          techStack,
           position: { x: 400, y: 50 },
         });
       }
