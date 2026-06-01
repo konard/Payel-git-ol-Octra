@@ -1,14 +1,14 @@
 # Octra - Multi-Agent Code Generation Platform
 
 <div align="center">
-  <img src="octra-mascot.png" alt="Octra Mascot" width="200">
+  <img src="docs/icons/octra-mascot.png" alt="Octra Mascot" width="200">
 </div>
 
 Octra is a modern web platform that automates software development using AI agents organized in a hierarchical IT company structure. Users describe projects in natural language, and the system generates complete, production-ready codebases published directly to GitHub repositories.
 
 ## Architecture
 
-![Architecture Diagram](octra-arc.png)
+![Architecture Diagram](docs/icons/octra-arc.png)
 
 **Boss flow inside Nodes:**
 
@@ -107,7 +107,7 @@ Octra operates on a subscription model to ensure service quality and accessibili
 ## Project Structure
 
 ```
-crewai/
+octra/
 ├── frontend/web/        # React web application
 │   ├── src/
 │   │   ├── app/         # Main application
@@ -133,9 +133,16 @@ crewai/
 │   │   └── worker/      # Worker agents
 │   └── ...
 ├── agents/              # LLM providers (external gRPC)
+├── tgbot/               # Telegram bot
+├── grademodel/          # Task complexity grader
+├── spec/                # WebSocket API specification
+│   ├── OCTRA-SPECIFICATION.md
+│   └── OCTRA-CLIENT-*.md  # Client libraries in 8 languages
+├── docs/
+│   └── icons/           # Project icons (mascot, architecture diagram)
 ├── docker-compose.yml   # Docker configuration
-├── go.work             # Go workspace
-└── .env.example        # Environment variables example
+├── go.work              # Go workspace
+└── .env.example         # Environment variables example
 ```
 
 ## Development Workflow
