@@ -32,6 +32,7 @@ import {
   isDocumentSolution,
   paginateMarkdown,
 } from '../../lib/markdown';
+import { findPresentationPreviewFile, parsePresentationMarkdown } from '../../lib/presentation';
 import { choosePreferredCodeFilePath } from '../../lib/solutionFiles';
 import '../../styles/markdown.css';
 
@@ -199,6 +200,139 @@ function BinaryPlaceholder({ file }: { file: CodeFile }) {
   );
 }
 
+function PresentationDeckPreview({ file, previewFile }: { file: CodeFile; previewFile: CodeFile }) {
+  const deck = useMemo(() => parsePresentationMarkdown(previewFile.content), [previewFile.content]);
+  const slides = deck.slides.length > 0
+    ? deck.slides
+    : [{ title: deck.title || file.name || 'Presentation', bullets: [], visual: '', sources: [], notes: '' }];
+  const [slideIndex, setSlideIndex] = useState(0);
+  const currentSlide = slides[Math.min(slideIndex, Math.max(0, slides.length - 1))];
+  const downloadUrl = useMemo(() => createBinaryDownloadUrl(file), [file.content, file.encoding, file.path]);
+  const downloadName = file.name || file.path.split('/').filter(Boolean).at(-1) || 'presentation.pptx';
+
+  useEffect(() => {
+    setSlideIndex(0);
+  }, [file.path, previewFile.path]);
+
+  useEffect(() => {
+    if (slideIndex >= slides.length) {
+      setSlideIndex(Math.max(0, slides.length - 1));
+    }
+  }, [slideIndex, slides.length]);
+
+  useEffect(() => {
+    return () => {
+      if (downloadUrl) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+    };
+  }, [downloadUrl]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--code-border)] bg-[var(--code-surface)] px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Presentation size={24} className="shrink-0 text-[var(--code-accent)]" />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{deck.title || binaryFileLabel(file.path)}</div>
+            <div className="truncate text-xs text-[var(--code-text-muted)]">{file.name}</div>
+          </div>
+        </div>
+        {downloadUrl && (
+          <a
+            href={downloadUrl}
+            download={downloadName}
+            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-[var(--code-border)] px-3 text-sm font-medium text-[var(--code-text)] transition-colors hover:bg-[var(--code-tree-hover)]"
+          >
+            <Download size={15} />
+            Download PPTX
+          </a>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto px-4 py-5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+          <section className="aspect-video overflow-auto rounded-md border border-[var(--code-border)] bg-[var(--code-surface)] p-6 shadow-sm sm:p-8">
+            <div className="flex min-h-full flex-col">
+              <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase text-[var(--code-accent)]">
+                <span>{slideIndex + 1} / {slides.length}</span>
+                <span className="truncate text-[var(--code-text-muted)]">{previewFile.name}</span>
+              </div>
+
+              <div className="mt-8 max-w-3xl">
+                <h1 className="text-2xl font-semibold leading-tight text-[var(--code-text)] sm:text-3xl">
+                  {currentSlide.title || deck.title || 'Presentation'}
+                </h1>
+                {currentSlide.bullets.length > 0 && (
+                  <ul className="mt-6 space-y-3 text-base leading-7 text-[var(--code-text)] sm:text-lg">
+                    {currentSlide.bullets.map((bullet, index) => (
+                      <li key={`${bullet}-${index}`} className="flex gap-3">
+                        <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--code-accent)]" />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {(currentSlide.visual || currentSlide.sources.length > 0 || currentSlide.notes) && (
+                <div className="mt-auto grid gap-3 pt-8 text-sm leading-6 text-[var(--code-text-muted)] sm:grid-cols-2">
+                  {currentSlide.visual && (
+                    <div className="rounded-md border border-[var(--code-border)] px-3 py-2">
+                      <div className="text-xs font-semibold uppercase text-[var(--code-text)]">Visual</div>
+                      <div>{currentSlide.visual}</div>
+                    </div>
+                  )}
+                  {currentSlide.sources.length > 0 && (
+                    <div className="rounded-md border border-[var(--code-border)] px-3 py-2">
+                      <div className="text-xs font-semibold uppercase text-[var(--code-text)]">Source</div>
+                      <div>{currentSlide.sources.join(' | ')}</div>
+                    </div>
+                  )}
+                  {currentSlide.notes && (
+                    <div className="rounded-md border border-[var(--code-border)] px-3 py-2 sm:col-span-2">
+                      <div className="text-xs font-semibold uppercase text-[var(--code-text)]">Notes</div>
+                      <div>{currentSlide.notes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {slides.length > 1 && (
+        <div className="flex h-14 shrink-0 items-center justify-center border-t border-[var(--code-border)] bg-[var(--code-surface)]">
+          <div className="flex items-center gap-2 rounded-full border border-[var(--code-border)] bg-[var(--code-bg)] px-2 py-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSlideIndex((value) => Math.max(0, value - 1))}
+              disabled={slideIndex <= 0}
+              aria-label="Previous slide"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="min-w-[74px] text-center text-sm font-medium tabular-nums text-[var(--code-text)]">
+              {slideIndex + 1} / {slides.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSlideIndex((value) => Math.min(slides.length - 1, value + 1))}
+              disabled={slideIndex >= slides.length - 1}
+              aria-label="Next slide"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TreeRows({
   nodes,
   depth,
@@ -299,6 +433,12 @@ export function SolutionViewer() {
   const activeFile = activePath ? filesByPath.get(activePath) ?? null : null;
   const activeIsMarkdown = activeFile ? isMarkdownPath(activeFile.path) : false;
   const activeIsBinary = activeFile ? isBinaryPath(activeFile.path) : false;
+  const presentationPreviewFile = useMemo(
+    () => activeFile && activeFile.path.toLowerCase().endsWith('.pptx')
+      ? findPresentationPreviewFile(codeFiles, activeFile.path)
+      : null,
+    [activeFile, codeFiles],
+  );
   // A document solution (research report, generated document, presentation) gets
   // a clean reader — no explorer or tabs — so a regular user just reads the text.
   const documentMode = useMemo(() => isDocumentSolution(codeFiles.map((file) => file.path)), [codeFiles]);
@@ -489,7 +629,11 @@ export function SolutionViewer() {
         <div ref={readerRef} className="min-h-0 flex-1 overflow-auto">
           {activeFile ? (
             activeIsBinary ? (
-              <BinaryPlaceholder file={activeFile} />
+              presentationPreviewFile ? (
+                <PresentationDeckPreview file={activeFile} previewFile={presentationPreviewFile} />
+              ) : (
+                <BinaryPlaceholder file={activeFile} />
+              )
             ) : (
               <article className="markdown-preview mx-auto w-full max-w-[820px] px-6 py-10 sm:px-10">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{pages[currentPage] ?? ''}</ReactMarkdown>
@@ -646,7 +790,11 @@ export function SolutionViewer() {
               </div>
               <div className="min-h-0 flex-1">
                 {activeIsBinary ? (
-                  <BinaryPlaceholder file={activeFile} />
+                  presentationPreviewFile ? (
+                    <PresentationDeckPreview file={activeFile} previewFile={presentationPreviewFile} />
+                  ) : (
+                    <BinaryPlaceholder file={activeFile} />
+                  )
                 ) : renderAsPreview ? (
                   <div className="markdown-preview h-full overflow-auto px-6 py-5">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>

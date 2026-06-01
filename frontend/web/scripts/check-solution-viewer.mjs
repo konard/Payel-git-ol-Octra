@@ -41,6 +41,8 @@ assert.match(viewer, /isDocumentSolution/, 'SolutionViewer must detect document 
 assert.match(viewer, /paginateMarkdown/, 'SolutionViewer must paginate document reader pages');
 assert.match(viewer, /documentMode/, 'SolutionViewer must branch on documentMode for the reader');
 assert.match(viewer, /choosePreferredCodeFilePath/, 'SolutionViewer must preserve the user-selected document');
+assert.match(viewer, /PresentationDeckPreview/, 'SolutionViewer must preview generated presentations from slide Markdown');
+assert.match(viewer, /findPresentationPreviewFile/, 'SolutionViewer must find Markdown paired with generated pptx files');
 
 const pkg = JSON.parse(read('package.json'));
 assert.ok(pkg.dependencies['react-markdown'], 'react-markdown must be a dependency');
@@ -61,6 +63,8 @@ try {
   const { isMarkdownPath, isBinaryPath, binaryFileLabel, isDocumentSolution, paginateMarkdown } =
     await server.ssrLoadModule('/src/lib/markdown.ts');
   const { choosePreferredCodeFilePath } = await server.ssrLoadModule('/src/lib/solutionFiles.ts');
+  const { parsePresentationMarkdown, findPresentationPreviewFile } =
+    await server.ssrLoadModule('/src/lib/presentation.ts');
 
   for (const path of ['report.md', 'docs/Research.MARKDOWN', 'a/b/notes.mdx', 'README.md']) {
     assert.equal(isMarkdownPath(path), true, `${path} should be detected as Markdown`);
@@ -127,6 +131,35 @@ try {
     'first file should be the fallback when active and latest are unavailable',
   );
   assert.equal(choosePreferredCodeFilePath([], null, null), null, 'empty file list should return null');
+
+  // --- 7. Presentation preview model. --------------------------------------
+  const deck = parsePresentationMarkdown(`# Launch Plan
+
+## Opening
+- Define the opportunity
+- Align stakeholders
+Visual: Product dashboard screenshot
+Source: Internal analytics
+> Keep this slide under one minute.
+
+## Roadmap
+* Phase one
+* Phase two`);
+  assert.equal(deck.title, 'Launch Plan', 'presentation parser keeps deck title');
+  assert.equal(deck.slides.length, 2, 'presentation parser creates slides from h2 headings');
+  assert.equal(deck.slides[0].title, 'Opening', 'first slide title');
+  assert.deepEqual(deck.slides[0].bullets, ['Define the opportunity', 'Align stakeholders'], 'first slide bullets');
+  assert.equal(deck.slides[0].visual, 'Product dashboard screenshot', 'visual direction is parsed');
+  assert.deepEqual(deck.slides[0].sources, ['Internal analytics'], 'sources are parsed');
+  assert.equal(deck.slides[0].notes, 'Keep this slide under one minute.', 'speaker notes are parsed');
+  assert.deepEqual(deck.slides[1].bullets, ['Phase one', 'Phase two'], 'asterisk bullets are parsed');
+
+  const preview = findPresentationPreviewFile([
+    { path: 'solution/designer-a1b2.md', content: '# Deck\n\n## Slide\n- point' },
+    { path: 'solution/designer-a1b2.pptx', content: 'UEs=', encoding: 'base64' },
+    { path: 'solution/final-presentation.md', content: '# Summary' },
+  ], 'solution/designer-a1b2.pptx');
+  assert.equal(preview?.path, 'solution/designer-a1b2.md', 'paired Markdown should preview the generated pptx');
 
   console.log('check-solution-viewer: all assertions passed');
 } finally {
