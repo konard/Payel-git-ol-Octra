@@ -8,6 +8,7 @@ import (
 
 	"nodes/internal/prompts"
 	"nodes/internal/service/util"
+	"nodes/internal/skills"
 )
 
 // generateCode — N+1 подход: спланировать список файлов, потом сгенерировать каждый
@@ -23,7 +24,11 @@ func (s *Service) generateCode(
 		techStack = "Go"
 	}
 
-	planPrompt := prompts.WorkerPlanFiles(role, description, taskMD, contextSection, techStack)
+	// Подбираем экспертный скилл под роль/стек/задачу воркера и инжектим его
+	// рекомендации в промпты планирования и генерации файлов.
+	skill := skills.Guidance(role+" "+description, techStack, taskMD)
+
+	planPrompt := prompts.WorkerPlanFiles(role, description, taskMD, contextSection, techStack, skill)
 	planResp, err := s.agentsClient.Generate(ctx, provider, model, planPrompt, tokens, 1024, 0.3)
 	if err != nil {
 		return nil, nil, err
@@ -41,7 +46,7 @@ func (s *Service) generateCode(
 
 	files := make(map[string]string)
 	for _, file := range plan.Files {
-		contentPrompt := prompts.WorkerGenerateFile(file, taskMD, role, techStack)
+		contentPrompt := prompts.WorkerGenerateFile(file, taskMD, role, techStack, skill)
 		content, err := s.agentsClient.Generate(ctx, provider, model, contentPrompt, tokens, 8192, 0.3)
 		if err != nil {
 			log.Printf("Error generating file %s: %v", file, err)

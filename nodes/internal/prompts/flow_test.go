@@ -69,7 +69,7 @@ func TestValidateSolutionRoutesByTaskType(t *testing.T) {
 }
 
 func TestPresentationWorkerAsksForVisualsAndSources(t *testing.T) {
-	prompt := PresentationWorker("designer", "launch plan", "\ncontext")
+	prompt := PresentationWorker("designer", "launch plan", "\ncontext", "")
 	for _, want := range []string{"Visual:", "Source:", "image", "web search results"} {
 		if !contains(prompt, want) {
 			t.Errorf("presentation prompt should ask for %q:\n%s", want, prompt)

@@ -1,11 +1,13 @@
 package prompts
 
-// WorkerPlanFiles — промпт для воркера: спланировать список файлов
-func WorkerPlanFiles(role, desc, task, context, techStack string) string {
+// WorkerPlanFiles — промпт для воркера: спланировать список файлов.
+// skill — опциональный блок экспертных рекомендаций из системных скиллов
+// (skills.Guidance), подобранный под роль/стек воркера. Если пусто — не влияет.
+func WorkerPlanFiles(role, desc, task, context, techStack, skill string) string {
 	return `You are a ` + role + ` developer. Role: ` + desc + `
 Language: ` + techStack + `
 
-TASK: ` + task + context + `
+TASK: ` + task + context + skill + `
 
 IMPORTANT: Use ONLY ` + techStack + ` language. NOT JavaScript, NOT TypeScript.
 Create files appropriate for ` + techStack + ` (e.g., .go files for Go, .py for Python).
@@ -13,13 +15,14 @@ Return JSON ONLY:
 {"files": ["path1.ext", "path2.ext", "path3.ext"]}`
 }
 
-// WorkerGenerateFile — промпт для воркера: сгенерировать содержимое одного файла
-func WorkerGenerateFile(filename, task, role, techStack string) string {
+// WorkerGenerateFile — промпт для воркера: сгенерировать содержимое одного файла.
+// skill — опциональный блок экспертных рекомендаций из системных скиллов.
+func WorkerGenerateFile(filename, task, role, techStack, skill string) string {
 	return `Write the FULL content of file: ` + filename + `
 Language: ` + techStack + `
 
 TASK: ` + task + `
-Role: ` + role + `
+Role: ` + role + skill + `
 
 IMPORTANT: Write COMPLETE ` + techStack + ` code. No placeholders. No TODOs.
 Use appropriate file extension (.go for Go, .py for Python, .js for JS).

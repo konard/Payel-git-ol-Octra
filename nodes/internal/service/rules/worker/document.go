@@ -10,6 +10,7 @@ import (
 	"nodes/internal/prompts"
 	"nodes/internal/service/document"
 	"nodes/internal/service/util"
+	"nodes/internal/skills"
 )
 
 // generateDocument — путь генерации для не-кодовых задач (research/document/presentation).
@@ -47,7 +48,8 @@ func (s *Service) generateDocument(
 		if searchBlock != "" {
 			presentationContext += "\n\nWEB SEARCH RESULTS FOR PRESENTATION SOURCES AND VISUAL IDEAS:\n" + searchBlock
 		}
-		prompt := prompts.PresentationWorker(role, topic, presentationContext)
+		skill := skills.Guidance(role+" presentation", "pptx markdown", topic)
+		prompt := prompts.PresentationWorker(role, topic, presentationContext, skill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("presentation generation failed: %w", err)
@@ -76,7 +78,8 @@ func (s *Service) generateDocument(
 		if sourcesMd != "" {
 			files["solution/sources-"+slug+".md"] = sourcesMd
 		}
-		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock)
+		skill := skills.Guidance(role+" research "+angle, "markdown", topic)
+		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock, skill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("research generation failed: %w", err)
@@ -86,7 +89,8 @@ func (s *Service) generateDocument(
 
 	default: // "document"
 		docType := detectDocType(topic + " " + description)
-		prompt := prompts.DocumentWorker(role, docType, topic, contextSection)
+		skill := skills.Guidance(role+" "+docType, "markdown", topic+" "+description)
+		prompt := prompts.DocumentWorker(role, docType, topic, contextSection, skill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("document generation failed: %w", err)

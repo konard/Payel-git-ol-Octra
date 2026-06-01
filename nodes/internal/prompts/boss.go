@@ -1,14 +1,28 @@
 package prompts
 
-import "fmt"
+import (
+	"fmt"
 
-// PlanArchitecture — промпт для босса: спланировать архитектуру задачи
+	"nodes/internal/skills"
+)
+
+// PlanArchitecture — промпт для босса: спланировать архитектуру задачи.
+// В промпт добавляется каталог доступных системных скиллов, чтобы босс подбирал
+// роли менеджеров/воркеров под реальные специальности (фронтенд, бэкенд, devops,
+// proxy, vpn, ресёрч, презентации), которые система умеет выполнять экспертно.
 func PlanArchitecture(title, desc string, grade int) string {
+	skillsSection := ""
+	if catalog := skills.Catalog(); catalog != "" {
+		skillsSection = `
+
+The system has built-in EXPERT SKILLS covering these areas (pick manager/worker roles that map to them when relevant):
+` + catalog
+	}
 	return `You are CTO. Analyze the task, classify what KIND of deliverable it is, and decide what manager roles are needed.
 
 Title: ` + title + `
 Description: ` + desc + `
-MODEL GRADED COMPLEXITY: ` + fmt.Sprintf("%d/10", grade) + ` (higher = more complex)
+MODEL GRADED COMPLEXITY: ` + fmt.Sprintf("%d/10", grade) + ` (higher = more complex)` + skillsSection + `
 
 FIRST, classify the task into one "task_type":
 - "code"         → write/modify software (apps, services, libraries, scripts, fixing a GitHub issue).

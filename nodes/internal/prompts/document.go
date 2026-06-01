@@ -10,7 +10,7 @@ package prompts
 // searchResults — это блок реальных результатов веб-поиска (заголовок, URL,
 // сниппет), уже переранжированных алгоритмом BM25. Если он пуст, воркер
 // опирается только на собственные знания и честно это отмечает.
-func ResearchWorker(role, angle, topic, context, searchResults string) string {
+func ResearchWorker(role, angle, topic, context, searchResults, skill string) string {
 	sourcesSection := ""
 	if searchResults != "" {
 		sourcesSection = `
@@ -32,7 +32,7 @@ state that the findings are not backed by a fresh web search.`
 Your search angle / method: ` + angle + `
 
 RESEARCH TOPIC:
-` + topic + context + sourcesSection + `
+` + topic + context + sourcesSection + skill + `
 
 Investigate the topic from YOUR angle only. Be specific, factual and cite concrete
 facts, figures, dates and named sources whenever possible. Distinguish clearly between
@@ -48,11 +48,11 @@ Return ONLY GitHub-Flavored Markdown. No code fences around the whole answer.`
 
 // DocumentWorker — промпт для воркера, пишущего текстовый документ.
 // docType: "report" | "essay" | "coursework" | "abstract" | "table" | "document".
-func DocumentWorker(role, docType, topic, context string) string {
+func DocumentWorker(role, docType, topic, context, skill string) string {
 	return `You are a professional writer producing a ` + docType + `. Your role: ` + role + `.
 
 ASSIGNMENT:
-` + topic + context + `
+` + topic + context + skill + `
 
 Write a complete, well-structured ` + docType + ` in GitHub-Flavored Markdown:
 - Start with a single H1 title.
@@ -67,11 +67,11 @@ Return ONLY the Markdown document. No commentary, no code fences around the whol
 // PresentationWorker — промпт для воркера, готовящего презентацию.
 // Воркер возвращает слайды в простом Markdown-формате, который затем
 // конвертируется в PPTX серверным билдером.
-func PresentationWorker(role, topic, context string) string {
+func PresentationWorker(role, topic, context, skill string) string {
 	return `You are a presentation designer. Your role: ` + role + `.
 
 TOPIC:
-` + topic + context + `
+` + topic + context + skill + `
 
 If the context includes web search results, use them to ground factual claims and to choose
 realistic image, chart, diagram or screenshot ideas. Cite only URLs that appear in those

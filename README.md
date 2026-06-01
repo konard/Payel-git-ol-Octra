@@ -45,6 +45,7 @@ Octra revolutionizes software development by creating an AI-powered development 
 - **Iterative Code Review** - Automated code validation and improvement cycles
 - **GitHub Integration** - Direct publishing of generated codebases to GitHub repositories
 - **Multi-Provider LLM Support** - Access to OpenRouter, Gemini, OpenAI, Claude, DeepSeek, and Grok models
+- **System Skills** - Agents read file-based expert skills (Research, Presentations, Frontend, Backend, DevOps, Proxy, VPN) and inject the matching guidance into their prompts (see `nodes/internal/skills/`)
 - **Research, Documents, and Presentations** - Non-code tasks can produce Markdown reports and designed PPTX slide decks
 - **Presentation Visual Guidance** - Presentation workers can use web search results to add source links and image/chart directions to slides
 - **Real-time Web Interface** - Live progress updates and interactive development canvas
