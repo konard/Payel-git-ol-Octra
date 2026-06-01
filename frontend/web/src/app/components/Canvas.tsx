@@ -34,8 +34,8 @@ const nodeTypes = {
 
 const nodeRoleDefaults: Record<string, string> = {
   boss: 'CEO',
-  manager: 'Backend',
-  worker: 'Developer',
+  manager: 'Coordinator',
+  worker: 'Specialist',
 };
 
 interface CanvasProps {

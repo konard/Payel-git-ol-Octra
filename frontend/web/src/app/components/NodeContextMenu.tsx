@@ -10,7 +10,7 @@ const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string 
   boss: Brain,
   manager: Bot,
   worker: Cpu,
-  zip: Archive,
+  github: Archive,
 };
 
 // Accent colors mirror the redesigned nodes so the menu reads as the same object.
@@ -18,7 +18,7 @@ const nodeAccents: Record<AgentNodeType, string> = {
   boss: '#f97316',
   manager: '#7c4dff',
   worker: '#22c55e',
-  zip: '#6e7681',
+  github: '#6e7681',
 };
 
 interface ContextMenuProps {
@@ -32,9 +32,9 @@ interface ContextMenuProps {
 
 const roleOptions: Record<AgentNodeType, string[]> = {
   boss: ['CEO', 'CTO', 'Technical Director', 'Architect'],
-  manager: ['Backend', 'Frontend', 'Fullstack', 'DevOps', 'Mobile', 'QA Lead'],
-  worker: ['Developer', 'UI Developer', 'API Developer', 'Database', 'Tester', 'Documentation'],
-  zip: ['Archive'],
+  manager: ['Coordinator', 'Research Lead', 'Content Lead', 'Backend', 'Frontend', 'QA Lead'],
+  worker: ['Specialist', 'Researcher', 'Designer', 'Writer', 'Developer', 'Tester'],
+  github: ['GitHub'],
 };
 
 const SCALE_OPTIONS: { label: string; value: number }[] = [

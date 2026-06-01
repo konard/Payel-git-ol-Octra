@@ -2,6 +2,7 @@ package boss
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"path/filepath"
 	"sort"
@@ -16,6 +17,7 @@ type streamedSolutionFile struct {
 	Path        string `json:"path"`
 	Content     string `json:"content"`
 	Language    string `json:"language"`
+	Encoding    string `json:"encoding,omitempty"`
 	WorkerRole  string `json:"worker_role"`
 	ManagerRole string `json:"manager_role"`
 	Status      string `json:"status"`
@@ -65,6 +67,8 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 		content     string
 		workerRole  string
 		managerRole string
+		language    string
+		encoding    string
 	}
 
 	var files []fileEntry
@@ -78,14 +82,19 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 				}
 				seen[path] = true
 				totalFiles++
+				language := languageForSolutionPath(path)
+				encoding := ""
 				if isBinarySolutionPath(path) {
-					continue
+					content = base64.StdEncoding.EncodeToString([]byte(content))
+					encoding = "base64"
 				}
 				files = append(files, fileEntry{
 					path:        path,
 					content:     content,
 					workerRole:  wr.Role,
 					managerRole: mr.Role,
+					language:    language,
+					encoding:    encoding,
 				})
 			}
 		}
@@ -101,7 +110,8 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 		payload = append(payload, streamedSolutionFile{
 			Path:        file.path,
 			Content:     file.content,
-			Language:    languageForSolutionPath(file.path),
+			Language:    file.language,
+			Encoding:    file.encoding,
 			WorkerRole:  file.workerRole,
 			ManagerRole: file.managerRole,
 			Status:      "ready",
@@ -154,6 +164,8 @@ func languageForSolutionPath(path string) string {
 		return "shell"
 	case ".sql":
 		return "sql"
+	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
+		return "binary"
 	default:
 		return "plaintext"
 	}

@@ -57,14 +57,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// If AI returns 0 managers or empty roles, create a default one
 	if len(decision.ManagerRoles) == 0 || decision.ManagersCount == 0 {
 		decision.ManagersCount = 1
-		decision.ManagerRoles = []models.ManagerRole{
-			{
-				Role:        "development",
-				Description: "Implement the requested functionality",
-				Priority:    1,
-			},
-		}
-		log.Printf("Boss: Applied fallback - created default 'development' manager")
+		decision.ManagerRoles = []models.ManagerRole{fallbackManagerRole(decision.TaskType)}
+		log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
 	}
 
 	architectureData := map[string]string{
@@ -201,6 +195,35 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	emit(progress, 100, "Project ready! "+task.Title+" created successfully", data)
 	return nil
+}
+
+func fallbackManagerRole(taskType string) models.ManagerRole {
+	switch taskType {
+	case TaskTypePresentation:
+		return models.ManagerRole{
+			Role:        "presentation",
+			Description: "Plan slides, visuals, and narrative for the requested presentation",
+			Priority:    1,
+		}
+	case TaskTypeResearch:
+		return models.ManagerRole{
+			Role:        "research",
+			Description: "Gather sources, verify facts, and summarize findings",
+			Priority:    1,
+		}
+	case TaskTypeDocument:
+		return models.ManagerRole{
+			Role:        "document",
+			Description: "Structure and write the requested document",
+			Priority:    1,
+		}
+	default:
+		return models.ManagerRole{
+			Role:        "development",
+			Description: "Implement the requested functionality",
+			Priority:    1,
+		}
+	}
 }
 
 // persistTask — сохраняет первоначальное состояние задачи в БД

@@ -15,7 +15,7 @@ interface WorkerNodeData {
 const WORKER_ACCENT = '#22c55e';
 
 function WorkerNodeComponent({ id, data }: NodeProps<{ data: WorkerNodeData }>) {
-  const { role = 'Developer', status = 'pending', filesCount, isConnected = false, scale = 1 } = data;
+  const { role = 'Specialist', status = 'pending', filesCount, isConnected = false, scale = 1 } = data;
   const { t } = useI18n();
 
   return (

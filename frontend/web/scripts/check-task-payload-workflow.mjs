@@ -46,6 +46,19 @@ try {
     ['Documentation Search Worker', 'News Search Worker'],
   );
 
+  const genericWorkerWorkflow = buildWorkflowConfigFromGraph(
+    [
+      { id: 'canvas-manager-general', type: 'manager', role: 'Coordinator', status: 'pending', position: { x: 0, y: 120 } },
+      { id: 'canvas-worker-general', type: 'worker', role: '', status: 'pending', position: { x: 0, y: 240 } },
+    ],
+    [{ from: 'canvas-manager-general', to: 'canvas-worker-general' }],
+  );
+  assert.equal(
+    genericWorkerWorkflow.managers[0].workers[0].role,
+    'Specialist',
+    'empty worker roles should use a generic Specialist fallback, not Developer',
+  );
+
   const noWorkflow = buildWorkflowConfigFromGraph(
     [{ id: 'boss-only', type: 'boss', role: 'Boss', status: 'pending', position: { x: 0, y: 0 } }],
     [],

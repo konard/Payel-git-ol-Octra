@@ -49,6 +49,7 @@ export interface CodeFile {
   path: string;
   name: string;
   language: string;
+  encoding?: string;
   content: string;
   status: CodeFileStatus;
   workerRole?: string;
@@ -127,6 +128,7 @@ const normalizeCodeFile = (
   path: file.path,
   name: file.name || existing?.name || getFileName(file.path),
   language: file.language || existing?.language || 'plaintext',
+  encoding: file.encoding || existing?.encoding,
   content: file.content,
   status: file.status || existing?.status || 'streaming',
   workerRole: file.workerRole || existing?.workerRole,

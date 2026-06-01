@@ -16,7 +16,7 @@ interface ManagerNodeData {
 const MANAGER_ACCENT = '#7c4dff';
 
 function ManagerNodeComponent({ id, data }: NodeProps<{ data: ManagerNodeData }>) {
-  const { role = 'Backend', status = 'pending', workerCount, progress = 0, isConnected = false, scale = 1 } = data;
+  const { role = 'Coordinator', status = 'pending', workerCount, progress = 0, isConnected = false, scale = 1 } = data;
   const { t } = useI18n();
 
   return (
