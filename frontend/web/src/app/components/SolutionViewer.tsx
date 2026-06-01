@@ -204,7 +204,7 @@ function PresentationDeckPreview({ file, previewFile }: { file: CodeFile; previe
   const deck = useMemo(() => parsePresentationMarkdown(previewFile.content), [previewFile.content]);
   const slides = deck.slides.length > 0
     ? deck.slides
-    : [{ title: deck.title || file.name || 'Presentation', bullets: [], visual: '', sources: [], notes: '' }];
+    : [{ title: deck.title || file.name || 'Presentation', bullets: [], visual: '', image: null, sources: [], notes: '' }];
   const [slideIndex, setSlideIndex] = useState(0);
   const currentSlide = slides[Math.min(slideIndex, Math.max(0, slides.length - 1))];
   const downloadUrl = useMemo(() => createBinaryDownloadUrl(file), [file.content, file.encoding, file.path]);
@@ -275,9 +275,20 @@ function PresentationDeckPreview({ file, previewFile }: { file: CodeFile; previe
                 )}
               </div>
 
-              {(currentSlide.visual || currentSlide.sources.length > 0 || currentSlide.notes) && (
+              {currentSlide.image && (
+                <div className="mt-6 overflow-hidden rounded-md border border-[var(--code-border)]">
+                  <img
+                    src={currentSlide.image.url}
+                    alt={currentSlide.image.alt || currentSlide.visual || currentSlide.title}
+                    loading="lazy"
+                    className="max-h-72 w-full bg-[var(--code-bg)] object-contain"
+                  />
+                </div>
+              )}
+
+              {((currentSlide.visual && !currentSlide.image) || currentSlide.sources.length > 0 || currentSlide.notes) && (
                 <div className="mt-auto grid gap-3 pt-8 text-sm leading-6 text-[var(--code-text-muted)] sm:grid-cols-2">
-                  {currentSlide.visual && (
+                  {currentSlide.visual && !currentSlide.image && (
                     <div className="rounded-md border border-[var(--code-border)] px-3 py-2">
                       <div className="text-xs font-semibold uppercase text-[var(--code-text)]">Visual</div>
                       <div>{currentSlide.visual}</div>
