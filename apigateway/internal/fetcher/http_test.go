@@ -1,6 +1,39 @@
 package fetcher
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+// TestNewStreamIDIsolatesConcurrentStreams guards the fix for cross-tab history
+// mixing (issue #31): two concurrent task/chat streams from the SAME user must
+// receive distinct Redis stream ids. Previously the user id itself was used as
+// the stream id, so two browser tabs shared the STREAM:<userID> key and one
+// tab's updates (e.g. a presentation) leaked into the other tab (code only).
+func TestNewStreamIDIsolatesConcurrentStreams(t *testing.T) {
+	const userID = "user-123"
+
+	seen := make(map[string]bool)
+	for i := 0; i < 100; i++ {
+		id := newStreamID(userID)
+
+		if !strings.HasPrefix(id, userID+":") {
+			t.Fatalf("newStreamID(%q) = %q, want prefix %q", userID, id, userID+":")
+		}
+		if id == userID {
+			t.Fatalf("newStreamID(%q) returned the bare user id, tabs would collide", userID)
+		}
+		if seen[id] {
+			t.Fatalf("newStreamID(%q) produced a duplicate id %q, tabs would collide", userID, id)
+		}
+		seen[id] = true
+	}
+
+	// Different users must never collide either.
+	if a, b := newStreamID("u-a"), newStreamID("u-b"); a == b {
+		t.Fatalf("newStreamID produced identical ids for different users: %q == %q", a, b)
+	}
+}
 
 func TestShouldLaunchWorkflowFromChatSearchRequests(t *testing.T) {
 	tests := []struct {
