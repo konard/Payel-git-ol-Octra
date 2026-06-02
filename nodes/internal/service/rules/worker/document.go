@@ -59,13 +59,19 @@ func (s *Service) generateDocument(
 		if deck.Title == "" {
 			deck.Title = firstLine(topic)
 		}
+		// Ищем в интернете реальные картинки и встраиваем их в слайды. Если поиск
+		// что-то нашёл — перезаписываем Markdown ссылками, чтобы .md и .pptx совпадали.
+		imgN := s.attachImages(ctx, &deck, topic)
+		if imgN > 0 {
+			md = document.RenderDeckMarkdown(deck)
+		}
 		pptxBytes, err := document.BuildPPTX(deck)
 		if err != nil {
 			return nil, nil, fmt.Errorf("pptx build failed: %w", err)
 		}
 		files["solution/"+slug+".md"] = md
 		files["solution/"+slug+".pptx"] = string(pptxBytes)
-		log.Printf("[Worker] Presentation generated: %d slides, %d bytes pptx, %d web sources", len(deck.Slides), len(pptxBytes), n)
+		log.Printf("[Worker] Presentation generated: %d slides, %d images, %d bytes pptx, %d web sources", len(deck.Slides), imgN, len(pptxBytes), n)
 
 	case "research":
 		angle := description

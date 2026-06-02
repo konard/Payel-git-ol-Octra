@@ -3,26 +3,42 @@ package search
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // Client — высокоуровневый поисковый клиент, которым пользуются воркеры.
 // Он оборачивает Provider, выполняет несколько запросов (по диапазону, заданному
 // менеджером), убирает дубли по URL и переранжирует объединённый набор алгоритмом
-// BM25 относительно темы ресёрча.
+// BM25 относительно темы ресёрча. Для презентаций он дополнительно умеет искать
+// изображения (imageProvider) и скачивать их байты (httpClient) для встраивания.
 type Client struct {
-	provider Provider
+	provider      Provider
+	imageProvider ImageProvider
+	httpClient    *http.Client
 }
 
-// NewClient создаёт клиент с дефолтным провайдером (DuckDuckGo).
+// NewClient создаёт клиент с дефолтными провайдерами: DuckDuckGo для текстового
+// поиска и Openverse для поиска изображений.
 func NewClient() *Client {
-	return &Client{provider: NewDuckDuckGoProvider()}
+	return &Client{
+		provider:      NewDuckDuckGoProvider(),
+		imageProvider: NewOpenverseProvider(),
+		httpClient:    &http.Client{Timeout: 15 * time.Second},
+	}
 }
 
-// NewClientWithProvider создаёт клиент с произвольным провайдером (для тестов).
+// NewClientWithProvider создаёт клиент с произвольным текстовым провайдером (для тестов).
 func NewClientWithProvider(p Provider) *Client {
 	return &Client{provider: p}
+}
+
+// NewClientWithImageProvider создаёт клиент с произвольным провайдером изображений
+// и (опционально) http-клиентом для скачивания картинок (для тестов).
+func NewClientWithImageProvider(p ImageProvider, httpClient *http.Client) *Client {
+	return &Client{imageProvider: p, httpClient: httpClient}
 }
 
 // Enabled сообщает, разрешён ли веб-поиск. Его можно полностью выключить

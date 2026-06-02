@@ -4,10 +4,16 @@ export interface PresentationPreviewFile {
   encoding?: string;
 }
 
+export interface PresentationImage {
+  url: string;
+  alt: string;
+}
+
 export interface PresentationSlide {
   title: string;
   bullets: string[];
   visual: string;
+  image: PresentationImage | null;
   sources: string[];
   notes: string;
 }
@@ -59,9 +65,23 @@ function emptySlide(title = ''): PresentationSlide {
     title,
     bullets: [],
     visual: '',
+    image: null,
     sources: [],
     notes: '',
   };
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+// setSlideImage записывает реальную ссылку на картинку в слайд, оставляя visual
+// как текстовое описание (alt используется как fallback, если visual пуст).
+function setSlideImage(slide: PresentationSlide, url: string, alt: string): void {
+  const trimmed = url.trim();
+  if (!isHttpUrl(trimmed)) return;
+  slide.image = { url: trimmed, alt: alt.trim() };
+  if (!slide.visual && alt.trim()) slide.visual = alt.trim();
 }
 
 function splitStructuredLine(line: string): [string, string] | null {
@@ -93,20 +113,26 @@ function applyStructuredLine(slide: PresentationSlide, line: string): boolean {
 
   if (key === 'source' || key === 'sources') {
     slide.sources.push(value);
+  } else if (key === 'image' || key === 'image idea' || key === 'illustration') {
+    // Прямая ссылка на картинку встраивается как изображение; текстовое описание
+    // (идея картинки) идёт в visual.
+    if (isHttpUrl(value)) {
+      setSlideImage(slide, value, slide.image?.alt ?? '');
+    } else {
+      slide.visual = value;
+    }
   } else {
     slide.visual = value;
   }
   return true;
 }
 
-function parseMarkdownImage(line: string): string {
+// parseMarkdownImage разбирает строку вида ![alt](url). Возвращает alt и url
+// отдельно, чтобы вызывающий код мог встроить реальную картинку.
+function parseMarkdownImage(line: string): { alt: string; url: string } | null {
   const match = line.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-  if (!match) return '';
-
-  const alt = match[1].trim();
-  const url = match[2].trim();
-  if (alt && url) return `${alt} - ${url}`;
-  return alt || url;
+  if (!match) return null;
+  return { alt: match[1].trim(), url: match[2].trim() };
 }
 
 export function parsePresentationMarkdown(markdown: string): PresentationDeck {
@@ -115,7 +141,7 @@ export function parsePresentationMarkdown(markdown: string): PresentationDeck {
 
   const flush = () => {
     if (!current) return;
-    if (current.title || current.bullets.length > 0 || current.visual || current.sources.length > 0 || current.notes) {
+    if (current.title || current.bullets.length > 0 || current.visual || current.image || current.sources.length > 0 || current.notes) {
       deck.slides.push(current);
     }
     current = null;
@@ -156,8 +182,15 @@ export function parsePresentationMarkdown(markdown: string): PresentationDeck {
     }
 
     if (line.startsWith('![')) {
-      const visual = parseMarkdownImage(line);
-      if (visual) ensureSlide().visual = visual;
+      const parsed = parseMarkdownImage(line);
+      if (parsed) {
+        const slide = ensureSlide();
+        if (isHttpUrl(parsed.url)) {
+          setSlideImage(slide, parsed.url, parsed.alt);
+        } else if (parsed.alt) {
+          slide.visual = parsed.alt;
+        }
+      }
       continue;
     }
 

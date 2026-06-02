@@ -43,6 +43,9 @@ assert.match(viewer, /documentMode/, 'SolutionViewer must branch on documentMode
 assert.match(viewer, /choosePreferredCodeFilePath/, 'SolutionViewer must preserve the user-selected document');
 assert.match(viewer, /PresentationDeckPreview/, 'SolutionViewer must preview generated presentations from slide Markdown');
 assert.match(viewer, /findPresentationPreviewFile/, 'SolutionViewer must find Markdown paired with generated pptx files');
+// Real images embedded into slides must render as <img>, not just visual text.
+assert.match(viewer, /currentSlide\.image/, 'SolutionViewer must branch on the slide image');
+assert.match(viewer, /<img/, 'SolutionViewer must render real slide images as <img>');
 
 const pkg = JSON.parse(read('package.json'));
 assert.ok(pkg.dependencies['react-markdown'], 'react-markdown must be a dependency');
@@ -153,6 +156,28 @@ Source: Internal analytics
   assert.deepEqual(deck.slides[0].sources, ['Internal analytics'], 'sources are parsed');
   assert.equal(deck.slides[0].notes, 'Keep this slide under one minute.', 'speaker notes are parsed');
   assert.deepEqual(deck.slides[1].bullets, ['Phase one', 'Phase two'], 'asterisk bullets are parsed');
+
+  // Real images: direct URLs (Markdown image, Image: line) become an embeddable
+  // image field; plain text visual ideas stay as visual descriptions only.
+  const withImages = parsePresentationMarkdown(`# Deck
+
+## Photo slide
+- Point one
+![A harbor at sunrise](https://example.com/harbor.jpg)
+
+## Idea slide
+- Another point
+Image: https://example.com/chart.png
+
+## Text-only slide
+- Final point
+Visual: A simple diagram with no URL`);
+  assert.equal(withImages.slides[0].image?.url, 'https://example.com/harbor.jpg', 'markdown image URL is captured');
+  assert.equal(withImages.slides[0].image?.alt, 'A harbor at sunrise', 'markdown image alt is captured');
+  assert.equal(withImages.slides[0].visual, 'A harbor at sunrise', 'image alt falls back into visual text');
+  assert.equal(withImages.slides[1].image?.url, 'https://example.com/chart.png', 'Image: line URL is captured');
+  assert.equal(withImages.slides[2].image, null, 'text-only visual stays without an image');
+  assert.equal(withImages.slides[2].visual, 'A simple diagram with no URL', 'plain visual text is preserved');
 
   const preview = findPresentationPreviewFile([
     { path: 'solution/designer-a1b2.md', content: '# Deck\n\n## Slide\n- point' },

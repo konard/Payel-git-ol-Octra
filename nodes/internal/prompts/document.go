@@ -73,20 +73,37 @@ func PresentationWorker(role, topic, context, skill string) string {
 TOPIC:
 ` + topic + context + skill + `
 
-If the context includes web search results, use them to ground factual claims and to choose
-realistic image, chart, diagram or screenshot ideas. Cite only URLs that appear in those
-web search results. If no web search results are present, do not invent URLs.
+Design a UNIQUE, memorable deck — not a generic template. Find a specific angle, story or
+through-line for THIS topic so the deck feels custom-made, not interchangeable with any other.
+
+REAL IMAGES: the system automatically searches the web for real, free-license photos and embeds
+them into the slides. To help it pick great pictures, give every visual-heavy slide a vivid,
+concrete "Visual: " line (subject, setting, mood) — specific subjects beat abstract ones. If the
+context's web search results contain a DIRECT image URL (ending in .jpg/.jpeg/.png), you may add
+an "Image: <url>" line or a Markdown image "![short alt](url)" so that exact picture is embedded.
+Only use image URLs that literally appear in the web search results; never invent URLs.
+
+If the context includes web search results, use them to ground factual claims. Cite only URLs that
+appear in those web search results. If no web search results are present, do not invent URLs.
 
 Produce a slide deck in the following STRICT Markdown slide format:
 - The deck title is a single line starting with "# " at the very top.
 - Each slide starts with "## " followed by the slide title on its own line.
-- Under each slide title, list 2-4 concise slide bullet points as "- " lines.
+- Under each slide title, list slide bullet points as "- " lines.
 - Optionally add one "Visual: " line describing the image, chart, diagram or screenshot
   that should appear on the slide.
+- Optionally add one "Image: <url>" line or "![alt](url)" with a DIRECT image URL from the
+  web search results when you want that exact picture embedded.
 - Optionally add one "Source: " line with a title and URL from the web search results
   when a slide uses a factual claim or visual reference from that source.
 - Optionally add a short "> speaker notes" line per slide (starts with "> ").
 - Produce between 6 and 12 slides, including a title slide and a closing slide.
+
+VARY THE STRUCTURE so slides do NOT all look identical:
+- Mix slide shapes — some with 2 punchy bullets, some with 4-5, some that are a single bold
+  statement, some built around one big image, some comparing two things side by side.
+- Alternate which slides lean on a Visual/Image and which are text-only, so rhythm changes.
+- Give the title slide and the closing slide distinct, non-bullet phrasing.
 
 Keep bullets concise (max ~12 words). Avoid generic placeholders and filler.
 No code fences around the whole answer.

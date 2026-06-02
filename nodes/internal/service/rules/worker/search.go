@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"nodes/internal/service/document"
 	"nodes/internal/service/rules"
 	"nodes/internal/service/search"
 )
@@ -93,6 +94,104 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 	emit.emit("", "done", len(queries))
 	log.Printf("[Worker] web search (%s): %d queries → %d sources", role, len(queries), len(results))
 	return search.FormatForPrompt(results), search.FormatSourcesMarkdown(results), len(results)
+}
+
+// attachImages ищет в интернете и встраивает реальные картинки в слайды колоды.
+// Для каждого слайда формируется запрос по его заголовку, теме и визуальному
+// направлению; берётся первая успешно скачанная картинка поддерживаемого формата
+// (jpeg/png). Если ИИ уже указал прямой URL картинки в Markdown, он пробуется
+// первым. Шаг устойчив к сбоям: при выключенном или недоступном поиске колода
+// просто остаётся без картинок, и презентация всё равно собирается.
+func (s *Service) attachImages(ctx context.Context, deck *document.Deck, topic string) int {
+	if s == nil || s.searchClient == nil || !search.Enabled() || deck == nil || len(deck.Slides) == 0 {
+		return 0
+	}
+
+	// Ограничиваем число картинок, чтобы файл не раздувался, а поиск не затягивался.
+	const maxImages = 6
+
+	used := make(map[string]bool)
+	attached := 0
+	for i := range deck.Slides {
+		if attached >= maxImages {
+			break
+		}
+		sl := &deck.Slides[i]
+		if sl.Image.Embeddable() {
+			// Уже есть готовые байты (например, после предыдущего шага) — не трогаем.
+			attached++
+			continue
+		}
+
+		queries := buildImageQueries(sl.Title, topic, sl.Visual)
+		candidates := s.searchClient.SearchImages(ctx, queries, 6)
+		// Прямой URL от ИИ пробуем первым: он мог прийти из результатов веб-поиска.
+		if u := strings.TrimSpace(sl.Image.URL); u != "" {
+			candidates = append([]search.Image{{URL: u, Title: sl.Image.Alt}}, candidates...)
+		}
+
+		for _, cand := range candidates {
+			key := normalizeImageKey(cand.URL)
+			if key == "" || used[key] {
+				continue
+			}
+			data, err := s.searchClient.FetchImage(ctx, cand)
+			if err != nil {
+				continue
+			}
+			used[key] = true
+			sl.Image = document.Image{
+				URL:         data.URL,
+				Alt:         data.Alt,
+				Source:      imageAttribution(cand),
+				Data:        data.Data,
+				ContentType: data.ContentType,
+			}
+			attached++
+			break
+		}
+	}
+
+	if attached > 0 {
+		log.Printf("[Worker] attached %d web images to presentation", attached)
+	}
+	return attached
+}
+
+// buildImageQueries строит набор запросов на поиск картинки для слайда, комбинируя
+// заголовок слайда, тему презентации и текстовое визуальное направление.
+func buildImageQueries(slideTitle, topic, visual string) []string {
+	var qs []string
+	add := func(s string) {
+		if s = cleanQuery(s); s != "" {
+			qs = append(qs, s)
+		}
+	}
+	title := cleanQuery(slideTitle)
+	t := cleanQuery(topic)
+	if title != "" && t != "" {
+		add(title + " " + t)
+	}
+	add(title)
+	add(t)
+	add(visual)
+	return dedupeQueries(qs)
+}
+
+// imageAttribution собирает короткую подпись-атрибуцию из источника и лицензии.
+func imageAttribution(img search.Image) string {
+	var parts []string
+	if img.Source != "" {
+		parts = append(parts, img.Source)
+	}
+	if img.License != "" {
+		parts = append(parts, strings.ToUpper(img.License))
+	}
+	return strings.Join(parts, " · ")
+}
+
+func normalizeImageKey(u string) string {
+	return strings.ToLower(strings.TrimRight(strings.TrimSpace(u), "/"))
 }
 
 // buildSearchQueries формирует набор поисковых запросов из темы и диапазона

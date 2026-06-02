@@ -94,7 +94,7 @@ FIX the code based on the feedback. Return the FULL corrected file as PLAIN TEXT
 	// Для презентаций пересобираем .pptx из исправленного slide-Markdown,
 	// чтобы бинарный файл соответствовал обновлённому содержимому.
 	if taskType == "presentation" {
-		rebuildPresentationArtifacts(req.OriginalFiles, fixedFiles)
+		s.rebuildPresentationArtifacts(ctx, req.OriginalFiles, fixedFiles)
 	}
 
 	if len(fixedFiles) == 0 {
@@ -120,7 +120,7 @@ FIX the code based on the feedback. Return the FULL corrected file as PLAIN TEXT
 // rebuildPresentationArtifacts — для каждого .pptx из исходных файлов, у которого
 // есть исправленный парный .md (slide-Markdown), пересобирает .pptx из обновлённого
 // Markdown, чтобы бинарник соответствовал отредактированному содержимому.
-func rebuildPresentationArtifacts(originalFiles, fixedFiles map[string]string) {
+func (s *Service) rebuildPresentationArtifacts(ctx context.Context, originalFiles, fixedFiles map[string]string) {
 	for path := range originalFiles {
 		if !strings.HasSuffix(strings.ToLower(path), ".pptx") {
 			continue
@@ -131,6 +131,11 @@ func rebuildPresentationArtifacts(originalFiles, fixedFiles map[string]string) {
 			continue
 		}
 		deck := document.ParseSlideMarkdown(md)
+		// После правок Markdown повторно подтягиваем картинки (парсер восстанавливает
+		// только их URL, без байтов), иначе встроенные изображения пропали бы.
+		if s.attachImages(ctx, &deck, deck.Title) > 0 {
+			fixedFiles[mdPath] = document.RenderDeckMarkdown(deck)
+		}
 		pptxBytes, err := document.BuildPPTX(deck)
 		if err != nil {
 			log.Printf("Failed to rebuild pptx %s during review: %v", path, err)
