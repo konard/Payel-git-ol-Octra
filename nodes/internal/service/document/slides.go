@@ -1,6 +1,9 @@
 package document
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // ParseSlideMarkdown — разбирает Markdown слайд-формат, который выдаёт воркер-презентатор:
 //
@@ -48,8 +51,18 @@ func ParseSlideMarkdown(md string) Deck {
 			if cur == nil {
 				cur = &Slide{Title: deck.Title}
 			}
-			if visual := parseMarkdownImage(line); visual != "" {
-				cur.Visual = visual
+			alt, imgURL := parseMarkdownImage(line)
+			if imgURL != "" {
+				// Реальная ссылка на картинку — её сможет скачать и встроить воркер.
+				if cur.Image.URL == "" {
+					cur.Image.URL = imgURL
+					cur.Image.Alt = alt
+				}
+				if cur.Visual == "" && alt != "" {
+					cur.Visual = alt
+				}
+			} else if alt != "" {
+				cur.Visual = alt
 			}
 		case strings.HasPrefix(line, "> "):
 			if cur != nil {
@@ -82,8 +95,20 @@ func applyStructuredSlideLine(slide *Slide, line string) bool {
 		return false
 	}
 	switch key {
-	case "visual", "visual direction", "image", "image idea", "illustration":
+	case "visual", "visual direction":
 		if value != "" {
+			slide.Visual = value
+		}
+	case "image", "image idea", "illustration":
+		// Если значение — настоящий URL, это картинка для встраивания; иначе —
+		// текстовое описание визуала.
+		switch {
+		case value == "":
+		case isHTTPURL(value):
+			if slide.Image.URL == "" {
+				slide.Image.URL = value
+			}
+		default:
 			slide.Visual = value
 		}
 	case "source", "sources":
@@ -110,21 +135,64 @@ func splitStructuredLine(line string) (key, value string, ok bool) {
 	}
 }
 
-func parseMarkdownImage(line string) string {
+// parseMarkdownImage разбирает строку вида ![alt](url) и возвращает alt и url
+// по отдельности (любой из них может быть пустым).
+func parseMarkdownImage(line string) (alt, url string) {
 	altStart := strings.Index(line, "![")
 	altEnd := strings.Index(line, "](")
 	urlEnd := strings.LastIndex(line, ")")
 	if altStart < 0 || altEnd < altStart+2 || urlEnd <= altEnd+2 {
-		return ""
+		return "", ""
 	}
-	alt := strings.TrimSpace(line[altStart+2 : altEnd])
-	url := strings.TrimSpace(line[altEnd+2 : urlEnd])
-	switch {
-	case alt != "" && url != "":
-		return alt + " — " + url
-	case alt != "":
-		return alt
-	default:
-		return url
+	alt = strings.TrimSpace(line[altStart+2 : altEnd])
+	url = strings.TrimSpace(line[altEnd+2 : urlEnd])
+	return alt, url
+}
+
+// isHTTPURL сообщает, что строка похожа на http(s)-ссылку.
+func isHTTPURL(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+// RenderDeckMarkdown сериализует Deck обратно в Markdown-формат, который понимает
+// ParseSlideMarkdown. Воркер использует это, чтобы файл .md и встроенные в .pptx
+// картинки оставались согласованными.
+func RenderDeckMarkdown(deck Deck) string {
+	var b strings.Builder
+	if t := strings.TrimSpace(deck.Title); t != "" {
+		b.WriteString("# " + t + "\n\n")
 	}
+	for i, s := range deck.Slides {
+		title := strings.TrimSpace(s.Title)
+		if title == "" {
+			title = fmt.Sprintf("Slide %d", i+1)
+		}
+		b.WriteString("## " + title + "\n")
+		for _, bullet := range s.Bullets {
+			if bullet = strings.TrimSpace(bullet); bullet != "" {
+				b.WriteString("- " + bullet + "\n")
+			}
+		}
+		if v := strings.TrimSpace(s.Visual); v != "" {
+			b.WriteString("Visual: " + v + "\n")
+		}
+		if u := strings.TrimSpace(s.Image.URL); u != "" {
+			alt := strings.TrimSpace(s.Image.Alt)
+			if alt == "" {
+				alt = "Illustration"
+			}
+			b.WriteString(fmt.Sprintf("![%s](%s)\n", alt, u))
+		}
+		for _, src := range s.Sources {
+			if src = strings.TrimSpace(src); src != "" {
+				b.WriteString("Source: " + src + "\n")
+			}
+		}
+		if notes := strings.TrimSpace(s.Notes); notes != "" {
+			b.WriteString("> " + notes + "\n")
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
 }

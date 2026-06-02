@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -40,7 +41,8 @@ func TestRebuildPresentationArtifacts(t *testing.T) {
 		"solution/designer-abc.md": revisedMD,
 	}
 
-	rebuildPresentationArtifacts(original, fixed)
+	// Без searchClient повторный поиск картинок пропускается, поведение прежнее.
+	(&Service{}).rebuildPresentationArtifacts(context.Background(), original, fixed)
 
 	got, ok := fixed["solution/designer-abc.pptx"]
 	if !ok {
