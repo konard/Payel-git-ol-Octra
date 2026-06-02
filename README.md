@@ -28,6 +28,7 @@ Describe task → AI analyzes requirements → AI team builds it → Code on Git
 - **Natural language input** — just describe what you need
 - **Multi-agent AI pipeline** — architecture planning, parallel code generation, automated review, quality validation
 - **Multiple LLM providers** — OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok, Qwen, Z.AI
+- **System skills** — agents read file-based expert skills (Research, Presentations, Frontend, Backend, DevOps, Proxy, VPN) and inject the matching guidance into their prompts (see `nodes/internal/skills/`)
 - **GitHub integration** — results published directly to a new repository or pull request
 - **Real-time progress** — watch your project being built step by step
 - **Web interface** — interactive canvas and chat modes
