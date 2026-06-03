@@ -9,6 +9,11 @@ Language: ` + techStack + `
 
 TASK: ` + task + context + skill + `
 
+SCOPE FIDELITY: plan the MINIMUM set of files that builds EXACTLY what the task asks for — nothing more.
+Do NOT add files for features the user did not request (no auth, database, user management, extra
+services, configs). If the task is minimal ("mini", "simple", "small", "basic", "мини", "минимальный",
+"простой"), a single source file plus the language manifest (e.g. main.go + go.mod) is usually enough.
+
 IMPORTANT: Use ONLY ` + techStack + ` language. NOT JavaScript, NOT TypeScript.
 Create files appropriate for ` + techStack + ` (e.g., .go files for Go, .py for Python).
 Return JSON ONLY:

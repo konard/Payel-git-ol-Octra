@@ -25,6 +25,12 @@ Task:
 
 Task complexity (grade_weight): ` + gradeWeight + `/100
 
+SCOPE FIDELITY: hire only the workers needed to build EXACTLY what the task asks for — nothing more.
+Do NOT add workers for features, layers or infrastructure the user did not request (auth, database,
+extra services, etc.). If the task is minimal ("mini", "simple", "small", "basic", "мини",
+"минимальный", "простой"), hire exactly 1 worker and keep the build minimal. The grade_weight only
+hints at effort — it must NEVER push you to add scope beyond what was requested.
+
 Use this formula:
 - grade 1-20: 1 worker ONLY
 - grade 21-40: 1-2 workers

@@ -32,6 +32,22 @@ FIRST, classify the task into one "task_type":
 When in doubt between document and research, pick "research" if the user wants information
 gathered/verified, otherwise "document". Only pick "code" when software must be produced.
 
+SCOPE FIDELITY — THE MOST IMPORTANT RULE:
+Build EXACTLY what the user asked for — the right KIND of deliverable, and nothing more.
+- The deliverable type must literally match the request. "a proxy" → a proxy. "a CLI tool" → a CLI tool.
+  Do NOT silently turn a small, specific request into a different, bigger project (e.g. a "proxy"
+  must NOT become a REST API with auth/database/users).
+- Do NOT add features, layers, dependencies or infrastructure the user did not ask for. No auth/JWT,
+  database, user management, CORS, rate limiting, Docker, etc. UNLESS the task explicitly requests them.
+- Match the architecture complexity to the literal request, not to the complexity grade. The grade only
+  hints at effort; it must NEVER inflate scope beyond what was asked.
+- Scope-limiting words mean keep it minimal — prefer the smallest reasonable structure (often a single
+  file with the standard library and zero dependencies):
+  English: "mini", "minimal", "simple", "small", "basic", "tiny", "just", "only", "quick".
+  Russian: "мини", "минимальный", "простой", "небольшой", "базовый", "только", "просто".
+- When the task is minimal, plan exactly 1 manager with 1 focused role; put the scope limit in
+  architecture_notes (e.g. "Minimal HTTP/HTTPS proxy, single file, stdlib only — no extra features").
+
 IMPORTANT (for code tasks):
 - Choose tech_stack based on user description ONLY
 - If description says "golang" or "на golang" → use Go
