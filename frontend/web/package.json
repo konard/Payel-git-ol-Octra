@@ -18,7 +18,8 @@
     "test:custom-providers": "node scripts/check-custom-provider-normalization.mjs",
     "test:chat-input": "node scripts/check-chat-input.mjs",
     "test:file-tree": "node scripts/check-file-tree-indent.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree"
+    "test:profile-avatar": "node scripts/check-profile-avatar.mjs",
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree && npm run test:profile-avatar"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
