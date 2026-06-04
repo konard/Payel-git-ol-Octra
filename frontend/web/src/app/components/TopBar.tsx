@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft, PanelRight } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
@@ -123,9 +123,17 @@ interface TopBarProps {
   onModeChange: (mode: 'canvas' | 'chat' | 'solution') => void;
   hasUnreadMessages: boolean;
   onToggleSidebar?: () => void;
+  // When the desktop workspace is active these drive the docked Sessions (left)
+  // and Solution (right) panes; on narrow screens they stay undefined and the
+  // header falls back to the overlay sidebar + single-pane mode tabs.
+  isDesktop?: boolean;
+  sessionsOpen?: boolean;
+  solutionOpen?: boolean;
+  onToggleSessions?: () => void;
+  onToggleSolution?: () => void;
 }
 
-export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar }: TopBarProps) {
+export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar, isDesktop = false, sessionsOpen = false, solutionOpen = false, onToggleSessions, onToggleSolution }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const repoUrl = useTaskStore((state) => state.repoUrl);
@@ -241,6 +249,20 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
         <div className="min-w-0 flex flex-1 flex-wrap items-center gap-3">
           {/* History & New Chat buttons */}
           <div className="flex items-center gap-1">
+            {isDesktop && onToggleSessions && (
+              <button
+                onClick={onToggleSessions}
+                className={`p-2 rounded-lg transition-colors ${
+                  sessionsOpen
+                    ? 'bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'hover:bg-[var(--background)] text-[var(--text-secondary)]'
+                }`}
+                title="Toggle Sessions panel"
+                aria-pressed={sessionsOpen}
+              >
+                <PanelLeft size={18} />
+              </button>
+            )}
             <button
               onClick={onToggleSidebar}
               className="p-2 hover:bg-[var(--background)] rounded-lg transition-colors text-[var(--text-secondary)]"
@@ -292,17 +314,34 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             >
               Chat
             </button>
-            <button
-              onClick={() => onModeChange('solution')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'solution'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-              }`}
-            >
-              Solution
-            </button>
+            {!isDesktop && (
+              <button
+                onClick={() => onModeChange('solution')}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === 'solution'
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+                }`}
+              >
+                Solution
+              </button>
+            )}
           </div>
+          {isDesktop && onToggleSolution && (
+            <button
+              onClick={onToggleSolution}
+              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-sm font-medium ${
+                solutionOpen
+                  ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent)]'
+                  : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--background)]'
+              }`}
+              title="Toggle Solution panel"
+              aria-pressed={solutionOpen}
+            >
+              <PanelRight size={16} />
+              <span className="hidden sm:inline">Solution</span>
+            </button>
+          )}
         </div>
 
         {/* Center: GitHub button */}

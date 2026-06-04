@@ -9,9 +9,13 @@ interface SidebarProps {
   onClose: () => void;
   onSelectChat: (chatId: string) => void;
   onNewChat: (chatId?: string) => void;
+  // 'overlay' is the slide-in drawer used on narrow screens; 'dock' renders the
+  // same session list inline as a persistent left pane in the desktop workspace.
+  variant?: 'overlay' | 'dock';
 }
 
-export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'overlay' }: SidebarProps) {
+  const isDock = variant === 'dock';
   const { user, isAuthenticated, accessToken, refreshToken } = useAuthStore();
   const [chats, setChats] = useState<ChatHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +31,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
     : notLoggedInLabel;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !isDock) return;
 
     if (!hasAuthSession) {
       setChats([]);
@@ -166,7 +170,13 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
   };
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div
+      className={
+        isDock
+          ? 'relative h-full w-full bg-[var(--surface)] flex flex-col'
+          : `fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`
+      }
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
         <div className="flex items-center gap-3">
@@ -175,13 +185,15 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
           </div>
           <span className="font-semibold text-[15px] text-[var(--text)]">{t('chatSidebar.history')}</span>
         </div>
-        <button
-          onClick={onClose}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors"
-          title={t('common.close')}
-        >
-          <X size={18} />
-        </button>
+        {!isDock && (
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors"
+            title={t('common.close')}
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* New Chat Button */}
