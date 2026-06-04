@@ -16,6 +16,8 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 		wantOwner string
 		wantRepo  string
 		wantNum   int
+		wantPR    bool
+		wantURL   string
 		wantFound bool
 	}{
 		{
@@ -24,6 +26,7 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 			wantOwner: "Payel-git-ol",
 			wantRepo:  "Octra",
 			wantNum:   7,
+			wantURL:   "https://github.com/Payel-git-ol/Octra/issues/7",
 			wantFound: true,
 		},
 		{
@@ -32,6 +35,7 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 			wantOwner: "octra-labs",
 			wantRepo:  "app",
 			wantNum:   42,
+			wantURL:   "https://github.com/octra-labs/app/issues/42",
 			wantFound: true,
 		},
 		{
@@ -40,9 +44,26 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 			wantFound: false,
 		},
 		{
-			name:      "pull request URL is not an issue target",
+			// Pasting a pull request link must now start the workflow too
+			// (issue #44): previously PR URLs were ignored and nothing happened.
+			name:      "pull request URL is a target",
 			text:      "Review https://github.com/Payel-git-ol/Octra/pull/8",
-			wantFound: false,
+			wantOwner: "Payel-git-ol",
+			wantRepo:  "Octra",
+			wantNum:   8,
+			wantPR:    true,
+			wantURL:   "https://github.com/Payel-git-ol/Octra/pull/8",
+			wantFound: true,
+		},
+		{
+			name:      "plural pulls URL is a target",
+			text:      "Continue https://github.com/octra-labs/app/pulls/15 please",
+			wantOwner: "octra-labs",
+			wantRepo:  "app",
+			wantNum:   15,
+			wantPR:    true,
+			wantURL:   "https://github.com/octra-labs/app/pull/15",
+			wantFound: true,
 		},
 		{
 			name:      "non github URL",
@@ -62,6 +83,12 @@ func TestParseIssueReferenceRequiresConcreteIssueURL(t *testing.T) {
 			}
 			if got.Owner != tt.wantOwner || got.Repo != tt.wantRepo || got.Number != tt.wantNum {
 				t.Fatalf("got %#v, want owner=%q repo=%q number=%d", got, tt.wantOwner, tt.wantRepo, tt.wantNum)
+			}
+			if got.IsPullRequest != tt.wantPR {
+				t.Fatalf("IsPullRequest = %v, want %v", got.IsPullRequest, tt.wantPR)
+			}
+			if got.URL != tt.wantURL {
+				t.Fatalf("URL = %q, want %q", got.URL, tt.wantURL)
 			}
 		})
 	}

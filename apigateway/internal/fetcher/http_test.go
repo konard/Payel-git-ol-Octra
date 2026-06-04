@@ -81,6 +81,26 @@ func TestShouldLaunchWorkflowFromChatSearchRequests(t *testing.T) {
 			message: "Спасибо, понял",
 			want:    false,
 		},
+		{
+			name:    "pasted GitHub issue link launches workflow",
+			message: "https://github.com/Payel-git-ol/Octra/issues/44",
+			want:    true,
+		},
+		{
+			name:    "pasted GitHub pull request link launches workflow",
+			message: "https://github.com/Payel-git-ol/Octra/pull/45",
+			want:    true,
+		},
+		{
+			name:    "GitHub issue link with surrounding text launches workflow",
+			message: "Please take a look at https://github.com/octra-labs/app/issues/7 thanks",
+			want:    true,
+		},
+		{
+			name:    "plain GitHub repo link stays in chat",
+			message: "https://github.com/gin-gonic/gin",
+			want:    false,
+		},
 	}
 
 	for _, tt := range tests {

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -372,7 +373,25 @@ func writeBossChatMessage(conn *websocket.Conn, taskID, message string, clarific
 	})
 }
 
+// githubTaskURLPattern распознаёт конкретные GitHub issue/pull request ссылки.
+// Раньше вставленная ссылка не запускала workflow — чат просто отвечал «Задача
+// создана» и ничего не происходило (issue #44). Теперь такая ссылка сразу
+// запускает пайплайн создания pull request.
+var githubTaskURLPattern = regexp.MustCompile(`(?i)\b(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(?:issues|pull|pulls)/[0-9]+`)
+
+// containsGitHubTaskURL сообщает, есть ли в сообщении ссылка на конкретный
+// GitHub issue или pull request, которую нужно превратить в задачу.
+func containsGitHubTaskURL(message string) bool {
+	return githubTaskURLPattern.MatchString(message)
+}
+
 func shouldLaunchWorkflowFromChat(message string) bool {
+	// Вставленная ссылка на GitHub issue/PR — это всегда задача, даже если в
+	// сообщении нет других ключевых слов.
+	if containsGitHubTaskURL(message) {
+		return true
+	}
+
 	words := normalizedWords(message)
 	if shouldLaunchSearchWorkflowFromChat(words) {
 		return true
