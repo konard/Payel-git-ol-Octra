@@ -3,7 +3,6 @@ import { Canvas } from './Canvas';
 import { Chat, type ChatMessage } from './Chat';
 import { SolutionViewer } from './SolutionViewer';
 import { BottomInput, type TaskData } from './BottomInput';
-import { ChatInput } from './ChatInput';
 import { Sidebar } from '../../components/Sidebar';
 
 interface WorkspaceProps {
@@ -19,7 +18,6 @@ interface WorkspaceProps {
   isSubmitting: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  onSendChatMessage: (message: string) => void;
   onSelectChat: (chatId: string) => void;
   onNewChat: (chatId?: string) => void;
   // Whether the left Sessions dock is visible. It is toggled from the header so
@@ -66,43 +64,42 @@ export function Workspace({
   isSubmitting,
   isExpanded,
   onToggleExpand,
-  onSendChatMessage,
   onSelectChat,
   onNewChat,
   sessionsOpen,
 }: WorkspaceProps) {
-  // The centre column stacks the Canvas (top) over the Octra Boss chat (bottom),
-  // each in its own window card with its docked input. Both are always visible,
-  // which is why the old Canvas/Chat/Solution header toggles became redundant
-  // and were removed (issue #40).
+  // The centre column stacks the Canvas (top) over the Octra Boss chat (bottom)
+  // as two resizable panes, then shares a SINGLE input docked at the bottom of
+  // the column. The owner asked for one unified field instead of a separate
+  // input for the canvas and another for the chat (issue #40 feedback). Because
+  // both panes are always visible, the old Canvas/Chat/Solution header toggles
+  // were redundant and were removed too.
   const center = (
-    <PanelGroup direction="vertical" className="h-full">
-      <Panel id="center-canvas" order={1} defaultSize={58} minSize={25}>
-        <PaneCard>
-          <div className="min-h-0 flex-1">
+    <PaneCard>
+      <PanelGroup direction="vertical" className="min-h-0 flex-1">
+        <Panel id="center-canvas" order={1} defaultSize={58} minSize={25}>
+          <div className="h-full min-h-0">
             <Canvas mode="canvas" onModeChange={onModeChange} hasUnreadMessages={hasUnreadMessages} />
           </div>
-          <BottomInput
-            onSubmit={onCreateTask}
-            onStop={onStopTask}
-            isSubmitting={isSubmitting}
-            isExpanded={isExpanded}
-            onToggleExpand={onToggleExpand}
-          />
-        </PaneCard>
-      </Panel>
+        </Panel>
 
-      <ResizeHandle orientation="horizontal" />
+        <ResizeHandle orientation="horizontal" />
 
-      <Panel id="center-chat" order={2} defaultSize={42} minSize={20}>
-        <PaneCard>
-          <div className="min-h-0 flex-1">
+        <Panel id="center-chat" order={2} defaultSize={42} minSize={20}>
+          <div className="h-full min-h-0">
             <Chat messages={chatMessages} onMarkAsRead={onMarkAsRead} />
           </div>
-          <ChatInput onSendMessage={onSendChatMessage} />
-        </PaneCard>
-      </Panel>
-    </PanelGroup>
+        </Panel>
+      </PanelGroup>
+
+      <BottomInput
+        onSubmit={onCreateTask}
+        onStop={onStopTask}
+        isSubmitting={isSubmitting}
+        isExpanded={isExpanded}
+        onToggleExpand={onToggleExpand}
+      />
+    </PaneCard>
   );
 
   // Re-key the group when the Sessions dock visibility changes so

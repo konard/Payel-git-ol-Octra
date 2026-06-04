@@ -713,6 +713,25 @@ export function SolutionViewer() {
     );
   }
 
+  // Before any files have been generated there is nothing to explore. Rendering
+  // the explorer aside next to the empty editor produced two stacked
+  // "No generated files yet." messages, which read as a layout bug (issue #40
+  // feedback). Show a single, centred empty state instead.
+  if (codeFiles.length === 0) {
+    return (
+      <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
+        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">
+          <Files size={16} className="text-[var(--code-text-muted)]" />
+          <span className="truncate text-sm font-medium">Solution files</span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center text-[var(--code-text-muted)]">
+          <FileCode2 size={46} className="mb-4 opacity-70" />
+          <div className="max-w-sm text-sm leading-6">No generated files yet.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">

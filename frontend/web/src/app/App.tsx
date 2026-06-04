@@ -550,7 +550,6 @@ export default function App() {
             isSubmitting={isSubmitting}
             isExpanded={isExpanded}
             onToggleExpand={toggleExpand}
-            onSendChatMessage={handleSendChatMessage}
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
             sessionsOpen={sessionsOpen}

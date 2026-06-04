@@ -37,8 +37,13 @@ assert.match(workspace, /variant="dock"/, 'workspace must render the Sidebar as 
 assert.match(workspace, /<SolutionViewer/, 'workspace must reuse the SolutionViewer');
 assert.match(workspace, /<Canvas/, 'workspace must reuse the Canvas');
 assert.match(workspace, /<Chat\b/, 'workspace must reuse the Chat view');
-assert.match(workspace, /<BottomInput/, 'workspace must reuse the task input');
-assert.match(workspace, /<ChatInput/, 'workspace must reuse the chat input');
+
+// The Canvas and the Octra Boss chat share a SINGLE unified input docked at the
+// bottom of the centre column — the owner asked for one field instead of a
+// separate input for the canvas and another for the chat (issue #40 feedback).
+const bottomInputs = workspace.match(/<BottomInput/g) ?? [];
+assert.equal(bottomInputs.length, 1, 'centre must dock exactly one unified input (no per-pane inputs)');
+assert.doesNotMatch(workspace, /<ChatInput/, 'the separate chat input must be removed in favour of the unified input');
 
 // The colour palette must be preserved (issue #40 explicitly keeps the colours).
 assert.match(workspace, /var\(--surface\)/, 'workspace panes must keep the existing surface colour');
