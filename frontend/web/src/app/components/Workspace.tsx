@@ -78,7 +78,10 @@ export function Workspace({
     <PaneCard>
       <PanelGroup direction="vertical" className="min-h-0 flex-1">
         <Panel id="center-canvas" order={1} defaultSize={58} minSize={25}>
-          <div className="h-full min-h-0">
+          {/* The Canvas root is `flex-1`, so its wrapper must be a flex column —
+              otherwise the ReactFlow surface collapses to height 0 and the dotted
+              grid / zoom controls never render (issue #40 feedback). */}
+          <div className="flex h-full min-h-0 flex-col">
             <Canvas mode="canvas" onModeChange={onModeChange} hasUnreadMessages={hasUnreadMessages} />
           </div>
         </Panel>

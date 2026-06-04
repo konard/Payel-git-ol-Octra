@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Send, Settings2, Square, ChevronUp, ChevronDown, Search, ChevronRight, Puzzle } from 'lucide-react';
+import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
-import { PROVIDERS, getProviderById } from '../../config/providers';
+import { PROVIDERS } from '../../config/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useCustomProvidersStore } from '../../stores/customProvidersStore';
 import { t } from '../../hooks/useI18n';
@@ -170,27 +170,58 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
 
   const selectedProvider = allProviders.find(p => p.id === formData.provider);
 
-  return (
-    <div className="bg-[var(--surface)] border-t border-[var(--border)]">
-      <div className="flex justify-center -mt-3 relative z-10">
-        <button
-          onClick={onToggleExpand}
-          className="bg-[var(--surface)] border border-[var(--border)] rounded-full p-1.5 hover:bg-[var(--background)] transition-colors text-[var(--text-muted)]"
-        >
-          {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        </button>
-      </div>
+  // Submit on Enter (Shift+Enter inserts a newline), matching the reference chat
+  // input behaviour.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!isSubmitting) handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
 
-      <form onSubmit={handleSubmit} className="p-4">
-        {isExpanded && (
-          <div className={`grid gap-3 mb-3 p-3 bg-[var(--background)] rounded-lg ${
-            hideApiKeyInput ? 'grid-cols-2' : 'grid-cols-3'
-          }`}>
-            {/* Provider Dropdown */}
+  return (
+    <div className="border-t border-[var(--border)] bg-[var(--surface)] p-3">
+      <form onSubmit={handleSubmit}>
+        {/* A single unified, rounded input card — the task description, the
+            provider/model selectors and the send button all live in one field,
+            matching the reference design from issue #40. */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 pb-2 pt-3 transition-colors focus-within:border-[var(--accent)]">
+          {/* Row 1 — description + send */}
+          <div className="flex items-end gap-2">
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onKeyDown={handleKeyDown}
+              rows={2}
+              className="min-h-[2.5rem] flex-1 resize-none bg-transparent px-1 text-sm leading-6 text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none"
+              placeholder={t('bottomInput.taskDescription')}
+            />
+
+            <button
+              ref={buttonRef}
+              type={isSubmitting ? 'button' : 'submit'}
+              onClick={() => {
+                if (!isSubmitting && !isAnimating) {
+                  setIsAnimating(true);
+                  setTimeout(() => setIsAnimating(false), 400);
+                }
+                if (isSubmitting && onStop) onStop();
+              }}
+              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-visible rounded-xl transition-colors ${
+                isSubmitting
+                  ? 'animate-pulse cursor-pointer bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]'
+              }`}
+              title={isSubmitting ? t('bottomInput.settings') : undefined}
+            >
+              {isSubmitting ? <Square size={18} fill="white" /> : <ArrowRight size={20} />}
+            </button>
+          </div>
+
+          {/* Row 2 — provider / model pills + secondary actions */}
+          <div className="mt-1 flex items-center gap-2">
+            {/* Provider pill */}
             <div className="relative">
-              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                {t('bottomInput.provider')}
-              </label>
               <button
                 ref={providerBtnRef}
                 type="button"
@@ -198,47 +229,42 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                   setShowProviderDropdown(!showProviderDropdown);
                   setShowModelSelector(false);
                 }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm hover:border-[var(--accent)] transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--text)] transition-colors hover:border-[var(--accent)]"
               >
                 {selectedProvider && (
-                  <div className="w-5 h-5 flex items-center justify-center overflow-hidden">
-                    {selectedProvider.icon ? (
-                      <img src={selectedProvider.icon} alt={selectedProvider.name} className="w-5 h-5 object-contain" />
-                    ) : (
-                      <Puzzle size={14} className="text-[var(--accent)]" />
-                    )}
-                  </div>
+                  selectedProvider.icon ? (
+                    <img src={selectedProvider.icon} alt={selectedProvider.name} className="h-3.5 w-3.5 object-contain" />
+                  ) : (
+                    <Puzzle size={13} className="text-[var(--accent)]" />
+                  )
                 )}
-                <span className="flex-1 text-left truncate">{selectedProvider?.name || formData.provider}</span>
-                <ChevronRight size={14} className={`transition-transform text-[var(--text-muted)] ${showProviderDropdown ? 'rotate-90' : ''}`} />
+                <span className="max-w-[8rem] truncate">{selectedProvider?.name || formData.provider}</span>
+                <ChevronDown size={13} className={`text-[var(--text-muted)] transition-transform ${showProviderDropdown ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Provider dropdown menu */}
               {showProviderDropdown && (
-                <div className="absolute bottom-full left-0 right-0 mb-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden z-20">
-                  <div className="p-2 max-h-64 overflow-y-auto">
-                     {allProviders.map((provider) => (
+                <div className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-xl z-20">
+                  <div className="max-h-64 overflow-y-auto p-2">
+                    {allProviders.map((provider) => (
                       <button
                         key={provider.id}
                         type="button"
                         onClick={() => handleProviderSelect(provider.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
                           formData.provider === provider.id
-                            ? 'bg-[var(--accent)]/15 border border-[var(--accent)]/30'
-                            : 'hover:bg-[var(--background)] border border-transparent'
+                            ? 'border border-[var(--accent)]/30 bg-[var(--accent)]/15'
+                            : 'border border-transparent hover:bg-[var(--background)]'
                         }`}
                       >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-[var(--background)]"
-                        >
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--background)]">
                           {provider.icon ? (
-                            <img src={provider.icon} alt={provider.name} className="w-6 h-6 object-contain" />
+                            <img src={provider.icon} alt={provider.name} className="h-6 w-6 object-contain" />
                           ) : (
                             <Puzzle size={16} className="text-[var(--accent)]" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-[var(--text)] font-medium">{provider.name}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-[var(--text)]">{provider.name}</div>
                         </div>
                       </button>
                     ))}
@@ -247,25 +273,21 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
               )}
             </div>
 
-            {/* Model Selector */}
+            {/* Model pill */}
             <div ref={modelInputRef} className="relative">
-              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                {t('bottomInput.model')}
-              </label>
               <button
                 type="button"
                 onClick={() => {
                   setShowModelSelector(!showModelSelector);
                   setShowProviderDropdown(false);
                 }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm hover:border-[var(--accent)] transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--text)] transition-colors hover:border-[var(--accent)]"
               >
-                <Search size={12} className="text-[var(--text-muted)] flex-shrink-0" />
-                <span className="flex-1 text-left truncate">{formData.model}</span>
-                <ChevronRight size={14} className={`transition-transform text-[var(--text-muted)] ${showModelSelector ? 'rotate-90' : ''}`} />
+                <Search size={12} className="flex-shrink-0 text-[var(--text-muted)]" />
+                <span className="max-w-[10rem] truncate">{formData.model}</span>
+                <ChevronDown size={13} className={`text-[var(--text-muted)] transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Model selector modal */}
               <ModelSelector
                 selectedProvider={formData.provider}
                 selectedModel={formData.model}
@@ -278,98 +300,49 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
               />
             </div>
 
-            {/* API Key */}
-            {!hideApiKeyInput && (
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
-                  {t('bottomInput.apiKey')}
-                </label>
-                <input
-                  type="password"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                  className="w-full px-2 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-                  placeholder={
-                    formData.provider === 'openrouter' ? 'sk-or-v1-...'
-                      : formData.provider === 'gemini' ? 'AIzaSy...'
-                      : formData.provider === 'openai' ? 'sk-...'
-                      : formData.provider === 'claude' ? 'sk-ant-...'
-                      : formData.provider === 'deepseek' ? 'sk-...'
-                      : 'xai-...'
-                  }
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isExpanded && (
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              type="button"
-              onClick={onToggleExpand}
-              className="p-1.5 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text-muted)]"
-              title={t('bottomInput.settings')}
-            >
-              <Settings2 size={16} />
-            </button>
-            <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
-              {selectedProvider && (
-                selectedProvider.icon ? (
-                  <img src={selectedProvider.icon} alt="" className="w-3.5 h-3.5 object-contain" />
-                ) : (
-                  <Puzzle size={12} className="text-[var(--accent)]" />
-                )
+            <div className="ml-auto flex items-center gap-0.5 text-[var(--text-muted)]">
+              {!hideApiKeyInput && (
+                <button
+                  type="button"
+                  onClick={onToggleExpand}
+                  className={`rounded-lg p-1.5 transition-colors hover:bg-[var(--surface)] hover:text-[var(--text)] ${isExpanded ? 'text-[var(--accent)]' : ''}`}
+                  title={t('bottomInput.settings')}
+                >
+                  <Settings2 size={16} />
+                </button>
               )}
-              {formData.provider} • {formData.model}
-            </span>
+              <span className="rounded-lg p-1.5" aria-hidden="true">
+                <Paperclip size={16} />
+              </span>
+              <span className="rounded-lg p-1.5" aria-hidden="true">
+                <Globe size={16} />
+              </span>
+            </div>
           </div>
-        )}
 
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            {isExpanded && (
+          {/* Advanced — API key, revealed only when the user opts in and the key
+              field isn't globally hidden. */}
+          {isExpanded && !hideApiKeyInput && (
+            <div className="mt-2 border-t border-[var(--border)] pt-2">
+              <label className="mb-1 block text-xs font-medium text-[var(--text-muted)]">
+                {t('bottomInput.apiKey')}
+              </label>
               <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm mb-2 placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-                placeholder={t('bottomInput.taskTitle')}
+                type="password"
+                value={formData.apiKey}
+                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] transition-colors focus:border-[var(--accent)] focus:outline-none"
+                placeholder={
+                  formData.provider === 'openrouter' ? 'sk-or-v1-...'
+                    : formData.provider === 'gemini' ? 'AIzaSy...'
+                    : formData.provider === 'openai' ? 'sk-...'
+                    : formData.provider === 'claude' ? 'sk-ant-...'
+                    : formData.provider === 'deepseek' ? 'sk-...'
+                    : 'xai-...'
+                }
               />
-            )}
-
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
-              className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl text-[var(--text)] text-sm resize-none placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-              placeholder={t('bottomInput.taskDescription')}
-            />
-          </div>
-
-          <button
-            ref={buttonRef}
-            type={isSubmitting ? "button" : "submit"}
-            disabled={false}
-            onClick={(e) => {
-              if (!isSubmitting && !isAnimating) {
-                setIsAnimating(true);
-                setTimeout(() => setIsAnimating(false), 400);
-              }
-              if (isSubmitting && onStop) onStop();
-            }}
-            className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors flex-shrink-0 overflow-visible ${
-              isSubmitting
-                ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse cursor-pointer'
-                : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
-            }`}
-          >
-            {isSubmitting ? (
-              <Square size={20} fill="white" />
-            ) : (
-              <Send size={20} />
-            )}
-          </button>
+            </div>
+          )}
         </div>
       </form>
     </div>

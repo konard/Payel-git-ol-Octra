@@ -54,19 +54,16 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--background)]">
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
-          {messages.length === 0 ? (
-            <div className="flex min-h-[55vh] items-center justify-center">
-              <div className="text-center">
-                <img
-                  src={octraMascot}
-                  alt="Octra Mascot"
-                  className="mx-auto mb-5 h-24 w-24 rounded-lg object-contain"
-                />
-                <h1 className="mb-2 text-2xl font-bold text-[var(--text)]">Octra Boss</h1>
-                <p className="text-sm text-[var(--text-muted)]">Ready.</p>
-              </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5">
+          {messages.length === 0 && nodes.length === 0 && searchSteps.length === 0 ? (
+            <div className="m-auto text-center">
+              <img
+                src={octraMascot}
+                alt="Octra Mascot"
+                className="mx-auto mb-4 h-28 w-28 object-contain drop-shadow"
+              />
+              <p className="text-sm text-[var(--text-muted)]">Ready.</p>
             </div>
           ) : (
             messages.map((message) => (

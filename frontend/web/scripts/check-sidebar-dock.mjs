@@ -120,6 +120,32 @@ try {
     'docked sidebar must render its content regardless of the isOpen flag',
   );
 
+  // The dock reads as a recessed panel using the slightly darker "sunken"
+  // surface (issue #40: "Сделай серый чуть потемнее").
+  assert.match(
+    dockHtml,
+    /surface-sunken/,
+    'docked sidebar must use the darker --surface-sunken background',
+  );
+  assert.doesNotMatch(
+    overlayHtml,
+    /surface-sunken/,
+    'overlay sidebar keeps the regular --surface background',
+  );
+
+  // The refreshed history header offers a compact "New" action with a Ctrl+N
+  // hint in the dock; the overlay keeps its full-width button instead.
+  assert.match(
+    dockHtml,
+    /Ctrl\+N/,
+    'docked sidebar header must advertise the Ctrl+N new-chat shortcut',
+  );
+  assert.doesNotMatch(
+    overlayHtml,
+    /Ctrl\+N/,
+    'overlay sidebar must not show the compact Ctrl+N header button',
+  );
+
   console.log('check-sidebar-dock: all assertions passed');
 } finally {
   await server.close();
