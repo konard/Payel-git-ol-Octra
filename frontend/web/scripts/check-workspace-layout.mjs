@@ -5,9 +5,10 @@ import { dirname, resolve } from 'node:path';
 
 // Structural guard for the desktop three-pane workspace (issue #40). SSR-rendering
 // the workspace would pull in the ReactFlow canvas, so instead we assert the
-// wiring invariants against the source: the layout must keep Sessions, the
-// centre, and the Solution panes as independently toggleable resizable docks and
-// must reuse the existing components rather than forking them.
+// wiring invariants against the source: the layout must keep Sessions (a
+// collapsible left dock), the centre (Canvas stacked over the Octra Boss chat),
+// and the Solution panes as resizable docks and must reuse the existing
+// components rather than forking them.
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(resolve(here, '..', rel), 'utf8');
@@ -21,9 +22,15 @@ assert.match(workspace, /id="sessions"/, 'workspace must declare a Sessions pane
 assert.match(workspace, /id="center"/, 'workspace must declare a centre pane');
 assert.match(workspace, /id="solution"/, 'workspace must declare a Solution pane');
 
-// Docks are independently toggleable.
+// The left Sessions dock is collapsible from the header so the centre and
+// Solution panes can take the full width.
 assert.match(workspace, /sessionsOpen &&/, 'Sessions pane must be conditional on sessionsOpen');
-assert.match(workspace, /solutionOpen &&/, 'Solution pane must be conditional on solutionOpen');
+
+// Matching the reference design (issue #40), the centre column stacks the
+// Canvas over the Octra Boss chat as two resizable panes, and the Solution
+// dock stays permanently docked on the right (no toggle).
+assert.match(workspace, /id="center-canvas"/, 'centre must stack a Canvas pane');
+assert.match(workspace, /id="center-chat"/, 'centre must stack a chat pane below the Canvas');
 
 // Reuse the existing components instead of duplicating them.
 assert.match(workspace, /variant="dock"/, 'workspace must render the Sidebar as a dock');
@@ -47,8 +54,8 @@ assert.match(app, /isDesktop \?/, 'App must branch the layout on isDesktop');
 
 const topbar = read('src/app/components/TopBar.tsx');
 
-// The header exposes the dock toggles only on desktop.
+// The header exposes the Sessions dock toggle only on desktop. The Solution
+// dock is always visible in the three-pane workspace, so it has no toggle.
 assert.match(topbar, /onToggleSessions/, 'TopBar must expose a Sessions toggle');
-assert.match(topbar, /onToggleSolution/, 'TopBar must expose a Solution toggle');
 
 console.log('check-workspace-layout: all assertions passed');

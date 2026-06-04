@@ -541,7 +541,6 @@ export default function App() {
       <ReactFlowProvider>
         {isDesktop ? (
           <Workspace
-            mode={mode}
             onModeChange={setMode}
             hasUnreadMessages={hasUnreadMessages}
             chatMessages={chatMessages}
@@ -555,7 +554,6 @@ export default function App() {
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
             sessionsOpen={sessionsOpen}
-            solutionOpen={solutionOpen}
           />
         ) : (
           <>
