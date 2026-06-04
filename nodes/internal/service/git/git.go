@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -132,6 +133,60 @@ func HasChanges(dir string) (bool, error) {
 		return false, err
 	}
 	return strings.TrimSpace(status) != "", nil
+}
+
+// BranchStats summarizes the diff between a base branch and a head branch so the
+// UI can show a pull request overview (commits / additions / deletions / files)
+// without sending the user back to GitHub.
+type BranchStats struct {
+	Commits      int
+	Additions    int
+	Deletions    int
+	ChangedFiles []string
+}
+
+// DiffStats computes commit and line statistics for head relative to base.
+// Errors are reported to the caller, which is expected to degrade gracefully
+// (an empty overview rather than failing the whole task).
+func DiffStats(dir, base, head string) (BranchStats, error) {
+	stats := BranchStats{}
+	if base == "" || head == "" {
+		return stats, fmt.Errorf("base and head are required")
+	}
+	revRange := base + ".." + head
+
+	commitsCmd := exec.Command("git", "rev-list", "--count", revRange)
+	commitsCmd.Dir = dir
+	if out, err := commitsCmd.Output(); err == nil {
+		if n, convErr := strconv.Atoi(strings.TrimSpace(string(out))); convErr == nil {
+			stats.Commits = n
+		}
+	}
+
+	numstatCmd := exec.Command("git", "diff", "--numstat", base+"..."+head)
+	numstatCmd.Dir = dir
+	out, err := numstatCmd.Output()
+	if err != nil {
+		return stats, fmt.Errorf("git diff --numstat failed: %w", err)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		fields := strings.SplitN(line, "\t", 3)
+		if len(fields) < 3 {
+			continue
+		}
+		// Binary files report "-" instead of a count; treat those as zero lines.
+		if n, convErr := strconv.Atoi(fields[0]); convErr == nil {
+			stats.Additions += n
+		}
+		if n, convErr := strconv.Atoi(fields[1]); convErr == nil {
+			stats.Deletions += n
+		}
+		stats.ChangedFiles = append(stats.ChangedFiles, fields[2])
+	}
+	return stats, nil
 }
 
 // IsGitRepo checks whether the directory is a valid git repository.

@@ -192,6 +192,24 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		data["githubMode"] = "pull_request"
 		data["pullRequestUrl"] = repoURL
 		data["githubIssueUrl"] = issueTarget.IssueURL
+		data["pullRequestRepo"] = issueTarget.Owner + "/" + issueTarget.Repo
+		data["pullRequestBase"] = firstNonEmpty(issueTarget.BaseBranch, "main")
+		data["pullRequestHead"] = issueTarget.BranchName
+		data["pullRequestState"] = "open"
+		if issueTarget.PullRequestNumber > 0 {
+			data["pullRequestNumber"] = strconv.Itoa(issueTarget.PullRequestNumber)
+		}
+		if issueTarget.PullRequestTitle != "" {
+			data["pullRequestTitle"] = issueTarget.PullRequestTitle
+		}
+		data["pullRequestCommits"] = strconv.Itoa(issueTarget.Commits)
+		data["pullRequestAdditions"] = strconv.Itoa(issueTarget.Additions)
+		data["pullRequestDeletions"] = strconv.Itoa(issueTarget.Deletions)
+		if len(issueTarget.ChangedFiles) > 0 {
+			if encoded, err := json.Marshal(issueTarget.ChangedFiles); err == nil {
+				data["pullRequestFiles"] = string(encoded)
+			}
+		}
 	}
 	emit(progress, 100, "Project ready! "+task.Title+" created successfully", data)
 	return nil

@@ -32,6 +32,15 @@ type IssueTarget struct {
 	IssueURL      string
 	RepositoryURL string
 	Cloned        bool
+
+	// Поля результата — заполняются после создания pull request, чтобы фронтенд
+	// мог показать обзор PR без перехода на GitHub (issue #44, часть 2).
+	PullRequestNumber int
+	PullRequestTitle  string
+	Commits           int
+	Additions         int
+	Deletions         int
+	ChangedFiles      []string
 }
 
 // IssueResponse — минимальные поля issue из GitHub API.

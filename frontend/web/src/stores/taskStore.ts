@@ -64,6 +64,23 @@ export interface LogEntry {
   type: 'info' | 'warning' | 'error' | 'success';
 }
 
+// PullRequestInfo — обзор созданного pull request для панели Solution, чтобы
+// пользователю не приходилось возвращаться на GitHub (issue #44).
+export interface PullRequestInfo {
+  url: string;
+  number?: number;
+  title?: string;
+  state?: 'open' | 'closed' | 'merged';
+  repository?: string;
+  baseBranch?: string;
+  headBranch?: string;
+  issueUrl?: string;
+  commits?: number;
+  additions?: number;
+  deletions?: number;
+  changedFiles?: string[];
+}
+
 export type SearchPhase = 'idle' | 'searching' | 'done';
 
 // SearchStep — один пункт в блоке «Searching the web» в чате. text — человекочитаемая
@@ -90,6 +107,7 @@ interface TaskState {
   searchSteps: SearchStep[];
   searchPhase: SearchPhase;
   searchStepsCount: number;
+  pullRequest: PullRequestInfo | null;
 
   // Actions
   setTaskId: (taskId: string) => void;
@@ -108,6 +126,7 @@ interface TaskState {
   setConnectionStatus: (connected: boolean) => void;
   recordSearchStep: (step: string, phase: SearchPhase, count: number) => void;
   clearSearchSteps: () => void;
+  setPullRequest: (pr: PullRequestInfo | null) => void;
   setTokensUsed: (tokens: number) => void;
   setStartTime: (time: number) => void;
   getWorkflow: () => WorkflowConfig | null;
@@ -170,6 +189,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   searchSteps: [],
   searchPhase: 'idle',
   searchStepsCount: 0,
+  pullRequest: null,
 
   setTaskId: (taskId) => set({ taskId }),
   
@@ -242,6 +262,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     searchSteps: [],
     searchPhase: 'idle',
     searchStepsCount: 0,
+    pullRequest: null,
   }),
   
   setConnectionStatus: (connected) => set({ isConnected: connected }),
@@ -262,6 +283,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   }),
 
   clearSearchSteps: () => set({ searchSteps: [], searchPhase: 'idle', searchStepsCount: 0 }),
+
+  setPullRequest: (pr) => set({ pullRequest: pr }),
 
   setTokensUsed: (tokens) => set({ tokensUsed: tokens }),
 
@@ -289,6 +312,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     searchSteps: [],
     searchPhase: 'idle',
     searchStepsCount: 0,
+    pullRequest: null,
   }),
 
   resetTask: () => set((state) => {
@@ -323,6 +347,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       searchSteps: [],
       searchPhase: 'idle',
       searchStepsCount: 0,
+      pullRequest: null,
     };
   }),
 
@@ -340,6 +365,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     searchSteps: [],
     searchPhase: 'idle',
     searchStepsCount: 0,
+    pullRequest: null,
     // Keep nodes, edges, and workflow
   })),
 }));

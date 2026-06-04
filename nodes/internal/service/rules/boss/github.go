@@ -68,10 +68,11 @@ func (s *Service) createPullRequest(ctx context.Context, task *models.Task, proj
 		log.Printf("Failed to push pull request branch: %v", err)
 		return ""
 	}
+	prTitle := pullRequestTitle(task, target)
 	pr, err := s.githubClient.CreatePullRequest(ctx, gh.PullRequestRequest{
 		Owner: target.Owner,
 		Repo:  target.Repo,
-		Title: pullRequestTitle(task, target),
+		Title: prTitle,
 		Head:  target.BranchName,
 		Base:  firstNonEmpty(target.BaseBranch, "main"),
 		Body:  pullRequestBody(task, target),
@@ -81,6 +82,20 @@ func (s *Service) createPullRequest(ctx context.Context, task *models.Task, proj
 		return ""
 	}
 	log.Printf("Successfully created GitHub pull request: %s", pr.HTMLURL)
+
+	// Capture the PR overview (number, title, diff stats) so the frontend can
+	// render the Solution-pane summary without a round trip to GitHub.
+	target.PullRequestNumber = pr.Number
+	target.PullRequestTitle = prTitle
+	if stats, statErr := git.DiffStats(projectPath, firstNonEmpty(target.BaseBranch, "main"), target.BranchName); statErr != nil {
+		log.Printf("Failed to compute pull request diff stats: %v", statErr)
+	} else {
+		target.Commits = stats.Commits
+		target.Additions = stats.Additions
+		target.Deletions = stats.Deletions
+		target.ChangedFiles = stats.ChangedFiles
+	}
+
 	task.ProjectJSON = pr.HTMLURL
 	database.Db.Save(task)
 	return pr.HTMLURL
