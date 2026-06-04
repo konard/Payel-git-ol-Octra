@@ -89,10 +89,10 @@ export default function App() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<'canvas' | 'chat' | 'solution'>('canvas');
-  // Visibility of the docked Sessions (left) and Solution (right) panes in the
-  // desktop workspace. They start open so the full three-pane layout is visible.
+  // Visibility of the docked Sessions (left) pane in the desktop workspace. It
+  // starts open so the full three-pane layout is visible. The Solution dock is
+  // always visible on desktop, so it has no toggle (issue #40).
   const [sessionsOpen, setSessionsOpen] = useState(true);
-  const [solutionOpen, setSolutionOpen] = useState(true);
   const isDesktop = useIsDesktop();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const currentChatIdRef = useRef<string | null>(null);
@@ -535,9 +535,7 @@ export default function App() {
         onToggleSidebar={() => setShowSidebar(true)}
         isDesktop={isDesktop}
         sessionsOpen={sessionsOpen}
-        solutionOpen={solutionOpen}
         onToggleSessions={() => setSessionsOpen((v) => !v)}
-        onToggleSolution={() => setSolutionOpen((v) => !v)}
       />
 
       <ReactFlowProvider>

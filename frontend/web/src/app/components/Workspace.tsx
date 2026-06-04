@@ -7,10 +7,9 @@ import { ChatInput } from './ChatInput';
 import { Sidebar } from '../../components/Sidebar';
 
 interface WorkspaceProps {
-  // The center pane mirrors the existing single-pane modes. On desktop we only
-  // ever surface 'canvas' or 'chat' in the centre because the solution lives in
-  // its own docked pane, but we keep the full union so callers can stay generic.
-  mode: 'canvas' | 'chat' | 'solution';
+  // The Canvas needs a mode prop to decide whether to show its "add agent"
+  // affordance; on desktop the centre always renders the canvas graph, so we
+  // pass 'canvas' through. onModeChange is forwarded for the same reason.
   onModeChange: (mode: 'canvas' | 'chat' | 'solution') => void;
   hasUnreadMessages: boolean;
   chatMessages: ChatMessage[];
@@ -23,10 +22,10 @@ interface WorkspaceProps {
   onSendChatMessage: (message: string) => void;
   onSelectChat: (chatId: string) => void;
   onNewChat: (chatId?: string) => void;
-  // Whether the left Sessions dock and right Solution dock are visible. They are
-  // toggled from the header so the centre canvas can take the full width.
+  // Whether the left Sessions dock is visible. It is toggled from the header so
+  // the centre and Solution panes can take the full width. The Solution dock is
+  // always visible on desktop (the redundant toggles were removed per issue #40).
   sessionsOpen: boolean;
-  solutionOpen: boolean;
 }
 
 // A reusable rounded "window card" wrapper that gives every pane the framed look
@@ -39,8 +38,17 @@ function PaneCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-// A slim grabbable divider between resizable panes.
-function ResizeHandle() {
+// A slim grabbable divider between resizable panes. Orientation follows the
+// parent PanelGroup direction: a vertical bar for horizontal groups, a
+// horizontal bar for vertical (stacked) groups.
+function ResizeHandle({ orientation = 'vertical' }: { orientation?: 'vertical' | 'horizontal' }) {
+  if (orientation === 'horizontal') {
+    return (
+      <PanelResizeHandle className="group relative h-2 shrink-0">
+        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[var(--border)] transition-colors group-hover:bg-[var(--accent)] group-data-[resize-handle-state=drag]:bg-[var(--accent)]" />
+      </PanelResizeHandle>
+    );
+  }
   return (
     <PanelResizeHandle className="group relative w-2 shrink-0">
       <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--border)] transition-colors group-hover:bg-[var(--accent)] group-data-[resize-handle-state=drag]:bg-[var(--accent)]" />
@@ -49,7 +57,6 @@ function ResizeHandle() {
 }
 
 export function Workspace({
-  mode,
   onModeChange,
   hasUnreadMessages,
   chatMessages,
@@ -63,38 +70,45 @@ export function Workspace({
   onSelectChat,
   onNewChat,
   sessionsOpen,
-  solutionOpen,
 }: WorkspaceProps) {
-  // On desktop the solution has a dedicated dock, so the centre only ever shows
-  // the canvas or the chat. Treat the 'solution' mode as 'canvas' here.
-  const centerMode: 'canvas' | 'chat' = mode === 'chat' ? 'chat' : 'canvas';
-
+  // The centre column stacks the Canvas (top) over the Octra Boss chat (bottom),
+  // each in its own window card with its docked input. Both are always visible,
+  // which is why the old Canvas/Chat/Solution header toggles became redundant
+  // and were removed (issue #40).
   const center = (
-    <PaneCard>
-      <div className="min-h-0 flex-1">
-        {centerMode === 'canvas' ? (
-          <Canvas mode="canvas" onModeChange={onModeChange} hasUnreadMessages={hasUnreadMessages} />
-        ) : (
-          <Chat messages={chatMessages} onMarkAsRead={onMarkAsRead} />
-        )}
-      </div>
-      {centerMode === 'canvas' ? (
-        <BottomInput
-          onSubmit={onCreateTask}
-          onStop={onStopTask}
-          isSubmitting={isSubmitting}
-          isExpanded={isExpanded}
-          onToggleExpand={onToggleExpand}
-        />
-      ) : (
-        <ChatInput onSendMessage={onSendChatMessage} />
-      )}
-    </PaneCard>
+    <PanelGroup direction="vertical" className="h-full">
+      <Panel id="center-canvas" order={1} defaultSize={58} minSize={25}>
+        <PaneCard>
+          <div className="min-h-0 flex-1">
+            <Canvas mode="canvas" onModeChange={onModeChange} hasUnreadMessages={hasUnreadMessages} />
+          </div>
+          <BottomInput
+            onSubmit={onCreateTask}
+            onStop={onStopTask}
+            isSubmitting={isSubmitting}
+            isExpanded={isExpanded}
+            onToggleExpand={onToggleExpand}
+          />
+        </PaneCard>
+      </Panel>
+
+      <ResizeHandle orientation="horizontal" />
+
+      <Panel id="center-chat" order={2} defaultSize={42} minSize={20}>
+        <PaneCard>
+          <div className="min-h-0 flex-1">
+            <Chat messages={chatMessages} onMarkAsRead={onMarkAsRead} />
+          </div>
+          <ChatInput onSendMessage={onSendChatMessage} />
+        </PaneCard>
+      </Panel>
+    </PanelGroup>
   );
 
-  // Re-key the group when the visible docks change so react-resizable-panels lays
-  // out cleanly instead of trying to reconcile a changed panel set.
-  const layoutKey = `${sessionsOpen ? 's' : ''}-${solutionOpen ? 'v' : ''}`;
+  // Re-key the group when the Sessions dock visibility changes so
+  // react-resizable-panels lays out cleanly instead of trying to reconcile a
+  // changed panel set.
+  const layoutKey = sessionsOpen ? 'sessions-open' : 'sessions-closed';
 
   return (
     <div className="min-h-0 flex-1 bg-[var(--background)] p-2">
@@ -120,16 +134,12 @@ export function Workspace({
           {center}
         </Panel>
 
-        {solutionOpen && (
-          <>
-            <ResizeHandle />
-            <Panel id="solution" order={3} defaultSize={32} minSize={20} maxSize={50}>
-              <PaneCard>
-                <SolutionViewer />
-              </PaneCard>
-            </Panel>
-          </>
-        )}
+        <ResizeHandle />
+        <Panel id="solution" order={3} defaultSize={32} minSize={20} maxSize={50}>
+          <PaneCard>
+            <SolutionViewer />
+          </PaneCard>
+        </Panel>
       </PanelGroup>
     </div>
   );

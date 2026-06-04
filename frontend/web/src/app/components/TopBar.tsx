@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft, PanelRight } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
@@ -123,17 +123,17 @@ interface TopBarProps {
   onModeChange: (mode: 'canvas' | 'chat' | 'solution') => void;
   hasUnreadMessages: boolean;
   onToggleSidebar?: () => void;
-  // When the desktop workspace is active these drive the docked Sessions (left)
-  // and Solution (right) panes; on narrow screens they stay undefined and the
-  // header falls back to the overlay sidebar + single-pane mode tabs.
+  // When the desktop workspace is active this drives the docked Sessions (left)
+  // pane; on narrow screens it stays undefined and the header falls back to the
+  // overlay sidebar + single-pane mode tabs. The Solution pane is always visible
+  // on desktop, so its toggle (and the Canvas/Chat/Solution mode tabs) are hidden
+  // there — they were redundant in the three-pane workspace (issue #40).
   isDesktop?: boolean;
   sessionsOpen?: boolean;
-  solutionOpen?: boolean;
   onToggleSessions?: () => void;
-  onToggleSolution?: () => void;
 }
 
-export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar, isDesktop = false, sessionsOpen = false, solutionOpen = false, onToggleSessions, onToggleSolution }: TopBarProps) {
+export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar, isDesktop = false, sessionsOpen = false, onToggleSessions }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const repoUrl = useTaskStore((state) => state.repoUrl);
@@ -292,29 +292,31 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
              className="w-10 h-10 rounded-lg object-contain"
             />
            <h1 className="text-lg font-semibold text-[var(--text)]">Octra</h1>
-          {/* Переключатель режимов */}
-          <div className="shrink-0 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm sm:ml-4">
-            <button
-              onClick={() => onModeChange('canvas')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'canvas'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-              }`}
-            >
-              Canvas
-            </button>
-            <button
-              onClick={() => onModeChange('chat')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'chat'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-              }`}
-            >
-              Chat
-            </button>
-            {!isDesktop && (
+          {/* Mode switch — only on narrow screens, where the layout is a single
+              pane. On desktop the three-pane workspace shows Canvas, Chat and
+              Solution at once, so these toggles were removed (issue #40). */}
+          {!isDesktop && (
+            <div className="shrink-0 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm sm:ml-4">
+              <button
+                onClick={() => onModeChange('canvas')}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === 'canvas'
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+                }`}
+              >
+                Canvas
+              </button>
+              <button
+                onClick={() => onModeChange('chat')}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === 'chat'
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+                }`}
+              >
+                Chat
+              </button>
               <button
                 onClick={() => onModeChange('solution')}
                 className={`px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -325,22 +327,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
               >
                 Solution
               </button>
-            )}
-          </div>
-          {isDesktop && onToggleSolution && (
-            <button
-              onClick={onToggleSolution}
-              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-sm font-medium ${
-                solutionOpen
-                  ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent)]'
-                  : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--background)]'
-              }`}
-              title="Toggle Solution panel"
-              aria-pressed={solutionOpen}
-            >
-              <PanelRight size={16} />
-              <span className="hidden sm:inline">Solution</span>
-            </button>
+            </div>
           )}
         </div>
 
