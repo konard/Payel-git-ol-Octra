@@ -12,3 +12,4 @@ projects
 .github/*
 !.github/workflows
 !.github/workflows/**
+.playwright-mcp/

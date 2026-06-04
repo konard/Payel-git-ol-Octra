@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Crown, Calendar, Edit2, Check, X, Copy } from 'lucide-react';
+import { Mail, Crown, Calendar, Edit2, Check, X, Copy } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { t } from '../hooks/useI18n';
+import { createAvatarDataUrl } from '../utils/avatar';
 
 interface UserProfileProps {
   onClose: () => void;
@@ -33,71 +34,22 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
-    const generateAvatar = async () => {
-      const key = `avatar-canvas-${user?.id || 'default'}`;
-      const cached = localStorage.getItem(key);
-      if (cached) {
-        setAvatarUrl(cached);
-        return;
-      }
+    // Bump the cache key version whenever the generator changes so users get
+    // the new isometric sculpture instead of a stale flat identicon.
+    const seed = user?.id || user?.email || 'default';
+    const key = `avatar-iso-v1-${seed}`;
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      setAvatarUrl(cached);
+      return;
+    }
 
-      const hash = user?.id || user?.email || 'default';
-      const fullHash = await sha256(hash);
-      const matrix = generateMatrix(fullHash);
-      const dataUrl = drawAvatar(matrix);
+    const dataUrl = createAvatarDataUrl(seed);
+    if (dataUrl) {
       localStorage.setItem(key, dataUrl);
       setAvatarUrl(dataUrl);
-    };
-
-    generateAvatar();
+    }
   }, [user?.id, user?.email]);
-
-  const sha256 = async (message: string): Promise<string> => {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
-  };
-
-  const generateMatrix = (hash: string): number[][] => {
-    const m = Array(5).fill(0).map(() => Array(5).fill(0));
-    for (let i = 0; i < 5; i++) {
-      for (let j = 0; j < 5; j++) {
-        const n = parseInt(hash.substr(i * 5 + j, 1), 16);
-        m[i][j] = n > 7 ? 0 : 1;
-      }
-    }
-    // make symmetric
-    for (let i = 0; i < 5; i++) {
-      for (let j = Math.floor(5 / 2), k = 2; j < 5; j++, k += 2) {
-        m[i][j] = m[i][j - k];
-      }
-    }
-    return m;
-  };
-
-  const drawAvatar = (m: number[][]): string => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 100;
-    canvas.height = 100;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#F8F8F8';
-    ctx.fillRect(0, 0, 100, 100);
-
-    const r = Math.floor(Math.random() * 128 + 128);
-    const g = Math.floor(Math.random() * 128 + 128);
-    const b = Math.floor(Math.random() * 128 + 128);
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
-
-    for (let i = 0; i < 5; i++) {
-      for (let j = 0; j < 5; j++) {
-        if (m[i][j] === 1) {
-          ctx.fillRect(j * 20, i * 20, 20, 20);
-        }
-      }
-    }
-    return canvas.toDataURL();
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
