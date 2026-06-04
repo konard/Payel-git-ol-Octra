@@ -304,11 +304,11 @@ export function Canvas({ mode }: CanvasProps) {
           proOptions={{ hideAttribution: true }}
           onInit={(instance) => setReactFlowInstance(instance)}
         >
-          <Controls showFitView={false} />
+          <Controls position="bottom-right" showFitView />
           <Background
             color="var(--edge-color)"
-            gap={16}
-            size={1}
+            gap={18}
+            size={1.4}
           />
         </ReactFlow>
       </div>

@@ -9,9 +9,13 @@ interface SidebarProps {
   onClose: () => void;
   onSelectChat: (chatId: string) => void;
   onNewChat: (chatId?: string) => void;
+  // 'overlay' is the slide-in drawer used on narrow screens; 'dock' renders the
+  // same session list inline as a persistent left pane in the desktop workspace.
+  variant?: 'overlay' | 'dock';
 }
 
-export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'overlay' }: SidebarProps) {
+  const isDock = variant === 'dock';
   const { user, isAuthenticated, accessToken, refreshToken } = useAuthStore();
   const [chats, setChats] = useState<ChatHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +31,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
     : notLoggedInLabel;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !isDock) return;
 
     if (!hasAuthSession) {
       setChats([]);
@@ -88,6 +92,20 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
       console.error('Failed to create chat:', error);
     }
   };
+
+  // Ctrl+N (Cmd+N) starts a new chat from the docked history pane, matching the
+  // shortcut advertised next to the header button.
+  useEffect(() => {
+    if (!isDock) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        handleNewChat();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -150,6 +168,13 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
 
   const groupedChats = groupChatsByMonth(chats);
 
+  // A small status dot reflects how recently a session was touched: a live
+  // accent dot for activity in the last day, a calmer muted dot otherwise.
+  const isRecentlyActive = (date: Date) => {
+    const diffHours = (new Date().getTime() - new Date(date).getTime()) / 3600000;
+    return diffHours < 24;
+  };
+
   const formatDate = (date: Date) => {
     const d = new Date(date);
     const now = new Date();
@@ -166,7 +191,13 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
   };
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div
+      className={
+        isDock
+          ? 'relative h-full w-full bg-[var(--surface-sunken)] flex flex-col'
+          : `fixed inset-y-0 left-0 z-40 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isOpen ? '' : 'pointer-events-none'}`
+      }
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
         <div className="flex items-center gap-3">
@@ -175,25 +206,44 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
           </div>
           <span className="font-semibold text-[15px] text-[var(--text)]">{t('chatSidebar.history')}</span>
         </div>
-        <button
-          onClick={onClose}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors"
-          title={t('common.close')}
-        >
-          <X size={18} />
-        </button>
+        {isDock ? (
+          /* Compact "New" action with a Ctrl+N hint, matching the reference
+             history header. The full-width button is reserved for the overlay
+             drawer where vertical space is plentiful. */
+          <button
+            onClick={handleNewChat}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            title={`${t('chatSidebar.newChat')} (Ctrl+N)`}
+          >
+            <Plus size={14} />
+            <span>{t('chatSidebar.newChat')}</span>
+            <kbd className="ml-0.5 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-px font-sans text-[10px] text-[var(--text-muted)]">
+              Ctrl+N
+            </kbd>
+          </button>
+        ) : (
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors"
+            title={t('common.close')}
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
-      {/* New Chat Button */}
-      <div className="px-4 py-3.5">
-        <button
-          onClick={handleNewChat}
-          className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
-        >
-          <Plus size={18} />
-          {t('chatSidebar.newChat')}
-        </button>
-      </div>
+      {/* Full-width New Chat button — overlay drawer only. */}
+      {!isDock && (
+        <div className="px-4 py-3.5">
+          <button
+            onClick={handleNewChat}
+            className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
+          >
+            <Plus size={18} />
+            {t('chatSidebar.newChat')}
+          </button>
+        </div>
+      )}
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto px-2.5 pb-4" ref={menuRef}>
@@ -239,10 +289,20 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
                       />
                     ) : (
                       <>
-                        <div className="text-[14px] font-semibold text-[var(--text)] pr-8 truncate">
-                          {chat.title || t('chatSidebar.newChat')}
+                        <div className="flex items-center gap-2 pr-8">
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${
+                              isRecentlyActive(chat.updated_at)
+                                ? 'bg-[var(--accent)]'
+                                : 'bg-[var(--text-muted)]/50'
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <div className="text-[14px] font-semibold text-[var(--text)] truncate">
+                            {chat.title || t('chatSidebar.newChat')}
+                          </div>
                         </div>
-                        <div className="text-xs text-[var(--text-muted)] mt-1 truncate">
+                        <div className="text-xs text-[var(--text-muted)] mt-1 ml-4 truncate">
                           {formatDate(chat.updated_at)}
                         </div>
                       </>
@@ -291,6 +351,15 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat }: SidebarPro
           ))
         )}
       </div>
+
+      {/* Footer — a quiet session counter, dock pane only. */}
+      {isDock && (
+        <div className="border-t border-[var(--border)] px-4 py-2.5 text-xs text-[var(--text-muted)]">
+          {hasAuthSession
+            ? `${chats.length} ${chats.length === 1 ? 'session' : 'sessions'}`
+            : notLoggedInMessage}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,9 @@
   --error: #ef4444;
   --warning: #eab308;
   --border: rgba(0, 0, 0, 0.12);
+  /* Sunken surface — a touch darker than --surface, used for docked side panels
+     (e.g. the Sessions history) so they read as recessed against the panes. */
+  --surface-sunken: #ececec;
 
   /* React Flow variables */
   --bg-canvas: #ffffff;
@@ -33,6 +36,9 @@
   --error: #ef4444;
   --warning: #eab308;
   --border: rgba(255, 255, 255, 0.1);
+  /* Sunken surface — a touch darker than --surface, used for docked side panels
+     (e.g. the Sessions history) so they read as recessed against the panes. */
+  --surface-sunken: #141414;
 
   /* React Flow variables */
   --bg-canvas: #111111;
@@ -45,6 +51,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-text: var(--text);

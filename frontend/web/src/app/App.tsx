@@ -8,8 +8,10 @@ import { Chat, type ChatMessage } from './components/Chat';
 import { SolutionViewer } from './components/SolutionViewer';
 import { BottomInput } from './components/BottomInput';
 import { ChatInput } from './components/ChatInput';
+import { Workspace } from './components/Workspace';
 import type { TaskData } from './components/BottomInput';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useIsDesktop } from '../hooks/useMediaQuery';
 import { useTaskStore } from '../stores/taskStore';
 import { useI18n } from '../hooks/useI18n';
 import { AuthModal } from '../components/AuthModal';
@@ -87,6 +89,11 @@ export default function App() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<'canvas' | 'chat' | 'solution'>('canvas');
+  // Visibility of the docked Sessions (left) pane in the desktop workspace. It
+  // starts open so the full three-pane layout is visible. The Solution dock is
+  // always visible on desktop, so it has no toggle (issue #40).
+  const [sessionsOpen, setSessionsOpen] = useState(true);
+  const isDesktop = useIsDesktop();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const currentChatIdRef = useRef<string | null>(null);
 
@@ -526,18 +533,40 @@ export default function App() {
         onModeChange={setMode}
         hasUnreadMessages={hasUnreadMessages}
         onToggleSidebar={() => setShowSidebar(true)}
+        isDesktop={isDesktop}
+        sessionsOpen={sessionsOpen}
+        onToggleSessions={() => setSessionsOpen((v) => !v)}
       />
 
       <ReactFlowProvider>
-        {mode === 'canvas' ? (
-          <Canvas mode={mode} onModeChange={setMode} hasUnreadMessages={hasUnreadMessages} />
-        ) : mode === 'solution' ? (
-          <SolutionViewer />
-        ) : (
-          <Chat
-            messages={chatMessages}
+        {isDesktop ? (
+          <Workspace
+            onModeChange={setMode}
+            hasUnreadMessages={hasUnreadMessages}
+            chatMessages={chatMessages}
             onMarkAsRead={handleMarkChatMessageAsRead}
+            onCreateTask={handleCreateTask}
+            onStopTask={handleStopTask}
+            isSubmitting={isSubmitting}
+            isExpanded={isExpanded}
+            onToggleExpand={toggleExpand}
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+            sessionsOpen={sessionsOpen}
           />
+        ) : (
+          <>
+            {mode === 'canvas' ? (
+              <Canvas mode={mode} onModeChange={setMode} hasUnreadMessages={hasUnreadMessages} />
+            ) : mode === 'solution' ? (
+              <SolutionViewer />
+            ) : (
+              <Chat
+                messages={chatMessages}
+                onMarkAsRead={handleMarkChatMessageAsRead}
+              />
+            )}
+          </>
         )}
       </ReactFlowProvider>
 
@@ -545,7 +574,7 @@ export default function App() {
 
       <ConsolePanel />
 
-      {mode === 'canvas' ? (
+      {!isDesktop && (mode === 'canvas' ? (
         <BottomInput
           onSubmit={handleCreateTask}
           onStop={handleStopTask}
@@ -555,7 +584,7 @@ export default function App() {
         />
       ) : mode === 'solution' ? null : (
         <ChatInput onSendMessage={handleSendChatMessage} />
-      )}
+      ))}
 
       {showAuthModal && !isAuthenticated && (
         <AuthModal
