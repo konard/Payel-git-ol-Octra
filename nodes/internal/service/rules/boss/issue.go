@@ -69,25 +69,33 @@ func issueDetectionText(req *CreateTaskRequest) string {
 }
 
 func withGitHubIssueContext(description string, target *gh.IssueTarget) string {
+	kind := "Issue"
+	if target.IsPullRequest {
+		kind = "Pull request"
+	}
 	var b strings.Builder
 	b.WriteString(strings.TrimSpace(description))
 	b.WriteString("\n\nGITHUB ISSUE TARGET:\n")
 	b.WriteString(fmt.Sprintf("- Repository: %s/%s\n", target.Owner, target.Repo))
-	b.WriteString(fmt.Sprintf("- Issue: #%d %s\n", target.Number, target.IssueURL))
+	b.WriteString(fmt.Sprintf("- %s: #%d %s\n", kind, target.Number, target.IssueURL))
 	if target.IssueTitle != "" {
-		b.WriteString("- Issue title: ")
+		b.WriteString(fmt.Sprintf("- %s title: ", kind))
 		b.WriteString(target.IssueTitle)
 		b.WriteString("\n")
 	}
 	if target.IssueBody != "" {
-		b.WriteString("\nIssue body:\n")
+		b.WriteString(fmt.Sprintf("\n%s body:\n", kind))
 		b.WriteString(limitText(target.IssueBody, 4000))
 		b.WriteString("\n")
 	}
 	b.WriteString("\nExecution rules:\n")
-	b.WriteString("- Treat this as a pull request task for the referenced GitHub issue.\n")
+	if target.IsPullRequest {
+		b.WriteString("- Treat this as a pull request task that continues the work described by the referenced GitHub pull request.\n")
+	} else {
+		b.WriteString("- Treat this as a pull request task for the referenced GitHub issue.\n")
+	}
 	b.WriteString("- Preserve the existing repository structure and make the smallest focused change that fixes the issue.\n")
-	b.WriteString("- Treat ordinary repository, package, documentation, and library URLs as reference material only unless they are concrete GitHub issue URLs.\n")
+	b.WriteString("- Treat ordinary repository, package, documentation, and library URLs as reference material only unless they are concrete GitHub issue or pull request URLs.\n")
 	return b.String()
 }
 

@@ -8,14 +8,18 @@ import (
 	"strings"
 )
 
-var issueURLPattern = regexp.MustCompile(`(?i)\b(?:https?://)?(?:www\.)?github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/issues/([0-9]+)(?:[/?#\s\]).,;:!]|$)`)
+// issueURLPattern распознаёт как issue-ссылки (.../issues/N), так и
+// pull request-ссылки (.../pull/N). Раньше принимались только issue-URL, из-за
+// чего ссылка на pull request не запускала PR-режим (issue #44).
+var issueURLPattern = regexp.MustCompile(`(?i)\b(?:https?://)?(?:www\.)?github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/(issues|pull|pulls)/([0-9]+)(?:[/?#\s\]).,;:!]|$)`)
 
-// IssueReference — ссылка на конкретный GitHub issue.
+// IssueReference — ссылка на конкретный GitHub issue или pull request.
 type IssueReference struct {
-	Owner  string
-	Repo   string
-	Number int
-	URL    string
+	Owner         string
+	Repo          string
+	Number        int
+	URL           string
+	IsPullRequest bool
 }
 
 // IssueTarget — контекст задачи, которую нужно оформить pull request'ом.
@@ -28,6 +32,15 @@ type IssueTarget struct {
 	IssueURL      string
 	RepositoryURL string
 	Cloned        bool
+
+	// Поля результата — заполняются после создания pull request, чтобы фронтенд
+	// мог показать обзор PR без перехода на GitHub (issue #44, часть 2).
+	PullRequestNumber int
+	PullRequestTitle  string
+	Commits           int
+	Additions         int
+	Deletions         int
+	ChangedFiles      []string
 }
 
 // IssueResponse — минимальные поля issue из GitHub API.
@@ -63,18 +76,24 @@ type PullRequestResponse struct {
 
 func ParseIssueReference(text string) (*IssueReference, bool) {
 	match := issueURLPattern.FindStringSubmatch(text)
-	if len(match) != 4 {
+	if len(match) != 5 {
 		return nil, false
 	}
-	number, err := strconv.Atoi(match[3])
+	number, err := strconv.Atoi(match[4])
 	if err != nil || number < 1 {
 		return nil, false
 	}
+	isPullRequest := strings.EqualFold(match[3], "pull") || strings.EqualFold(match[3], "pulls")
+	pathSegment := "issues"
+	if isPullRequest {
+		pathSegment = "pull"
+	}
 	ref := &IssueReference{
-		Owner:  match[1],
-		Repo:   match[2],
-		Number: number,
-		URL:    fmt.Sprintf("https://github.com/%s/%s/issues/%d", match[1], match[2], number),
+		Owner:         match[1],
+		Repo:          match[2],
+		Number:        number,
+		URL:           fmt.Sprintf("https://github.com/%s/%s/%s/%d", match[1], match[2], pathSegment, number),
+		IsPullRequest: isPullRequest,
 	}
 	return ref, true
 }

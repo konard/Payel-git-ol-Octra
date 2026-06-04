@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
+import { parsePullRequestInfo } from '../lib/pullRequest';
 import { t } from './useI18n';
 
 interface WebSocketMessage {
@@ -148,6 +149,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     completeCodeStreaming: useTaskStore((state) => state.completeCodeStreaming),
     clearCodeFiles: useTaskStore((state) => state.clearCodeFiles),
     recordSearchStep: useTaskStore((state) => state.recordSearchStep),
+    setPullRequest: useTaskStore((state) => state.setPullRequest),
     nodes: () => useTaskStore.getState().nodes,
   };
 
@@ -304,6 +306,14 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           addGitHubNode(msg.data.repoUrl);
         } else if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
+        }
+        // Pull request summary for the Solution pane so the user does not need to
+        // jump back to GitHub (issue #44).
+        {
+          const pullRequest = parsePullRequestInfo(msg.data);
+          if (pullRequest) {
+            storeActions.setPullRequest(pullRequest);
+          }
         }
         // Update all nodes to done
         finalizeAllNodes('done');

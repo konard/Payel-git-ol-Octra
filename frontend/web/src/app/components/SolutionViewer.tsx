@@ -34,6 +34,7 @@ import {
 } from '../../lib/markdown';
 import { findPresentationPreviewFile, parsePresentationMarkdown } from '../../lib/presentation';
 import { choosePreferredCodeFilePath } from '../../lib/solutionFiles';
+import { PullRequestSummary } from './PullRequestSummary';
 import '../../styles/markdown.css';
 
 interface TreeNode {
@@ -448,6 +449,7 @@ function TreeRows({
 
 export function SolutionViewer() {
   const codeFiles = useTaskStore((state) => state.codeFiles);
+  const pullRequest = useTaskStore((state) => state.pullRequest);
   const latestCodeFilePath = useTaskStore((state) => state.latestCodeFilePath);
   const updateCodeFileContent = useTaskStore((state) => state.updateCodeFileContent);
   const isDark = useThemeStore((state) => state.isDark);
@@ -458,6 +460,7 @@ export function SolutionViewer() {
   const [displayContent, setDisplayContent] = useState('');
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [showSource, setShowSource] = useState(false);
+  const [isPrSummaryOpen, setIsPrSummaryOpen] = useState(true);
   const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const displayedContentByPathRef = useRef<Record<string, string>>({});
 
@@ -724,10 +727,16 @@ export function SolutionViewer() {
           <Files size={16} className="text-[var(--code-text-muted)]" />
           <span className="truncate text-sm font-medium">Solution files</span>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center text-[var(--code-text-muted)]">
-          <FileCode2 size={46} className="mb-4 opacity-70" />
-          <div className="max-w-sm text-sm leading-6">No generated files yet.</div>
-        </div>
+        {pullRequest ? (
+          <div className="min-h-0 flex-1 overflow-auto p-3">
+            <PullRequestSummary pr={pullRequest} />
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center text-[var(--code-text-muted)]">
+            <FileCode2 size={46} className="mb-4 opacity-70" />
+            <div className="max-w-sm text-sm leading-6">No generated files yet.</div>
+          </div>
+        )}
       </div>
     );
   }
@@ -751,6 +760,24 @@ export function SolutionViewer() {
           {codeFiles.length} {codeFiles.length === 1 ? 'file' : 'files'}
         </div>
       </div>
+
+      {pullRequest && (
+        <div className="shrink-0 border-b border-[var(--code-border)] bg-[var(--code-surface)]">
+          <button
+            type="button"
+            onClick={() => setIsPrSummaryOpen((value) => !value)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--code-text-muted)] transition-colors hover:text-[var(--code-text)]"
+          >
+            {isPrSummaryOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            Pull request
+          </button>
+          {isPrSummaryOpen && (
+            <div className="max-h-[60%] overflow-auto px-3 pb-3">
+              <PullRequestSummary pr={pullRequest} />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1">
         {isExplorerOpen && (

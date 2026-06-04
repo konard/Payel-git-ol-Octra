@@ -21,7 +21,8 @@
     "test:sidebar-dock": "node scripts/check-sidebar-dock.mjs",
     "test:workspace": "node scripts/check-workspace-layout.mjs",
     "test:profile-avatar": "node scripts/check-profile-avatar.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree && npm run test:workspace && npm run test:profile-avatar"
+    "test:pull-request-summary": "node scripts/check-pull-request-summary.mjs",
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree && npm run test:workspace && npm run test:profile-avatar && npm run test:pull-request-summary"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
