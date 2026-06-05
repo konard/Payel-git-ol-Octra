@@ -244,11 +244,15 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
   return (
     <>
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Logo + Mode Switch */}
-        <div className="min-w-0 flex flex-1 flex-wrap items-center gap-3">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3">
+        {/* Top row: kept on a single line at every width so the mobile app bar
+            never wraps into the cramped multi-row stack it used to (issue #46).
+            The Canvas/Chat/Solution switch now lives in its own row below. */}
+        <div className="flex items-center justify-between gap-3">
+        {/* Left: Logo */}
+        <div className="min-w-0 flex flex-1 items-center gap-2 sm:gap-3">
           {/* History & New Chat buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             {isDesktop && onToggleSessions && (
               <button
                 onClick={onToggleSessions}
@@ -292,43 +296,6 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
              className="w-10 h-10 rounded-lg object-contain"
             />
            <h1 className="text-lg font-semibold text-[var(--text)]">Octra</h1>
-          {/* Mode switch — only on narrow screens, where the layout is a single
-              pane. On desktop the three-pane workspace shows Canvas, Chat and
-              Solution at once, so these toggles were removed (issue #40). */}
-          {!isDesktop && (
-            <div className="shrink-0 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm sm:ml-4">
-              <button
-                onClick={() => onModeChange('canvas')}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === 'canvas'
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-                }`}
-              >
-                Canvas
-              </button>
-              <button
-                onClick={() => onModeChange('chat')}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === 'chat'
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-                }`}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => onModeChange('solution')}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === 'solution'
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
-                }`}
-              >
-                Solution
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Center: GitHub button */}
@@ -397,6 +364,47 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             </button>
           )}
         </div>
+        </div>
+
+        {/* Mode switch — only on narrow screens, where the layout is a single
+            pane. It sits on its own full-width row so the app bar above stays a
+            clean single line on phones instead of wrapping (issue #46). On
+            desktop the three-pane workspace shows Canvas, Chat and Solution at
+            once, so these toggles are hidden there (issue #40). */}
+        {!isDesktop && (
+          <div className="mt-3 grid grid-cols-3 border border-[var(--border)] rounded-lg overflow-hidden shadow-sm">
+            <button
+              onClick={() => onModeChange('canvas')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'canvas'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+              }`}
+            >
+              Canvas
+            </button>
+            <button
+              onClick={() => onModeChange('chat')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'chat'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+              }`}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => onModeChange('solution')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'solution'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--background)]'
+              }`}
+            >
+              Solution
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Settings Modal (JetBrains style) */}
