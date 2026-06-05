@@ -1,0 +1,38 @@
+name: Desktop CI
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'frontend/desktop/**'
+      - '.github/workflows/desktop-ci.yml'
+  pull_request:
+    paths:
+      - 'frontend/desktop/**'
+      - '.github/workflows/desktop-ci.yml'
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: desktop-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (frontend/desktop)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The structural/functional checks are pure Node with no dependencies, so
+      # we skip the (large) Electron download and run them directly.
+      - name: Run tests
+        run: npm test
