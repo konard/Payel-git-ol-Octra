@@ -31,8 +31,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/desktop/package-lock.json
 
-      # The structural/functional checks are pure Node with no dependencies, so
-      # we skip the (large) Electron download and run them directly.
+      # Install dev deps (TypeScript + @types/node) to compile the main process.
+      # The tests never launch Electron, so skip its large binary download.
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+      # `npm test` compiles electron/*.ts (tsc) and runs the unit tests for the
+      # filesystem reader, recent-projects store, menu model, static server and
+      # the main/preload IPC contract.
       - name: Run tests
         run: npm test
