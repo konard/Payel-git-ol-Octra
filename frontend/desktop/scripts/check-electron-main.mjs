@@ -1,48 +1,43 @@
+#!/usr/bin/env node
+/*
+ * Static contract test for the Electron main + preload. Electron itself can't
+ * boot headlessly in CI, so instead we assert the compiled main process and the
+ * preload agree on every IPC channel: each channel the preload invokes must have
+ * a matching ipcMain.handle in main, and the preload must expose window.octra.
+ * Also asserts the window is frameless (issue #50.5 — fix the window chrome).
+ */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 
-// Structural guard for the Electron main process & preload bridge: a frameless,
-// context-isolated window with an explicit IPC surface for window controls and
-// project filesystem operations (issue #48 technical requirements).
+const dir = path.dirname(fileURLToPath(import.meta.url));
+const dist = path.join(dir, '..', 'dist-electron');
 
-const here = dirname(fileURLToPath(import.meta.url));
-const read = (rel) => readFileSync(resolve(here, '..', rel), 'utf8');
+const main = fs.readFileSync(path.join(dist, 'main.js'), 'utf8');
+const preload = fs.readFileSync(path.join(dist, 'preload.js'), 'utf8');
 
-const main = read('src/main/main.js');
-const preload = read('src/main/preload.js');
-const pkg = JSON.parse(read('package.json'));
+// Preload must expose the bridge.
+assert.match(preload, /exposeInMainWorld\(["']octra["']/, 'preload must expose window.octra');
+assert.match(preload, /isElectron: true/, 'bridge must flag isElectron');
 
-// Frameless window so we can draw the Zed-style title bar ourselves.
-assert.match(main, /frame:\s*false/, 'main window is frameless');
-assert.match(main, /backgroundColor:\s*'#111111'/, 'window background is the Octra dark base');
-
-// Secure renderer: context isolation on, node integration off, preload bridge.
-assert.match(main, /contextIsolation:\s*true/, 'context isolation is enabled');
-assert.match(main, /nodeIntegration:\s*false/, 'node integration is disabled');
-assert.match(main, /preload:/, 'a preload script is configured');
-
-// Window-control IPC.
-for (const channel of ['window:minimize', 'window:toggle-maximize', 'window:close']) {
-  assert.ok(main.includes(channel), `main handles ${channel}`);
+// Every channel invoked by the preload must be handled by main.
+const invoked = [...preload.matchAll(/ipcRenderer\.invoke\(["']([^"']+)["']/g)].map((m) => m[1]);
+const handled = new Set(
+  [...main.matchAll(/ipcMain\.handle\(["']([^"']+)["']/g)].map((m) => m[1]),
+);
+assert.ok(invoked.length > 0, 'preload should invoke at least one channel');
+for (const channel of invoked) {
+  assert.ok(handled.has(channel), `main is missing a handler for "${channel}"`);
 }
 
-// Project IPC (open / create / recent / forget).
-for (const channel of ['projects:list-recent', 'projects:open', 'projects:create', 'projects:open-path']) {
-  assert.ok(main.includes(channel), `main handles ${channel}`);
-}
-assert.match(main, /dialog\.showOpenDialog/, 'open/create use a native folder dialog');
-
-// The preload bridge exposes a minimal, explicit API — never raw Node.
-assert.match(preload, /contextBridge\.exposeInMainWorld\('octra'/, 'preload exposes window.octra');
-assert.match(preload, /isElectron:\s*true/, 'bridge marks the Electron environment');
-for (const api of ['minimize', 'toggleMaximize', 'close', 'listRecent', 'open', 'create']) {
-  assert.ok(preload.includes(api), `bridge exposes ${api}`);
+// The headline filesystem channels must be present (issue #50.4).
+for (const channel of ['fs:read-tree', 'fs:read-file', 'projects:open', 'app:get-config']) {
+  assert.ok(handled.has(channel), `main must handle ${channel}`);
 }
 
-// Cross-platform packaging metadata (Windows/Linux/macOS per the issue).
-assert.equal(pkg.main, 'src/main/main.js', 'package main points at the Electron entry');
-assert.ok(pkg.devDependencies && pkg.devDependencies.electron, 'electron is a dev dependency');
+// Frameless window with a custom title bar (issue #50.5).
+assert.match(main, /frame:\s*false/, 'window must be frameless');
+assert.match(main, /preload\.js/, 'window must load the preload bridge');
 
-console.log('check-electron-main: all assertions passed');
+console.log('check-electron-main: OK');

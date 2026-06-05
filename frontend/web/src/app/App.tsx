@@ -112,20 +112,6 @@ export default function App() {
     currentChatIdRef.current = currentChatId;
   }, [currentChatId]);
 
-  // Определяем, показывать лендинг или приложение
-  const isLandingPage = window.location.pathname === '/' && !isAuthenticated;
-  const isPaymentSuccess = window.location.pathname === '/payment-success';
-
-  // Если мы на главной и не авторизован - показываем лендинг
-  if (isLandingPage) {
-    return <LandingPage />;
-  }
-
-  // Если успешная оплата - показываем страницу успеха
-  if (isPaymentSuccess) {
-    return <PaymentSuccess />;
-  }
-
   const persistChatMessage = (role: 'user' | 'boss', content: string) => {
     const chatId = currentChatIdRef.current;
     if (!chatId || !content.trim()) return;
@@ -512,8 +498,27 @@ export default function App() {
     }
   };
 
+  // Determine whether to show the landing page or the app. These early returns
+  // MUST come after every hook above: React requires the same hooks to run in
+  // the same order on every render, so returning before later hooks (e.g. when
+  // `isAuthenticated` flips on login) would change the hook count and crash with
+  // "Rendered fewer/more hooks than expected" — white-screening the app, and the
+  // desktop shell that loads it.
+  const isLandingPage = window.location.pathname === '/' && !isAuthenticated;
+  const isPaymentSuccess = window.location.pathname === '/payment-success';
+
+  // On the home route while unauthenticated, show the landing page.
+  if (isLandingPage) {
+    return <LandingPage />;
+  }
+
+  // After a successful payment, show the success page.
+  if (isPaymentSuccess) {
+    return <PaymentSuccess />;
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
+    <div className="h-full flex flex-col bg-[var(--background)] text-[var(--text)] overflow-hidden">
       <div
         className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-200 ${showSidebar ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setShowSidebar(false)}

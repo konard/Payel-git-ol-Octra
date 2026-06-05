@@ -1,20 +1,24 @@
 {
   "name": "@octra/desktop",
   "private": true,
-  "version": "0.1.0",
-  "description": "Octra Desktop — Electron IDE shell with a Zed-style top panel, application menu, and project switcher in the Octra design system.",
-  "main": "src/main/main.js",
+  "version": "0.2.0",
+  "description": "Octra Desktop — an Electron shell that runs the real Octra web app as its renderer, adding a frameless title bar, native menu, recent-projects store and a filesystem-backed file explorer.",
+  "main": "dist-electron/main.js",
   "scripts": {
-    "start": "electron .",
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dev": "OCTRA_DEV=1 npm run start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:filesystem": "node scripts/check-filesystem.mjs",
     "test:projects": "node scripts/check-projects.mjs",
     "test:menu-model": "node scripts/check-menu-model.mjs",
-    "test:topbar": "node scripts/check-topbar.mjs",
-    "test:switcher": "node scripts/check-project-switcher.mjs",
+    "test:static-server": "node scripts/check-static-server.mjs",
     "test:main": "node scripts/check-electron-main.mjs",
-    "test:workspace": "node scripts/check-workspace.mjs",
-    "test": "npm run test:projects && npm run test:menu-model && npm run test:topbar && npm run test:switcher && npm run test:main && npm run test:workspace"
+    "test": "npm run build && npm run test:filesystem && npm run test:projects && npm run test:menu-model && npm run test:static-server && npm run test:main"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "@types/node": "^20.14.0",
+    "electron": "^33.0.0",
+    "typescript": "^5.5.4"
   }
 }

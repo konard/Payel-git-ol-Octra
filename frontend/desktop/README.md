@@ -1,103 +1,110 @@
 # Octra Desktop
 
-A desktop IDE shell for **Octra** built with **Electron**. It reproduces the live
-Octra web app (`frontend/web`) and adapts it for the desktop with a **Zed-style
-title bar**, an **application menu**, a **project switcher**, and native
-filesystem integration for opening and creating projects.
+A desktop IDE for **Octra** built with **Electron** and written entirely in
+**TypeScript**. Instead of reimplementing the UI, the desktop app **runs the real
+Octra web app (`frontend/web`) as its renderer**, so the IDE looks, behaves and
+talks to the backend exactly like the web product. On top of that renderer it adds
+a frameless **title bar with window controls**, a native **application menu**, a
+**recent-projects** store and a **filesystem-backed file explorer**.
 
-> Implements [issue #48](https://github.com/Payel-git-ol/Octra/issues/48).
+> Implements [issue #50](https://github.com/Payel-git-ol/Octra/issues/50).
 
-## What it looks like
+## Why load the web app instead of rebuilding it?
 
-When **no project is open** the window shows a welcome screen with the real Octra
-mascot and the Open / New actions. There is **no File menu** at this point — it
-only appears once a project is open.
+The previous shell (issue #48) was a separate vanilla HTML/CSS/JS UI that drifted
+from the web app — it didn't look like Octra, most buttons did nothing, and it had
+its own backend assumptions. This rewrite deletes that duplication:
 
-![Welcome screen](../../docs/screenshots/desktop-welcome.png)
+| Issue #50 requirement | How it's met |
+| --- | --- |
+| 1. Look like the web app | The renderer **is** the web app (`frontend/web`). |
+| 2. Buttons actually work | Real React app → all existing web functionality works. |
+| 3. Rewrite JS → TypeScript | The whole main process is TypeScript (`electron/*.ts`). |
+| 4. Read & display project files | `fs:read-tree` / `fs:read-file` IPC + a file explorer and Monaco viewer in the renderer. |
+| 5. Fix the window-control buttons | Frameless window + a styled React title bar that reuses Octra design tokens. |
+| 6. Same backend as the web app | The web renderer uses its own API/WS client unchanged (dev uses the Vite proxy). |
+| 7. Fix the Canvas | The web app's real `@xyflow/react` canvas renders as-is. |
+| 8. Use React components | The renderer is the web app's React tree; desktop chrome is React too. |
 
-Once a project is open the window becomes the full **three-pane workspace** that
-mirrors the web UI — **История** (sessions) · **Canvas + Octra chat + a shared
-composer** · **Solution files** — with the application menu bar in the title bar
-and the **Консоль** dock at the bottom.
-
-![Workspace](../../docs/screenshots/desktop-workspace.png)
-
-The chrome reuses the Octra design tokens (`--background`, `--surface`, `--accent`
-`#f97316`, `--text`, `--border`, the `Inter` font) and the real mascot artwork
-(`octra-mascot.png`) from `frontend/web`, so it reads as the same product as the
-web app.
+The desktop-only React pieces live in `frontend/web/src/desktop/` and every one of
+them is gated on `window.octra?.isElectron`, so the plain web build is unaffected.
 
 ## Architecture
 
 ```
-src/
-  main/
-    main.js       Electron main process — frameless window + IPC
-    preload.js    contextBridge → window.octra (the only renderer ↔ Node surface)
-    menu.js       builds the native menu from the shared model
-    projects.js   filesystem integration (open / create / recent), pure Node
-  renderer/
-    index.html    the desktop shell (title bar + appbar + welcome/workspace + console)
-    assets/       octra-mascot.png — the real Octra mascot (shared with the web app)
-    styles/
-      tokens.css     Octra design system tokens (dark theme default)
-      chrome.css     Zed-style title bar, menu, project switcher
-      workspace.css  appbar, welcome screen, three-pane workspace, console dock
-    js/
-      menuModel.js     single source of truth for the menu (shared with main)
-      icons.js         inline-SVG icon set (mirrors the web's lucide icons)
-      api.js           window.octra in Electron, in-memory mock in a browser
-      dropdown.js      shared open/close controller
-      appMenu.js       renders the menu bar + dropdowns
-      projectSwitcher.js  renders the project switcher
-      app.js           boots the shell, gates the menu/workspace on an open project
+frontend/desktop/
+  electron/                 Electron main process — TypeScript, compiled by tsc
+    main.ts                 frameless window, IPC handlers, renderer lifecycle
+    preload.ts              contextBridge → window.octra (the only renderer ↔ Node surface)
+    config.ts               resolves dev-server vs bundled-dist + backend URLs from env
+    staticServer.ts         loopback http server that serves frontend/web/dist in prod
+    fileSystem.ts           readProjectTree / readProjectFile (pure Node, sandboxed to root)
+    projects.ts             recent-projects store (open / remember / list / forget)
+    menu.ts, menuModel.ts   native application menu built from a shared model
+  scripts/                  Node unit tests (no Electron runtime needed)
+  tsconfig.json             rootDir electron/ → outDir dist-electron/
+  dist-electron/            tsc output; main field points at dist-electron/main.js
+
+frontend/web/src/desktop/   the desktop-only renderer pieces (gated on Electron)
+  bridge.ts                 typed wrapper over window.octra + isDesktopApp()
+  desktopStore.ts           zustand store: project, file tree, open file, recents
+  DesktopTitleBar.tsx       frameless title bar + minimize/maximize/close controls
+  DesktopFileExplorer.tsx   project file tree
 ```
 
-### Project-gated UI
+Opening a file from the Explorer does not pop a separate window: the file is
+pushed into the web app's task store and rendered in the existing **Solution
+files** panel (`SolutionViewer`), reusing its Monaco editor, Markdown preview,
+binary download and tabs.
 
-The whole shell switches on `body[data-has-project]`:
+### How the renderer is loaded
 
-- **no project** → welcome screen; the File/Edit/… menu bar and the workspace are
-  hidden (per the PR review: _"если не открыт проект то меню файлов быть не должно"_).
-- **project open** → three-pane workspace; the menu bar and console dock appear.
+`config.ts` resolves one of two modes (everything overridable via env vars so
+packagers/CI can point at any backend without code changes):
 
-There is **no hardcoded project data**: the Recent Projects list starts empty and
-is only populated when the user actually opens or creates a project (persisted by
-`projects.js` in Electron, kept in memory in the browser preview).
+- **dev** (`OCTRA_DEV=1`) — load the running Vite dev server
+  (`http://localhost:5173`). The Vite proxy forwards `/api` + `/auth` to the local
+  backend, so backend interaction is identical to the web app with zero config.
+- **prod** — serve the built `frontend/web/dist` over a loopback http server
+  (`staticServer.ts`) and load that URL.
 
 Security: the window runs with `contextIsolation: true` and `nodeIntegration:
 false`. The renderer reaches the filesystem only through the explicit, whitelisted
-channels in `preload.js`.
+channels in `preload.ts`, and `fileSystem.ts` refuses any path that escapes the
+opened project root.
 
 ## Develop
 
 ```bash
-cd frontend/desktop
-npm install
-npm start          # launch the Electron app
+# 1. start the web app (the renderer) in one terminal
+cd frontend/web && npm install && npm run dev
+
+# 2. launch the desktop shell against it in another terminal
+cd frontend/desktop && npm install && npm run dev   # OCTRA_DEV=1 → loads localhost:5173
 ```
 
-The renderer is plain HTML/CSS/JS, so it also runs in a normal browser for quick
-visual iteration (it falls back to an in-memory project mock when `window.octra`
-is absent):
+For a production-like run, build the web app first, then start Electron:
 
 ```bash
-# from this directory
-python3 -m http.server 8099 --directory src/renderer
-# then open http://localhost:8099/index.html
+cd frontend/web && npm run build      # produces frontend/web/dist
+cd ../desktop && npm start            # serves dist over loopback and loads it
 ```
 
 ## Test
 
-Structural and functional checks (no Electron runtime required):
+Structural and functional checks (no Electron runtime required). `npm test` first
+compiles `electron/*.ts` with `tsc`, then runs the unit tests:
 
 ```bash
 npm test
 ```
 
-- `check-projects` — round-trips open / remember / list / create / forget on a temp dir
-- `check-menu-model` — the menu bar matches the Zed reference and native+in-window share one model
-- `check-topbar` — the Zed-style title bar has all required regions and Octra tokens
-- `check-project-switcher` — the switcher has search / This Window / Recent Projects and is wired to the bridge
+- `check-filesystem` — `readProjectTree` / `readProjectFile` on a temp dir, including the path-escape guard
+- `check-projects` — round-trips open / remember / list / forget recent projects
+- `check-menu-model` — the application menu model is well-formed and shared
+- `check-static-server` — the loopback dist server serves files with correct MIME types
 - `check-electron-main` — frameless, context-isolated window with the expected IPC surface
-- `check-workspace` — real mascot, no hardcoded recents, menu/workspace gated on an open project, three-pane web UI
+
+The web side adds `check-desktop-integration` and `check-app-render-guards`
+(run via `npm test` in `frontend/web`) to guarantee the desktop gates stay in
+place and the renderer never regresses the Rules-of-Hooks ordering.

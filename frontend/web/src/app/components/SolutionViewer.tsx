@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTaskStore, type CodeFile } from '../../stores/taskStore';
 import { useThemeStore } from '../../stores/themeStore';
+import { useDesktopStore } from '../../desktop/desktopStore';
 import {
   isMarkdownPath,
   isBinaryPath,
@@ -453,6 +454,10 @@ export function SolutionViewer() {
   const latestCodeFilePath = useTaskStore((state) => state.latestCodeFilePath);
   const updateCodeFileContent = useTaskStore((state) => state.updateCodeFileContent);
   const isDark = useThemeStore((state) => state.isDark);
+  // Desktop app only: the path/nonce of the file last opened from the file
+  // Explorer. In a plain browser these stay null/0, so the effect below is inert.
+  const desktopOpenPath = useDesktopStore((state) => state.openFilePath);
+  const desktopOpenNonce = useDesktopStore((state) => state.openNonce);
   const [openFilePaths, setOpenFilePaths] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | null>(null);
   const [isExplorerOpen, setIsExplorerOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 720);
@@ -516,6 +521,18 @@ export function SolutionViewer() {
       return existing.includes(preferredPath) ? existing : [...existing, preferredPath];
     });
   }, [activePath, codeFiles, filesByPath, latestCodeFilePath]);
+
+  // Desktop: when the user opens a file from the Explorer it is pushed into the
+  // task store and should immediately become the active tab here. Keyed on the
+  // open nonce so re-opening the same file re-focuses it, and so streaming
+  // updates to unrelated files never steal focus. Runs after the effect above so
+  // it wins the active selection. Inert on the web (desktopOpenPath stays null).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!desktopOpenPath) return;
+    setActivePath(desktopOpenPath);
+    setOpenFilePaths((prev) => (prev.includes(desktopOpenPath) ? prev : [...prev, desktopOpenPath]));
+  }, [desktopOpenNonce]);
 
   useEffect(() => {
     const folders = new Set<string>();
