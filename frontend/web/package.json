@@ -20,11 +20,13 @@
     "test:file-tree": "node scripts/check-file-tree-indent.mjs",
     "test:sidebar-dock": "node scripts/check-sidebar-dock.mjs",
     "test:workspace": "node scripts/check-workspace-layout.mjs",
+    "test:mobile-header": "node scripts/check-mobile-header.mjs",
     "test:profile-avatar": "node scripts/check-profile-avatar.mjs",
     "test:pull-request-summary": "node scripts/check-pull-request-summary.mjs",
+    "test:model-selector-toggle": "node scripts/check-model-selector-toggle.mjs",
     "test:desktop-integration": "node scripts/check-desktop-integration.mjs",
     "test:app-render-guards": "node scripts/check-app-render-guards.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree && npm run test:workspace && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:desktop-integration && npm run test:app-render-guards"
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
