@@ -314,77 +314,7 @@ body {
   text-align: center;
 }
 
-/* ---- Workspace body (kept minimal — the focus of this issue is the chrome) -- */
-
-.workspace {
-  flex: 1 1 auto;
-  display: flex;
-  min-height: 0;
-}
-
-.workspace__sidebar {
-  width: 240px;
-  border-right: 1px solid var(--border);
-  background: var(--surface-sunken);
-  padding: 12px;
-  overflow-y: auto;
-}
-
-.workspace__sidebar h2 {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.tree-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  color: var(--text);
-}
-
-.tree-row:hover {
-  background: var(--menu-hover);
-}
-
-.tree-row .icon {
-  width: 14px;
-  height: 14px;
-  color: var(--text-muted);
-}
-
-.workspace__main {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--background);
-  color: var(--text-muted);
-  flex-direction: column;
-  gap: 10px;
-  text-align: center;
-  padding: 24px;
-}
-
-.workspace__main .mascot {
-  font-size: 40px;
-}
-
-.workspace__main h1 {
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.workspace__main .cta {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-}
+/* ---- Shared buttons (used by the welcome screen and workspace) ------------- */
 
 .btn-accent {
   background: var(--accent);

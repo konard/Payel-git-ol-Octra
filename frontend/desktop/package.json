@@ -11,7 +11,8 @@
     "test:topbar": "node scripts/check-topbar.mjs",
     "test:switcher": "node scripts/check-project-switcher.mjs",
     "test:main": "node scripts/check-electron-main.mjs",
-    "test": "npm run test:projects && npm run test:menu-model && npm run test:topbar && npm run test:switcher && npm run test:main"
+    "test:workspace": "node scripts/check-workspace.mjs",
+    "test": "npm run test:projects && npm run test:menu-model && npm run test:topbar && npm run test:switcher && npm run test:main && npm run test:workspace"
   },
   "devDependencies": {
     "electron": "^33.0.0"

@@ -4,11 +4,11 @@ on:
   push:
     branches: [master, main]
     paths:
-      - 'frontend/web/desktop/**'
+      - 'frontend/desktop/**'
       - '.github/workflows/desktop-ci.yml'
   pull_request:
     paths:
-      - 'frontend/web/desktop/**'
+      - 'frontend/desktop/**'
       - '.github/workflows/desktop-ci.yml'
 
 # Cancel superseded runs on the same ref to save CI minutes.
@@ -18,11 +18,11 @@ concurrency:
 
 jobs:
   test:
-    name: Test (frontend/web/desktop)
+    name: Test (frontend/desktop)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend/web/desktop
+        working-directory: frontend/desktop
     steps:
       - name: Checkout
         uses: actions/checkout@v4

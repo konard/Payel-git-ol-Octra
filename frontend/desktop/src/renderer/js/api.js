@@ -9,19 +9,16 @@
 (function (root) {
   const real = root.octra;
 
-  // In-memory mock mirroring the main-process project store, seeded to match the
-  // reference 4 screenshot (octra / LeFine + recent projects).
+  // In-memory mock mirroring the main-process project store. It starts EMPTY —
+  // there is no hardcoded project list. Recents only appear here once the user
+  // actually opens or creates a project (matching the real Electron store).
   function createMock() {
-    let recent = [
-      { name: 'octra', path: '/home/user/dev/octra', openedAt: 4 },
-      { name: 'LeFine', path: '/home/user/dev/lefine', openedAt: 3 },
-      { name: 'Вакансии столяр (помощь отцу)', path: '/home/user/dev/vakansii-stolyar', openedAt: 2 },
-      { name: 'TradeFast', path: '/home/user/dev/tradefast', openedAt: 1 },
-    ];
+    let recent = [];
+    let counter = 0;
     const baseName = (p) => p.split(/[\\/]/).filter(Boolean).pop() || p;
     const remember = (path, name) => {
       recent = recent.filter((r) => r.path !== path);
-      const entry = { name: name || baseName(path), path, openedAt: Date.now ? 0 : 0 };
+      const entry = { name: name || baseName(path), path, openedAt: ++counter };
       recent = [entry, ...recent].slice(0, 12);
       return { project: entry, recent };
     };
