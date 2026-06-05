@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, MessageSquare, MoreHorizontal, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, BookOpen, MoreHorizontal, Edit2, Trash2, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { getChatHistory, createChat, deleteChat, type ChatHistoryItem } from '../services/chatHistoryService';
 import { t } from '../hooks/useI18n';
@@ -202,7 +202,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'o
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--background)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">
-            <MessageSquare size={18} />
+            <BookOpen size={18} />
           </div>
           <span className="font-semibold text-[15px] text-[var(--text)]">{t('chatSidebar.history')}</span>
         </div>
