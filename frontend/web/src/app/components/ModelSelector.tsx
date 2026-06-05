@@ -112,13 +112,21 @@ export function ModelSelector({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Ignore clicks on the trigger/anchor: it already toggles the menu via its
+      // own onClick. Without this guard, a click on the open trigger fired this
+      // mousedown -> onClose() (re-render, menu unmounts) and then the trigger's
+      // click toggled it back open, so the menu "closed and immediately
+      // reopened" (PR #47 feedback). Treat the anchor as inside the menu.
+      const insideMenu = modalRef.current && modalRef.current.contains(target);
+      const insideAnchor = anchorRef.current && anchorRef.current.contains(target);
+      if (!insideMenu && !insideAnchor) {
         onClose();
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, anchorRef]);
 
   if (!isOpen) return null;
 
