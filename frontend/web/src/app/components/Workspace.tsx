@@ -4,6 +4,9 @@ import { Chat, type ChatMessage } from './Chat';
 import { SolutionViewer } from './SolutionViewer';
 import { BottomInput, type TaskData } from './BottomInput';
 import { Sidebar } from '../../components/Sidebar';
+import { DesktopFileExplorer } from '../../desktop/DesktopFileExplorer';
+import { DesktopFileViewer } from '../../desktop/DesktopFileViewer';
+import { isDesktopApp } from '../../desktop/bridge';
 
 interface WorkspaceProps {
   // The Canvas needs a mode prop to decide whether to show its "add agent"
@@ -108,11 +111,28 @@ export function Workspace({
   // Re-key the group when the Sessions dock visibility changes so
   // react-resizable-panels lays out cleanly instead of trying to reconcile a
   // changed panel set.
-  const layoutKey = sessionsOpen ? 'sessions-open' : 'sessions-closed';
+  // The desktop app adds a filesystem-backed Explorer dock on the far left. It is
+  // present only inside Electron, so the web layout is unchanged. Include it in
+  // the layout key so the panel group reconciles cleanly when it is present.
+  const showExplorer = isDesktopApp();
+  const layoutKey =
+    (sessionsOpen ? 'sessions-open' : 'sessions-closed') + (showExplorer ? '-explorer' : '');
 
   return (
-    <div className="min-h-0 flex-1 bg-[var(--background)] p-2">
+    <div className="relative min-h-0 flex-1 bg-[var(--background)] p-2">
+      {/* Opened project files render over the workspace for full editor width. */}
+      <DesktopFileViewer />
       <PanelGroup key={layoutKey} direction="horizontal" className="h-full">
+        {showExplorer && (
+          <>
+            <Panel id="explorer" order={0} defaultSize={20} minSize={14} maxSize={36}>
+              <div className="h-full min-h-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                <DesktopFileExplorer />
+              </div>
+            </Panel>
+            <ResizeHandle />
+          </>
+        )}
         {sessionsOpen && (
           <>
             <Panel id="sessions" order={1} defaultSize={20} minSize={14} maxSize={32}>
