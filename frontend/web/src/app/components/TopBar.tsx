@@ -290,12 +290,14 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             </button>
           </div>
           <div style={{ width: 3 }}></div>
+           {/* Mascot + wordmark crowd the narrow mobile app bar, so they are
+               hidden on phones and only shown from md+ (issue #46). */}
            <img
              src={octraMascot}
              alt="Octra Mascot"
-             className="w-10 h-10 rounded-lg object-contain"
+             className="hidden md:block w-10 h-10 rounded-lg object-contain"
             />
-           <h1 className="text-lg font-semibold text-[var(--text)]">Octra</h1>
+           <h1 className="hidden md:block text-lg font-semibold text-[var(--text)]">Octra</h1>
         </div>
 
         {/* Center: GitHub button */}
@@ -315,9 +317,12 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
         {/* Right: Theme & Settings & Profile */}
         <div className="flex shrink-0 items-center gap-2">
+          {/* Theme toggle also adds to the mobile clutter; hidden on phones and
+              shown from md+ (issue #46). The theme can still be switched from
+              Settings → Interface. */}
           <button
             onClick={toggleTheme}
-            className="p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
+            className="hidden md:block p-2 hover:bg-[var(--background)] rounded-md transition-colors text-[var(--text)]"
             title={isDark ? t('topbar.lightTheme') : t('topbar.darkTheme')}
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}

@@ -59,4 +59,23 @@ assert.doesNotMatch(
   'the mobile mode-tab row must not render on desktop (must stay behind !isDesktop)',
 );
 
+// The owner asked to declutter the mobile top bar (PR #47 feedback): the mascot
+// image, the "Octra" wordmark and the theme toggle must be hidden on phones and
+// only appear from md+ (`hidden md:block`).
+assert.match(
+  topbar,
+  /alt="Octra Mascot"\s*\n\s*className="hidden md:block/,
+  'the mascot image must be hidden on mobile (hidden md:block)',
+);
+assert.match(
+  topbar,
+  /<h1 className="hidden md:block[^"]*">Octra<\/h1>/,
+  'the "Octra" wordmark must be hidden on mobile (hidden md:block)',
+);
+assert.match(
+  topbar,
+  /onClick=\{toggleTheme\}\s*\n\s*className="hidden md:block/,
+  'the theme toggle must be hidden on mobile (hidden md:block)',
+);
+
 console.log('check-mobile-header: all assertions passed');
