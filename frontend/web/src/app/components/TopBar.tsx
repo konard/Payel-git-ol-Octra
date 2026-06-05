@@ -265,7 +265,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
             )}
             <button
               onClick={onToggleSidebar}
-              className="p-2 hover:bg-[var(--background)] rounded-lg transition-colors text-[var(--text-secondary)]"
+              className="p-2 hover:bg-[var(--background)] rounded-lg transition-colors text-[var(--text-secondary)] md:hidden"
               title="Chat History"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
