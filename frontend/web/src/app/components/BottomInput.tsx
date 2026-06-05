@@ -20,14 +20,17 @@ export interface TaskData {
   provider: string;
   model: string;
   apiKey: string;
+  files: File[];
 }
 
 export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
@@ -140,6 +143,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       ...formData,
       title,
       apiKey: formData.apiKey.trim(),
+      files: attachedFiles,
     });
 
     setFormData({
@@ -150,6 +154,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       model: formData.model,
       apiKey: '',
     });
+    setAttachedFiles([]);
     setShowModelSelector(false);
   };
 
@@ -311,9 +316,30 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                   <Settings2 size={16} />
                 </button>
               )}
-              <span className="rounded-lg p-1.5" aria-hidden="true">
+              <input
+                type="file"
+                multiple
+                ref={fileInputRef}
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setAttachedFiles((prev) => [...prev, ...files]);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg p-1.5 transition-colors hover:bg-[var(--surface)] hover:text-[var(--text)] relative"
+                title="Attach files"
+              >
                 <Paperclip size={16} />
-              </span>
+                {attachedFiles.length > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-medium text-white">
+                    {attachedFiles.length}
+                  </span>
+                )}
+              </button>
               <span className="rounded-lg p-1.5" aria-hidden="true">
                 <Globe size={16} />
               </span>
