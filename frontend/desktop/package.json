@@ -1,0 +1,20 @@
+{
+  "name": "@octra/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Octra Desktop — Electron IDE shell with a Zed-style top panel, application menu, and project switcher in the Octra design system.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test:projects": "node scripts/check-projects.mjs",
+    "test:menu-model": "node scripts/check-menu-model.mjs",
+    "test:topbar": "node scripts/check-topbar.mjs",
+    "test:switcher": "node scripts/check-project-switcher.mjs",
+    "test:main": "node scripts/check-electron-main.mjs",
+    "test:workspace": "node scripts/check-workspace.mjs",
+    "test": "npm run test:projects && npm run test:menu-model && npm run test:topbar && npm run test:switcher && npm run test:main && npm run test:workspace"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
