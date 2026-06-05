@@ -1,8 +1,14 @@
 /**
- * Desktop-only UI state: the currently open project, its file tree, the file
- * being viewed, and whether the file explorer dock is shown. Lives in its own
- * store so the web app is untouched when not running in Electron — none of this
- * state is ever populated in a plain browser.
+ * Desktop-only UI state: the currently open project, its file tree, the path of
+ * the file last opened from the explorer, and whether the file explorer dock is
+ * shown. Lives in its own store so the web app is untouched when not running in
+ * Electron — none of this state is ever populated in a plain browser.
+ *
+ * Opening a file no longer pops a separate viewer window. Per the owner's
+ * feedback on issue #50 ("Удали боковое окно просмотра файлов и открывай в
+ * solution files"), an opened project file is pushed into the web app's task
+ * store so it renders inside the existing "Solution files" panel, reusing its
+ * Monaco editor, Markdown preview, binary download and tab UI.
  */
 
 import { create } from 'zustand';
@@ -13,21 +19,18 @@ import {
   type FileTreeNode,
   type ReadFileResult,
 } from './bridge';
-
-export interface OpenFile {
-  path: string;
-  name: string;
-  content: string;
-  language: string;
-  binary: boolean;
-  truncated: boolean;
-}
+import { useTaskStore } from '../stores/taskStore';
 
 interface DesktopState {
   project: DesktopProject | null;
   tree: FileTreeNode | null;
   recent: DesktopProject[];
-  openFile: OpenFile | null;
+  // Path of the file most recently opened from the explorer. Drives the active
+  // row highlight; the file's contents live in the task store's codeFiles.
+  openFilePath: string | null;
+  // Bumped on every open so the Solution files panel can focus the freshly
+  // opened file even when the same path is re-opened.
+  openNonce: number;
   explorerOpen: boolean;
   loadingTree: boolean;
   loadingFile: boolean;
@@ -62,16 +65,21 @@ function languageForPath(filePath: string): string {
   return LANGUAGE_BY_EXT[ext] || 'plaintext';
 }
 
-function toOpenFile(result: ReadFileResult): OpenFile {
+// Map a file read from disk into the task store's CodeFile shape so it shows up
+// in the "Solution files" panel. Binary files keep their base64 content and
+// encoding so the panel can offer a download; text files get an inline note when
+// they were truncated for size.
+function toCodeFile(result: ReadFileResult) {
   return {
     path: result.path,
     name: result.path.split('/').pop() || result.path,
-    content: result.binary
-      ? `[Binary file — ${result.size} bytes, not shown]`
-      : result.content + (result.truncated ? '\n\n… [file truncated]' : ''),
     language: result.binary ? 'plaintext' : languageForPath(result.path),
-    binary: result.binary,
-    truncated: result.truncated,
+    encoding: result.encoding,
+    content:
+      result.binary || !result.truncated
+        ? result.content
+        : result.content + '\n\n… [file truncated]',
+    status: 'ready' as const,
   };
 }
 
@@ -79,7 +87,8 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
   project: null,
   tree: null,
   recent: [],
-  openFile: null,
+  openFilePath: null,
+  openNonce: 0,
   explorerOpen: true,
   loadingTree: false,
   loadingFile: false,
@@ -102,7 +111,7 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
     try {
       const result = await bridge.projects.open();
       if (result) {
-        set({ project: result.project, recent: result.recent, openFile: null });
+        set({ project: result.project, recent: result.recent, openFilePath: null });
         await get().reloadTree();
       }
     } catch (err) {
@@ -115,7 +124,7 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
     if (!bridge) return;
     try {
       const result = await bridge.projects.openPath(path);
-      set({ project: result.project, recent: result.recent, openFile: null });
+      set({ project: result.project, recent: result.recent, openFilePath: null });
       await get().reloadTree();
     } catch (err) {
       set({ error: String(err) });
@@ -142,7 +151,10 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
     set({ loadingFile: true, error: null });
     try {
       const result = await bridge.fs.readFile(project.path, relativePath);
-      set({ openFile: toOpenFile(result), loadingFile: false });
+      // Surface the file in the web app's "Solution files" panel instead of a
+      // separate desktop viewer window (issue #50 owner feedback).
+      useTaskStore.getState().upsertCodeFiles([toCodeFile(result)]);
+      set((s) => ({ openFilePath: result.path, openNonce: s.openNonce + 1, loadingFile: false }));
     } catch (err) {
       set({ error: String(err), loadingFile: false });
     }

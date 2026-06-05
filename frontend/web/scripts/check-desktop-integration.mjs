@@ -30,7 +30,6 @@ for (const key of ['readTree', 'readFile', 'minimize', 'toggleMaximize', 'close'
 for (const file of [
   'desktop/DesktopTitleBar.tsx',
   'desktop/DesktopFileExplorer.tsx',
-  'desktop/DesktopFileViewer.tsx',
 ]) {
   const code = read(file);
   assert.match(code, /if \(!isDesktopApp\(\)\) return null/, `${file} must no-op when not in Electron`);
@@ -41,15 +40,31 @@ for (const file of [
 const main = read('main.tsx');
 assert.match(main, /DesktopTitleBar/, 'main.tsx must mount DesktopTitleBar');
 
-// The workspace must only add the Explorer dock inside the desktop app.
+// The workspace must only add the Explorer dock inside the desktop app, and must
+// NOT mount a separate desktop file viewer window — opened files render in the
+// "Solution files" panel instead (issue #50 owner feedback).
 const workspace = read('app/components/Workspace.tsx');
 assert.match(workspace, /isDesktopApp\(\)/, 'Workspace must gate the explorer on isDesktopApp');
 assert.match(workspace, /DesktopFileExplorer/, 'Workspace must render the explorer');
-assert.match(workspace, /DesktopFileViewer/, 'Workspace must render the file viewer');
+assert.doesNotMatch(workspace, /DesktopFileViewer/, 'Workspace must not render a separate file viewer window');
 
-// The store maps file extensions to Monaco languages for syntax highlighting.
+// The standalone desktop file viewer component must be gone.
+assert.ok(
+  !fs.existsSync(path.join(src, 'desktop/DesktopFileViewer.tsx')),
+  'DesktopFileViewer.tsx should be removed; files open in the Solution files panel',
+);
+
+// The store maps file extensions to Monaco languages for syntax highlighting and
+// routes opened files into the task store so they appear in "Solution files".
 const store = read('desktop/desktopStore.ts');
 assert.match(store, /typescript/, 'desktop store must map extensions to languages');
 assert.match(store, /refreshRecent/, 'desktop store must expose recent-project loading');
+assert.match(store, /useTaskStore/, 'desktop store must push opened files into the task store');
+assert.match(store, /upsertCodeFiles/, 'desktop store must upsert opened files as solution files');
+
+// The Solution files panel focuses the file opened from the desktop Explorer.
+const solutionViewer = read('app/components/SolutionViewer.tsx');
+assert.match(solutionViewer, /useDesktopStore/, 'SolutionViewer must observe the desktop open-file signal');
+assert.match(solutionViewer, /openNonce/, 'SolutionViewer must focus the freshly opened desktop file');
 
 console.log('check-desktop-integration: all assertions passed');

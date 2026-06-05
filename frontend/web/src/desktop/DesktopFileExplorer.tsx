@@ -15,8 +15,8 @@ import { useDesktopStore } from './desktopStore';
  * Filesystem-backed file explorer for the desktop app — the feature the old
  * shell was missing ("Чтение файлов нету … ничего не отобразилось", issue #50.4).
  * Reads the open project's tree through the Electron bridge and lets the user
- * open any file, which is shown by DesktopFileViewer. Renders nothing in a
- * normal browser.
+ * open any file, which is shown in the web app's "Solution files" panel
+ * (SolutionViewer). Renders nothing in a normal browser.
  */
 export function DesktopFileExplorer() {
   if (!isDesktopApp()) return null;
@@ -128,7 +128,7 @@ function DirectoryRow({ node, depth }: { node: FileTreeNode; depth: number }) {
 
 function FileRow({ node, depth }: { node: FileTreeNode; depth: number }) {
   const openPath = useDesktopStore((s) => s.openPath);
-  const activePath = useDesktopStore((s) => s.openFile?.path);
+  const activePath = useDesktopStore((s) => s.openFilePath);
   const isActive = activePath === node.path;
   return (
     <button

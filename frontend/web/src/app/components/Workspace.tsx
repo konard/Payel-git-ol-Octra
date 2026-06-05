@@ -5,7 +5,6 @@ import { SolutionViewer } from './SolutionViewer';
 import { BottomInput, type TaskData } from './BottomInput';
 import { Sidebar } from '../../components/Sidebar';
 import { DesktopFileExplorer } from '../../desktop/DesktopFileExplorer';
-import { DesktopFileViewer } from '../../desktop/DesktopFileViewer';
 import { isDesktopApp } from '../../desktop/bridge';
 
 interface WorkspaceProps {
@@ -120,8 +119,8 @@ export function Workspace({
 
   return (
     <div className="relative min-h-0 flex-1 bg-[var(--background)] p-2">
-      {/* Opened project files render over the workspace for full editor width. */}
-      <DesktopFileViewer />
+      {/* Files opened from the desktop Explorer render in the Solution files
+          panel (SolutionViewer), not a separate viewer window (issue #50). */}
       <PanelGroup key={layoutKey} direction="horizontal" className="h-full">
         {showExplorer && (
           <>

@@ -50,8 +50,12 @@ frontend/web/src/desktop/   the desktop-only renderer pieces (gated on Electron)
   desktopStore.ts           zustand store: project, file tree, open file, recents
   DesktopTitleBar.tsx       frameless title bar + minimize/maximize/close controls
   DesktopFileExplorer.tsx   project file tree
-  DesktopFileViewer.tsx     read-only Monaco viewer for the selected file
 ```
+
+Opening a file from the Explorer does not pop a separate window: the file is
+pushed into the web app's task store and rendered in the existing **Solution
+files** panel (`SolutionViewer`), reusing its Monaco editor, Markdown preview,
+binary download and tabs.
 
 ### How the renderer is loaded
 
