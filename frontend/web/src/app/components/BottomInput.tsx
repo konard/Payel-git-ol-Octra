@@ -185,7 +185,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   };
 
   return (
-    <div className="border-t border-[var(--border)] bg-[var(--surface)] p-3">
+    <div className="border-t border-[var(--border)] bg-[var(--surface)] p-3" data-tour="task-input">
       <form onSubmit={handleSubmit}>
         {/* A single unified, rounded input card — the task description, the
             provider/model selectors and the send button all live in one field,

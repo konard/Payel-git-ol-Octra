@@ -30,9 +30,12 @@ interface WorkspaceProps {
 
 // A reusable rounded "window card" wrapper that gives every pane the framed look
 // from the reference design while preserving the existing surface colours.
-function PaneCard({ children }: { children: React.ReactNode }) {
+function PaneCard({ children, dataTour }: { children: React.ReactNode; dataTour?: string }) {
   return (
-    <div className="h-full min-h-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+    <div
+      className="h-full min-h-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm"
+      data-tour={dataTour}
+    >
       <div className="flex h-full min-h-0 flex-col">{children}</div>
     </div>
   );
@@ -77,7 +80,7 @@ export function Workspace({
   // both panes are always visible, the old Canvas/Chat/Solution header toggles
   // were redundant and were removed too.
   const center = (
-    <PaneCard>
+    <PaneCard dataTour="workflow-workspace">
       <PanelGroup direction="vertical" className="min-h-0 flex-1">
         <Panel id="center-canvas" order={1} defaultSize={58} minSize={25}>
           {/* The Canvas root is `flex-1`, so its wrapper must be a flex column —
@@ -135,7 +138,7 @@ export function Workspace({
         {sessionsOpen && (
           <>
             <Panel id="sessions" order={1} defaultSize={20} minSize={14} maxSize={32}>
-              <PaneCard>
+              <PaneCard dataTour="chat-sessions">
                 <Sidebar
                   variant="dock"
                   isOpen
@@ -155,7 +158,7 @@ export function Workspace({
 
         <ResizeHandle />
         <Panel id="solution" order={3} defaultSize={32} minSize={20} maxSize={50}>
-          <PaneCard>
+          <PaneCard dataTour="solution-pane">
             <SolutionViewer />
           </PaneCard>
         </Panel>

@@ -9,6 +9,36 @@
     "close": "Close",
     "optional": "optional"
   },
+  "onboarding": {
+    "progress": "Training",
+    "ok": "OK",
+    "skip": "Skip training",
+    "finish": "Finish",
+    "workspace": {
+      "title": "Workspace",
+      "body": "This is the working area. Build a workflow on the canvas, talk with Octra Boss, and review generated results without leaving the app."
+    },
+    "agents": {
+      "title": "Add agents",
+      "body": "Use this button to add agents and workflow templates. Drag nodes onto the canvas, connect them, and describe each role."
+    },
+    "taskInput": {
+      "title": "Describe the task",
+      "body": "Write the goal here, choose a provider and model, attach files if needed, then send the task to start execution."
+    },
+    "settings": {
+      "title": "Settings",
+      "body": "Open settings to manage API tokens, custom providers, models, language, interface visibility, and integrations."
+    },
+    "chats": {
+      "title": "Chats",
+      "body": "Create separate chats for different tasks. Each chat can keep its own conversation and saved workflow."
+    },
+    "solution": {
+      "title": "Solution",
+      "body": "The Solution area shows generated files, documents, search results, and pull request summaries after Octra finishes work."
+    }
+  },
   "topbar": {
     "download": "Download",
     "settings": "Settings",

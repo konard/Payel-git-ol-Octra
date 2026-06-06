@@ -9,6 +9,7 @@ import { SolutionViewer } from './components/SolutionViewer';
 import { BottomInput } from './components/BottomInput';
 import { ChatInput } from './components/ChatInput';
 import { Workspace } from './components/Workspace';
+import { OnboardingTour, shouldShowOnboardingTour } from './components/OnboardingTour';
 import type { TaskData } from './components/BottomInput';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useIsDesktop } from '../hooks/useMediaQuery';
@@ -89,6 +90,7 @@ export default function App() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<'canvas' | 'chat' | 'solution'>('canvas');
+  const [showOnboardingTour, setShowOnboardingTour] = useState(() => shouldShowOnboardingTour());
   // Visibility of the docked Sessions (left) pane in the desktop workspace. It
   // starts open so the full three-pane layout is visible. The Solution dock is
   // always visible on desktop, so it has no toggle (issue #40).
@@ -608,6 +610,10 @@ export default function App() {
             await checkAuth();
           }}
         />
+      )}
+
+      {showOnboardingTour && (
+        <OnboardingTour onClose={() => setShowOnboardingTour(false)} />
       )}
     </div>
   );
