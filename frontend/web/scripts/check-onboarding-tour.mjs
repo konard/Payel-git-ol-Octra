@@ -14,6 +14,7 @@ const read = (rel) => readFileSync(resolve(here, '..', rel), 'utf8');
 
 const app = read('src/app/App.tsx');
 const tour = read('src/app/components/OnboardingTour.tsx');
+const tourState = read('src/app/components/onboardingTourState.ts');
 const workspace = read('src/app/components/Workspace.tsx');
 const topbar = read('src/app/components/TopBar.tsx');
 const canvas = read('src/app/components/Canvas.tsx');
@@ -26,9 +27,9 @@ const ru = JSON.parse(read('public/languages/ru.json'));
 assert.match(app, /shouldShowOnboardingTour\(\)/, 'App must check first-run tour state');
 assert.match(app, /<OnboardingTour\b/, 'App must mount the onboarding tour in the app shell');
 
-assert.match(tour, /ONBOARDING_TOUR_STORAGE_KEY/, 'tour must expose a stable storage key');
-assert.match(tour, /localStorage\.getItem\(ONBOARDING_TOUR_STORAGE_KEY\)/, 'tour must read persisted completion');
-assert.match(tour, /localStorage\.setItem\(ONBOARDING_TOUR_STORAGE_KEY,\s*'true'\)/, 'tour must persist completion');
+assert.match(tourState, /ONBOARDING_TOUR_STORAGE_KEY/, 'tour must expose a stable storage key');
+assert.match(tourState, /localStorage\.getItem\(ONBOARDING_TOUR_STORAGE_KEY\)/, 'tour must read persisted completion');
+assert.match(tourState, /localStorage\.setItem\(ONBOARDING_TOUR_STORAGE_KEY,\s*'true'\)/, 'tour must persist completion');
 assert.match(tour, /querySelectorAll/, 'tour must locate real UI targets by selector');
 assert.match(tour, /getBoundingClientRect/, 'tour must position the spotlight from target geometry');
 assert.match(tour, /scrollIntoView/, 'tour must bring highlighted controls into view');

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { useI18n } from '../../hooks/useI18n';
-
-export const ONBOARDING_TOUR_STORAGE_KEY = 'octra:onboarding-tour-completed';
+import { markOnboardingTourComplete } from './onboardingTourState';
 
 type TourStep = {
   titleKey: string;
@@ -74,30 +73,6 @@ const TOUR_STEPS: TourStep[] = [
     selectors: ['[data-tour="solution-pane"]', '[data-tour="solution-tab"]'],
   },
 ];
-
-export function shouldShowOnboardingTour() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  try {
-    return window.localStorage.getItem(ONBOARDING_TOUR_STORAGE_KEY) !== 'true';
-  } catch {
-    return false;
-  }
-}
-
-function markOnboardingTourComplete() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(ONBOARDING_TOUR_STORAGE_KEY, 'true');
-  } catch {
-    // Storage may be disabled in hardened browser contexts; closing still works.
-  }
-}
 
 function getViewportFallbackRect(): TargetRect {
   return {
