@@ -16,7 +16,7 @@ concurrency:
 
 env:
   COMPOSE_FILE: docker-compose.prod.yml
-  PROJECT_DIR: /root/octra
+  PROJECT_DIR: /root/CrewAi
 
 jobs:
   deploy:
@@ -42,12 +42,16 @@ jobs:
             # Pull latest code
             git pull origin master
 
-            # Build and restart all services
-            docker compose -f ${{ env.COMPOSE_FILE }} build --pull
-            docker compose -f ${{ env.COMPOSE_FILE }} up -d --remove-orphans
+            # Build all services sequentially
+            docker compose -f ${{ env.COMPOSE_FILE }} build frontend --no-cache
+            docker compose -f ${{ env.COMPOSE_FILE }} build user
+            docker compose -f ${{ env.COMPOSE_FILE }} build nodes
+            docker compose -f ${{ env.COMPOSE_FILE }} build apigateway
+            docker compose -f ${{ env.COMPOSE_FILE }} build grademodel
+            docker compose -f ${{ env.COMPOSE_FILE }} build agents
+
+            # Start all services
+            docker compose -f ${{ env.COMPOSE_FILE }} up -d
 
             # Clean up old unused images
             docker image prune -f
-
-            # Verify all services are healthy
-            docker compose -f ${{ env.COMPOSE_FILE }} ps
