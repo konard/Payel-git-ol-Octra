@@ -214,6 +214,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'o
             onClick={handleNewChat}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
             title={`${t('chatSidebar.newChat')} (Ctrl+N)`}
+            data-tour="new-chat"
           >
             <Plus size={14} />
             <span>{t('chatSidebar.newChat')}</span>
@@ -238,6 +239,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'o
           <button
             onClick={handleNewChat}
             className="w-full h-12 flex items-center justify-center gap-2.5 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-xl transition-all text-sm shadow-[0_10px_30px_rgba(255,132,0,0.18)] active:scale-[0.985]"
+            data-tour="new-chat"
           >
             <Plus size={18} />
             {t('chatSidebar.newChat')}

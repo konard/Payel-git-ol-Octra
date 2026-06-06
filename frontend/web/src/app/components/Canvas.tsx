@@ -273,7 +273,7 @@ export function Canvas({ mode }: CanvasProps) {
   }, [nodes, edges]);
 
   return (
-    <div className="flex-1 bg-[var(--bg-canvas)] relative">
+    <div className="flex-1 bg-[var(--bg-canvas)] relative" data-tour="canvas">
       {/* Кнопка открытия панели - только в режиме canvas */}
       {mode === 'canvas' && (
         <button
@@ -281,6 +281,7 @@ export function Canvas({ mode }: CanvasProps) {
           className={`absolute right-4 top-4 z-10 bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 hover:bg-[var(--accent)] hover:text-white transition-colors shadow-lg ${
             sidebarOpen ? 'hidden' : ''
           }`}
+          data-tour="add-agent"
         >
           + {t('sidebar.addAgent')}
         </button>
