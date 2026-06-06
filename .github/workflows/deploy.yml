@@ -1,0 +1,57 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [master, main]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'docs/**'
+      - 'experiments/**'
+      - 'spec/**'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COMPOSE_FILE: docker-compose.prod.yml
+  PROJECT_DIR: /root/CrewAi
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_SERVER_HOST }}
+          username: ${{ secrets.DEPLOY_SERVER_USERNAME }}
+          password: ${{ secrets.DEPLOY_SERVER_SSH_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+
+            cd ${{ env.PROJECT_DIR }}
+
+            # Pull latest code
+            git pull origin master
+
+            # Build all services sequentially
+            docker compose -f ${{ env.COMPOSE_FILE }} build frontend --no-cache
+            docker compose -f ${{ env.COMPOSE_FILE }} build user
+            docker compose -f ${{ env.COMPOSE_FILE }} build nodes
+            docker compose -f ${{ env.COMPOSE_FILE }} build apigateway
+            docker compose -f ${{ env.COMPOSE_FILE }} build grademodel
+            docker compose -f ${{ env.COMPOSE_FILE }} build agents
+
+            # Start all services
+            docker compose -f ${{ env.COMPOSE_FILE }} up -d
+
+            # Clean up old unused images
+            docker image prune -f
