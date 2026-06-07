@@ -37,13 +37,14 @@ function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
 
   return (
     <div
-      className={`agent-node group relative ${isActive ? 'agent-node--active' : ''}`}
+      className={`agent-node group relative ${isActive ? 'agent-node--active' : ''} ${repoUrl ? 'cursor-pointer' : ''}`}
       style={{
         minWidth: 200,
         transform: `scale(${currentScale})`,
         transformOrigin: 'center center',
         ['--node-accent' as any]: GITHUB_ACCENT,
       }}
+      title={repoUrl ? t('nodes.openGithub') : undefined}
     >
       {/* Input handles (from managers/workers) */}
       <Handle type="target" position={Position.Top} id="input-0" className="agent-node__handle" style={{ top: -4, left: '20%' }} />
