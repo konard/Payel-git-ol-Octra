@@ -59,6 +59,64 @@ pkg/guids/
 
 Each guide contains structured commands, Nix packages, and project structure — injected into AI prompts to prevent hallucinated commands and save tokens.
 
+## Context management system (`internal/service/context/`)
+
+Octra maintains per-project context with three visibility scopes, stored in Redis (fast cache) and PostgreSQL (permanent storage):
+
+```
+                        ┌──────────────────┐
+                        │  AI Agent returns │
+                        │  JSON with        │
+                        │  "context" field  │
+                        └──────┬───────────┘
+                               ↓
+               ┌───────────────────────────────┐
+               │  ContextService.SaveFromAI()   │
+               │  ┌──────────┐  ┌────────────┐ │
+               │  │ Postgres │  │   Redis    │ │
+               │  │ (always) │  │ (5min TTL) │ │
+               │  └──────────┘  └────────────┘ │
+               └───────────────────────────────┘
+                               ↓
+               ┌───────────────────────────────┐
+               │  GetForPrompt() → injects     │
+               │  into Boss/Manager/Worker      │
+               └───────────────────────────────┘
+```
+
+**Three scope levels:**
+
+| Scope | Visibility | Set by | Lifecycle |
+|-------|-----------|--------|-----------|
+| `global` | All agents in project | Boss/Manager | Persists forever |
+| `team` | All workers under one manager | Manager | Until manager finishes |
+| `individual` | Single agent | Any agent | Per agent session |
+
+**How context flows:**
+
+1. **Boss** sends prompt → AI returns JSON with optional `"context": {"scope": "global", "type": "global_rule", "content": "..."}`
+2. **ContextService** saves to Postgres + Redis, then injects into all subsequent agent prompts
+3. **Manager** and **Worker** also receive and can create context (team/individual scopes)
+4. Before every AI call, `GetForPrompt()` assembles all relevant context into a formatted block
+
+**Automatic cleanup:**
+
+- **Messages** capped at ~20 (adaptive: 40 if avg length <200 chars, 30 if <500 chars)
+- When limit exceeded, the **5 oldest non-important** messages are removed (sawtooth pattern)
+- **Global rules** live forever unless user says `"forget"`
+- If user/AI sends `"content": "forget"` → all matching entries are marked `forgotten`
+- Redis entries expire after 5 minutes, reloaded from Postgres on next access
+
+**Key files:**
+
+| File | Purpose |
+|------|---------|
+| `internal/service/context/response.go` | AI context flag parsing, forget detection |
+| `internal/service/context/postgres.go` | Permanent storage, adaptive cleanup |
+| `internal/service/context/redis.go` | TTL cache (5 min), cache-aside pattern |
+| `internal/service/context/service.go` | Coordinator, SaveFromAI, GetForPrompt |
+| `pkg/models/context_entry.go` | GORM model (project_id, scope, type, content, …) |
+
 ## Project lifecycle with Nix
 
 ```
@@ -100,6 +158,8 @@ This means projects take zero space when idle but can be restored at any time.
 | `orchestrator/internal/service/rules/boss/nix_build.go` | `nix build`, `nix flake check`, `nix flake lock` |
 | `orchestrator/internal/service/rules/worker/tool_executor.go` | Real tool scaffolding inside `nix develop` |
 | `orchestrator/pkg/guids/` | Structured tool guide registry (commands, packages, structure) |
+| `orchestrator/pkg/models/context_entry.go` | Context entry GORM model |
+| `orchestrator/internal/service/context/` | Context management (Redis + Postgres, 3 scopes, auto-cleanup) |
 | `projects/<taskID>/flake.nix` | Auto-generated per project |
 
 Run with NixOS:
