@@ -160,23 +160,13 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
    const [showAddProvider, setShowAddProvider] = useState(false);
    const [editingProvider, setEditingProvider] = useState<string | null>(null);
   
-  // Integration state
-   const lefineIntegration = useIntegrationStore((state) => state.integrations.lefine);
-   const telegramIntegration = useIntegrationStore((state) => state.integrations.telegram);
-   const n8nIntegration = useIntegrationStore((state) => state.integrations.n8n);
-   const rawGithub = useIntegrationStore((state) => state.integrations.github);
-   const githubIntegration = rawGithub ?? { 
-     connected: false, 
-     config: { 
-       useDefaultKey: false, 
-       apiKey: '', 
-       workflowId: '',
-       publishNewProjects: false,
-       createPullRequests: false 
-     } 
-   };
-  const setIntegrationConnected = useIntegrationStore((state) => state.setIntegrationConnected);
-  const disconnectIntegration = useIntegrationStore((state) => state.disconnectIntegration);
+// Integration state
+   const lefineIntegration = useIntegrationStore((state) => state.getIntegration('lefine'));
+   const telegramIntegration = useIntegrationStore((state) => state.getIntegration('telegram'));
+   const n8nIntegration = useIntegrationStore((state) => state.getIntegration('n8n'));
+   const githubIntegration = useIntegrationStore((state) => state.getIntegration('github'));
+   const setIntegrationConnected = useIntegrationStore((state) => state.setIntegrationConnected);
+   const disconnectIntegration = useIntegrationStore((state) => state.disconnectIntegration);
 
   useEffect(() => {
     if (!showSettings) {

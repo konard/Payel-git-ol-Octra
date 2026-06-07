@@ -695,10 +695,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       storeActions.updateNode('boss-1', { status: 'done' });
 
       if (currentTaskType.current === '' || currentTaskType.current === 'code') {
-        const ghIntegration = useIntegrationStore.getState().integrations.github;
-        const shouldAdd = !ghIntegration?.connected ||
-          ghIntegration?.config?.publishNewProjects ||
-          ghIntegration?.config?.createPullRequests;
+        const ghIntegration = useIntegrationStore.getState().getIntegration('github');
+        const shouldAdd = !ghIntegration.connected ||
+          ghIntegration.config.publishNewProjects ||
+          ghIntegration.config.createPullRequests;
         if (shouldAdd) {
           addGitHubNode();
         }

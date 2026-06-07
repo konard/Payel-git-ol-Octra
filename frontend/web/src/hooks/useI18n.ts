@@ -6,12 +6,23 @@ export { SUPPORTED_LANGUAGES };
 export type { LanguageCode };
 
 // Cache for loaded translations
-const translationsCache: Record<string, Record<string, any>> = {};
+export const translationsCache: Record<string, Record<string, any>> = {};
 
-// Static t function for non-React usage
+// Static t function for non-React usage (e.g., in WebSocket handlers)
+// Uses the cache directly without calling hooks
 export function t(key: string): string {
-  const { language } = useI18nStore.getState();
-  const translations = translationsCache[language] || {};
+  // Get language from localStorage to avoid calling hook outside React
+  let lang = 'en';
+  try {
+    const saved = localStorage.getItem('octra-language');
+    if (saved && SUPPORTED_LANGUAGES.includes(saved as LanguageCode)) {
+      lang = saved;
+    }
+  } catch {
+    // localStorage not available
+  }
+  
+  const translations = translationsCache[lang] || {};
   
   if (Object.keys(translations).length === 0) return key;
 
@@ -26,9 +37,6 @@ export function t(key: string): string {
   }
   return typeof current === 'string' ? current : key;
 }
-
-// Expose cache for static t function
-(window as any).__translationsCache = translationsCache;
 
 // React hook for i18n
 export function useI18n() {

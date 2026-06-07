@@ -368,8 +368,8 @@ export default function App() {
     taskPayload.meta.provider = providerAuth.provider;
 
     // GitHub integration flags
-    const ghIntegration = useIntegrationStore.getState().integrations.github;
-    if (ghIntegration?.connected) {
+    const ghIntegration = useIntegrationStore.getState().getIntegration('github');
+    if (ghIntegration.connected) {
       taskPayload.meta.publish_repositories = ghIntegration.config.publishNewProjects ? 'true' : 'false';
       taskPayload.meta.create_pull_requests = ghIntegration.config.createPullRequests ? 'true' : 'false';
     }
