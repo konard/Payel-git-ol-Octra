@@ -53,9 +53,9 @@ services:
       - PROJECTS_DIR=/workspace/projects
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
       - GIT_USER_NAME=CrewAI Orchestrator
-      - ORCHESTRATOR_GRPC_PORT=50051
+      - ORCHESTRATOR_GRPC_PORT=50052
     ports:
-      - "50051:50051"
+      - "50052:50052"
     volumes:
       - ./projects:/workspace/projects
     depends_on:
@@ -92,7 +92,7 @@ services:
     env_file:
       - .env
     environment:
-      - BOSS_SERVICE_HOST=orchestrator:50051
+      - BOSS_SERVICE_HOST=orchestrator:50052
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true

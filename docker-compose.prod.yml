@@ -101,7 +101,7 @@ services:
       dockerfile: Dockerfile
     container_name: octra-apigateway
     environment:
-      - NODES_SERVICE_HOST=orchestrator:50051
+      - NODES_SERVICE_HOST=orchestrator:50052
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
       - AUTH_SERVICE_HOST=user:3112

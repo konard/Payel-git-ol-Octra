@@ -34,7 +34,7 @@ func main() {
 
 	port := os.Getenv("ORCHESTRATOR_GRPC_PORT")
 	if port == "" {
-		port = "50051"
+		port = "50052"
 	}
 
 	log.Printf("Starting orchestrator gRPC server on port %s (boss+manager+worker in one process)", port)
