@@ -1,12 +1,14 @@
-package guids
+package haskell
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Cabal",
 		Tool:  "cabal",
 		Tools: []string{"ghc", "cabal-install"},
 		Desc:  "Haskell build system and package manager",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Init new project", "cabal init"},
 			{"Init with Stack", "stack new <name>"},
 			{"Build", "cabal build"},

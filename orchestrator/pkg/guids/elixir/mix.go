@@ -1,12 +1,14 @@
-package guids
+package elixir
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Mix",
 		Tool:  "mix",
 		Tools: []string{"elixir"},
 		Desc:  "Elixir build tool and project manager",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"New project", "mix new <name>"},
 			{"New Phoenix app", "mix phx.new <name>"},
 			{"New Phoenix without Ecto", "mix phx.new <name> --no-ecto"},

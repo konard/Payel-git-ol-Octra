@@ -1,12 +1,14 @@
-package guids
+package rust
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Cargo",
 		Tool:  "cargo",
 		Tools: []string{"rustc", "cargo"},
 		Desc:  "Rust package manager and build tool",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"New binary project", "cargo init --name <name>"},
 			{"New library", "cargo init --lib --name <name>"},
 			{"Build", "cargo build"},

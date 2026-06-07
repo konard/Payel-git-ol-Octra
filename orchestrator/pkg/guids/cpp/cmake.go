@@ -1,12 +1,14 @@
-package guids
+package cpp
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "CMake",
 		Tool:  "cmake",
 		Tools: []string{"cmake", "gcc", "ninja"},
 		Desc:  "Cross-platform build system generator for C/C++",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Configure (out-of-source)", "cmake -B build -G Ninja"},
 			{"Configure with preset", "cmake --preset <preset>"},
 			{"Build", "cmake --build build"},

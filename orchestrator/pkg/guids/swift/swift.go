@@ -1,12 +1,14 @@
-package guids
+package swift
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "SwiftPM",
 		Tool:  "swift",
 		Tools: []string{"swift"},
 		Desc:  "Swift Package Manager — build, run, test Swift projects",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"New executable", "swift package init --type executable"},
 			{"New library", "swift package init --type library"},
 			{"New macro", "swift package init --type macro"},

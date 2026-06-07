@@ -1,12 +1,14 @@
-package guids
+package ruby
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Bundler",
 		Tool:  "bundler",
 		Tools: []string{"ruby", "bundler"},
 		Desc:  "Ruby dependency manager and project initializer",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Init Gemfile", "bundle init"},
 			{"Install deps", "bundle install"},
 			{"Add gem", "bundle add <gem>"},

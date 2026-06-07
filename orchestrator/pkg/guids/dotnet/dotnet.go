@@ -1,12 +1,14 @@
-package guids
+package dotnet
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "dotnet",
 		Tool:  "dotnet",
 		Tools: []string{"dotnet-sdk"},
 		Desc:  ".NET SDK — build apps for web, mobile, desktop, cloud",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"New console app", "dotnet new console -n <name>"},
 			{"New web API", "dotnet new webapi -n <name>"},
 			{"New MVC app", "dotnet new mvc -n <name>"},

@@ -1,12 +1,14 @@
-package guids
+package golang
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Go",
 		Tool:  "go",
 		Tools: []string{"go"},
 		Desc:  "Go toolchain — compile, run, test, and manage modules",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"New module", "go mod init <module>"},
 			{"Build package", "go build ./..."},
 			{"Build to file", "go build -o <output> ."},

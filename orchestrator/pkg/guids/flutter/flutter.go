@@ -1,12 +1,14 @@
-package guids
+package flutter
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "Flutter",
 		Tool:  "flutter",
 		Tools: []string{"flutter", "dart"},
 		Desc:  "Flutter SDK — cross-platform UI toolkit",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Create new project", "flutter create <name>"},
 			{"Create with org domain", "flutter create --org com.example ."},
 			{"Create for web only", "flutter create --platforms=web ."},

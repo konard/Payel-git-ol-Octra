@@ -1,12 +1,14 @@
-package guids
+package node
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "npm",
 		Tool:  "npm",
 		Tools: []string{"nodejs"},
 		Desc:  "Node.js package manager and project tool",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Init package.json", "npm init -y"},
 			{"Create Next.js app", "npx create-next-app@latest ."},
 			{"Create React app", "npx create-react-app ."},

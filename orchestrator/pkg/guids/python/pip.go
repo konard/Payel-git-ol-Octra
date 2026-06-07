@@ -1,12 +1,14 @@
-package guids
+package python
+
+import "orchestrator/pkg/guids/core"
 
 func init() {
-	register(Guide{
+	core.Register(core.Guide{
 		Name:  "pip",
 		Tool:  "pip",
 		Tools: []string{"python3", "pip"},
 		Desc:  "Python package installer and virtual environment manager",
-		Commands: []CommandExample{
+		Commands: []core.CommandExample{
 			{"Create virtual env", "python -m venv .venv"},
 			{"Activate venv (Linux/macOS)", "source .venv/bin/activate"},
 			{"Activate venv (Windows)", ".venv\\Scripts\\activate"},
