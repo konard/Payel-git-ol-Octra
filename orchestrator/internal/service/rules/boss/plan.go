@@ -11,6 +11,8 @@ import (
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 	"orchestrator/pkg/models"
+
+	"github.com/google/uuid"
 )
 
 // thinkAboutTask — boss решает архитектуру через AI (с fallback'ом по провайдерам)
@@ -52,7 +54,11 @@ func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, re
 
 // thinkOnce — один запрос к AI для планирования архитектуры
 func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *CreateTaskRequest) (*DecisionResult, error) {
-	prompt := prompts.PlanArchitecture(req.Title, req.Description, req.Grade)
+	taskUUID, _ := uuid.Parse(req.Meta["task_id"])
+
+	// Inject project context into the prompt
+	contextBlock := s.contextClient.GetForPrompt(ctx, taskUUID, "boss", "")
+	prompt := prompts.PlanArchitecture(req.Title, req.Description+contextBlock, req.Grade)
 
 	tokens := req.Tokens
 	if tokens == nil {
@@ -66,6 +72,11 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 	}
 
 	jsonStr := util.ExtractJSONFromMarkdown(resp)
+
+	// Extract and save context from AI response
+	if entry := s.contextClient.SaveFromAI(ctx, taskUUID, "boss", jsonStr); entry != nil {
+		log.Printf("[Context] Boss saved: [%s] %s", entry.ContextType, entry.Content)
+	}
 
 	var decision DecisionResult
 	if err := json.Unmarshal([]byte(jsonStr), &decision); err != nil {

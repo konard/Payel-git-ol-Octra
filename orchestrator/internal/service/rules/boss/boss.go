@@ -7,6 +7,7 @@ import (
 
 	"orchestrator/internal/redis"
 	"orchestrator/internal/service/agents"
+	ctxsvc "orchestrator/internal/service/context"
 	"orchestrator/internal/service/github"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/rules/manager"
@@ -20,25 +21,27 @@ import (
 // теперь это просто компонент внутри orchestrator, который напрямую вызывает
 // manager.Service вместо gRPC-клиента.
 type Service struct {
-	agentsClient *agents.Client
-	manager      *manager.Service
-	redisClient  *redis.Client
-	githubClient *github.Client
-	db           *gorm.DB
+	agentsClient  *agents.Client
+	manager       *manager.Service
+	redisClient   *redis.Client
+	githubClient  *github.Client
+	db            *gorm.DB
+	contextClient *ctxsvc.Service
 }
 
 // NewService — создаёт босса, привязанного к локальному менеджеру
-func NewService(agentsClient *agents.Client, mgr *manager.Service, redisClient *redis.Client) *Service {
+func NewService(agentsClient *agents.Client, mgr *manager.Service, redisClient *redis.Client, contextClient *ctxsvc.Service) *Service {
 	var gh *github.Client
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		gh = github.NewClient(token, os.Getenv("GIT_USER_NAME"), os.Getenv("GIT_USER_EMAIL"))
 	}
 	return &Service{
-		agentsClient: agentsClient,
-		manager:      mgr,
-		redisClient:  redisClient,
-		githubClient: gh,
-		db:           database.Db,
+		agentsClient:  agentsClient,
+		manager:       mgr,
+		redisClient:   redisClient,
+		githubClient:  gh,
+		db:            database.Db,
+		contextClient: contextClient,
 	}
 }
 

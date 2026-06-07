@@ -29,6 +29,7 @@ func InitDb() {
 		&models.Manager{},
 		&models.Worker{},
 		&models.WorkerSolution{},
+		&models.ContextEntry{},
 	}
 	for _, model := range migrations {
 		if err := Db.AutoMigrate(model); err != nil {

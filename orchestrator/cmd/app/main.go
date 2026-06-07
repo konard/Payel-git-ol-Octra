@@ -7,6 +7,7 @@ import (
 	"orchestrator/internal/fetcher/grpc"
 	"orchestrator/internal/redis"
 	"orchestrator/internal/service/agents"
+	ctxsvc "orchestrator/internal/service/context"
 	"orchestrator/internal/service/rules/boss"
 	"orchestrator/internal/service/rules/manager"
 	"orchestrator/internal/service/rules/worker"
@@ -28,9 +29,11 @@ func main() {
 
 	redisClient := redis.NewClient()
 
-	workerSvc := worker.NewService(agentsClient)
-	managerSvc := manager.NewService(agentsClient, workerSvc)
-	bossSvc := boss.NewService(agentsClient, managerSvc, redisClient)
+	contextSvc := ctxsvc.NewService(database.Db, ctxsvc.NewRedisCache(redisClient.GetRedisClient(), redisClient.IsEnabled()))
+
+	workerSvc := worker.NewService(agentsClient, contextSvc)
+	managerSvc := manager.NewService(agentsClient, workerSvc, contextSvc)
+	bossSvc := boss.NewService(agentsClient, managerSvc, redisClient, contextSvc)
 
 	port := os.Getenv("ORCHESTRATOR_GRPC_PORT")
 	if port == "" {

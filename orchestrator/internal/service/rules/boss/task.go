@@ -39,6 +39,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	provider, model := pickProviderModel(req.Meta)
 	emit(progress, 15, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
 
+	if req.Meta == nil {
+		req.Meta = make(map[string]string)
+	}
+	req.Meta["task_id"] = taskID.String()
+
 	emit(progress, 20, "Boss thinking about architecture...", nil)
 	decision, err := s.thinkAboutTask(ctx, provider, model, req)
 	if err != nil {

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"orchestrator/internal/service/rules"
+
+	"github.com/google/uuid"
 )
 
 // AssignWorkersAndWait — последовательно прогоняет всех воркеров команды менеджера.
@@ -41,6 +43,12 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 		s.mu.Lock()
 		accumulatedContext := buildAccumulatedContext(workerResults, contextSummary)
 		s.mu.Unlock()
+
+		// Inject project-level context (global rules + team + individual)
+		if taskUUID, err := uuid.Parse(req.TaskId); err == nil && s.contextClient != nil {
+			projectCtx := s.contextClient.GetForPrompt(ctx, taskUUID, "worker-"+wr.Role, req.ManagerId)
+			accumulatedContext += projectCtx
+		}
 
 		// basePct — текущий прогресс воркера; шаги веб-поиска транслируются в чат
 		// под этим значением, чтобы не «прыгать» по шкале прогресса.

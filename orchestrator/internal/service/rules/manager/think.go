@@ -9,13 +9,17 @@ import (
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/util"
 	"orchestrator/pkg/models"
+
+	"github.com/google/uuid"
 )
 
 // think — менеджер решает каких воркеров нанять
-func (s *Service) think(ctx context.Context, provider, model string, tokens map[string]string, taskDesc, role, description, gradeWeight, taskType string) ([]models.WorkerRole, error) {
+func (s *Service) think(ctx context.Context, provider, model string, tokens map[string]string, taskDesc, role, description, gradeWeight, taskType string, projectID uuid.UUID, managerID string) ([]models.WorkerRole, error) {
 	log.Printf("Manager (%s) thinking about workers... (grade: %s, type: %s)", role, gradeWeight, taskType)
 
-	prompt := prompts.ManagerThink(role, description, taskDesc, gradeWeight, taskType)
+	// Inject project context into prompt
+	contextBlock := s.contextClient.GetForPrompt(ctx, projectID, "manager-"+managerID, managerID)
+	prompt := prompts.ManagerThink(role, description, taskDesc+contextBlock, gradeWeight, taskType)
 
 	genCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -25,10 +29,17 @@ func (s *Service) think(ctx context.Context, provider, model string, tokens map[
 		return []models.WorkerRole{fallbackWorkerRole(taskType, "fallback due to timeout")}, nil
 	}
 
+	jsonStr := util.ExtractJSONFromMarkdown(resp)
+
+	// Extract and save context from AI response
+	if entry := s.contextClient.SaveFromAI(ctx, projectID, "manager-"+managerID, jsonStr); entry != nil {
+		log.Printf("[Context] Manager saved: [%s] %s", entry.ContextType, entry.Content)
+	}
+
 	var result struct {
 		WorkerRoles []models.WorkerRole `json:"worker_roles"`
 	}
-	if err := json.Unmarshal([]byte(util.ExtractJSONFromMarkdown(resp)), &result); err != nil {
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
 		return []models.WorkerRole{fallbackWorkerRole(taskType, resp)}, nil
 	}
 	if len(result.WorkerRoles) == 0 {

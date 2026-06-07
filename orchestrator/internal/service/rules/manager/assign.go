@@ -68,7 +68,7 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 		}
 	} else {
 		var err error
-		workerRolesList, err = s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight, taskType)
+		workerRolesList, err = s.think(ctx, provider, model, tokens, req.TechnicalDescription, req.Role, req.Description, gradeWeight, taskType, taskID, managerID.String())
 		if err != nil {
 			manager.Status = "error"
 			database.Db.Save(manager)
