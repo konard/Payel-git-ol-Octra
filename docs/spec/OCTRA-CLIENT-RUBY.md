@@ -22,7 +22,7 @@ loop do
         user_id: "00000000-0000-0000-0000-000000000006",
         title: "Ruby Task",
         description: "Test from Ruby",
-        meta: { model: "your-model", provider: "provider" },
+        meta: { model: "your-model", provider: "provider", publish_repositories: "true", create_pull_requests: "true" },
         tokens: { provider: "your-api-key" }
       }.to_json)
     end

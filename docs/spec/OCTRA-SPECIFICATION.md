@@ -58,7 +58,7 @@ This tells the server to restore the task state from Redis and continue streamin
 
 ### Outgoing messages
 
-**Create task** (правильный формат):
+**Create task**:
 ```json
 {
   "username": "",
@@ -67,7 +67,9 @@ This tells the server to restore the task state from Redis and continue streamin
   "description": "Need a mini proxy in Go without frontend and tests",
   "meta": {
     "model": "your-model",
-    "provider": "provider"
+    "provider": "provider",
+    "publish_repositories": "true",
+    "create_pull_requests": "true"
   },
   "tokens": {
     "provider": "your-api-key",
@@ -75,6 +77,15 @@ This tells the server to restore the task state from Redis and continue streamin
   }
 }
 ```
+
+**GitHub integration flags** (optional, in `meta`):
+
+| Flag | Type | Default | Effect |
+|------|------|---------|--------|
+| `publish_repositories` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a GitHub repository and pushes the generated code. When `"false"`, skips repo creation. |
+| `create_pull_requests` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a pull request for issue-linked tasks. When `"false"`, pushes code to a branch but does not create a PR. |
+
+If both flags are set to `"false"`, no GitHub node appears on the frontend canvas. If the integration is not connected (flags absent), the backend falls back to its default behaviour (publishes if `GITHUB_TOKEN` is set).
 
 **Resume task**:
 ```json

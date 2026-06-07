@@ -33,7 +33,7 @@ func main() {
 				"user_id":     "00000000-0000-0000-0000-000000000003",
 				"title":       "Go client task",
 				"description": "Test from Go",
-				"meta":        map[string]string{"model": "your-model", "provider": "provider"},
+				"meta":        map[string]string{"model": "your-model", "provider": "provider", "publish_repositories": "true", "create_pull_requests": "true"},
 				"tokens":      map[string]string{"provider": "your-api-key"},
 			})
 		}

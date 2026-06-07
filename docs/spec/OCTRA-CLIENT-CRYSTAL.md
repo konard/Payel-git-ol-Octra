@@ -22,7 +22,7 @@ loop do
         user_id: "00000000-0000-0000-0000-000000000007",
         title: "Crystal Task",
         description: "Test from Crystal",
-        meta: { model: "your-model", provider: "provider" },
+        meta: { model: "your-model", provider: "provider", publish_repositories: "true", create_pull_requests: "true" },
         tokens: { provider: "your-api-key" }
       }.to_json)
     end

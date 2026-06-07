@@ -26,7 +26,7 @@ async fn main() {
                         "user_id": "00000000-0000-0000-0000-000000000008",
                         "title": "Rust Client",
                         "description": "Test from Rust",
-                        "meta": {"model": "your-model", "provider": "provider"},
+                        "meta": {"model": "your-model", "provider": "provider", "publish_repositories": "true", "create_pull_requests": "true"},
                         "tokens": {"provider": "your-api-key"}
                     });
                     ws.send(Message::Text(msg.to_string())).await.unwrap();
