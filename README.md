@@ -4,6 +4,8 @@ Octra is a multi-agent AI orchestrator that builds software projects using a Bos
 
 ## Architecture (Boss → Manager → Worker)
 
+![Octra logic](docs/icons/octra-logic.png)
+
 ```
 User → API Gateway → Boss (architect)
                         ├── Manager (backend) → Worker × N
