@@ -17,7 +17,47 @@ User → API Gateway → Boss (architect)
 
 **Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
 **Managers** review and orchestrate workers.  
-**Workers** generate code inside Nix-isolated environments.
+**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding.
+
+## Tool scaffolding pipeline
+
+Octra can scaffold real projects using native toolchains inside `nix develop`:
+
+```
+setupProject() → FlakeBuilder(techStack) → ToolExecutor(generateViaTools)
+                                              ├── npm init / cargo init / flutter create / …
+                                              ├── AI generation fallback if Nix/tool unavailable
+                                              └── git status --porcelain to detect created files
+```
+
+- **FlakeBuilder** generates `flake.nix` with Nix packages for 20+ tech stacks
+- **ToolExecutor** runs real scaffolding commands (`npm install`, `cargo init`, `composer create-project`, etc.)
+- Graceful fallback to AI generation if Nix or tool is unavailable
+
+## Structured tool guides (`pkg/guids`)
+
+Octra ships with a registry of structured tool guides — one file per tool, organized by language ecosystem:
+
+```
+pkg/guids/
+├── core/               # Guide type, registry, formatting
+├── golang/             # go
+├── rust/               # cargo
+├── node/               # npm
+├── python/             # pip
+├── java/               # maven, gradle, kotlin/
+├── php/                # composer, artisan
+├── flutter/            # flutter
+├── cpp/                # cmake
+├── dotnet/             # dotnet
+├── elixir/             # mix
+├── haskell/            # cabal
+├── zig/                # zig
+├── swift/              # swiftpm
+└── ruby/               # bundler, gem
+```
+
+Each guide contains structured commands, Nix packages, and project structure — injected into AI prompts to prevent hallucinated commands and save tokens.
 
 ## Project lifecycle with Nix
 
@@ -29,7 +69,7 @@ setupProject() → generate flake.nix → AI generates code → nix-store --add 
 
 Each project:
 
-1. Gets a `flake.nix` at creation time
+1. Gets a `flake.nix` at creation time (auto-generated per tech stack)
 2. Is built by AI agents inside the working directory
 3. On completion: **snapshotted to `/nix/store/`** via `nix-store --add`
 4. Working directory is removed (zero disk waste)
@@ -41,8 +81,8 @@ This means projects take zero space when idle but can be restored at any time.
 
 | Service | Stack | Role |
 |---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Nix snapshots |
-| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, ...) |
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Nix snapshots, tool scaffolding |
+| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, …) |
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
 | `frontend/web` | React, Vite, Electron | Interactive canvas + chat UI |
@@ -56,6 +96,10 @@ This means projects take zero space when idle but can be restored at any time.
 | `orchestrator/nix/module.nix` | NixOS module (systemd service) |
 | `orchestrator/Dockerfile` | Based on `nixos/nix` — includes Nix in container |
 | `orchestrator/internal/service/rules/boss/project.go` | `snapshotProject()`, `RestoreProject()`, `generateFlake()` |
+| `orchestrator/internal/service/rules/boss/flake_builder.go` | Dynamic `flake.nix` generation per tech stack |
+| `orchestrator/internal/service/rules/boss/nix_build.go` | `nix build`, `nix flake check`, `nix flake lock` |
+| `orchestrator/internal/service/rules/worker/tool_executor.go` | Real tool scaffolding inside `nix develop` |
+| `orchestrator/pkg/guids/` | Structured tool guide registry (commands, packages, structure) |
 | `projects/<taskID>/flake.nix` | Auto-generated per project |
 
 Run with NixOS:
