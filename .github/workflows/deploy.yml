@@ -5,10 +5,10 @@ on:
     branches: [master, main]
     paths-ignore:
       - '**.md'
-      - '.github/**'
       - 'docs/**'
       - 'experiments/**'
       - 'spec/**'
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -39,8 +39,10 @@ jobs:
 
             cd ${{ env.PROJECT_DIR }}
 
-            # Pull latest code
-            git pull origin master
+            # Sync the deployment checkout to the branch that triggered this workflow.
+            DEPLOY_BRANCH="${{ github.ref_name }}"
+            git fetch --prune origin "+refs/heads/${DEPLOY_BRANCH}:refs/remotes/origin/${DEPLOY_BRANCH}"
+            git checkout -B "${DEPLOY_BRANCH}" "origin/${DEPLOY_BRANCH}"
 
             # Build all services sequentially
             docker compose -f ${{ env.COMPOSE_FILE }} build frontend --no-cache
