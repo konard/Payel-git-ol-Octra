@@ -36,7 +36,10 @@ RUN nix-store --version && echo "nix is ready"
 
 RUN mkdir -p /var/lib/octra/projects
 
-COPY --from=builder /workspace/orchestrator-bin /usr/local/bin/crewai-orchestrator
+COPY --from=builder /workspace/orchestrator-bin /usr/local/bin/orchestrator
+
+RUN ls -la /usr/local/bin/ && \
+    chmod +x /usr/local/bin/orchestrator
 
 RUN printf '%s\n' \
     '#!/bin/sh' \
@@ -52,7 +55,7 @@ RUN printf '%s\n' \
     'git config --global user.name  "${GIT_USER_NAME:-CrewAI Orchestrator}"' \
     'git config --global credential.helper store' \
     '' \
-    'exec crewai-orchestrator' \
+    'exec /usr/local/bin/orchestrator' \
     > /usr/local/bin/octra-entrypoint.sh && \
     chmod +x /usr/local/bin/octra-entrypoint.sh
 
