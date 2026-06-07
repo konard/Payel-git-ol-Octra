@@ -2,7 +2,6 @@ package context
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"orchestrator/pkg/models"
@@ -74,6 +73,25 @@ func (s *PostgresStore) ForgetByID(ctx context.Context, id uuid.UUID) error {
 		Update("forgotten", true).Error
 }
 
+const (
+	cleanupBatch    = 5
+	shortMsgLimit   = 40
+	mediumMsgLimit  = 30
+	defaultMsgLimit = 20
+	shortMsgAvg     = 200
+	mediumMsgAvg    = 500
+)
+
+func (s *PostgresStore) avgMessageLength(ctx context.Context, projectID uuid.UUID) int {
+	var avg float64
+	s.db.WithContext(ctx).
+		Model(&models.ContextEntry{}).
+		Where("project_id = ? AND context_type = 'message' AND forgotten = false", projectID).
+		Select("COALESCE(AVG(LENGTH(content)), 0)").
+		Scan(&avg)
+	return int(avg)
+}
+
 func (s *PostgresStore) CleanupMessages(ctx context.Context, projectID uuid.UUID) (int64, error) {
 	var count int64
 	s.db.WithContext(ctx).
@@ -81,30 +99,45 @@ func (s *PostgresStore) CleanupMessages(ctx context.Context, projectID uuid.UUID
 		Where("project_id = ? AND context_type = 'message' AND forgotten = false", projectID).
 		Count(&count)
 
-	if count <= MessageLimit {
+	avgLen := s.avgMessageLength(ctx, projectID)
+	limit := defaultMsgLimit
+	switch {
+	case avgLen > 0 && avgLen <= shortMsgAvg:
+		limit = shortMsgLimit
+	case avgLen <= mediumMsgAvg:
+		limit = mediumMsgLimit
+	}
+
+	if count <= int64(limit) {
 		return 0, nil
 	}
 
-	excess := count - MessageLimit
-	var toDelete []string
+	toRemove := int64(cleanupBatch) // 5
+	excess := count - int64(limit)
+	if excess < toRemove {
+		toRemove = excess
+	}
+
+	var ids []uuid.UUID
 	s.db.WithContext(ctx).
 		Model(&models.ContextEntry{}).
-		Where("project_id = ? AND context_type = 'message' AND forgotten = false", projectID).
+		Where("project_id = ? AND context_type = 'message' AND forgotten = false AND important = false", projectID).
 		Order("timestamp ASC").
-		Limit(int(excess)).
-		Pluck("id", &toDelete)
+		Limit(int(toRemove)).
+		Pluck("id", &ids)
 
-	if len(toDelete) == 0 {
-		return 0, nil
+	// Если нет неважных — удаляем самые старые
+	if len(ids) == 0 {
+		s.db.WithContext(ctx).
+			Model(&models.ContextEntry{}).
+			Where("project_id = ? AND context_type = 'message' AND forgotten = false", projectID).
+			Order("timestamp ASC").
+			Limit(int(toRemove)).
+			Pluck("id", &ids)
 	}
 
-	ids := make([]uuid.UUID, len(toDelete))
-	for i, id := range toDelete {
-		uid, err := uuid.Parse(id)
-		if err != nil {
-			return 0, fmt.Errorf("parse uuid %s: %w", id, err)
-		}
-		ids[i] = uid
+	if len(ids) == 0 {
+		return 0, nil
 	}
 
 	res := s.db.WithContext(ctx).
