@@ -93,7 +93,8 @@
     "role": "Role",
     "stack": "Stack:",
     "managers": "Managers",
-    "workers": "Workers"
+    "workers": "Workers",
+    "openGithub": "Open repository in new tab"
   },
   "modelSelector": {
     "title": "Select Model",
