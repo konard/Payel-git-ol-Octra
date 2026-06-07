@@ -180,19 +180,19 @@ warehouse.Select(slugs...)             // только эти фрагменты
 
 ### Category filtering
 
-Boss может указать `skill_categories` в метаданных задачи — тогда:
+The Boss can pass `skill_categories` in task metadata — then:
 
-1. **Boss** видит каталог только по этим категориям (через `CatalogFiltered`)
-2. **Manager** ищет фрагменты только в этих категориях (через `SearchFiltered`)
-3. **Worker** получает только соответствующие скиллы
+1. **Boss** sees only those categories in the catalog (via `CatalogFiltered`)
+2. **Manager** searches fragments only in those categories (via `SearchFiltered`)
+3. **Worker** receives only the matching skills
 
-Пример:
+Example:
 ```json
-// metadata задачи
+// task metadata
 { "skill_categories": "Backend, Frontend" }
 ```
 
-Без флага — все навыки как раньше (обратная совместимость).
+Without the flag — all skills as before (backward compatibility).
 
 ### How the Manager picks
 
@@ -232,6 +232,50 @@ The Warehouse discovers it automatically via `//go:embed`.
 | `internal/skills/skills.go` | Legacy skill system (backward compat) |
 | `internal/service/rules/worker/skill.go` | `buildSkillContext()` — fragment resolution entry point |
 | `internal/service/rules/manager/assign.go` | Manager selects fragments per worker via Warehouse |
+
+## GitHub Integration
+
+Octra can automatically publish generated projects to GitHub and create pull requests for issue-linked tasks. The behavior is configured in the Settings panel via two toggles:
+
+| Toggle | Meta flag | Effect |
+|--------|-----------|--------|
+| Publish new projects to GitHub | `publish_repositories` | Creates a new GitHub repository and pushes the generated code |
+| Create pull requests | `create_pull_requests` | Creates a PR for issue-linked tasks (pushes code to a branch in any case) |
+
+### Data flow
+
+```
+Settings (UI) → meta.publish_repositories / meta.create_pull_requests
+                                    ↓
+                   task.go → pushToGitHub(ctx, task, projectPath, issueTarget, meta)
+                                    ↓
+                   github.go — checks flags and decides:
+                     publish_repositories=false → skip repo creation
+                     create_pull_requests=false → push branch only, skip PR
+                                    ↓
+                   WebSocket response → frontend adds GitHubNode
+                     repoUrl → repository link
+                     pullRequestUrl → PR link (displayed as "GitHub PR" node)
+```
+
+### Frontend behavior
+
+- If both toggles are off (integration connected but disabled) — no GitHub node is added to the canvas
+- If a pull request is created — the node shows "GitHub PR" as role and opens the PR URL on click
+- If a repository is published — the node shows "GitHub" as role and opens the repo URL on click
+- The click handler respects `prUrl` over `repoUrl` when both are present
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `orchestrator/internal/service/rules/boss/github.go` | `pushToGitHub()` with flag-aware repo/PR creation |
+| `orchestrator/internal/service/rules/boss/task.go` | Passes `req.Meta` to `pushToGitHub` |
+| `frontend/web/src/app/App.tsx` | Sends flags in task creation payload |
+| `frontend/web/src/hooks/useWebSocket.ts` | Conditionally adds GitHub node based on flags and response data |
+| `frontend/web/src/app/components/nodes/GitHubNode.tsx` | Renders repo/PR link, supports `prUrl` field |
+| `frontend/web/src/stores/taskStore.ts` | `AgentNode.prUrl` field |
+| `frontend/web/src/components/IntegrationForm.tsx` | UI toggles for publish/PR settings |
 
 ## Project lifecycle with Nix
 
