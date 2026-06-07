@@ -61,7 +61,8 @@
     "stack": "Stack:",
     "managers": "Managers",
     "workers": "Workers",
-    "openGithub": "Open repository in new tab"
+    "openGithub": "Open repository in new tab",
+    "openPr": "Open pull request in new tab"
   },
   "modelSelector": {
     "title": "Selectare Model",

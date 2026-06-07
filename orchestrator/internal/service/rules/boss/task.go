@@ -153,7 +153,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	repoURL := ""
 	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
 	if isCodeTask || issueTarget != nil {
-		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget)
+		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
 	} else {
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}

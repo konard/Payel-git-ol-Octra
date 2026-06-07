@@ -227,9 +227,12 @@ export function Canvas({ mode }: CanvasProps) {
   }, [selectedNodeIds, removeNode]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    // GitHub node with repoUrl opens in a new tab
-    if (node.type === 'github' && node.data?.repoUrl) {
-      window.open(node.data.repoUrl as string, '_blank', 'noopener,noreferrer');
+    // GitHub node with repoUrl/prUrl opens in a new tab
+    if (node.type === 'github') {
+      const url = (node.data as any)?.prUrl || (node.data as any)?.repoUrl;
+      if (url) {
+        window.open(url as string, '_blank', 'noopener,noreferrer');
+      }
     }
     setSelectedNodeIds((prev) => {
       const newSet = new Set(prev);

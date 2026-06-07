@@ -16,6 +16,7 @@ export interface AgentNode {
   position?: { x: number; y: number };
   // GitHub specific fields
   repoUrl?: string;
+  prUrl?: string;
   commitCount?: number;
   // N8n automation
   n8nTrigger?: 'start' | 'end' | 'middle' | 'custom';

@@ -16,15 +16,40 @@ import (
 
 // pushToGitHub — создаёт репозиторий и пушит результат, если есть GITHUB_TOKEN.
 // Возвращает URL созданного репозитория или пустую строку.
-func (s *Service) pushToGitHub(ctx context.Context, task *models.Task, projectPath string, issueTarget *gh.IssueTarget) string {
+// meta может содержать флаги "publish_repositories" и "create_pull_requests"
+// для управления поведением из UI интеграций.
+func (s *Service) pushToGitHub(ctx context.Context, task *models.Task, projectPath string, issueTarget *gh.IssueTarget, meta map[string]string) string {
 	if os.Getenv("GITHUB_TOKEN") == "" || s.githubClient == nil {
 		return ""
 	}
+
+	// Если флаги явно установлены в "false" — пропускаем соответствующую операцию
+	publishRepos := meta["publish_repositories"] != "false"
+	createPRs := meta["create_pull_requests"] != "false"
+
 	if task.ProjectJSON != "" {
 		return task.ProjectJSON
 	}
 	if issueTarget != nil && issueTarget.Cloned {
+		if !createPRs {
+			log.Printf("Skipping pull request creation (create_pull_requests=false)")
+			// Всё равно пушим код в ветку, чтобы пользователь мог создать PR вручную
+			if err := git.CheckoutBranch(projectPath, issueTarget.BranchName); err != nil {
+				log.Printf("Failed to checkout branch: %v", err)
+				return ""
+			}
+			if err := s.githubClient.PushBranch(ctx, projectPath, issueTarget.BranchName); err != nil {
+				log.Printf("Failed to push branch: %v", err)
+				return ""
+			}
+			return issueTarget.RepositoryURL
+		}
 		return s.createPullRequest(ctx, task, projectPath, issueTarget)
+	}
+
+	if !publishRepos {
+		log.Printf("Skipping repository publish (publish_repositories=false)")
+		return ""
 	}
 
 	log.Printf("Pushing results to GitHub...")

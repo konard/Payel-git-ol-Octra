@@ -12,6 +12,7 @@ interface GitHubNodeProps {
     role?: string;
     status?: AgentNodeStatus;
     repoUrl?: string;
+    prUrl?: string;
     commitCount?: number;
     scale?: number;
   };
@@ -31,20 +32,22 @@ function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
   const status = data.status || 'pending';
   const config = statusConfig[status] || statusConfig.pending;
   const repoUrl = data.repoUrl || '';
+  const prUrl = data.prUrl || '';
   const commitCount = data.commitCount;
   const { scale: currentScale, handleResize } = useNodeResize(id, data.scale || 1);
   const isActive = status === 'working';
+  const hasLink = !!(repoUrl || prUrl);
 
   return (
     <div
-      className={`agent-node group relative ${isActive ? 'agent-node--active' : ''} ${repoUrl ? 'cursor-pointer' : ''}`}
+      className={`agent-node group relative ${isActive ? 'agent-node--active' : ''} ${hasLink ? 'cursor-pointer' : ''}`}
       style={{
         minWidth: 200,
         transform: `scale(${currentScale})`,
         transformOrigin: 'center center',
         ['--node-accent' as any]: GITHUB_ACCENT,
       }}
-      title={repoUrl ? t('nodes.openGithub') : undefined}
+      title={hasLink ? (prUrl ? t('nodes.openPr') : t('nodes.openGithub')) : undefined}
     >
       {/* Input handles (from managers/workers) */}
       <Handle type="target" position={Position.Top} id="input-0" className="agent-node__handle" style={{ top: -4, left: '20%' }} />
@@ -73,7 +76,9 @@ function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
         </div>
 
         {repoUrl && (
-          <div className="text-xs font-mono text-[var(--text)] truncate">{repoUrl}</div>
+          <div className="text-xs font-mono text-[var(--text)] truncate" title={prUrl ? 'Pull Request' : 'Repository'}>
+            {prUrl || repoUrl}
+          </div>
         )}
 
         {commitCount !== undefined && (

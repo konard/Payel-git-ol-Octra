@@ -94,7 +94,8 @@
     "stack": "Stack:",
     "managers": "Managers",
     "workers": "Workers",
-    "openGithub": "Открыть репозиторий в новой вкладке"
+    "openGithub": "Открыть репозиторий в новой вкладке",
+    "openPr": "Открыть pull request в новой вкладке"
   },
   "modelSelector": {
     "title": "Выбор модели",

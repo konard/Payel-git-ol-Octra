@@ -25,6 +25,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useIntegrationStore } from '../stores/integrationStore';
 import LandingPage from './components/LandingPage';
 import { buildTaskProviderAuth, buildWorkflowConfigFromGraph } from './taskPayload';
 
@@ -365,6 +366,13 @@ export default function App() {
 
     taskPayload.tokens = providerAuth.tokens;
     taskPayload.meta.provider = providerAuth.provider;
+
+    // GitHub integration flags
+    const ghIntegration = useIntegrationStore.getState().integrations.github;
+    if (ghIntegration?.connected) {
+      taskPayload.meta.publish_repositories = ghIntegration.config.publishNewProjects ? 'true' : 'false';
+      taskPayload.meta.create_pull_requests = ghIntegration.config.createPullRequests ? 'true' : 'false';
+    }
 
     console.log('Sending task payload:', JSON.stringify(taskPayload, null, 2));
     send(taskPayload);

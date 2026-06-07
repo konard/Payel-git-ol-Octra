@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
+import { useIntegrationStore } from '../stores/integrationStore';
 import { parsePullRequestInfo } from '../lib/pullRequest';
 import { t } from './useI18n';
 
@@ -303,7 +304,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         }
         if (msg.data?.repoUrl) {
           storeActions.setZipUrl(msg.data.repoUrl);
-          addGitHubNode(msg.data.repoUrl);
+          addGitHubNode(msg.data.repoUrl, msg.data?.pullRequestUrl);
         } else if (msg.data?.zipUrl) {
           storeActions.setZipUrl(msg.data.zipUrl);
         }
@@ -421,11 +422,12 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
   // Helper: add the publishing sink during code packaging, then attach the
   // repository URL when the backend returns one.
-  const addGitHubNode = (repoUrl?: string) => {
-    const nodeStatus: 'working' | 'done' = repoUrl ? 'done' : 'working';
+  const addGitHubNode = (repoUrl?: string, prUrl?: string) => {
+    const nodeStatus: 'working' | 'done' = repoUrl || prUrl ? 'done' : 'working';
     if (zipNodeAdded.current) {
       storeActions.updateNode('github-archive', {
         ...(repoUrl ? { repoUrl } : {}),
+        ...(prUrl ? { prUrl } : {}),
         status: nodeStatus,
       });
       return;
@@ -444,9 +446,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     storeActions.addNode({
       id: 'github-archive',
       type: 'github',
-      role: 'GitHub',
+      role: prUrl ? 'GitHub PR' : 'GitHub',
       status: nodeStatus,
       ...(repoUrl ? { repoUrl } : {}),
+      ...(prUrl ? { prUrl } : {}),
       position: { x: centerX, y: 520 },
     });
 
@@ -692,14 +695,20 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       storeActions.updateNode('boss-1', { status: 'done' });
 
       if (currentTaskType.current === '' || currentTaskType.current === 'code') {
-        addGitHubNode();
+        const ghIntegration = useIntegrationStore.getState().integrations.github;
+        const shouldAdd = !ghIntegration?.connected ||
+          ghIntegration?.config?.publishNewProjects ||
+          ghIntegration?.config?.createPullRequests;
+        if (shouldAdd) {
+          addGitHubNode();
+        }
       }
     }
 
     // === PROJECT READY (progress 100) ===
     if (progress === 100 && msg.data?.repoUrl) {
       storeActions.setZipUrl(msg.data.repoUrl);
-      addGitHubNode(msg.data.repoUrl);
+      addGitHubNode(msg.data.repoUrl, msg.data?.pullRequestUrl);
     }
   };
 
