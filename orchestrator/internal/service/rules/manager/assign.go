@@ -81,6 +81,7 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 
 	workerRoles := make([]*rules.WorkerRole, 0, len(workerRolesList))
 	techStack := req.Metadata["tech_stack"]
+	skillCategories := req.Metadata["skill_categories"]
 	warehouse := skills.NewWarehouse()
 	for _, r := range workerRolesList {
 		wr := &rules.WorkerRole{
@@ -88,8 +89,15 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 			Description:  r.Description,
 			CustomPrompt: r.CustomPrompt,
 		}
-		// Manager picks the best-matching skill fragments for each worker
-		fragments := warehouse.Search(r.Role+" "+r.Description, techStack, req.TechnicalDescription, 3)
+		// Manager picks the best-matching skill fragments for each worker.
+		// If skill_categories was specified, restrict search to those areas.
+		var fragments []*skills.Fragment
+		if skillCategories != "" {
+			areas := skills.ParseCategories(skillCategories)
+			fragments = warehouse.SearchFiltered(r.Role+" "+r.Description, techStack, req.TechnicalDescription, 3, areas...)
+		} else {
+			fragments = warehouse.Search(r.Role+" "+r.Description, techStack, req.TechnicalDescription, 3)
+		}
 		for _, f := range fragments {
 			wr.SelectedSkillSlugs = append(wr.SelectedSkillSlugs, f.Slug)
 		}

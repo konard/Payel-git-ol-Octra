@@ -156,14 +156,15 @@ func buildManagerMetadata(req *CreateTaskRequest, decision *DecisionResult) map[
 		taskType = "code"
 	}
 	metadata := map[string]string{
-		"tokens":       util.MarshalJSON(req.Tokens),
-		"model":        req.Meta["model"],
-		"provider":     req.Meta["provider"],
-		"title":        req.Title,
-		"description":  req.Description,
-		"grade_weight": "10",
-		"tech_stack":   techStack,
-		"task_type":    taskType,
+		"tokens":           util.MarshalJSON(req.Tokens),
+		"model":            req.Meta["model"],
+		"provider":         req.Meta["provider"],
+		"title":            req.Title,
+		"description":      req.Description,
+		"grade_weight":     "10",
+		"tech_stack":       techStack,
+		"task_type":        taskType,
+		"skill_categories": req.Meta["skill_categories"],
 	}
 	for k, v := range req.Tokens {
 		metadata[k] = v

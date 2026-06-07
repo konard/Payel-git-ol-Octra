@@ -58,7 +58,7 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 
 	// Inject project context into the prompt
 	contextBlock := s.contextClient.GetForPrompt(ctx, taskUUID, "boss", "")
-	prompt := prompts.PlanArchitecture(req.Title, req.Description+contextBlock, req.Grade)
+	prompt := prompts.PlanArchitecture(req.Title, req.Description+contextBlock, req.Grade, req.Meta["skill_categories"])
 
 	tokens := req.Tokens
 	if tokens == nil {

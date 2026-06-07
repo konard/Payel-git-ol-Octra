@@ -9,7 +9,7 @@ import (
 // «мини прокси на go» босс раздувал scope до полноценного REST API с JWT/БД.
 // Промпт планирования теперь обязан явно требовать строгого следования задаче.
 func TestPlanArchitectureEnforcesScopeFidelity(t *testing.T) {
-	p := PlanArchitecture("Mini proxy", "Нужен мини прокси на go", 5)
+	p := PlanArchitecture("Mini proxy", "Нужен мини прокси на go", 5, "")
 	for _, want := range []string{
 		"SCOPE FIDELITY",
 		"EXACTLY what the user asked",

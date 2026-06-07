@@ -148,6 +148,91 @@ Every agent's `Process(ctx, conv)` receives the full `Conversation` with all mes
 | `internal/service/groupchat/selection.go` | RoundRobin, AllAtOnce, RoleBased, AgentBased selectors |
 | `internal/service/rules/worker/agent.go` | `WorkerAgent` implementing `groupchat.Agent` with AI generation |
 
+## Skill Warehouse (`internal/skills/`)
+
+Octra ships with a **Skill Warehouse** — a registry of atomic skill fragments that replace monolithic skill files. Instead of sending entire skill documents to every AI call, the system picks only the relevant fragments:
+
+### Fragments instead of monoliths
+
+Traditional skills (7 large `.md` files) were broken into **42 atomic fragments** (3-6 lines each):
+
+```
+internal/skills/fragments/
+├── backend-api.md, backend-arch.md, backend-data.md, backend-security.md, ...
+├── frontend-component.md, frontend-state.md, frontend-accessibility.md, ...
+├── devops-cicd.md, devops-containers.md, devops-iac.md, ...
+├── research-intent.md, research-sources.md, research-triangulate.md, ...
+├── presentation-slide.md, presentation-story.md, presentation-visual.md, ...
+├── proxy-types.md, proxy-headers.md, proxy-security.md, ...
+└── vpn-protocol.md, vpn-crypto.md, vpn-network.md, ...
+```
+
+### Warehouse API
+
+```go
+warehouse := skills.NewWarehouse()
+warehouse.Catalog()                    // всё что есть на складе
+warehouse.CatalogFiltered("Backend")   // только указанные категории
+warehouse.Search(role, tech, task, 3)  // top-3 фрагмента по релевантности
+warehouse.SearchFiltered(role, tech, task, 3, "Backend") // с фильтром по категории
+warehouse.Select(slugs...)             // только эти фрагменты → текст для промпта
+```
+
+### Category filtering
+
+Boss может указать `skill_categories` в метаданных задачи — тогда:
+
+1. **Boss** видит каталог только по этим категориям (через `CatalogFiltered`)
+2. **Manager** ищет фрагменты только в этих категориях (через `SearchFiltered`)
+3. **Worker** получает только соответствующие скиллы
+
+Пример:
+```json
+// metadata задачи
+{ "skill_categories": "Backend, Frontend" }
+```
+
+Без флага — все навыки как раньше (обратная совместимость).
+
+### How the Manager picks
+
+After deciding worker roles, the Manager queries the Warehouse:
+
+```
+Manager → warehouse.Search("backend go", "go", taskDescription, 3)
+       → ["backend-api", "backend-data", "backend-security"]
+       → WorkerRole.SelectedSkillSlugs = ["backend-api", "backend-data", "backend-security"]
+```
+
+The Worker then resolves only those slugs via `warehouse.Select(slugs...)`, injecting **~15-30 lines** of targeted guidance instead of a full 100+ line skill file.
+
+### Adding new skills
+
+Drop a new `.md` file in `internal/skills/fragments/` with frontmatter:
+```yaml
+---
+name: My New Skill
+slug: my-skill
+area: MyArea
+keywords: relevant, keywords, here
+tech: go, python
+weight: 3
+---
+Short guidance text (3-6 lines).
+```
+
+The Warehouse discovers it automatically via `//go:embed`.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `internal/skills/warehouse.go` | Warehouse registry, catalog, search, select, category filter |
+| `internal/skills/fragments/*.md` | 42 atomic skill fragments |
+| `internal/skills/skills.go` | Legacy skill system (backward compat) |
+| `internal/service/rules/worker/skill.go` | `buildSkillContext()` — fragment resolution entry point |
+| `internal/service/rules/manager/assign.go` | Manager selects fragments per worker via Warehouse |
+
 ## Project lifecycle with Nix
 
 ```
@@ -170,7 +255,7 @@ This means projects take zero space when idle but can be restored at any time.
 
 | Service | Stack | Role |
 |---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Nix snapshots, tool scaffolding |
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding |
 | `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, …) |
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
@@ -194,6 +279,10 @@ This means projects take zero space when idle but can be restored at any time.
 | `projects/<taskID>/flake.nix` | Auto-generated per project |
 | `internal/service/groupchat/` | Group Chat orchestration (star topology, concurrent rounds) |
 | `internal/service/rules/worker/agent.go` | `WorkerAgent` — group chat participant with AI generation |
+| `internal/skills/warehouse.go` | Skill Warehouse — catalog, search, select, category filtering |
+| `internal/skills/fragments/` | 42 atomic skill fragments (3-6 lines each, one per topic) |
+| `internal/skills/skills.go` | Legacy skill system (backward compat) |
+| `internal/service/rules/worker/skill.go` | `buildSkillContext()` — warehouse fragment resolution |
 
 Run with NixOS:
 

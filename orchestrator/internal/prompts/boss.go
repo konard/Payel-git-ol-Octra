@@ -7,16 +7,26 @@ import (
 )
 
 // PlanArchitecture — промпт для босса: спланировать архитектуру задачи.
-// В промпт добавляется каталог доступных системных скиллов, чтобы босс подбирал
-// роли менеджеров/воркеров под реальные специальности (фронтенд, бэкенд, devops,
-// proxy, vpn, ресёрч, презентации), которые система умеет выполнять экспертно.
-func PlanArchitecture(title, desc string, grade int) string {
+// Если skillCategories непустое (comma-separated), в промпт попадают только
+// фрагменты из указанных категорий — остальные исключаются.
+func PlanArchitecture(title, desc string, grade int, skillCategories string) string {
 	skillsSection := ""
-	if catalog := skills.Catalog(); catalog != "" {
-		skillsSection = `
+	if skillCategories != "" {
+		areas := skills.ParseCategories(skillCategories)
+		warehouse := skills.NewWarehouse()
+		if catalog := warehouse.CatalogFiltered(areas...); catalog != "" {
+			skillsSection = fmt.Sprintf(`
+The user requested these skill categories: %s
 
+Available expert fragments in those categories:
+%s`, skillCategories, catalog)
+		}
+	} else {
+		if catalog := skills.Catalog(); catalog != "" {
+			skillsSection = `
 The system has built-in EXPERT SKILLS covering these areas (pick manager/worker roles that map to them when relevant):
 ` + catalog
+		}
 	}
 	return `You are CTO. Analyze the task, classify what KIND of deliverable it is, and decide what manager roles are needed.
 
@@ -74,7 +84,9 @@ Reply ONLY with JSON:
   "manager_roles": [{"role": "backend", "description": "Backend development", "priority": 1}],
   "tech_stack": ["CHOOSE_FROM_DESCRIPTION"],
   "architecture_notes": "Simple proxy"
-}`
+}
+`
+
 }
 
 // ValidateSolution — промпт для босса: проверить итоговое решение.
@@ -121,4 +133,3 @@ Reply ONLY with JSON:
   "feedback": "detailed feedback"
 }`
 }
-

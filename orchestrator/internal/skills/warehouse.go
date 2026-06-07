@@ -146,15 +146,32 @@ func (w *Warehouse) Get(slug string) *Fragment {
 	return w.bySlug[slug]
 }
 
-// Catalog returns a one-line-per-fragment summary, suitable for telling the
-// Boss / Manager which specialities are available on the "warehouse".
+// Catalog returns a one-line-per-fragment summary of ALL fragments.
 func (w *Warehouse) Catalog() string {
-	if len(w.fragments) == 0 {
-		return ""
+	return w.catalogFilter(func(_ *Fragment) bool { return true })
+}
+
+// CatalogFiltered returns a one-line-per-fragment summary for fragments whose
+// Area matches one of the given area names (case-insensitive). If no areas are
+// given, it returns the full catalog (same as Catalog()).
+func (w *Warehouse) CatalogFiltered(areas ...string) string {
+	if len(areas) == 0 {
+		return w.Catalog()
 	}
+	areaSet := normalizeAreas(areas)
+	return w.catalogFilter(func(f *Fragment) bool { return areaSet[strings.ToLower(f.Area)] })
+}
+
+func (w *Warehouse) catalogFilter(match func(*Fragment) bool) string {
 	var b strings.Builder
-	b.WriteString("=== SKILL WAREHOUSE CATALOG ===\n")
+	count := 0
 	for _, f := range w.fragments {
+		if !match(f) {
+			continue
+		}
+		if count == 0 {
+			b.WriteString("=== SKILL WAREHOUSE CATALOG ===\n")
+		}
 		b.WriteString("- ")
 		b.WriteString(f.Name)
 		b.WriteString(" (slug: ")
@@ -164,6 +181,10 @@ func (w *Warehouse) Catalog() string {
 		b.WriteString(", weight: ")
 		writeInt(&b, f.Weight)
 		b.WriteString(")\n")
+		count++
+	}
+	if count == 0 {
+		return ""
 	}
 	b.WriteString("=== END CATALOG ===")
 	return b.String()
@@ -276,4 +297,68 @@ func (w *Warehouse) Select(slugs ...string) string {
 	}
 	b.WriteString("=== END SKILL FRAGMENTS ===")
 	return b.String()
+}
+
+// SearchFiltered is like Search but restricts the search to fragments whose
+// Area matches one of the given area names (case-insensitive). If no areas are
+// given, behaves exactly like Search.
+func (w *Warehouse) SearchFiltered(role, techStack, task string, max int, areas ...string) []*Fragment {
+	if len(areas) == 0 {
+		return w.Search(role, techStack, task, max)
+	}
+	if max <= 0 {
+		max = 3
+	}
+	areaSet := normalizeAreas(areas)
+	type scored struct {
+		f     *Fragment
+		score int
+	}
+	var ranked []scored
+	for _, f := range w.fragments {
+		if !areaSet[strings.ToLower(f.Area)] {
+			continue
+		}
+		if sc := scoreFragment(f, role, techStack, task); sc > 0 {
+			ranked = append(ranked, scored{f, sc})
+		}
+	}
+	sort.SliceStable(ranked, func(i, j int) bool { return ranked[i].score > ranked[j].score })
+	if len(ranked) > max {
+		ranked = ranked[:max]
+	}
+	out := make([]*Fragment, len(ranked))
+	for i, r := range ranked {
+		out[i] = r.f
+	}
+	return out
+}
+
+// normalizeAreas converts a list of area names to a lowercase set for lookup.
+func normalizeAreas(areas []string) map[string]bool {
+	set := make(map[string]bool, len(areas))
+	for _, a := range areas {
+		a = strings.ToLower(strings.TrimSpace(a))
+		if a != "" {
+			set[a] = true
+		}
+	}
+	return set
+}
+
+// ParseCategories splits a comma-separated category string into a trimmed,
+// lowercased slice. Returns nil when raw is empty. Used by prompts and manager
+// to convert the user-supplied skill_categories flag into area filters.
+func ParseCategories(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		p := strings.TrimSpace(part)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }

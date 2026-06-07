@@ -10,7 +10,7 @@ import (
 // TestPlanArchitectureListsSkillCatalog — босс видит каталог системных скиллов,
 // чтобы подбирать роли под реальные специальности.
 func TestPlanArchitectureListsSkillCatalog(t *testing.T) {
-	p := PlanArchitecture("Build a proxy", "write a reverse proxy in Go", 5)
+	p := PlanArchitecture("Build a proxy", "write a reverse proxy in Go", 5, "")
 	if !strings.Contains(p, "EXPERT SKILLS") {
 		t.Errorf("plan prompt should mention expert skills catalog:\n%s", p)
 	}
