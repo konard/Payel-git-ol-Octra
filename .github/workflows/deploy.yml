@@ -45,7 +45,7 @@ jobs:
             # Build all services sequentially
             docker compose -f ${{ env.COMPOSE_FILE }} build frontend --no-cache
             docker compose -f ${{ env.COMPOSE_FILE }} build user
-            docker compose -f ${{ env.COMPOSE_FILE }} build nodes
+            docker compose -f ${{ env.COMPOSE_FILE }} build orchestrator
             docker compose -f ${{ env.COMPOSE_FILE }} build apigateway
             docker compose -f ${{ env.COMPOSE_FILE }} build grademodel
             docker compose -f ${{ env.COMPOSE_FILE }} build agents

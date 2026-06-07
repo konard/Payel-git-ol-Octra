@@ -36,11 +36,11 @@ services:
       retries: 5
     restart: unless-stopped
 
-  nodes:
+  orchestrator:
     build:
       context: .
-      dockerfile: ./nodes/Dockerfile
-    container_name: octra-nodes
+      dockerfile: ./orchestrator/Dockerfile
+    container_name: octra-orchestrator
     environment:
       - DB_DNS=host=postgres user=octra password=${POSTGRES_PASSWORD:-octra_password} dbname=octra port=5432
       - REDIS_URL=redis://redis:6379/0
@@ -73,7 +73,7 @@ services:
     ports:
       - "50055:50055"
     depends_on:
-      - nodes
+      - orchestrator
     networks:
       - octra-network
     restart: unless-stopped
@@ -101,7 +101,7 @@ services:
       dockerfile: Dockerfile
     container_name: octra-apigateway
     environment:
-      - NODES_SERVICE_HOST=nodes:50051
+      - NODES_SERVICE_HOST=orchestrator:50051
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
       - AUTH_SERVICE_HOST=user:3112
@@ -112,7 +112,7 @@ services:
     ports:
       - "3111:3111"
     depends_on:
-      nodes:
+      orchestrator:
         condition: service_started
       redis:
         condition: service_healthy

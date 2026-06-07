@@ -27,7 +27,7 @@ Client (Browser/App) ──WebSocket──► API Gateway (3111) ──gRPC─�
 |----------|---------|-------------|
 | `PORT` | `3111` | HTTP listen port |
 | `JWT_SECRET` | — | HMAC secret for JWT validation |
-| `BOSS_SERVICE_HOST` | `nodes:50051` | gRPC address of Boss service |
+| `BOSS_SERVICE_HOST` | `orchestrator:50051` | gRPC address of Boss service |
 | `REDIS_URL` | — | Redis connection string |
 | `REDIS_ENABLED` | `false` | Enable Redis for stream persistence |
 | `DATABASE_URL` | — | PostgreSQL connection string |

@@ -112,7 +112,7 @@ func init() {
 	var err error
 	bossHost := os.Getenv("BOSS_SERVICE_HOST")
 	if bossHost == "" {
-		bossHost = "nodes:50051"
+		bossHost = "orchestrator:50051"
 	}
 	bossClient, err = boss.NewClient(bossHost)
 	if err != nil {

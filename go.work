@@ -3,6 +3,6 @@ go 1.25.4
 use (
 	./agents
 	./apigateway
-	./nodes
+	./orchestrator
 	user
 )

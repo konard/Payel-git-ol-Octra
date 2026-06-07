@@ -35,14 +35,14 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # nodes — единый процесс с boss + manager + worker внутри.
+  # orchestrator — единый процесс с boss + manager + worker внутри.
   # Раньше это были три отдельных gRPC-сервиса; теперь все вызовы
   # между ролями идут напрямую через Go, без gRPC.
-  nodes:
+  orchestrator:
     build:
       context: .
-      dockerfile: ./nodes/Dockerfile
-    container_name: crewai-nodes
+      dockerfile: ./orchestrator/Dockerfile
+    container_name: crewai-orchestrator
     environment:
       - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
       - AZURE_API_KEY=${AZURE_API_KEY:-}
@@ -52,9 +52,8 @@ services:
       - WORKER_MODE=multypass
       - PROJECTS_DIR=/workspace/projects
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
-      - GIT_USER_NAME=CrewAI Nodes
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - NODES_GRPC_PORT=50051
+      - GIT_USER_NAME=CrewAI Orchestrator
+      - ORCHESTRATOR_GRPC_PORT=50051
     ports:
       - "50051:50051"
     volumes:
@@ -93,7 +92,7 @@ services:
     env_file:
       - .env
     environment:
-      - BOSS_SERVICE_HOST=nodes:50051
+      - BOSS_SERVICE_HOST=orchestrator:50051
       - AZURE_API_KEY=${AZURE_API_KEY:-}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
@@ -108,7 +107,7 @@ services:
     ports:
       - "3111:3111"
     depends_on:
-      nodes:
+      orchestrator:
         condition: service_started
       agents:
         condition: service_started
