@@ -21,10 +21,11 @@ import (
 // runOneWorker — обработка одного воркера: TASK.md → код → файлы → коммит.
 // progress/basePct используются, чтобы ресёрч-воркер мог транслировать шаги
 // веб-поиска в чат (блок «Searching the web»).
+// Если skipGit=true — git-операции не выполняются, caller сам делает git add/commit.
 func (s *Service) runOneWorker(
 	ctx context.Context, req *rules.AssignWorkersRequest, wr *rules.WorkerRole,
 	meta workerMeta, basePath, accumulatedContext string,
-	progress rules.ProgressFunc, basePct int32,
+	progress rules.ProgressFunc, basePct int32, skipGit bool,
 ) (*rules.WorkerResult, error) {
 	role := wr.Role
 	description := wr.Description
@@ -131,28 +132,32 @@ func (s *Service) runOneWorker(
 		}
 	}
 
-	isRepo, err := git.IsGitRepo(basePath)
-	if err != nil {
-		workerModel.Status = "error"
-		database.Db.Save(workerModel)
-		return nil, fmt.Errorf("git check at %s: %w", basePath, err)
-	}
-	if !isRepo {
-		workerModel.Status = "error"
-		database.Db.Save(workerModel)
-		return nil, fmt.Errorf("git repository not found at: %s", basePath)
-	}
+	if skipGit {
+		log.Printf("Worker (%s) skipping git operations (async mode)", role)
+	} else {
+		isRepo, err := git.IsGitRepo(basePath)
+		if err != nil {
+			workerModel.Status = "error"
+			database.Db.Save(workerModel)
+			return nil, fmt.Errorf("git check at %s: %w", basePath, err)
+		}
+		if !isRepo {
+			workerModel.Status = "error"
+			database.Db.Save(workerModel)
+			return nil, fmt.Errorf("git repository not found at: %s", basePath)
+		}
 
-	commitMessage := fmt.Sprintf("Worker %s: %s", role, taskMD)
-	if err := git.Add(basePath); err != nil {
-		workerModel.Status = "error"
-		database.Db.Save(workerModel)
-		return nil, fmt.Errorf("git add: %w", err)
-	}
-	if err := git.Commit(basePath, commitMessage); err != nil {
-		workerModel.Status = "error"
-		database.Db.Save(workerModel)
-		return nil, fmt.Errorf("git commit: %w", err)
+		commitMessage := fmt.Sprintf("Worker %s: %s", role, taskMD)
+		if err := git.Add(basePath); err != nil {
+			workerModel.Status = "error"
+			database.Db.Save(workerModel)
+			return nil, fmt.Errorf("git add: %w", err)
+		}
+		if err := git.Commit(basePath, commitMessage); err != nil {
+			workerModel.Status = "error"
+			database.Db.Save(workerModel)
+			return nil, fmt.Errorf("git commit: %w", err)
+		}
 	}
 
 	result := &rules.WorkerResult{

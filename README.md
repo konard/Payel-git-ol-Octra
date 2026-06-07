@@ -17,7 +17,7 @@ User → API Gateway → Boss (architect)
 
 **Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
 **Managers** review and orchestrate workers.  
-**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding.
+**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding.  
 
 ## Tool scaffolding pipeline
 
@@ -117,6 +117,37 @@ Octra maintains per-project context with three visibility scopes, stored in Redi
 | `internal/service/context/service.go` | Coordinator, SaveFromAI, GetForPrompt |
 | `pkg/models/context_entry.go` | GORM model (project_id, scope, type, content, …) |
 
+## Group Chat Agent Orchestration (`internal/service/groupchat/`)
+
+Octra's workers use the **Group Chat** pattern ([Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/group-chat)) for true multi-agent collaboration:
+
+```
+Round 1: all agents generate concurrently (AllAtOnceSelector)
+         Worker A ──→ Message{files}
+         Worker B ──→ Message{files}
+         Worker C ──→ Message{files}
+                ↓ broadcast
+Round 2: each agent sees full conversation → can refine based on peer work
+         Worker A ──→ sees B+C files → improves
+         Worker B ──→ sees A+C files → improves
+         Worker C ──→ sees A+B files → improves
+                ↓ termination condition
+         git add . + git commit
+```
+
+**How agents "check the chat":**
+
+Every agent's `Process(ctx, conv)` receives the full `Conversation` with all messages and files. `WorkerAgent.buildChatContext()` extracts peer-generated files and content, injects them into the AI prompt — workers literally see what others built and can adapt.
+
+**Key components:**
+
+| File | Purpose |
+|------|---------|
+| `internal/service/groupchat/types.go` | Agent, Message, Conversation, SpeakerSelector interfaces |
+| `internal/service/groupchat/orchestrator.go` | Orcherator: registration, concurrent rounds, termination |
+| `internal/service/groupchat/selection.go` | RoundRobin, AllAtOnce, RoleBased, AgentBased selectors |
+| `internal/service/rules/worker/agent.go` | `WorkerAgent` implementing `groupchat.Agent` with AI generation |
+
 ## Project lifecycle with Nix
 
 ```
@@ -139,7 +170,7 @@ This means projects take zero space when idle but can be restored at any time.
 
 | Service | Stack | Role |
 |---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Nix snapshots, tool scaffolding |
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Nix snapshots, tool scaffolding |
 | `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, …) |
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
@@ -161,6 +192,8 @@ This means projects take zero space when idle but can be restored at any time.
 | `orchestrator/pkg/models/context_entry.go` | Context entry GORM model |
 | `orchestrator/internal/service/context/` | Context management (Redis + Postgres, 3 scopes, auto-cleanup) |
 | `projects/<taskID>/flake.nix` | Auto-generated per project |
+| `internal/service/groupchat/` | Group Chat orchestration (star topology, concurrent rounds) |
+| `internal/service/rules/worker/agent.go` | `WorkerAgent` — group chat participant with AI generation |
 
 Run with NixOS:
 

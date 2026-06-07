@@ -8,13 +8,17 @@ import (
 	"strconv"
 	"strings"
 
+	"orchestrator/internal/service/git"
+	"orchestrator/internal/service/groupchat"
 	"orchestrator/internal/service/rules"
 
 	"github.com/google/uuid"
 )
 
-// AssignWorkersAndWait — последовательно прогоняет всех воркеров команды менеджера.
-// Раньше это был gRPC-вызов manager → worker. Теперь — прямой Go-вызов.
+// AssignWorkersAndWait — запускает всех воркеров через Group Chat паттерн.
+// Оркестратор регистрирует каждого воркера как агента, запускает раунды,
+// воркеры видят полную историю беседы (проверяют чат).
+// После завершения — единый git add/commit.
 func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWorkersRequest, progress rules.ProgressFunc) (*rules.AssignWorkersResponse, error) {
 	log.Printf("Received task from manager %s (%s): %s", req.ManagerId, req.ManagerRole, req.TaskId)
 
@@ -27,66 +31,137 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	writeContextFile(basePath, req.TaskId, req.ManagerId, req.ManagerRole, req.WorkerRoles, contextSummary)
 
 	if progress != nil {
-		progress(0, "Workers assigned and starting work", map[string]string{
+		progress(5, "Starting Group Chat with all workers", map[string]string{
 			"manager_id":   req.ManagerId,
 			"manager_role": req.ManagerRole,
+			"workers":      fmt.Sprintf("%d", len(req.WorkerRoles)),
 		})
 	}
 
-	workerResults := make([]*rules.WorkerResult, 0, len(req.WorkerRoles))
+	// Build project-level context once — shared by all workers
+	var projectCtx string
+	if taskUUID, err := uuid.Parse(req.TaskId); err == nil && s.contextClient != nil {
+		projectCtx = s.contextClient.GetForPrompt(ctx, taskUUID, "workers-"+req.ManagerRole, req.ManagerId)
+	}
+
+	acc := buildAccumulatedContext(nil, contextSummary) + projectCtx
+
+	// Создаём Group Chat оркестратор
+	// 2 раунда: 1-й генерация, 2-й кросс-ревью
+	orch := groupchat.NewOrchestrator(2)
+	orch.SetSelector(groupchat.NewAllAtOnceSelector())
+
+	// Регистрируем агентов-воркеров
+	agents := make([]*WorkerAgent, len(req.WorkerRoles))
 	for i, wr := range req.WorkerRoles {
-		if progress != nil {
-			p := int32(10 + (i * 80 / max1(len(req.WorkerRoles))))
-			progress(p, fmt.Sprintf("Starting worker %d/%d: %s", i+1, len(req.WorkerRoles), wr.Role), nil)
-		}
+		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc)
+		agents[i] = agent
+		orch.RegisterAgent(agent)
+	}
 
-		s.mu.Lock()
-		accumulatedContext := buildAccumulatedContext(workerResults, contextSummary)
-		s.mu.Unlock()
+	// Условие завершения: после 1-го раунда (все сгенерировали) останавливаемся
+	orch.SetTerminationCondition(func(conv *groupchat.Conversation, round int) bool {
+		// После первого раунда у нас уже есть весь код
+		return round >= 1
+	})
 
-		// Inject project-level context (global rules + team + individual)
-		if taskUUID, err := uuid.Parse(req.TaskId); err == nil && s.contextClient != nil {
-			projectCtx := s.contextClient.GetForPrompt(ctx, taskUUID, "worker-"+wr.Role, req.ManagerId)
-			accumulatedContext += projectCtx
-		}
+	if progress != nil {
+		progress(10, "Running Group Chat conversation", map[string]string{
+			"agents": fmt.Sprintf("%d", len(agents)),
+			"rounds": "2",
+		})
+	}
 
-		// basePct — текущий прогресс воркера; шаги веб-поиска транслируются в чат
-		// под этим значением, чтобы не «прыгать» по шкале прогресса.
-		basePct := int32(10 + (i * 80 / max1(len(req.WorkerRoles))))
-		result, err := s.runOneWorker(ctx, req, wr, meta, basePath, accumulatedContext, progress, basePct)
-		if err != nil {
-			log.Printf("Worker %s error: %v", wr.Role, err)
-			continue
-		}
+	// Запускаем Group Chat
+	if err := orch.Run(ctx, req.TaskMd); err != nil {
+		return nil, fmt.Errorf("group chat failed: %w", err)
+	}
 
-		s.mu.Lock()
-		workerResults = append(workerResults, result)
-		s.mu.Unlock()
+	// Собираем результаты из чата
+	conv := orch.SnapshotConversation()
+	allFiles := conv.AllFiles()
 
-		if progress != nil {
-			p := int32(20 + ((i + 1) * 80 / max1(len(req.WorkerRoles))))
-			fileList := []string{}
-			for k := range result.Files {
-				fileList = append(fileList, k)
+	// Собираем per-agent результаты
+	type agentResult struct {
+		agent  *WorkerAgent
+		taskMD string
+	}
+	agentResults := make([]agentResult, 0, len(agents))
+
+	// Ищем сообщения каждого агента и собираем taskMD
+	for _, msg := range conv.Messages {
+		if msg.Type == groupchat.MsgResponse && msg.Files != nil {
+			for _, a := range agents {
+				if msg.AgentID == a.id {
+					agentResults = append(agentResults, agentResult{
+						agent:  a,
+						taskMD: msg.Content,
+					})
+					break
+				}
 			}
-			data := map[string]string{
-				"manager_id":   req.ManagerId,
-				"manager_role": req.ManagerRole,
-				"status":       "processing",
-				"files":        strings.Join(fileList, ","),
-				"files_count":  strconv.Itoa(len(result.Files)),
-			}
-			if codeFiles := buildCodeFilesPayload(result.Files, wr.Role, req.ManagerRole); codeFiles != "" {
-				data["code_files"] = codeFiles
-			}
-			progress(p, fmt.Sprintf("Worker %d/%d (%s) completed: %d files", i+1, len(req.WorkerRoles), wr.Role, len(result.Files)), data)
 		}
 	}
 
 	if progress != nil {
-		progress(100, "All workers completed successfully", map[string]string{
+		progress(80, "All agents completed, writing files and committing", map[string]string{
+			"files": fmt.Sprintf("%d", len(allFiles)),
+		})
+	}
+
+	// Single git add/commit for all workers after all complete
+	if len(allFiles) > 0 {
+		if err := git.Add(basePath); err != nil {
+			log.Printf("Warning: git add failed: %v", err)
+		}
+		roles := make([]string, 0, len(agents))
+		for _, a := range agents {
+			roles = append(roles, a.role)
+		}
+		msg := fmt.Sprintf("Group Chat Workers: %s", strings.Join(roles, ", "))
+		if err := git.Commit(basePath, msg); err != nil {
+			log.Printf("Warning: git commit failed: %v", err)
+		}
+	}
+
+	// Персистим в БД
+	for _, a := range agents {
+		persistWorkerDB(req, a.id, a.role, "", allFiles, true)
+	}
+
+	// Строим ответ
+	workerResults := make([]*rules.WorkerResult, 0, len(agents))
+	for _, a := range agents {
+		wr := &rules.WorkerResult{
+			WorkerId: a.id,
+			Role:     a.role,
+			TaskMd:   "",
+			Files:    allFiles,
+			Success:  true,
+		}
+		// Фильтруем только файлы этого воркера
+		wr.Files = make(map[string]string)
+		for _, msg := range conv.Messages {
+			if msg.AgentID == a.id && msg.Files != nil {
+				for k, v := range msg.Files {
+					wr.Files[k] = v
+				}
+			}
+		}
+		wr.SolutionMd = fmt.Sprintf("Generated %d files for role %s", len(wr.Files), a.role)
+		workerResults = append(workerResults, wr)
+	}
+
+	if progress != nil {
+		fileList := make([]string, 0, len(allFiles))
+		for k := range allFiles {
+			fileList = append(fileList, k)
+		}
+		progress(100, fmt.Sprintf("Group Chat completed: %d agents, %d files", len(agents), len(allFiles)), map[string]string{
 			"manager_id":   req.ManagerId,
 			"manager_role": req.ManagerRole,
+			"files":        strings.Join(fileList, ","),
+			"files_count":  strconv.Itoa(len(allFiles)),
 		})
 	}
 
@@ -97,7 +172,7 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	}, nil
 }
 
-// buildAccumulatedContext — собирает контекст из уже завершённых воркеров текущей команды
+// buildAccumulatedContext — собирает контекст из уже завершённых воркеров команды
 func buildAccumulatedContext(workerResults []*rules.WorkerResult, externalCtx string) string {
 	acc := ""
 	for _, prevResult := range workerResults {
@@ -116,12 +191,3 @@ func buildAccumulatedContext(workerResults []*rules.WorkerResult, externalCtx st
 	}
 	return acc
 }
-
-// max1 — защита от деления на 0 в progress-расчёте
-func max1(n int) int {
-	if n < 1 {
-		return 1
-	}
-	return n
-}
-
