@@ -4,5 +4,5 @@ use (
 	./agents
 	./apigateway
 	./orchestrator
-	user
+	./user
 )
