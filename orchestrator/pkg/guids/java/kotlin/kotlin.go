@@ -1,4 +1,4 @@
-package java
+package kotlin
 
 import "orchestrator/pkg/guids/core"
 

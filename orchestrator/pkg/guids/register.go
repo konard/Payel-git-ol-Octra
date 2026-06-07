@@ -12,6 +12,7 @@ import (
 	_ "orchestrator/pkg/guids/php"
 	_ "orchestrator/pkg/guids/python"
 	_ "orchestrator/pkg/guids/ruby"
+	_ "orchestrator/pkg/guids/java/kotlin"
 	_ "orchestrator/pkg/guids/rust"
 	_ "orchestrator/pkg/guids/swift"
 	_ "orchestrator/pkg/guids/zig"
