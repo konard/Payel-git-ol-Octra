@@ -74,13 +74,25 @@ func (s *Service) runOneWorker(
 		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit)
 	} else {
 		workerMode := os.Getenv("WORKER_MODE")
-		if workerMode == "" {
-			workerMode = "multypass"
+		useTools := workerMode == "tool" || (isToolMode(meta.techStack) && workerMode != "no-tool")
+		if useTools {
+			files, commands, err = s.generateViaTools(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+			if err != nil || len(files) == 0 {
+				log.Printf("[ToolExecutor] Fallback to AI generation (tool mode failed: %v, files=%d)", err, len(files))
+				files = nil
+				commands = nil
+				useTools = false
+			}
 		}
-		if workerMode == "multypass" {
-			files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
-		} else {
-			files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+		if !useTools {
+			if workerMode == "" || workerMode == "tool" {
+				workerMode = "multypass"
+			}
+			if workerMode == "multypass" {
+				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+			} else {
+				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+			}
 		}
 	}
 	if err != nil {

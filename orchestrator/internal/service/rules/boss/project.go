@@ -119,33 +119,12 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 	log.Printf("Merged all manager branches into %s", targetBranch)
 }
 
-// generateFlake — записывает flake.nix в корень проекта для Nix-совместимости
-func (s *Service) generateFlake(projectPath, taskID, title string) {
-	nixSystem := detectNixSystem()
-	flakeContent := fmt.Sprintf(`{
-  description = "Octra project: %s - %s";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  outputs = { self, nixpkgs }:
-    let
-      system = "%s";
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      packages.${system}.default = pkgs.stdenv.mkDerivation {
-        name = "octra-project-%s";
-        src = ./.;
-        installPhase = ''
-          mkdir -p "$out"
-          cp -r . "$out/"
-        '';
-      };
-    };
-}
-`, taskID, sanitizeNixComment(title), nixSystem, taskID)
-	if err := os.WriteFile(filepath.Join(projectPath, "flake.nix"), []byte(flakeContent), 0644); err != nil {
-		log.Printf("Failed to write flake.nix: %v", err)
-		return
-	}
-	log.Printf("Generated flake.nix at: %s", filepath.Join(projectPath, "flake.nix"))
+// generateFlake — записывает flake.nix в корень проекта для Nix-совместимости.
+// Использует FlakeBuilder для генерации богатого flake.nix с зависимостями
+// на основе techStack, определённого AI на этапе планирования.
+func (s *Service) generateFlake(projectPath, taskID, title string, techStack []string) {
+	packages := NewFlakeBuilder().ResolveFromTechStacks(techStack)
+	s.WriteFlake(projectPath, taskID, title, packages)
 }
 
 // detectNixSystem — определяет систему Nix на основе архитектуры хоста

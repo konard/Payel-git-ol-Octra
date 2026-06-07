@@ -62,6 +62,39 @@ Focus on:
 4. Potential challenges`
 }
 
+// WorkerToolCommands — промпт для воркера: спланировать команды scaffolding
+// через реальные тулы (npm, cargo, flutter, composer, …) внутри nix develop.
+// Используется в ToolExecutor mode.
+func WorkerToolCommands(role, desc, task, context, techStack string) string {
+	return `You are a ` + role + ` developer using the ` + techStack + ` toolchain.
+
+ROLE: ` + desc + `
+TASK: ` + task + context + `
+
+You have a BLANK project directory. Your job is to scaffold the project using
+REAL tools — NOT by writing code manually. The tools will be available via
+` + "`nix develop`" + ` (they are already in the environment).
+
+RULES (MOST IMPORTANT — read carefully):
+1. Use REAL TOOLS to create the project structure. Examples:
+   - Node: npm init, npx create-*, npm install <pkg>
+   - Rust: cargo init, cargo add <dep>
+   - PHP: composer init, composer require <pkg>
+   - Flutter/Dart: flutter create, dart create
+   - C++: cmake, make
+   - .NET: dotnet new, dotnet add package
+   - Ruby: bundle init, bundle add <gem>
+   - Java/Kotlin: mvn archetype:generate, gradle init
+2. Install dependencies the project needs (runtime + dev)
+3. Keep it MINIMAL — only what the task asks for. No extra features.
+4. If the task is simple enough for a single source file, use: echo/cat to write it
+5. Return a list of bash commands, one per line, that will be executed IN ORDER
+   in the project root directory.
+
+Return JSON ONLY:
+{"commands": ["cmd1", "cmd2", "cmd3"]}`
+}
+
 // WorkerReview — промпт для воркера: переписать файл с учётом фидбэка
 func WorkerReview(role, feedback, code string) string {
 	return `You are a ` + role + ` developer. Your previous work was reviewed.
