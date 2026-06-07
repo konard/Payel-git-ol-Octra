@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   ChevronRight,
   ChevronDown,
-  File as FileIcon,
   Folder,
   FolderOpen,
   RefreshCw,
@@ -10,6 +9,7 @@ import {
 } from 'lucide-react';
 import { isDesktopApp, type FileTreeNode } from './bridge';
 import { useDesktopStore } from './desktopStore';
+import { FileTypeIcon } from '../lib/FileTypeIcon';
 
 /**
  * Filesystem-backed file explorer for the desktop app — the feature the old
@@ -140,7 +140,7 @@ function FileRow({ node, depth }: { node: FileTreeNode; depth: number }) {
       }`}
       style={{ paddingLeft: 8 + depth * 14 + 14 }}
     >
-      <FileIcon size={13} className="shrink-0 text-[var(--text-muted)]" />
+      <FileTypeIcon filePath={node.path} size={13} />
       <span className="truncate">{node.name}</span>
     </button>
   );

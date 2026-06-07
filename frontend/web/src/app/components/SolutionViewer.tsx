@@ -23,6 +23,7 @@ import {
   Presentation,
   X,
 } from 'lucide-react';
+import { FileTypeIcon } from '../../lib/FileTypeIcon';
 import { useTaskStore, type CodeFile } from '../../stores/taskStore';
 import { useThemeStore } from '../../stores/themeStore';
 import { useDesktopStore } from '../../desktop/desktopStore';
@@ -430,15 +431,7 @@ function TreeRows({
             }`}
           >
             <TreeIndent depth={depth} />
-            {node.path.toLowerCase().endsWith('.pptx') ? (
-              <Presentation size={15} />
-            ) : isBinaryPath(node.path) ? (
-              <FileBox size={15} />
-            ) : isMarkdownPath(node.path) ? (
-              <FileText size={15} />
-            ) : (
-              <FileCode2 size={15} />
-            )}
+            <FileTypeIcon filePath={node.path} size={15} />
             <span className="min-w-0 flex-1 truncate">{node.name}</span>
             {node.file && <CodeStatus status={node.file.status} />}
           </button>
@@ -668,13 +661,7 @@ export function SolutionViewer() {
                     : 'border-[var(--code-border)] text-[var(--code-text-muted)] hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]'
                 }`}
               >
-                {file.path.toLowerCase().endsWith('.pptx') ? (
-                  <Presentation size={13} />
-                ) : isBinaryPath(file.path) ? (
-                  <FileBox size={13} />
-                ) : (
-                  <FileText size={13} />
-                )}
+                <FileTypeIcon filePath={file.path} size={13} />
                 <span className="max-w-[160px] truncate">{file.name}</span>
               </button>
             ))}
@@ -839,15 +826,7 @@ export function SolutionViewer() {
                     onClick={() => setActivePath(file.path)}
                     className="flex min-w-0 flex-1 items-center gap-2 px-3"
                   >
-                    {file.path.toLowerCase().endsWith('.pptx') ? (
-                      <Presentation size={15} />
-                    ) : isBinaryPath(file.path) ? (
-                      <FileBox size={15} />
-                    ) : isMarkdownPath(file.path) ? (
-                      <FileText size={15} />
-                    ) : (
-                      <FileCode2 size={15} />
-                    )}
+                    <FileTypeIcon filePath={file.path} size={15} />
                     <span className="truncate">{file.name}</span>
                     <CodeStatus status={file.status} />
                   </button>
