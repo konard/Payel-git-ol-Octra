@@ -25,6 +25,8 @@ type Task struct {
 	ProjectJSON           string    `gorm:"type:text" json:"project_json"`
 	GitData               string    `gorm:"type:text" json:"git_data"`
 	Solution              []byte    `gorm:"type:bytea" json:"solution"`
+	NixStorePath          string    `gorm:"type:text" json:"nix_store_path"`
+	NixFlake              string    `gorm:"type:text" json:"nix_flake"`
 	CreatedAt             time.Time `json:"created_at"`
 	UpdatedAt             time.Time `json:"updated_at"`
 }

@@ -27,15 +27,15 @@ RUN cd orchestrator && go mod download
 
 RUN cd orchestrator && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/orchestrator-bin ./cmd/app
 
-FROM alpine:latest
+FROM nixos/nix:latest
 
-WORKDIR /root/
-
-RUN apk --no-cache add ca-certificates git
+# git, ca-certificates, curl включены в образ nixos/nix
 
 RUN git config --global user.email "${GIT_USER_EMAIL:-orchestrator@crewai.local}" && \
     git config --global user.name "${GIT_USER_NAME:-CrewAI Orchestrator}" && \
     git config --global credential.helper store
+
+ENV NIX_CONFIG="experimental-features = nix-command flakes"
 
 COPY --from=builder /workspace/orchestrator-bin ./orchestrator
 

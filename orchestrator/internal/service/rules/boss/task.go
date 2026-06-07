@@ -81,6 +81,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, err.Error(), errorData())
 		return err
 	}
+	s.generateFlake(projectPath, taskID.String(), req.Title)
 
 	// Если это доработка существующего проекта — клонируем репозиторий с GitHub
 	if req.ExistingRepoUrl != "" {
@@ -96,7 +97,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 			log.Printf("Failed to clone existing repo: %v", err)
 		}
 	}
-	defer s.cleanupProject(projectPath)
+	defer s.cleanupProject(projectPath, taskID.String())
 	if issueTarget != nil && issueTarget.Cloned {
 		appendRepositoryContext(decision, projectPath)
 	}

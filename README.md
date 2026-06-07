@@ -1,7 +1,7 @@
 # Octra — AI-Powered Software Development Team
 
 <div align="center">
-  <img src="docs/icons/octra-mascot.png" alt="Octra Mascot" width="200">
+  <img src="docs/icons/octra-nix.png" alt="Octra Nix" width="200">
 </div>
 
 **Describe your idea. Get production-ready code. Published to GitHub.**
