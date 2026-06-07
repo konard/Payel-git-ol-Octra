@@ -25,7 +25,7 @@ COPY orchestrator/proto ./orchestrator/proto
 RUN cd agents && go mod download
 RUN cd orchestrator && go mod download
 
-RUN cd orchestrator && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/orchestrator-bin ./cmd/app
+RUN cd orchestrator && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /workspace/orchestrator-bin ./cmd/app && ls -la /workspace/orchestrator-bin
 
 FROM nixos/nix:latest
 
