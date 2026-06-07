@@ -1,53 +1,82 @@
-# Octra — AI-Powered Software Development Team
+# Octra — AI agent factory powered by Nix
 
-<div align="center">
-  <img src="docs/icons/octra-mascot.png" alt="Octra" height="100"> + <img src="docs/icons/nixos.webp" alt="Nix" height="100">
-</div>
+Octra is a multi-agent AI orchestrator that builds software projects using a Boss → Manager → Worker pipeline. Every project is snapshotted into the [Nix](https://nixos.org) store, enabling instant rollback and zero-storage recovery.
 
-**Describe your idea. Get production-ready code. Published to GitHub.**
-
-Octra replaces an entire development team with AI agents. You describe what you want to build in natural language, and Octra handles everything from architecture planning to code generation to GitHub publishing — in minutes, not weeks.
-
-## What Octra Solves
-
-Building software is slow. You need to design architecture, set up projects, write hundreds of files, manage dependencies, fix bugs, and repeat. Octra automates the entire process:
-
-- **From idea to code** — describe your task once, get a complete project
-- **Multiple AI agents working together** — one plans architecture, others write code, review it, and fix issues
-- **Any stack, any complexity** — REST APIs, microservices, frontends, CLIs, research reports, presentations
-- **Ready to use** — generated project is pushed directly to your GitHub repository
-
-## How It Works
+## Architecture (Boss → Manager → Worker)
 
 ```
-Describe task → AI analyzes requirements → AI team builds it → Code on GitHub
+User → API Gateway → Boss (architect)
+                        ├── Manager (backend) → Worker × N
+                        ├── Manager (frontend) → Worker × N
+                        └── Manager (devops)  → Worker × N
+                              ↓
+                        Agents Service → Claude / Gemini / GPT / ...
 ```
 
-## Key Features
+**Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
+**Managers** review and orchestrate workers.  
+**Workers** generate code inside Nix-isolated environments.
 
-- **Natural language input** — just describe what you need
-- **Multi-agent AI pipeline** — architecture planning, parallel code generation, automated review, quality validation
-- **Multiple LLM providers** — OpenRouter, Gemini, OpenAI, Claude, DeepSeek, Grok, Qwen, Z.AI
-- **System skills** — agents read file-based expert skills (Research, Presentations, Frontend, Backend, DevOps, Proxy, VPN) and inject the matching guidance into their prompts (see `orchestrator/internal/skills/`)
-- **GitHub integration** — results published directly to a new repository or pull request
-- **Real-time progress** — watch your project being built step by step
-- **Web interface** — interactive canvas and chat modes
-- **Telegram bot** — create tasks from Telegram
-- **Non-code output** — research reports, documentation, and slide decks with web-sourced references
-- **Custom workflows** — save and reuse agent configurations
+## Project lifecycle with Nix
 
-## Use Cases
+```
+setupProject() → generate flake.nix → AI generates code → nix-store --add → cleanup
+                                                                 ↓
+                                                          RestoreProject(taskID)
+```
 
-- **Prototyping** — go from concept to working prototype in one session
-- **Full-stack applications** — generate complete APIs with frontends, databases, authentication
-- **Research & analysis** — produce well-sourced reports with web search
-- **Presentations** — create slide decks with visual guidance and source attribution
-- **Open-source contributions** — fix GitHub issues with automatically generated pull requests
+Each project:
 
-## Get Started
+1. Gets a `flake.nix` at creation time
+2. Is built by AI agents inside the working directory
+3. On completion: **snapshotted to `/nix/store/`** via `nix-store --add`
+4. Working directory is removed (zero disk waste)
+5. **`RestoreProject(taskID)`** recovers the project from the Nix store instantly
+
+This means projects take zero space when idle but can be restored at any time.
+
+## Services
+
+| Service | Stack | Role |
+|---------|-------|------|
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Nix snapshots |
+| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, ...) |
+| `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
+| `user` | Go, Gin | Auth, subscriptions, custom providers |
+| `frontend/web` | React, Vite, Electron | Interactive canvas + chat UI |
+| `grademodel` | Python, scikit-learn | Task complexity grading |
+
+## Nix integration
+
+| File | Purpose |
+|------|---------|
+| `orchestrator/flake.nix` | Builds orchestrator binary via `buildGoModule` |
+| `orchestrator/nix/module.nix` | NixOS module (systemd service) |
+| `orchestrator/Dockerfile` | Based on `nixos/nix` — includes Nix in container |
+| `orchestrator/internal/service/rules/boss/project.go` | `snapshotProject()`, `RestoreProject()`, `generateFlake()` |
+| `projects/<taskID>/flake.nix` | Auto-generated per project |
+
+Run with NixOS:
+
+```nix
+{
+  imports = [ octra.flake.nixosModules.octra-orchestrator ];
+  services.octra-orchestrator = {
+    enable = true;
+    environment.DB_DNS = "postgres://...";
+  };
+}
+```
+
+## Quick start
 
 ```bash
 docker compose up -d --build
 ```
 
-Open http://localhost, describe your task, and Octra builds it.
+Open http://localhost, describe your task, Octra builds it.  
+Project is cached in Nix store — recover anytime via `RestoreProject(taskID)`.
+
+---
+
+*Octra: describe once, rebuild forever.*
