@@ -3,10 +3,13 @@ package boss
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -118,12 +121,13 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 
 // generateFlake — записывает flake.nix в корень проекта для Nix-совместимости
 func (s *Service) generateFlake(projectPath, taskID, title string) {
+	nixSystem := detectNixSystem()
 	flakeContent := fmt.Sprintf(`{
   description = "Octra project: %s - %s";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   outputs = { self, nixpkgs }:
     let
-      system = "x86_64-linux";
+      system = "%s";
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       packages.${system}.default = pkgs.stdenv.mkDerivation {
@@ -136,7 +140,7 @@ func (s *Service) generateFlake(projectPath, taskID, title string) {
       };
     };
 }
-`, taskID, sanitizeNixComment(title), taskID)
+`, taskID, sanitizeNixComment(title), nixSystem, taskID)
 	if err := os.WriteFile(filepath.Join(projectPath, "flake.nix"), []byte(flakeContent), 0644); err != nil {
 		log.Printf("Failed to write flake.nix: %v", err)
 		return
@@ -144,42 +148,142 @@ func (s *Service) generateFlake(projectPath, taskID, title string) {
 	log.Printf("Generated flake.nix at: %s", filepath.Join(projectPath, "flake.nix"))
 }
 
+// detectNixSystem — определяет систему Nix на основе архитектуры хоста
+func detectNixSystem() string {
+	switch runtime.GOARCH {
+	case "arm64":
+		return "aarch64-linux"
+	case "amd64":
+		return "x86_64-linux"
+	default:
+		return "x86_64-linux"
+	}
+}
+
 // snapshotProject — сохраняет проект в Nix store и возвращает store path
-func (s *Service) snapshotProject(projectPath, taskID string) (string, string) {
+func (s *Service) snapshotProject(projectPath, taskID string) (storePath, flakeContent string, err error) {
 	log.Printf("Snapshoting project to Nix store: %s", projectPath)
 
-	cmd := exec.Command("nix-store", "--add", projectPath)
+	stagingDir, err := prepareSnapshotDir(projectPath)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to prepare snapshot: %w", err)
+	}
+	defer os.RemoveAll(stagingDir)
+
+	cmd := exec.Command("nix-store", "--add", stagingDir)
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		log.Printf("Nix snapshot failed (nix-store not available?): %v", err)
-		return "", ""
+		return "", "", fmt.Errorf("nix snapshot failed (nix-store not available?): %w", err)
 	}
-	storePath := strings.TrimSpace(string(out))
+	storePath = strings.TrimSpace(string(out))
 	log.Printf("Project snapshoted to Nix store: %s", storePath)
 
+	registerGCRoot(storePath, taskID)
+
 	flakePath := filepath.Join(projectPath, "flake.nix")
-	flakeBytes, err := os.ReadFile(flakePath)
-	flakeContent := ""
-	if err == nil {
+	flakeBytes, rerr := os.ReadFile(flakePath)
+	if rerr == nil {
 		flakeContent = string(flakeBytes)
 	}
 
 	if storePath != "" && flakeContent != "" {
 		annotated := fmt.Sprintf("%s\n# NixStorePath: %s\n# SnapshotTime: %s\n", flakeContent, storePath, time.Now().UTC().Format(time.RFC3339))
-		if err := os.WriteFile(flakePath, []byte(annotated), 0644); err != nil {
-			log.Printf("Failed to annotate flake.nix: %v", err)
+		if werr := os.WriteFile(flakePath, []byte(annotated), 0644); werr != nil {
+			log.Printf("Failed to annotate flake.nix: %v", werr)
 		}
 	}
 
-	return storePath, flakeContent
+	return storePath, flakeContent, nil
+}
+
+// prepareSnapshotDir — создаёт временную директорию только с отслеживаемыми git-файлами
+// (уважает .gitignore, исключает node_modules, .git и т.д.)
+func prepareSnapshotDir(projectPath string) (string, error) {
+	stagingDir, err := os.MkdirTemp("", "octra-snapshot-")
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command("git", "-C", projectPath, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+	out, err := cmd.Output()
+	if err != nil {
+		os.RemoveAll(stagingDir)
+		return "", fmt.Errorf("git ls-files failed: %w", err)
+	}
+
+	files := strings.Split(strings.TrimRight(string(out), "\x00"), "\x00")
+	for _, file := range files {
+		if file == "" {
+			continue
+		}
+		src := filepath.Join(projectPath, file)
+		dst := filepath.Join(stagingDir, file)
+		if err := copyFile(src, dst); err != nil {
+			os.RemoveAll(stagingDir)
+			return "", fmt.Errorf("failed to copy %s: %w", file, err)
+		}
+	}
+
+	flakeSrc := filepath.Join(projectPath, "flake.nix")
+	if _, err := os.Stat(flakeSrc); err == nil {
+		if err := copyFile(flakeSrc, filepath.Join(stagingDir, "flake.nix")); err != nil {
+			os.RemoveAll(stagingDir)
+			return "", fmt.Errorf("failed to copy flake.nix: %w", err)
+		}
+	}
+
+	return stagingDir, nil
+}
+
+// copyFile — копирует файл с созданием родительских директорий
+func copyFile(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+// registerGCRoot — регистрирует store path как GC root, чтобы Nix не удалил его
+func registerGCRoot(storePath, taskID string) {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Printf("Failed to get current user for GC root: %v", err)
+		return
+	}
+	gcrootsDir := filepath.Join("/nix/var/nix/gcroots/per-user", currentUser.Username)
+	if err := os.MkdirAll(gcrootsDir, 0755); err != nil {
+		log.Printf("Failed to create GC roots dir %s: %v", gcrootsDir, err)
+		return
+	}
+	rootPath := filepath.Join(gcrootsDir, fmt.Sprintf("octra-project-%s", taskID))
+	os.Remove(rootPath)
+	if err := os.Symlink(storePath, rootPath); err != nil {
+		log.Printf("Failed to create GC root %s -> %s: %v", rootPath, storePath, err)
+		return
+	}
+	log.Printf("GC root registered: %s -> %s", rootPath, storePath)
 }
 
 // restoreProjectFromStore — восстанавливает проект из Nix store по store path
 func (s *Service) restoreProjectFromStore(storePath, destPath string) error {
 	log.Printf("Restoring project from Nix store: %s -> %s", storePath, destPath)
 
-	if _, err := os.Stat(storePath); os.IsNotExist(err) {
+	resolvedPath := resolveStorePath(storePath)
+	if _, err := os.Stat(resolvedPath); os.IsNotExist(err) {
 		return fmt.Errorf("Nix store path not found (may have been garbage collected): %s", storePath)
 	}
 
@@ -190,10 +294,15 @@ func (s *Service) restoreProjectFromStore(storePath, destPath string) error {
 		return fmt.Errorf("failed to create dest dir: %w", err)
 	}
 
-	cmd := exec.Command("cp", "-r", storePath+"/.", destPath)
+	cmd := exec.Command("cp", "-r", resolvedPath+"/.", destPath)
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to copy from Nix store: %w", err)
+	}
+
+	// Fix permissions: Nix store files are read-only (0444), делаем writable для git
+	if err := exec.Command("chmod", "-R", "u+w", destPath).Run(); err != nil {
+		log.Printf("Failed to set writable permissions: %v", err)
 	}
 
 	if err := git.SetUser(destPath,
@@ -204,6 +313,18 @@ func (s *Service) restoreProjectFromStore(storePath, destPath string) error {
 
 	log.Printf("Project restored successfully to: %s", destPath)
 	return nil
+}
+
+// resolveStorePath — учитывает NIX_STORE env, если store настроен на нестандартный путь
+func resolveStorePath(storePath string) string {
+	nixStore := os.Getenv("NIX_STORE")
+	if nixStore == "" {
+		return storePath
+	}
+	if strings.HasPrefix(storePath, "/nix/store") {
+		return filepath.Join(nixStore, strings.TrimPrefix(storePath, "/nix/store"))
+	}
+	return storePath
 }
 
 // RestoreProject — публичный метод для восстановления проекта по taskID
@@ -239,7 +360,12 @@ func (s *Service) cleanupProject(projectPath, taskID string) {
 
 	log.Printf("Cleaning up project directory: %s", projectPath)
 
-	storePath, flakeContent := s.snapshotProject(projectPath, taskID)
+	storePath, flakeContent, err := s.snapshotProject(projectPath, taskID)
+	if err != nil {
+		log.Printf("WARNING: snapshot failed (%v), keeping project directory at %s to avoid data loss", err, projectPath)
+		return
+	}
+
 	if storePath != "" && taskID != "" {
 		s.db.Model(&models.Task{}).Where("id = ?", taskID).Updates(map[string]interface{}{
 			"nix_store_path": storePath,

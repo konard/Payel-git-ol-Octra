@@ -31,12 +31,29 @@ FROM nixos/nix:latest
 
 # git, ca-certificates, curl включены в образ nixos/nix
 
-RUN git config --global user.email "${GIT_USER_EMAIL:-orchestrator@crewai.local}" && \
-    git config --global user.name "${GIT_USER_NAME:-CrewAI Orchestrator}" && \
-    git config --global credential.helper store
-
 ENV NIX_CONFIG="experimental-features = nix-command flakes"
+RUN nix-store --version && echo "nix is ready"
 
-COPY --from=builder /workspace/orchestrator-bin ./orchestrator
+RUN mkdir -p /var/lib/octra/projects
 
-CMD ["./orchestrator"]
+COPY --from=builder /workspace/orchestrator-bin /usr/local/bin/octra-orchestrator
+
+RUN printf '%s\n' \
+    '#!/bin/sh' \
+    'set -e' \
+    '' \
+    '# Start nix daemon if available (multi-user image), otherwise single-user mode' \
+    'if command -v nix-daemon >/dev/null 2>&1; then' \
+    '    nix-daemon --daemon >/dev/null 2>&1 &' \
+    'fi' \
+    '' \
+    '# Configure git at runtime (env vars may not exist at build time)' \
+    'git config --global user.email "${GIT_USER_EMAIL:-orchestrator@crewai.local}"' \
+    'git config --global user.name  "${GIT_USER_NAME:-CrewAI Orchestrator}"' \
+    'git config --global credential.helper store' \
+    '' \
+    'exec octra-orchestrator' \
+    > /usr/local/bin/octra-entrypoint.sh && \
+    chmod +x /usr/local/bin/octra-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/octra-entrypoint.sh"]

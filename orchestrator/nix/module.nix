@@ -25,7 +25,7 @@ in {
         PROJECTS_DIR = "/var/lib/octra/projects";
         DB_DNS = "postgres://octra:octra@localhost:5432/octra?sslmode=disable";
         REDIS_URL = "redis://localhost:6379/0";
-        AGENTS_GRPC_ADDR = "localhost:50053";
+        AGENTS_SERVICE_HOST = "localhost:50053";
       };
       description = "Environment variables for the orchestrator";
     };
@@ -37,6 +37,8 @@ in {
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" "postgresql.service" "redis.service" ];
 
+      path = [ pkgs.nix ];
+
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/app";
         Restart = "on-failure";
@@ -45,7 +47,7 @@ in {
         Group = "octra";
         StateDirectory = "octra";
         WorkingDirectory = "/var/lib/octra";
-        EnvironmentFile = "/etc/octra.env";
+        Environment = cfg.environment;
       };
     };
 
