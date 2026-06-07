@@ -38,9 +38,9 @@ const server = await createServer({
 try {
   const { useAuthStore } = await server.ssrLoadModule('/src/stores/authStore');
   const { useI18nStore } = await server.ssrLoadModule('/src/stores/i18nStore.ts');
-  await server.ssrLoadModule('/src/hooks/useI18n.ts');
+  const { translationsCache } = await server.ssrLoadModule('/src/hooks/useI18n.ts');
 
-  window.__translationsCache.ru = {
+  translationsCache.ru = {
     common: { close: 'Закрыть' },
     chatSidebar: {
       history: 'История',
