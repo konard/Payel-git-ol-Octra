@@ -129,7 +129,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		integrationBranch = issueTarget.BranchName
 	}
 	s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
-	emit(progress, 80, "Boss validating solution...", nil)
+	s.nixBuild(projectPath, progress)
+	emit(progress, 83, "Boss validating solution...", nil)
 	tokens := req.Tokens
 	if tokens == nil {
 		tokens = map[string]string{}
