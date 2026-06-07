@@ -86,55 +86,100 @@ export const useIntegrationStore = create<IntegrationState>()(
       },
 
       setIntegrationConnected: (type, connected, config = {}) => {
-        set((state) => ({
-          integrations: {
-            ...state.integrations,
-            [type]: {
-              ...state.integrations[type],
-              type,
-              connected,
-              config: {
-                ...state.integrations[type].config,
-                ...config,
-              },
-              connectedAt: connected ? new Date().toISOString() : undefined,
+        set((state) => {
+          const currentIntegration = state.integrations[type] || {
+            type,
+            connected: false,
+            config: {
+              useDefaultKey: true,
+              apiKey: '',
+              workflowId: '',
             },
-          },
-        }));
+          };
+          return {
+            integrations: {
+              ...state.integrations,
+              [type]: {
+                ...currentIntegration,
+                type,
+                connected,
+                config: {
+                  ...currentIntegration.config,
+                  ...config,
+                },
+                connectedAt: connected ? new Date().toISOString() : undefined,
+              },
+            },
+          };
+        });
       },
 
       setIntegrationConfig: (type, config) => {
-        set((state) => ({
-          integrations: {
-            ...state.integrations,
-            [type]: {
-              ...state.integrations[type],
-              config,
+        set((state) => {
+          const currentIntegration = state.integrations[type] || {
+            type,
+            connected: false,
+            config: {
+              useDefaultKey: true,
+              apiKey: '',
+              workflowId: '',
             },
-          },
-        }));
+          };
+          return {
+            integrations: {
+              ...state.integrations,
+              [type]: {
+                ...currentIntegration,
+                config,
+              },
+            },
+          };
+        });
       },
 
       getIntegration: (type) => {
-        return get().integrations[type];
+        const integration = get().integrations[type];
+        if (!integration) {
+          return {
+            type,
+            connected: false,
+            config: {
+              useDefaultKey: true,
+              apiKey: '',
+              workflowId: '',
+            },
+          };
+        }
+        return integration;
       },
 
       disconnectIntegration: (type) => {
-        set((state) => ({
-          integrations: {
-            ...state.integrations,
-            [type]: {
-              ...state.integrations[type],
-              connected: false,
-              config: {
-                useDefaultKey: true,
-                apiKey: '',
-                workflowId: '',
-              },
-              connectedAt: undefined,
+        set((state) => {
+          const currentIntegration = state.integrations[type] || {
+            type,
+            connected: false,
+            config: {
+              useDefaultKey: true,
+              apiKey: '',
+              workflowId: '',
             },
-          },
-        }));
+          };
+          return {
+            integrations: {
+              ...state.integrations,
+              [type]: {
+                ...currentIntegration,
+                connected: false,
+                config: {
+                  useDefaultKey: true,
+                  apiKey: '',
+                  workflowId: '',
+                },
+                connectedAt: undefined,
+              },
+            },
+          };
+        });
       },
     }),
     {
