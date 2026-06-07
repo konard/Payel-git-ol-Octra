@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"orchestrator/internal/service/rules"
+	"orchestrator/internal/skills"
 	"orchestrator/pkg/database"
 	"orchestrator/pkg/models"
 
@@ -79,12 +80,23 @@ func (s *Service) AssignManager(ctx context.Context, req *rules.AssignManagerReq
 	emit(progress, 20, fmt.Sprintf("Manager %s decided to hire %d workers", req.Role, len(workerRolesList)), nil)
 
 	workerRoles := make([]*rules.WorkerRole, 0, len(workerRolesList))
+	techStack := req.Metadata["tech_stack"]
+	warehouse := skills.NewWarehouse()
 	for _, r := range workerRolesList {
-		workerRoles = append(workerRoles, &rules.WorkerRole{
+		wr := &rules.WorkerRole{
 			Role:         r.Role,
 			Description:  r.Description,
 			CustomPrompt: r.CustomPrompt,
-		})
+		}
+		// Manager picks the best-matching skill fragments for each worker
+		fragments := warehouse.Search(r.Role+" "+r.Description, techStack, req.TechnicalDescription, 3)
+		for _, f := range fragments {
+			wr.SelectedSkillSlugs = append(wr.SelectedSkillSlugs, f.Slug)
+		}
+		if len(wr.SelectedSkillSlugs) > 0 {
+			log.Printf("[Warehouse] Manager picked fragments for %s: %v", r.Role, wr.SelectedSkillSlugs)
+		}
+		workerRoles = append(workerRoles, wr)
 	}
 	manager.WorkersCount = int32(len(workerRoles))
 	workerRolesJSON, _ := json.Marshal(workerRolesList)

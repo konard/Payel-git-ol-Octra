@@ -14,12 +14,10 @@ import (
 )
 
 // generateDocument — путь генерации для не-кодовых задач (research/document/presentation).
-// Результат всегда кладётся в папку solution/ в формате Markdown; для презентаций
-// дополнительно собирается .pptx через серверный билдер. Возвращает (files, commands, err)
-// с той же сигнатурой, что и generateCode, чтобы легко встроиться в runOneWorker.
+// skill — уже разрешённый контент скиллов (из Warehouse.Select() или Guidance()), может быть пустым.
 func (s *Service) generateDocument(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskType, role, description, topic, extCtx, workerID string, emit searchEmitter,
+	taskType, role, description, topic, extCtx, workerID string, emit searchEmitter, skill string,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -31,11 +29,15 @@ func (s *Service) generateDocument(
 	if slug == "" {
 		slug = "result"
 	}
-	// Несколько воркеров часто получают одинаковую роль (например, "analyst"),
-	// поэтому добавляем короткий уникальный суффикс из workerID, чтобы документы
-	// разных воркеров не перезаписывали друг друга и все попали в синтез менеджера.
 	if suffix := shortID(workerID); suffix != "" {
 		slug = slug + "-" + suffix
+	}
+
+	skillFallback := func(techStack, task string) string {
+		if skill != "" {
+			return skill
+		}
+		return skills.Guidance(role+" "+description, techStack, task)
 	}
 
 	switch taskType {
@@ -48,8 +50,8 @@ func (s *Service) generateDocument(
 		if searchBlock != "" {
 			presentationContext += "\n\nWEB SEARCH RESULTS FOR PRESENTATION SOURCES AND VISUAL IDEAS:\n" + searchBlock
 		}
-		skill := skills.Guidance(role+" presentation", "pptx markdown", topic)
-		prompt := prompts.PresentationWorker(role, topic, presentationContext, skill)
+		resolvedSkill := skillFallback("pptx markdown", topic)
+		prompt := prompts.PresentationWorker(role, topic, presentationContext, resolvedSkill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("presentation generation failed: %w", err)
@@ -59,8 +61,6 @@ func (s *Service) generateDocument(
 		if deck.Title == "" {
 			deck.Title = firstLine(topic)
 		}
-		// Ищем в интернете реальные картинки и встраиваем их в слайды. Если поиск
-		// что-то нашёл — перезаписываем Markdown ссылками, чтобы .md и .pptx совпадали.
 		imgN := s.attachImages(ctx, &deck, topic)
 		if imgN > 0 {
 			md = document.RenderDeckMarkdown(deck)
@@ -78,14 +78,12 @@ func (s *Service) generateDocument(
 		if angle == "" {
 			angle = "general web research"
 		}
-		// Воркер сначала выполняет реальный веб-поиск в своём диапазоне, затем
-		// LLM пишет отчёт, опираясь на найденные источники (а не выдумывая их).
 		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, angle)
 		if sourcesMd != "" {
 			files["solution/sources-"+slug+".md"] = sourcesMd
 		}
-		skill := skills.Guidance(role+" research "+angle, "markdown", topic)
-		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock, skill)
+		resolvedSkill := skillFallback("markdown", topic+" "+angle)
+		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock, resolvedSkill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("research generation failed: %w", err)
@@ -95,8 +93,8 @@ func (s *Service) generateDocument(
 
 	default: // "document"
 		docType := detectDocType(topic + " " + description)
-		skill := skills.Guidance(role+" "+docType, "markdown", topic+" "+description)
-		prompt := prompts.DocumentWorker(role, docType, topic, contextSection, skill)
+		resolvedSkill := skillFallback("markdown", topic+" "+description)
+		prompt := prompts.DocumentWorker(role, docType, topic, contextSection, resolvedSkill)
 		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
 		if err != nil {
 			return nil, nil, fmt.Errorf("document generation failed: %w", err)

@@ -64,6 +64,10 @@ func (s *Service) runOneWorker(
 
 	var files map[string]string
 	var commands []string
+
+	// Разрешаем skill fragments: используем то, что менеджер выбрал со склада
+	skillContent := buildSkillContext(wr.SelectedSkillSlugs, role, meta.techStack, req.TaskMd, description)
+
 	if meta.taskType != "" && meta.taskType != "code" {
 		// Не-кодовые задачи (research/document/presentation) идут по документному пути:
 		// результат — Markdown (и .pptx для презентаций) в папке solution/.
@@ -72,7 +76,7 @@ func (s *Service) runOneWorker(
 			topic = req.TaskMd
 		}
 		emit := s.searchEmitterFor(progress, basePct, req, role)
-		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit)
+		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit, skillContent)
 	} else {
 		workerMode := os.Getenv("WORKER_MODE")
 		useTools := workerMode == "tool" || (isToolMode(meta.techStack) && workerMode != "no-tool")
@@ -90,9 +94,9 @@ func (s *Service) runOneWorker(
 				workerMode = "multypass"
 			}
 			if workerMode == "multypass" {
-				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent)
 			} else {
-				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent)
 			}
 		}
 	}

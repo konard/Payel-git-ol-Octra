@@ -11,9 +11,10 @@ import (
 )
 
 // generateCodeMultiPass — single-pass генерация: все файлы за один LLM-запрос (-45% токенов)
+// skill — уже разрешённый контент скиллов (может быть пустым, используется только при fallback).
 func (s *Service) generateCodeMultiPass(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskMD, role, description, managerRole, basePath, extCtx, techStack string,
+	taskMD, role, description, managerRole, basePath, extCtx, techStack, skill string,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -69,7 +70,7 @@ RULES:
 	files, commands := parseMultiFileResponse(response)
 	if len(files) == 0 {
 		log.Printf("[Worker] Multi-pass parsing failed, falling back to N+1")
-		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, extCtx, techStack)
+		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, extCtx, techStack, skill)
 	}
 
 	finalFiles := make(map[string]string, len(files))

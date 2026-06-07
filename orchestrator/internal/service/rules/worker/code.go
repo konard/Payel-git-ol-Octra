@@ -12,9 +12,10 @@ import (
 )
 
 // generateCode — N+1 подход: спланировать список файлов, потом сгенерировать каждый
+// skill — уже разрешённый контент скиллов (из Warehouse.Select() или Guidance()), может быть пустым.
 func (s *Service) generateCode(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskMD, role, description, managerRole, basePath, extCtx, techStack string,
+	taskMD, role, description, managerRole, basePath, extCtx, techStack, skill string,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -23,10 +24,9 @@ func (s *Service) generateCode(
 	if techStack == "" {
 		techStack = "Go"
 	}
-
-	// Подбираем экспертный скилл под роль/стек/задачу воркера и инжектим его
-	// рекомендации в промпты планирования и генерации файлов.
-	skill := skills.Guidance(role+" "+description, techStack, taskMD)
+	if skill == "" {
+		skill = skills.Guidance(role+" "+description, techStack, taskMD)
+	}
 
 	planPrompt := prompts.WorkerPlanFiles(role, description, taskMD, contextSection, techStack, skill)
 	planResp, err := s.agentsClient.Generate(ctx, provider, model, planPrompt, tokens, 1024, 0.3)

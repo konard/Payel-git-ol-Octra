@@ -6,9 +6,10 @@ package rules
 
 // WorkerRole — описание роли воркера, который менеджер хочет нанять
 type WorkerRole struct {
-	Role         string
-	Description  string
-	CustomPrompt string
+	Role               string
+	Description        string
+	CustomPrompt       string
+	SelectedSkillSlugs []string // skill fragments, выбранные менеджером со склада
 }
 
 // ManagerRole — описание роли менеджера

@@ -30,6 +30,7 @@ type WorkerAgent struct {
 	meta               workerMeta
 	basePath           string
 	accumulatedContext string
+	selectedSlugs      []string // skill fragments, выбранные менеджером со склада
 }
 
 func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.WorkerRole, meta workerMeta, basePath, accCtx string) *WorkerAgent {
@@ -42,6 +43,7 @@ func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.Worke
 		meta:               meta,
 		basePath:           basePath,
 		accumulatedContext: accCtx,
+		selectedSlugs:      wr.SelectedSkillSlugs,
 	}
 }
 
@@ -56,6 +58,9 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 	// Собираем контекст из чата: что другие воркеры уже нагенерили
 	chatContext := a.buildChatContext(conv)
 	fullContext := chatContext + "\n" + a.accumulatedContext
+
+	// Разрешаем skill fragments: используем то, что менеджер выбрал со склада
+	skillContent := buildSkillContext(a.selectedSlugs, a.role, a.meta.techStack, a.req.TaskMd, a.description)
 
 	// TASK.md (AI)
 	taskMD, err := a.service.createTaskMD(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
@@ -77,7 +82,7 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			topic = a.req.TaskMd
 		}
 		files, commands, err = a.service.generateDocument(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil)
+			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
 	} else {
 		useTools := workerMode == "tool" || (isToolMode(a.meta.techStack) && workerMode != "no-tool")
 		if useTools {
@@ -95,10 +100,10 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			}
 			if workerMode == "multypass" {
 				files, commands, err = a.service.generateCodeMultiPass(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack)
+					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
 			} else {
 				files, commands, err = a.service.generateCode(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack)
+					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
 			}
 		}
 	}
