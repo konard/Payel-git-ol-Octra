@@ -26,7 +26,7 @@ export function ProvidersSection() {
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="mb-4 text-sm font-semibold text-emerald-300">Model choice stays flexible</p>
-            <h2 className="text-4xl font-semibold leading-tight sm:text-5xl">
+            <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               Use the provider that fits the task.
             </h2>
             <p className="mt-5 text-lg leading-8 text-white/66">

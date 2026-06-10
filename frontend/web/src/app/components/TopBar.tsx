@@ -290,7 +290,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
              alt="Octra Mascot"
              className="hidden md:block w-10 h-10 rounded-lg object-contain"
             />
-           <h1 className="hidden md:block text-lg font-semibold text-[var(--text)]">Octra</h1>
+           <h1 className="hidden md:block font-serif text-xl font-semibold tracking-tight text-[var(--text)]">Octra</h1>
         </div>
 
         {/* Center: GitHub button */}

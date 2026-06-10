@@ -102,7 +102,7 @@ export function WorkflowDemo() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-14 max-w-3xl">
           <p className="mb-4 text-sm font-semibold text-orange-300">One workspace, multiple outcomes</p>
-          <h2 className="text-4xl font-semibold leading-tight sm:text-5xl">
+          <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
             Built for code, research, text documents, and presentations.
           </h2>
           <p className="mt-5 text-lg leading-8 text-white/66">
