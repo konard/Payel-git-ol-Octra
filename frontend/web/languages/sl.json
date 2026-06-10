@@ -277,7 +277,13 @@
     "pasteJson": "Prilepite JSON tukaj...",
     "importBtn": "Uvozi",
     "chooseFile": "Izberi datoteko",
-    "invalidJson": "Neveljaven format JSON"
+    "invalidJson": "Neveljaven format JSON",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Veljavno do",

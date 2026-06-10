@@ -7,10 +7,16 @@ import { useState, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { useAuthStore } from '../stores/authStore';
 import { useI18n } from '../hooks/useI18n';
+import { exportOcaweText } from '../services/ocaweService';
 
 interface WorkflowExportProps {
   onImportJSON: (json: string) => void;
 }
+
+// Octra can describe a workflow either as native JSON (re-importable here) or as
+// an ocawe Cawfile bundle (https://github.com/lefinepro/ocawe) so the same
+// Boss → Manager → Worker graph can be run by the ocawe Crystal runtime.
+type ExportFormat = 'json' | 'ocawe';
 
 export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
   const { t } = useI18n();
@@ -21,20 +27,49 @@ export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
   const [jsonText, setJsonText] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+  const [format, setFormat] = useState<ExportFormat>('json');
+
+  const buildJson = useCallback(
+    (publicFlag: boolean) =>
+      JSON.stringify(
+        {
+          nodes,
+          edges,
+          author: user?.username || 'Anonymous',
+          is_public: publicFlag,
+          exported_at: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+    [nodes, edges, user],
+  );
+
+  const buildOcawe = useCallback(
+    () => exportOcaweText(nodes, edges, { workflowName: 'octra-workflow' }),
+    [nodes, edges],
+  );
+
+  const generate = useCallback(
+    (fmt: ExportFormat, publicFlag: boolean) =>
+      fmt === 'ocawe' ? buildOcawe() : buildJson(publicFlag),
+    [buildJson, buildOcawe],
+  );
 
   const handleExport = useCallback(() => {
-    const workflowData = {
-      nodes,
-      edges,
-      author: user?.username || 'Anonymous',
-      is_public: isPublic,
-      exported_at: new Date().toISOString(),
-    };
-    const json = JSON.stringify(workflowData, null, 2);
-    setJsonText(json);
+    setJsonText(generate(format, isPublic));
     setCopied(false);
     setIsOpen(true);
-  }, [nodes, edges, user, isPublic]);
+  }, [generate, format, isPublic]);
+
+  const handleFormatChange = useCallback(
+    (fmt: ExportFormat) => {
+      setFormat(fmt);
+      setJsonText(generate(fmt, isPublic));
+      setCopied(false);
+    },
+    [generate, isPublic],
+  );
 
   const handleCopy = useCallback(async () => {
     try {
@@ -55,14 +90,17 @@ export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
   }, [jsonText]);
 
   const handleDownload = useCallback(() => {
-    const blob = new Blob([jsonText], { type: 'application/json' });
+    const isOcawe = format === 'ocawe';
+    const blob = new Blob([jsonText], {
+      type: isOcawe ? 'text/plain' : 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `workflow-${Date.now()}.json`;
+    a.download = isOcawe ? `Cawfile-${Date.now()}.caws.txt` : `workflow-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [jsonText]);
+  }, [jsonText, format]);
 
   const handleImport = useCallback(() => {
     onImportJSON(jsonText);
@@ -127,31 +165,60 @@ export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <p className="text-sm text-[var(--text-secondary)]">{t('workflowLibrary.exportDesc')}</p>
 
-              {/* Public toggle */}
+              {/* Format selector: native JSON or ocawe Cawfile bundle */}
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="export-public"
-                  checked={isPublic}
-                  onChange={(e) => {
-                    setIsPublic(e.target.checked);
-                    // Re-generate JSON with updated value
-                    const workflowData = {
-                      nodes,
-                      edges,
-                      author: user?.username || 'Anonymous',
-                      is_public: e.target.checked,
-                      exported_at: new Date().toISOString(),
-                    };
-                    setJsonText(JSON.stringify(workflowData, null, 2));
-                    setCopied(false);
-                  }}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="export-public" className="text-sm text-[var(--text)]">
-                  {t('workflowLibrary.publishLabel')}
-                </label>
+                <span className="text-sm text-[var(--text)]">{t('workflowLibrary.formatLabel')}</span>
+                <div className="inline-flex rounded-md border border-[var(--border)] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => handleFormatChange('json')}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      format === 'json'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--background)] text-[var(--text)] hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  >
+                    {t('workflowLibrary.formatJson')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFormatChange('ocawe')}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      format === 'ocawe'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--background)] text-[var(--text)] hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  >
+                    {t('workflowLibrary.formatOcawe')}
+                  </button>
+                </div>
               </div>
+
+              {format === 'ocawe' && (
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  {t('workflowLibrary.ocaweHint')}
+                </p>
+              )}
+
+              {/* Public toggle — only meaningful for the native JSON format */}
+              {format === 'json' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="export-public"
+                    checked={isPublic}
+                    onChange={(e) => {
+                      setIsPublic(e.target.checked);
+                      setJsonText(buildJson(e.target.checked));
+                      setCopied(false);
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="export-public" className="text-sm text-[var(--text)]">
+                    {t('workflowLibrary.publishLabel')}
+                  </label>
+                </div>
+              )}
 
               {/* JSON textarea */}
               <div className="relative">
@@ -166,21 +233,23 @@ export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
                 />
               </div>
 
-              {/* File upload */}
-              <div className="flex items-center gap-3">
-                <label className="px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-sm text-[var(--text)] cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors">
-                  {t('workflowLibrary.chooseFile')}
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  {t('workflowLibrary.importDesc')}
-                </span>
-              </div>
+              {/* File upload — importing back into Octra only supports JSON */}
+              {format === 'json' && (
+                <div className="flex items-center gap-3">
+                  <label className="px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-sm text-[var(--text)] cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors">
+                    {t('workflowLibrary.chooseFile')}
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-xs text-[var(--text-tertiary)]">
+                    {t('workflowLibrary.importDesc')}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -194,22 +263,30 @@ export function WorkflowExport({ onImportJSON }: WorkflowExportProps) {
                       : 'bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white'
                   }`}
                 >
-                  {copied ? t('workflowLibrary.copied') : t('workflowLibrary.copyJson')}
+                  {copied
+                    ? t('workflowLibrary.copied')
+                    : format === 'ocawe'
+                      ? t('workflowLibrary.copyBundle')
+                      : t('workflowLibrary.copyJson')}
                 </button>
                 <button
                   onClick={handleDownload}
                   className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] text-[var(--text)] text-sm font-medium rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
                 >
-                  {t('workflowLibrary.downloadJson')}
+                  {format === 'ocawe'
+                    ? t('workflowLibrary.downloadBundle')
+                    : t('workflowLibrary.downloadJson')}
                 </button>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handleImport}
-                  className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] text-[var(--text)] text-sm font-medium rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
-                >
-                  {t('workflowLibrary.importBtn')}
-                </button>
+                {format === 'json' && (
+                  <button
+                    onClick={handleImport}
+                    className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] text-[var(--text)] text-sm font-medium rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
+                  >
+                    {t('workflowLibrary.importBtn')}
+                  </button>
+                )}
                 <button
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] text-[var(--text)] text-sm font-medium rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"

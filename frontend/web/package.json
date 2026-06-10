@@ -30,8 +30,9 @@
     "test:app-render-guards": "node scripts/check-app-render-guards.mjs",
     "test:onboarding-tour": "node scripts/check-onboarding-tour.mjs",
     "test:token-statistics": "node scripts/check-token-statistics.mjs",
+    "test:ocawe-export": "node scripts/check-ocawe-export.mjs",
     "test:create-solution": "node scripts/check-create-solution.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour && npm run test:token-statistics && npm run test:create-solution"
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour && npm run test:token-statistics && npm run test:ocawe-export && npm run test:create-solution"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

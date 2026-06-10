@@ -277,7 +277,13 @@
     "pasteJson": "Lipiți JSON aici...",
     "importBtn": "Import",
     "chooseFile": "Alege fișier",
-    "invalidJson": "Format JSON nevalid"
+    "invalidJson": "Format JSON nevalid",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Valabil până la",

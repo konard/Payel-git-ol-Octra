@@ -289,7 +289,13 @@
     "pasteJson": "在此粘贴JSON...",
     "importBtn": "导入",
     "chooseFile": "选择文件",
-    "invalidJson": "无效的JSON格式"
+    "invalidJson": "无效的JSON格式",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "有效期至",

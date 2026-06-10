@@ -277,7 +277,13 @@
     "pasteJson": "Vložte JSON sem...",
     "importBtn": "Importovat",
     "chooseFile": "Vybrat soubor",
-    "invalidJson": "Neplatný formát JSON"
+    "invalidJson": "Neplatný formát JSON",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Platné do",

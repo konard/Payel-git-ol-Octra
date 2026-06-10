@@ -277,7 +277,13 @@
     "pasteJson": "여기에 JSON 붙여넣기...",
     "importBtn": "가져오기",
     "chooseFile": "파일 선택",
-    "invalidJson": "잘못된 JSON 형식"
+    "invalidJson": "잘못된 JSON 형식",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "유효 기간",
