@@ -46,7 +46,8 @@
     "stop": "Ferma",
     "reconnecting": "Riconnessione al server...",
     "taskCreated": "Attività creata",
-    "sendError": "Errore invio attività"
+    "sendError": "Errore invio attività",
+    "searchOnLefine": "Cerca su Lefine"
   },
   "nodes": {
     "ceo": "CEO",

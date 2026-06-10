@@ -46,7 +46,8 @@
     "stop": "Durdur",
     "reconnecting": "Sunucuya yeniden bağlanıyor...",
     "taskCreated": "Görev oluşturuldu",
-    "sendError": "Göver gönderme hatası"
+    "sendError": "Göver gönderme hatası",
+    "searchOnLefine": "Lefine'de ara"
   },
   "nodes": {
     "ceo": "CEO",

@@ -46,7 +46,8 @@
     "stop": "Тоқтату",
     "reconnecting": "Серверге қайта қосылу...",
     "taskCreated": "Тапсырма жасалды",
-    "sendError": "Тапсырма жіберу қатесі"
+    "sendError": "Тапсырма жіберу қатесі",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

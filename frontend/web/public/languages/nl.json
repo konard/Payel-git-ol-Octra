@@ -46,7 +46,8 @@
     "stop": "Stop",
     "reconnecting": "Opnieuw verbinden met server...",
     "taskCreated": "Taak aangemaakt",
-    "sendError": "Taak verzendfout"
+    "sendError": "Taak verzendfout",
+    "searchOnLefine": "Zoeken op Lefine"
   },
   "nodes": {
     "ceo": "CEO",

@@ -46,7 +46,8 @@
     "stop": "Заустави",
     "reconnecting": "Поновно повезивање на сервер...",
     "taskCreated": "Задатак креиран",
-    "sendError": "Грешка при слању задатка"
+    "sendError": "Грешка при слању задатка",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

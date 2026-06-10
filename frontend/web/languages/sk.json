@@ -46,7 +46,8 @@
     "stop": "Zastaviť",
     "reconnecting": "Opätovné pripájanie k serveru...",
     "taskCreated": "Úloha vytvorená",
-    "sendError": "Chyba pri odosielaní úlohy"
+    "sendError": "Chyba pri odosielaní úlohy",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

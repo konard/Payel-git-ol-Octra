@@ -46,7 +46,8 @@
     "stop": "Arrêter",
     "reconnecting": "Reconnexion au serveur...",
     "taskCreated": "Tâche créée",
-    "sendError": "Erreur d'envoi de la tâche"
+    "sendError": "Erreur d'envoi de la tâche",
+    "searchOnLefine": "Rechercher sur Lefine"
   },
   "nodes": {
     "ceo": "PDG",

@@ -6,6 +6,18 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useCustomProvidersStore } from '../../stores/customProvidersStore';
 import { t } from '../../hooks/useI18n';
 
+// Destination for the globe / search button. In development Lefine runs on the
+// local Vite server; in production it lives at lefine.pro. An explicit
+// VITE_LEFINE_URL always wins so deployments can point elsewhere.
+const LEFINE_SEARCH_URL =
+  import.meta.env.VITE_LEFINE_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5173/' : 'https://lefine.pro/');
+
+function openLefineSearch() {
+  if (typeof window === 'undefined') return;
+  window.open(LEFINE_SEARCH_URL, '_blank', 'noopener,noreferrer');
+}
+
 interface BottomInputProps {
   onSubmit: (data: TaskData) => void;
   onStop?: () => void;
@@ -446,9 +458,15 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                   </span>
                 )}
               </button>
-              <span className="rounded-lg p-1.5" aria-hidden="true">
+              <button
+                type="button"
+                onClick={openLefineSearch}
+                className="rounded-lg p-1.5 transition-colors hover:bg-[var(--surface)] hover:text-[var(--text)]"
+                title={t('bottomInput.searchOnLefine')}
+                aria-label={t('bottomInput.searchOnLefine')}
+              >
                 <Globe size={16} />
-              </span>
+              </button>
             </div>
           </div>
 
