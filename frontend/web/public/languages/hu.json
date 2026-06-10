@@ -277,7 +277,13 @@
     "pasteJson": "Illessze be a JSON-t ide...",
     "importBtn": "Importálás",
     "chooseFile": "Fájl kiválasztása",
-    "invalidJson": "Érvénytelen JSON formátum"
+    "invalidJson": "Érvénytelen JSON formátum",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Érvényes eddig",

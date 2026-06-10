@@ -277,7 +277,13 @@
     "pasteJson": "الصق JSON هنا...",
     "importBtn": "استيراد",
     "chooseFile": "اختر ملف",
-    "invalidJson": "تنسيق JSON غير صالح"
+    "invalidJson": "تنسيق JSON غير صالح",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "صالح حتى",

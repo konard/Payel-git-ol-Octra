@@ -277,7 +277,13 @@
     "pasteJson": "Buraya JSON yapıştırın...",
     "importBtn": "İçe Aktar",
     "chooseFile": "Dosya seç",
-    "invalidJson": "Geçersiz JSON formatı"
+    "invalidJson": "Geçersiz JSON formatı",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Geçerlilik süresi",

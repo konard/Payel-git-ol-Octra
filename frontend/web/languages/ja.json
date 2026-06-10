@@ -289,7 +289,13 @@
     "pasteJson": "ここにJSONを貼り付け...",
     "importBtn": "インポート",
     "chooseFile": "ファイルを選択",
-    "invalidJson": "無効なJSON形式"
+    "invalidJson": "無効なJSON形式",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "有効期限",

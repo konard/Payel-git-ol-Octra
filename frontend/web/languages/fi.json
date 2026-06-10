@@ -277,7 +277,13 @@
     "pasteJson": "Liitä JSON tähän...",
     "importBtn": "Tuo",
     "chooseFile": "Valitse tiedosto",
-    "invalidJson": "Virheellinen JSON-muoto"
+    "invalidJson": "Virheellinen JSON-muoto",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Voimassa asti",

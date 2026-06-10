@@ -250,7 +250,13 @@
     "pasteJson": "JSON осында қою...",
     "importBtn": "Импорттау",
     "chooseFile": "Файлды таңдау",
-    "invalidJson": "JSON пішімі жарамсыз"
+    "invalidJson": "JSON пішімі жарамсыз",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Valid until",

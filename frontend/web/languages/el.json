@@ -277,7 +277,13 @@
     "pasteJson": "Επικολλήστε JSON εδώ...",
     "importBtn": "Εισαγωγή",
     "chooseFile": "Επιλογή αρχείου",
-    "invalidJson": "Μη έγκυρη μορφή JSON"
+    "invalidJson": "Μη έγκυρη μορφή JSON",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Ισχύει έως",

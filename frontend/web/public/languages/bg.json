@@ -277,7 +277,13 @@
     "pasteJson": "Поставете JSON тук...",
     "importBtn": "Импорт",
     "chooseFile": "Избери файл",
-    "invalidJson": "Невалиден JSON формат"
+    "invalidJson": "Невалиден JSON формат",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Валидно до",

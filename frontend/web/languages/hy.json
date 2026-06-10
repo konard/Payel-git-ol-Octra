@@ -250,7 +250,13 @@
     "pasteJson": "Փակցրեք JSON այստեղ...",
     "importBtn": "Ներմուծել",
     "chooseFile": "Ընտրել ֆայլ",
-    "invalidJson": "Սխալ JSON ֆորմատ"
+    "invalidJson": "Սխալ JSON ֆորմատ",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Valid until",

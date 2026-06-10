@@ -261,7 +261,13 @@
     "pasteJson": "JSON shu yerga joylang...",
     "importBtn": "Import qilish",
     "chooseFile": "Faylni tanlash",
-    "invalidJson": "JSON format noto'g'ri"
+    "invalidJson": "JSON format noto'g'ri",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Valid until",

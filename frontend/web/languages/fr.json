@@ -263,7 +263,13 @@
     "pasteJson": "Collez le JSON ici...",
     "importBtn": "Importer",
     "chooseFile": "Choisir un fichier",
-    "invalidJson": "Format JSON invalide"
+    "invalidJson": "Format JSON invalide",
+    "formatLabel": "Format:",
+    "formatJson": "JSON",
+    "formatOcawe": "Ocawe",
+    "ocaweHint": "Ocawe Cawfile bundle (github.com/lefinepro/ocawe). Copy or download to run with: ocawe up",
+    "copyBundle": "Copy bundle",
+    "downloadBundle": "Download bundle"
   },
   "profile": {
     "subscriptionEnd": "Valid until",
