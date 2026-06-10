@@ -31,10 +31,17 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	writeContextFile(basePath, req.TaskId, req.ManagerId, req.ManagerRole, req.WorkerRoles, contextSummary)
 
 	if progress != nil {
+		roleNames := make([]string, 0, len(req.WorkerRoles))
+		for _, wr := range req.WorkerRoles {
+			if wr != nil {
+				roleNames = append(roleNames, wr.Role)
+			}
+		}
 		progress(5, "Starting Group Chat with all workers", map[string]string{
 			"manager_id":   req.ManagerId,
 			"manager_role": req.ManagerRole,
 			"workers":      fmt.Sprintf("%d", len(req.WorkerRoles)),
+			"worker_roles": strings.Join(roleNames, ","),
 		})
 	}
 

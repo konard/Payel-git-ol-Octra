@@ -40,7 +40,7 @@ func (s *Service) nixBuild(projectPath string, progress rules.ProgressFunc) {
 		return
 	}
 
-	emit(progress, 81, "Building project with Nix...", nil)
+	emit(progress, 81, "Building project...", nil)
 
 	cmd := exec.Command("nix", "build",
 		"--extra-experimental-features", "nix-command flakes")
@@ -48,15 +48,14 @@ func (s *Service) nixBuild(projectPath string, progress rules.ProgressFunc) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Warning: nix build failed (non-fatal): %v\nOutput: %s", err, string(out))
-		emit(progress, 82, "Nix build completed with warnings", map[string]string{
-			"nix_build":  "failed",
-			"nix_output": string(out),
+		emit(progress, 82, "Build completed with warnings", map[string]string{
+			"build": "failed",
 		})
 		return
 	}
 	log.Printf("nix build succeeded: %s", projectPath)
-	emit(progress, 82, "Nix build passed", map[string]string{
-		"nix_build": "passed",
+	emit(progress, 82, "Build passed", map[string]string{
+		"build": "passed",
 	})
 }
 

@@ -307,7 +307,8 @@ export function Canvas({ mode }: CanvasProps) {
           onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}
           onPaneClick={onPaneClick}
-          fitView
+          minZoom={0.15}
+          defaultViewport={{ x: 80, y: 90, zoom: 0.45 }}
           className="bg-[var(--bg-canvas)]"
           proOptions={{ hideAttribution: true }}
           onInit={(instance) => setReactFlowInstance(instance)}
