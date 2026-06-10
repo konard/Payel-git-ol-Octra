@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe } from 'lucide-react';
+import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS } from '../../config/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -23,14 +23,59 @@ export interface TaskData {
   files: File[];
 }
 
+type AttachedFileItem = {
+  id: string;
+  file: File;
+  previewUrl: string | null;
+};
+
+function createAttachmentId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createAttachedFileItem(file: File): AttachedFileItem {
+  return {
+    id: createAttachmentId(),
+    file,
+    previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+  };
+}
+
+function revokeAttachmentPreview(attachment: AttachedFileItem) {
+  if (attachment.previewUrl) {
+    URL.revokeObjectURL(attachment.previewUrl);
+  }
+}
+
+function formatFileSize(size: number): string {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  const units = ['KB', 'MB', 'GB'];
+  let value = size / 1024;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
 export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFileItem[]>([]);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachedFilesRef = useRef<AttachedFileItem[]>([]);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
@@ -76,6 +121,16 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       if (intervalId) clearInterval(intervalId);
     };
   }, [isAnimating, createBubble]);
+
+  useEffect(() => {
+    attachedFilesRef.current = attachedFiles;
+  }, [attachedFiles]);
+
+  useEffect(() => {
+    return () => {
+      attachedFilesRef.current.forEach(revokeAttachmentPreview);
+    };
+  }, []);
 
   // Custom providers
   const { providers: customProviders, models: customModels } = useCustomProvidersStore();
@@ -143,7 +198,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       ...formData,
       title,
       apiKey: formData.apiKey.trim(),
-      files: attachedFiles,
+      files: attachedFiles.map((attachment) => attachment.file),
     });
 
     setFormData({
@@ -154,6 +209,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       model: formData.model,
       apiKey: '',
     });
+    attachedFiles.forEach(revokeAttachmentPreview);
     setAttachedFiles([]);
     setShowModelSelector(false);
   };
@@ -173,6 +229,24 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
     setDefaultModel(modelId);
   }, [setDefaultModel]);
 
+  const handleFilesSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...files.map(createAttachedFileItem)]);
+    }
+    e.target.value = '';
+  }, []);
+
+  const removeAttachedFile = useCallback((attachmentId: string) => {
+    setAttachedFiles((prev) => {
+      const attachment = prev.find((item) => item.id === attachmentId);
+      if (attachment) {
+        revokeAttachmentPreview(attachment);
+      }
+      return prev.filter((item) => item.id !== attachmentId);
+    });
+  }, []);
+
   const selectedProvider = allProviders.find(p => p.id === formData.provider);
 
   // Submit on Enter (Shift+Enter inserts a newline), matching the reference chat
@@ -191,6 +265,42 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
             provider/model selectors and the send button all live in one field,
             matching the reference design from issue #40. */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 pb-2 pt-3 transition-colors focus-within:border-[var(--accent)]">
+          {attachedFiles.length > 0 && (
+            <div className="mb-2 flex max-h-32 gap-2 overflow-x-auto pb-1" aria-label="Attached files">
+              {attachedFiles.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex h-14 min-w-44 max-w-60 flex-shrink-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5"
+                >
+                  {attachment.previewUrl ? (
+                    <img
+                      src={attachment.previewUrl}
+                      alt={attachment.file.name}
+                      className="h-10 w-10 flex-shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-[var(--background)] text-[var(--text-muted)]">
+                      <FileText size={18} />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-[var(--text)]">{attachment.file.name}</div>
+                    <div className="truncate text-[11px] text-[var(--text-muted)]">{formatFileSize(attachment.file.size)}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachedFile(attachment.id)}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--background)] hover:text-[var(--text)]"
+                    aria-label={`Remove ${attachment.file.name}`}
+                    title={`Remove ${attachment.file.name}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Row 1 — description + send */}
           <div className="flex items-end gap-2">
             <textarea
@@ -321,11 +431,7 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                 multiple
                 ref={fileInputRef}
                 className="hidden"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  setAttachedFiles((prev) => [...prev, ...files]);
-                  e.target.value = '';
-                }}
+                onChange={handleFilesSelected}
               />
               <button
                 type="button"
