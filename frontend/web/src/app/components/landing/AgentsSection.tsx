@@ -33,7 +33,7 @@ export function AgentsSection() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/7">
               <Users className="h-6 w-6 text-cyan-300" />
             </div>
-            <h2 className="text-4xl font-semibold leading-tight sm:text-5xl">
+            <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               Regular users and technical teams work in the same system.
             </h2>
           </div>

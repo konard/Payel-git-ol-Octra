@@ -58,7 +58,7 @@ export function ModelsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-6"
+            className="font-serif text-4xl sm:text-5xl font-bold tracking-tight text-[var(--text)] mb-6"
           >
             {t('landing.models.title')}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">{t('landing.models.titleAccent')}</span>

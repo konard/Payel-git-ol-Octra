@@ -8,6 +8,13 @@
   --accent-hover: #ea580c;
   --text: #111111;
   --text-muted: #6b7280;
+  /* Secondary/tertiary text + tertiary surface. These tokens are referenced
+     across the app (sidebar, modals, workflow library) but were never defined,
+     so those elements fell back to inherited colours. Defined here with neutral
+     greys that match the existing palette — no change to the established hues. */
+  --text-secondary: #374151;
+  --text-tertiary: #9ca3af;
+  --bg-tertiary: #e5e7eb;
   --success: #22c55e;
   --error: #ef4444;
   --warning: #eab308;
@@ -32,6 +39,11 @@
   --accent-hover: #fb923c;
   --text: #e5e5e5;
   --text-muted: #a3a3a3;
+  /* Secondary/tertiary text + tertiary surface — neutral greys matching the
+     existing dark palette (see the note in :root). */
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #737373;
+  --bg-tertiary: #262626;
   --success: #22c55e;
   --error: #ef4444;
   --warning: #eab308;
@@ -52,15 +64,24 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-sunken: var(--surface-sunken);
+  --color-bg-tertiary: var(--bg-tertiary);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
   --color-success: var(--success);
   --color-error: var(--error);
   --color-warning: var(--warning);
   --color-border: var(--border);
-  
+
+  /* Typography — drives the `font-sans` / `font-serif` Tailwind utilities and
+     the `var(--font-*)` references used in base styles. Defined with literal
+     stacks here (not `var(--font-*)`) to avoid a self-referential cycle. */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Source Serif 4', 'Georgia', 'Times New Roman', ui-serif, serif;
+
   /* React Flow */
   --color-bg-canvas: var(--bg-canvas);
   --color-bg-node: var(--bg-node);
@@ -77,7 +98,22 @@
   body {
     background-color: var(--background);
     color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Editorial serif for display headings — the most recognisable "Claude" cue.
+     Scoped to opt-in classes (`.font-serif`, markdown content, landing display)
+     so dense UI chrome keeps the clean sans. */
+  .font-serif,
+  .markdown-preview h1,
+  .markdown-preview h2,
+  .markdown-preview h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
   }
 
   /* Custom scrollbars - Light theme */

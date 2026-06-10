@@ -36,7 +36,7 @@ export function HeroSection() {
           </span>
         </div>
 
-        <h1 className="mb-6 text-5xl font-semibold leading-none text-white sm:text-6xl lg:text-7xl">
+        <h1 className="mb-6 font-serif text-5xl font-semibold leading-none tracking-tight text-white sm:text-6xl lg:text-7xl">
           Octra
         </h1>
 
