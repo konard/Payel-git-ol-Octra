@@ -437,18 +437,79 @@ func shouldLaunchSearchWorkflowFromChat(words map[string]bool) bool {
 	return false
 }
 
+// isRussian reports whether the message contains Cyrillic letters. The chat
+// answers in the same language the user wrote in, so a greeting like «привет»
+// is met with a Russian reply instead of the previous English-only canned text
+// (issue #70: the chat ignored casual/Russian messages and felt dead).
+func isRussian(message string) bool {
+	for _, r := range message {
+		if unicode.Is(unicode.Cyrillic, r) {
+			return true
+		}
+	}
+	return false
+}
+
+// buildBossChatReply produces a conversational reply for messages that are not
+// workflow/search requests. The chat must behave like a normal assistant — a
+// plain «привет» or "hello" should get a friendly answer rather than silence or
+// a generic English line (issue #70). Replies are returned in the user's
+// language (Russian when the message contains Cyrillic, English otherwise).
 func buildBossChatReply(message string) string {
+	ru := isRussian(message)
 	words := normalizedWords(message)
-	if hasAnyWord(words, []string{"hello", "hi", "hey"}) {
-		return "Hi, I'm here."
+
+	// Greetings — hello / hi / привет / здравствуйте / добрый день …
+	if hasAnyWord(words, []string{
+		"hello", "hi", "hey", "yo", "hiya", "howdy",
+		"привет", "приветик", "прив", "здравствуй", "здравствуйте", "здарова",
+		"хай", "ку", "салют", "добрый", "доброе",
+	}) {
+		if ru {
+			return "Привет! Я Octra. Можем просто пообщаться, а можно описать, что нужно собрать или найти, — и я возьмусь за задачу."
+		}
+		return "Hi! I'm Octra. We can just chat, or you can describe what to build or look up and I'll get to work."
 	}
-	if hasAnyWord(words, []string{"thanks", "thank"}) {
-		return "You're welcome."
+
+	// How are you — как дела / как ты / how are you …
+	if hasAnyWord(words, []string{"дела", "поживаешь"}) ||
+		(words["how"] && words["you"] && (words["are"] || words["doing"])) {
+		if ru {
+			return "У меня всё отлично, спасибо! Чем помочь — пообщаться, поискать что-то в интернете или собрать проект?"
+		}
+		return "I'm doing great, thanks! Want to chat, research something, or have me build a project?"
 	}
-	if hasAnyWord(words, []string{"help", "workflow", "build", "create"}) {
-		return "I can answer here, or start the workflow when you describe code you want built or changed."
+
+	// Thanks — thanks / thank you / спасибо / благодарю …
+	if hasAnyWord(words, []string{"thanks", "thank", "thx", "спасибо", "благодарю", "спс", "пасиб"}) {
+		if ru {
+			return "Всегда пожалуйста! Если понадобится что-то ещё — просто напишите."
+		}
+		return "You're welcome! Let me know if there's anything else."
 	}
-	return "I understand. Send the next detail when you are ready."
+
+	// Farewell — bye / goodbye / пока / до свидания …
+	if hasAnyWord(words, []string{"bye", "goodbye", "cya", "пока", "свидания", "увидимся", "прощай"}) {
+		if ru {
+			return "Пока! Возвращайтесь, когда понадобится помощь."
+		}
+		return "Bye! Come back whenever you need a hand."
+	}
+
+	// Identity / capabilities / help — who are you / что ты умеешь / помоги …
+	if hasAnyWord(words, []string{"help", "помощь", "помоги", "умеешь", "можешь"}) ||
+		(words["who"] && words["you"]) || (words["what"] && (words["can"] || words["do"]) && words["you"]) ||
+		(words["кто"] && words["ты"]) || (words["что"] && words["ты"]) {
+		if ru {
+			return "Я Octra — фабрика ИИ-агентов. Могу просто общаться, искать информацию в интернете или собрать проект целиком. Например: «создай php сервер» или «найди документацию по httpx»."
+		}
+		return "I'm Octra, an AI agent factory. I can chat, research the web, or build a whole project for you. Try: \"create a php server\" or \"find the httpx docs\"."
+	}
+
+	if ru {
+		return "Понял вас. Опишите задачу — и я возьмусь за работу, либо продолжим общение."
+	}
+	return "Got it. Describe a task and I'll get to work, or we can keep chatting."
 }
 
 func normalizedWords(message string) map[string]bool {
@@ -589,9 +650,62 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 
 		if update.Status == "success" || update.Status == "error" {
 			wsHub.Broadcast(streamID, wsUpdate)
+			// When the workflow finishes successfully the boss reports back to the
+			// user in the chat ("отчитаться") so a completed task never ends in
+			// silence (issue #70). Errors keep their existing red status banner.
+			if update.Status == "success" {
+				sendCompletionReport(conn, streamID, taskReq, update.Data)
+			}
 			return
 		}
 	}
+}
+
+// sendCompletionReport posts a short boss chat message summarizing a finished
+// task. It folds in the boss's own answer (chatSummary, used by
+// research/document tasks) and a link to the result when one is available, and
+// is written in the language of the original request (issue #70).
+func sendCompletionReport(conn *websocket.Conn, taskID string, taskReq requests.CreateTaskRequest, data map[string]string) {
+	writeBossChatMessage(conn, taskID, buildCompletionReport(taskReq, data), false)
+}
+
+// buildCompletionReport composes the boss's completion message in the language
+// of the original request, folding in the boss's own answer (chatSummary) and a
+// result link when available.
+func buildCompletionReport(taskReq requests.CreateTaskRequest, data map[string]string) string {
+	ru := isRussian(taskReq.Title + " " + taskReq.Description)
+
+	link := data["pullRequestUrl"]
+	if link == "" {
+		link = data["repoUrl"]
+	}
+	if link == "" {
+		link = data["zipUrl"]
+	}
+
+	var b strings.Builder
+	if ru {
+		b.WriteString("✅ Готово! Я завершил задачу")
+	} else {
+		b.WriteString("✅ Done! I've finished the task")
+	}
+	if title := strings.TrimSpace(taskReq.Title); title != "" {
+		b.WriteString(" «" + title + "»")
+	}
+	b.WriteString(".")
+
+	if summary := strings.TrimSpace(data["chatSummary"]); summary != "" {
+		b.WriteString("\n\n" + summary)
+	}
+	if link != "" {
+		if ru {
+			b.WriteString("\n\nРезультат: " + link)
+		} else {
+			b.WriteString("\n\nResult: " + link)
+		}
+	}
+
+	return b.String()
 }
 
 // handleTaskReconnectWS handles WebSocket reconnection to an existing task

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, CircleDotDashed, Download, GitBranch, Globe, Loader2, UserRound } from 'lucide-react';
 import octraMascot from '../../images/octra-mascot.png';
 import { useTaskStore } from '../../stores/taskStore';
+import { TypewriterText } from './TypewriterText';
 
 export interface ChatMessage {
   id: string;
@@ -12,6 +13,10 @@ export interface ChatMessage {
   isClarification?: boolean;
   progress?: number;
   showProgress?: boolean;
+  // When true the boss message is revealed with a typewriter animation. Set for
+  // freshly received boss replies; left false for the user's own messages and
+  // for history restored when switching chats (issue #70).
+  animate?: boolean;
 }
 
 interface ChatProps {
@@ -86,7 +91,17 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
                         ? 'border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[var(--text)]'
                         : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text)]'
                   }`}>
-                    <div className="whitespace-pre-wrap text-sm leading-6">{message.text}</div>
+                    <div className="whitespace-pre-wrap text-sm leading-6">
+                      {message.sender === 'boss' ? (
+                        <TypewriterText
+                          text={message.text}
+                          animate={message.animate}
+                          onTick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                        />
+                      ) : (
+                        message.text
+                      )}
+                    </div>
 
                     {message.showProgress && (
                       <div className="mt-3">

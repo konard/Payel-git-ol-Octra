@@ -194,6 +194,10 @@ export default function App() {
       isClarification,
       progress,
       showProgress,
+      // Freshly received boss replies type themselves out (issue #70). The
+      // progress message (showProgress) updates its text frequently, so it is
+      // shown instantly instead of re-animating on every tick.
+      animate: sender === 'boss' && !showProgress,
     };
     setChatMessages(prev => [...prev, newMessage]);
     if (sender === 'boss') {
@@ -215,7 +219,8 @@ export default function App() {
         };
         return updatedMessages;
       } else {
-        // Create new boss message with progress
+        // Create new boss message with progress. Progress text updates often,
+        // so it is shown instantly rather than typed out (issue #70).
         const newMessage = {
           id: Date.now().toString(),
           text: message || 'Processing your request...',
@@ -224,6 +229,7 @@ export default function App() {
           read: false,
           progress,
           showProgress: true,
+          animate: false,
         };
         return [...prev, newMessage];
       }
@@ -399,6 +405,7 @@ export default function App() {
       sender: 'user' as const,
       timestamp: new Date(),
       read: true,
+      animate: false,
     };
     setChatMessages(prev => [...prev, newMessage]);
     setMode('chat');
@@ -499,6 +506,9 @@ export default function App() {
         sender: message.role,
         timestamp: new Date(message.created_at || message.timestamp || Date.now()),
         read: true,
+        // Restored history is shown instantly — only live replies type out
+        // (issue #70).
+        animate: false,
       })));
 
       // Restore this chat's saved workflow (a full graph swap, empty if none).

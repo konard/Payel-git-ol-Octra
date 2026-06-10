@@ -331,11 +331,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           message: msg.message || 'Project ready!',
           type: 'success',
         });
-        // Non-code tasks (research/document/presentation): Boss posts a short
-        // text answer in chat; the full result lives in the Solution tab.
-        if (msg.data?.chatSummary && onChatMessage) {
-          onChatMessage(msg.data.chatSummary, 'boss', false);
-        }
+        // The boss reports task completion back in the chat via a dedicated
+        // `chat` message (see sendCompletionReport on the gateway), which already
+        // folds in the short text answer (chatSummary) used by
+        // research/document tasks — so nothing extra is posted here (issue #70).
         if (msg.data?.repoUrl) {
           storeActions.setZipUrl(msg.data.repoUrl);
           addGitHubNode(msg.data.repoUrl, msg.data?.pullRequestUrl);
