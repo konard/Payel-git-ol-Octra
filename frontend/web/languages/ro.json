@@ -46,7 +46,8 @@
     "stop": "Oprire",
     "reconnecting": "Reconectare la server...",
     "taskCreated": "Sarcină creată",
-    "sendError": "Eroare la trimiterea sarcinii"
+    "sendError": "Eroare la trimiterea sarcinii",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

@@ -46,7 +46,8 @@
     "stop": "Стоп",
     "reconnecting": "Перападключэнне да сервера...",
     "taskCreated": "Задача створана",
-    "sendError": "Памылка адпраўкі задачы"
+    "sendError": "Памылка адпраўкі задачы",
+    "searchOnLefine": "Пошук у Lefine"
   },
   "nodes": {
     "ceo": "CEO",

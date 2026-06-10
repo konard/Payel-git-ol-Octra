@@ -45,7 +45,8 @@
     "stop": "To'xtatish",
     "reconnecting": "Serverga qayta ulanmoqda...",
     "taskCreated": "Vazifa yaratildi",
-    "sendError": "Vazifani yuborish xatosi"
+    "sendError": "Vazifani yuborish xatosi",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

@@ -46,7 +46,8 @@
     "stop": "중지",
     "reconnecting": "서버에 재연결 중...",
     "taskCreated": "작업이 생성되었습니다",
-    "sendError": "작업 전송 오류"
+    "sendError": "작업 전송 오류",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

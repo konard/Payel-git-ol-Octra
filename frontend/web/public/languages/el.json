@@ -46,7 +46,8 @@
     "stop": "Διακοπή",
     "reconnecting": "Επανασύνδεση στον διακομιστή...",
     "taskCreated": "Η εργασία δημιουργήθηκε",
-    "sendError": "Σφάλμα αποστολής εργασίας"
+    "sendError": "Σφάλμα αποστολής εργασίας",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

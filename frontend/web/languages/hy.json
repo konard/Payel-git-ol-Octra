@@ -46,7 +46,8 @@
     "stop": "Կանգ",
     "reconnecting": "Վերամիանում սերվերին...",
     "taskCreated": "Խնդիրը ստեղծվել է",
-    "sendError": "Խնդրի ուղարկման սխալ"
+    "sendError": "Խնդրի ուղարկման սխալ",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",
