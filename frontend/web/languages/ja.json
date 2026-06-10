@@ -46,7 +46,8 @@
     "stop": "停止",
     "reconnecting": "サーバーに再接続中...",
     "taskCreated": "タスクが作成されました",
-    "sendError": "タスク送信エラー"
+    "sendError": "タスク送信エラー",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

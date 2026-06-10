@@ -46,7 +46,8 @@
     "stop": "停止",
     "reconnecting": "正在重新连接到服务器...",
     "taskCreated": "任务已创建",
-    "sendError": "任务发送错误"
+    "sendError": "任务发送错误",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

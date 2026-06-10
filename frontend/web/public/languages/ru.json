@@ -79,7 +79,8 @@
     "resetTask": "Сбросить и попробовать снова",
     "reconnecting": "Переподключение к серверу...",
     "taskCreated": "Задача создана",
-    "sendError": "Ошибка отправки задачи"
+    "sendError": "Ошибка отправки задачи",
+    "searchOnLefine": "Поиск в Lefine"
   },
   "nodes": {
     "ceo": "CEO",

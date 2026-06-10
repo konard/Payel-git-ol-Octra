@@ -46,7 +46,8 @@
     "stop": "Pysäytä",
     "reconnecting": "Yhdistetään uudelleen palvelimeen...",
     "taskCreated": "Tehtävä luotu",
-    "sendError": "Tehtävän lähetysvirhe"
+    "sendError": "Tehtävän lähetysvirhe",
+    "searchOnLefine": "Hae Lefinestä"
   },
   "nodes": {
     "ceo": "CEO",

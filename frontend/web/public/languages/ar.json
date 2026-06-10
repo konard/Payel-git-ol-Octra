@@ -46,7 +46,8 @@
     "stop": "إيقاف",
     "reconnecting": "إعادة الاتصال بالخادم...",
     "taskCreated": "تم إنشاء المهمة",
-    "sendError": "خطأ في إرسال المهمة"
+    "sendError": "خطأ في إرسال المهمة",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "الرئيس التنفيذي",

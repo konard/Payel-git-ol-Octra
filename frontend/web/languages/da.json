@@ -46,7 +46,8 @@
     "stop": "Stop",
     "reconnecting": "Genopretter forbindelse til server...",
     "taskCreated": "Opgave oprettet",
-    "sendError": "Fejl ved afsendelse af opgave"
+    "sendError": "Fejl ved afsendelse af opgave",
+    "searchOnLefine": "Søg på Lefine"
   },
   "nodes": {
     "ceo": "CEO",

@@ -46,7 +46,8 @@
     "stop": "Leállítás",
     "reconnecting": "Újracsatlakozás a szerverhez...",
     "taskCreated": "Feladat létrehozva",
-    "sendError": "Feladat küldési hiba"
+    "sendError": "Feladat küldési hiba",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

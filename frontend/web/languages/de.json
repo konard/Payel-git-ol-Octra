@@ -46,7 +46,8 @@
     "stop": "Stoppen",
     "reconnecting": "Erneut mit Server verbinden...",
     "taskCreated": "Aufgabe erstellt",
-    "sendError": "Aufgaben-Sendefehler"
+    "sendError": "Aufgaben-Sendefehler",
+    "searchOnLefine": "Auf Lefine suchen"
   },
   "nodes": {
     "ceo": "CEO",

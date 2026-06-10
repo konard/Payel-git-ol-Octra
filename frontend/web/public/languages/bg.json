@@ -46,7 +46,8 @@
     "stop": "Спри",
     "reconnecting": "Повторно свързване към сървъра...",
     "taskCreated": "Задачата е създадена",
-    "sendError": "Грешка при изпращане на задача"
+    "sendError": "Грешка при изпращане на задача",
+    "searchOnLefine": "Търсене в Lefine"
   },
   "nodes": {
     "ceo": "CEO",

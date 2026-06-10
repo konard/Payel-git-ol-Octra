@@ -46,7 +46,8 @@
     "stop": "Ustavi",
     "reconnecting": "Ponovno povezovanje na strežnik...",
     "taskCreated": "Naloga ustvarjena",
-    "sendError": "Napaka pri pošiljanju naloge"
+    "sendError": "Napaka pri pošiljanju naloge",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

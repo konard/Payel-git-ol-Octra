@@ -46,7 +46,8 @@
     "stop": "Stoppa",
     "reconnecting": "Återansluter till server...",
     "taskCreated": "Uppgift skapad",
-    "sendError": "Fel vid sändning av uppgift"
+    "sendError": "Fel vid sändning av uppgift",
+    "searchOnLefine": "Sök på Lefine"
   },
   "nodes": {
     "ceo": "CEO",

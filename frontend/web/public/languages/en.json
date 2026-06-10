@@ -79,7 +79,8 @@
     "resetTask": "Reset & Try Again",
     "reconnecting": "Reconnecting to server...",
     "taskCreated": "Task created",
-    "sendError": "Task send error"
+    "sendError": "Task send error",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",

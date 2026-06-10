@@ -46,7 +46,8 @@
     "stop": "Stopp",
     "reconnecting": "Kobler til server igjen...",
     "taskCreated": "Oppgave opprettet",
-    "sendError": "Feil ved sending av oppgave"
+    "sendError": "Feil ved sending av oppgave",
+    "searchOnLefine": "Search on Lefine"
   },
   "nodes": {
     "ceo": "CEO",
