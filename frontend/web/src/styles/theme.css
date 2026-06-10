@@ -1,68 +1,63 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Light theme — warm "Claude" palette.
-     Inspired by claude.ai (issue #61): a soft ivory canvas, warm sand panels
-     and a terracotta accent instead of the flat white + neon-orange of before.
-     The element layout is untouched — only the colour/typography tokens change. */
-  --background: #faf9f5; /* warm ivory canvas */
-  --surface: #f3f1ea; /* sand panel */
-  --accent: #c96442; /* Claude terracotta */
-  --accent-hover: #b4543a;
-  --text: #1f1d1a; /* warm near-black */
-  --text-muted: #6f6b62; /* warm grey */
-  --text-secondary: #534f48;
-  --text-tertiary: #8a857a;
-  --bg-tertiary: #e9e6dd;
-  --success: #3a9d6b;
-  --error: #c0453a;
-  --warning: #c08a2e;
-  --border: rgba(45, 40, 32, 0.12); /* warm-tinted hairline */
+  /* Light theme — default */
+  --background: #ffffff;
+  --surface: #f5f5f5;
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --text: #111111;
+  --text-muted: #6b7280;
+  /* Secondary/tertiary text + tertiary surface. These tokens are referenced
+     across the app (sidebar, modals, workflow library) but were never defined,
+     so those elements fell back to inherited colours. Defined here with neutral
+     greys that match the existing palette — no change to the established hues. */
+  --text-secondary: #374151;
+  --text-tertiary: #9ca3af;
+  --bg-tertiary: #e5e7eb;
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #eab308;
+  --border: rgba(0, 0, 0, 0.12);
   /* Sunken surface — a touch darker than --surface, used for docked side panels
      (e.g. the Sessions history) so they read as recessed against the panes. */
-  --surface-sunken: #ece9e0;
-
-  /* Soft, warm elevation shadows (used by panels, popovers, modals) */
-  --shadow-soft: 0 1px 2px rgba(45, 40, 32, 0.05), 0 4px 14px rgba(45, 40, 32, 0.08);
-  --shadow-strong: 0 8px 30px rgba(45, 40, 32, 0.16);
+  --surface-sunken: #ececec;
 
   /* React Flow variables */
-  --bg-canvas: #faf9f5;
-  --bg-node: #f3f1ea;
-  --text-node: #1f1d1a;
-  --edge-color: #b7b1a3;
-  --edge-active: #c96442;
+  --bg-canvas: #ffffff;
+  --bg-node: #f5f5f5;
+  --text-node: #111111;
+  --edge-color: #9ca3af;
+  --edge-active: #f97316;
 }
 
 .dark {
-  /* Dark theme — warm charcoal in the spirit of Claude's dark mode. */
-  --background: #262624; /* warm charcoal canvas */
-  --surface: #30302d; /* raised warm panel */
-  --accent: #d97757; /* terracotta reads brighter on dark */
-  --accent-hover: #e08e72;
-  --text: #ece9e3; /* warm off-white */
-  --text-muted: #a8a399;
-  --text-secondary: #c4bfb5;
-  --text-tertiary: #847f74;
-  --bg-tertiary: #3a3a36;
-  --success: #4ec08a;
-  --error: #e06a5f;
-  --warning: #e0aa4e;
-  --border: rgba(255, 252, 245, 0.1);
+  /* Dark theme — dark gray / black */
+  --background: #111111;
+  --surface: #1a1a1a;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --text: #e5e5e5;
+  --text-muted: #a3a3a3;
+  /* Secondary/tertiary text + tertiary surface — neutral greys matching the
+     existing dark palette (see the note in :root). */
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #737373;
+  --bg-tertiary: #262626;
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #eab308;
+  --border: rgba(255, 255, 255, 0.1);
   /* Sunken surface — a touch darker than --surface, used for docked side panels
      (e.g. the Sessions history) so they read as recessed against the panes. */
-  --surface-sunken: #1f1f1d;
-
-  /* Soft elevation shadows — deeper on dark */
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.4);
-  --shadow-strong: 0 10px 34px rgba(0, 0, 0, 0.55);
+  --surface-sunken: #141414;
 
   /* React Flow variables */
-  --bg-canvas: #262624;
-  --bg-node: #30302d;
-  --text-node: #ece9e3;
-  --edge-color: #54534e;
-  --edge-active: #d97757;
+  --bg-canvas: #111111;
+  --bg-node: #1a1a1a;
+  --text-node: #e5e5e5;
+  --edge-color: #525252;
+  --edge-active: #f97316;
 }
 
 @theme inline {
@@ -119,18 +114,6 @@
   .markdown-preview h3 {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
-  }
-
-  /* Warm accent text selection */
-  ::selection {
-    background: color-mix(in srgb, var(--accent) 26%, transparent);
-    color: var(--text);
-  }
-
-  /* Subtle accent focus ring, consistent across the app */
-  :focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
-    outline-offset: 2px;
   }
 
   /* Custom scrollbars - Light theme */
