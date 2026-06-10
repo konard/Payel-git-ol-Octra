@@ -94,7 +94,9 @@
     "role": "Role",
     "stack": "Stack:",
     "managers": "Managers",
-    "workers": "Workers"
+    "workers": "Workers",
+    "openGithub": "Открыть репозиторий в новой вкладке",
+    "openPr": "Открыть pull request в новой вкладке"
   },
   "modelSelector": {
     "title": "Выбор модели",
@@ -109,6 +111,7 @@
     "hideServerStatusHint": "Скрыть строку состояния подключения сервера",
     "hideConsole": "Скрыть консоль",
     "hideConsoleHint": "Скрыть панель консоли",
+    "statistics": "Статистика",
     "apiTokens": "API и токены",
     "language": "Язык",
     "appearance": "Внешний вид",
@@ -473,6 +476,22 @@
       "product": "Продукт",
       "resources": "Ресурсы",
       "company": "Компания"
+    }
+  },
+  "statistics": {
+    "title": "Статистика по токенам",
+    "description": "Токены, потраченные на все ваши задачи, сгруппированные по категориям.",
+    "total": "Всего потрачено токенов",
+    "tokensAxis": "токенов",
+    "chartLabel": "Потрачено токенов",
+    "filterAll": "Все",
+    "empty": "Пока нет данных об использовании токенов. Запустите задачу, чтобы увидеть статистику.",
+    "clear": "Очистить",
+    "categories": {
+      "search": "Поиск",
+      "development": "Разработка",
+      "presentation": "Презентация",
+      "document": "Документ"
     }
   }
 }

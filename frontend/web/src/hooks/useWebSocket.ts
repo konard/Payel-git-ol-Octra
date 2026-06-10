@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { useIntegrationStore } from '../stores/integrationStore';
+import { useStatisticsStore } from '../stores/statisticsStore';
 import { parsePullRequestInfo } from '../lib/pullRequest';
 import { t } from './useI18n';
 
@@ -84,6 +85,28 @@ function parseCodeFiles(data?: Record<string, any>): StreamedCodeFile[] {
 
 function normalizeTaskType(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+// Pull a token-usage count out of a websocket payload. The backend reports usage
+// under a few different field names depending on the message source, so every
+// known spelling is checked. Returns 0 when no usable count is present.
+function extractTokenCount(data: Record<string, any> | undefined): number {
+  if (!data) return 0;
+  const candidates = [
+    data.tokensUsed,
+    data.tokens_used,
+    data.totalTokens,
+    data.total_tokens,
+    data.usage?.total_tokens,
+    data.usage?.totalTokens,
+  ];
+  for (const candidate of candidates) {
+    const value = typeof candidate === 'string' ? Number(candidate) : candidate;
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  return 0;
 }
 
 function normalizeRoleKey(value: string): string {
@@ -293,6 +316,17 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
         handleCodeFilesMessage(msg);
         storeActions.setTaskStatus('done');
         storeActions.completeCodeStreaming();
+        // Record token usage for the global statistics chart (issue #67). Prefer
+        // a count reported on the success payload, falling back to the running
+        // total already shown in the status bar. Usage is grouped by the task type
+        // the boss classified so the chart can be filtered by category.
+        {
+          const finalTokens = extractTokenCount(msg.data) || useTaskStore.getState().tokensUsed;
+          if (finalTokens > 0) {
+            storeActions.setTokensUsed(finalTokens);
+            useStatisticsStore.getState().recordTaskUsage(currentTaskType.current, finalTokens);
+          }
+        }
         storeActions.addLog({
           message: msg.message || 'Project ready!',
           type: 'success',
@@ -473,6 +507,13 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const taskType = normalizeTaskType(msg.data?.taskType || msg.data?.task_type);
     if (taskType) {
       currentTaskType.current = taskType;
+    }
+
+    // Keep the running token counter (status bar + statistics fallback) in sync as
+    // the backend streams usage updates during the task.
+    const progressTokens = extractTokenCount(msg.data);
+    if (progressTokens > 0) {
+      storeActions.setTokensUsed(progressTokens);
     }
 
     storeActions.addLog({

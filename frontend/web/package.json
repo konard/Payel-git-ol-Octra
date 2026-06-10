@@ -29,7 +29,8 @@
     "test:desktop-integration": "node scripts/check-desktop-integration.mjs",
     "test:app-render-guards": "node scripts/check-app-render-guards.mjs",
     "test:onboarding-tour": "node scripts/check-onboarding-tour.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour"
+    "test:token-statistics": "node scripts/check-token-statistics.mjs",
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour && npm run test:token-statistics"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -66,6 +67,7 @@
     "@radix-ui/react-tooltip": "1.1.8",
     "@xyflow/react": "^12.10.2",
     "canvas-confetti": "1.9.4",
+    "chart.js": "^4.5.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
@@ -80,6 +82,7 @@
     "motion": "12.23.24",
     "next-themes": "0.4.6",
     "react": "18.3.1",
+    "react-chartjs-2": "^5.3.1",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",

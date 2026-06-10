@@ -13,7 +13,8 @@ const extraKeys = {
     hideServerStatus: 'Hide server status',
     hideServerStatusHint: 'Hide the server connection status bar',
     hideConsole: 'Hide console',
-    hideConsoleHint: 'Hide the console panel'
+    hideConsoleHint: 'Hide the console panel',
+    statistics: 'Statistics'
   },
   providers: {
     title: 'Custom Providers',
@@ -83,13 +84,30 @@ const extraKeys = {
     continueWithGithub: 'Continue with GitHub',
     registerWithGoogle: 'Sign up with Google',
     registerWithGithub: 'Sign up with GitHub'
+  },
+  statistics: {
+    title: 'Token usage statistics',
+    description: 'Tokens spent across all your tasks, grouped by category.',
+    total: 'Total tokens spent',
+    tokensAxis: 'tokens',
+    chartLabel: 'Tokens spent',
+    filterAll: 'All',
+    empty: 'No token usage recorded yet. Run a task to see statistics here.',
+    clear: 'Clear',
+    categories: {
+      search: 'Search',
+      development: 'Development',
+      presentation: 'Presentation',
+      document: 'Document'
+    }
   }
 
 };
 
 const translations = {
   ru: {
-    settings: { customProviders: 'Кастомные провайдеры', customModels: 'Кастомные модели', hideServerStatus: 'Скрыть статус сервера', hideServerStatusHint: 'Скрыть строку состояния подключения сервера', hideConsole: 'Скрыть консоль', hideConsoleHint: 'Скрыть панель консоли' },
+    settings: { customProviders: 'Кастомные провайдеры', customModels: 'Кастомные модели', hideServerStatus: 'Скрыть статус сервера', hideServerStatusHint: 'Скрыть строку состояния подключения сервера', hideConsole: 'Скрыть консоль', hideConsoleHint: 'Скрыть панель консоли', statistics: 'Статистика' },
+    statistics: { title: 'Статистика по токенам', description: 'Токены, потраченные на все ваши задачи, сгруппированные по категориям.', total: 'Всего потрачено токенов', tokensAxis: 'токенов', chartLabel: 'Потрачено токенов', filterAll: 'Все', empty: 'Пока нет данных об использовании токенов. Запустите задачу, чтобы увидеть статистику.', clear: 'Очистить', categories: { search: 'Поиск', development: 'Разработка', presentation: 'Презентация', document: 'Документ' } },
     providers: { title: 'Кастомные провайдеры', description: 'Добавляйте собственные AI провайдеры для использования в задачах', newProvider: 'Новый провайдер', configured: 'Настроен', addCustomProvider: 'Добавить кастомный провайдер', addNew: 'Добавить новый', collapse: 'Свернуть', expand: 'Развернуть', edit: 'Редактировать', delete: 'Удалить', add: 'Добавить', name: 'Название', namePlaceholder: 'Мой AI провайдер', baseUrl: 'Базовый URL', baseUrlHint: 'URL API сервера провайдера (например: https://api.example.com/v1)', apiKey: 'API ключ', apiKeyPlaceholder: 'sk-...', save: 'Сохранить', cancel: 'Отмена' },
     profile: { subscriptionEnd: 'Действительно до', noSubscription: 'Нет активной подписки', userId: 'ID пользователя', memberSince: 'Участник с', logout: 'Выйти' },
     auth: { login: 'Войти', register: 'Регистрация', loginTitle: 'Войти', registerTitle: 'Регистрация', close: 'Закрыть', emailRequired: 'Email обязателен', passwordRequired: 'Пароль обязателен', usernameRequired: 'Имя пользователя обязательно', invalidEmail: 'Неверный формат email', passwordMinLength: 'Пароль должен содержать минимум 6 символов', passwordsNotMatch: 'Пароли не совпадают', password: 'Пароль', enterPassword: 'Введите пароль', loggingIn: 'Вход...', username: 'Имя пользователя', yourName: 'Ваше имя', min6Chars: 'Мин. 6 символов', confirmPassword: 'Подтвердите пароль', repeatPassword: 'Повторите пароль', registering: 'Регистрация...', noAccount: 'Нет аккаунта?', hasAccount: 'Уже есть аккаунт?', continueWithGoogle: 'Продолжить с Google', continueWithGithub: 'Продолжить с GitHub', registerWithGoogle: 'Регистрация через Google', registerWithGithub: 'Регистрация через GitHub' }
@@ -167,6 +185,7 @@ function applyRequiredKeys(data, lang) {
 
   mergeSection(data, 'profile', extraKeys.profile, overrides.profile);
   mergeSection(data, 'auth', extraKeys.auth, overrides.auth);
+  mergeSection(data, 'statistics', extraKeys.statistics, overrides.statistics);
 }
 
 const files = Array.from(new Set([

@@ -61,7 +61,9 @@
     "role": "Role",
     "stack": "Stack:",
     "managers": "Managers",
-    "workers": "Workers"
+    "workers": "Workers",
+    "openGithub": "Open repository in new tab",
+    "openPr": "Open pull request in new tab"
   },
   "modelSelector": {
     "title": "모델 선택",
@@ -76,6 +78,7 @@
     "hideServerStatusHint": "서버 연결 상태 표시줄 숨기기",
     "hideConsole": "콘솔 숨기기",
     "hideConsoleHint": "콘솔 패널 숨기기",
+    "statistics": "Statistics",
     "apiTokens": "API 및 토큰",
     "language": "언어",
     "appearance": "외관",
@@ -400,6 +403,22 @@
         "title": "Scalability",
         "desc": "From simple tasks to complex multi-agent systems without limits"
       }
+    }
+  },
+  "statistics": {
+    "title": "Token usage statistics",
+    "description": "Tokens spent across all your tasks, grouped by category.",
+    "total": "Total tokens spent",
+    "tokensAxis": "tokens",
+    "chartLabel": "Tokens spent",
+    "filterAll": "All",
+    "empty": "No token usage recorded yet. Run a task to see statistics here.",
+    "clear": "Clear",
+    "categories": {
+      "search": "Search",
+      "development": "Development",
+      "presentation": "Presentation",
+      "document": "Document"
     }
   }
 }
