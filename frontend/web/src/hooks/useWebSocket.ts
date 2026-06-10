@@ -689,6 +689,80 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       }
     }
 
+    // === GROUP CHAT WORKERS — "Starting Group Chat with all workers" ===
+    // Workers now run through a Group Chat, which does not emit the per-worker
+    // "Starting worker N/M" lines. Without this handler the canvas only ever
+    // shows Boss + Manager and never reaches the workers. We materialise the
+    // worker nodes here from the comma-separated worker_roles supplied by the
+    // backend (falling back to the worker count when roles are absent).
+    if (message.includes('Starting Group Chat')) {
+      const managerRole = msg.data?.manager_role || currentManagerRole.current;
+      const rawRoles = typeof msg.data?.worker_roles === 'string' ? msg.data.worker_roles : '';
+      const roles = rawRoles.split(',').map((r) => r.trim()).filter(Boolean);
+      const count = Number.parseInt(String(msg.data?.workers ?? ''), 10);
+      const effectiveRoles = roles.length > 0
+        ? roles
+        : Array.from({ length: Number.isNaN(count) ? 0 : count }, (_, i) => `Worker ${i + 1}`);
+
+      const managerIdx = [...managersKnown.current].indexOf(managerRole);
+
+      if (!workersByManager.current[managerRole]) {
+        workersByManager.current[managerRole] = [];
+      }
+      if (!workerIdsByManager.current[managerRole]) {
+        workerIdsByManager.current[managerRole] = [];
+      }
+      if (!workerCounters.current[managerRole]) {
+        workerCounters.current[managerRole] = 0;
+      }
+
+      const mgrX = managerIdx >= 0
+        ? (storeActions.nodes().find(n => n.id === `manager-${managerIdx}`)?.position?.x || 200)
+        : 200;
+
+      effectiveRoles.forEach((role) => {
+        if (workersByManager.current[managerRole].includes(role)) {
+          return;
+        }
+        const wIdx = workerCounters.current[managerRole]++;
+        workersByManager.current[managerRole].push(role);
+
+        const reusableWorker = findReusableWorkerNode(role);
+        const sanitizedManagerRole = managerRole.replace(/[^a-zA-Z0-9]/g, '');
+        const workerId = reusableWorker?.id || `worker-${sanitizedManagerRole}-${wIdx}`;
+        workerIdsByManager.current[managerRole].push(workerId);
+
+        if (reusableWorker) {
+          console.log('[WS] => Reusing custom worker (group chat):', workerId);
+          storeActions.updateNode(workerId, { status: 'working' });
+        } else {
+          const workerX = mgrX + wIdx * 140;
+          console.log('[WS] => Adding group-chat worker:', workerId, 'role:', role);
+          storeActions.addNode({
+            id: workerId,
+            type: 'worker',
+            role: capitalizeRole(role),
+            status: 'working',
+            position: { x: workerX, y: 400 },
+          });
+          if (managerIdx >= 0) {
+            storeActions.addEdge({ from: `manager-${managerIdx}`, to: workerId });
+          }
+        }
+      });
+    }
+
+    // === GROUP CHAT COMPLETED — "Group Chat completed: N agents, M files" ===
+    const groupChatDoneMatch = message.match(/Group Chat completed:\s*(\d+)\s*agents,\s*(\d+)\s*files/i);
+    if (groupChatDoneMatch) {
+      const managerRole = msg.data?.manager_role || currentManagerRole.current;
+      const filesCount = parseInt(groupChatDoneMatch[2], 10);
+      const ids = workerIdsByManager.current[managerRole] || [];
+      ids.forEach((workerId) => {
+        storeActions.updateNode(workerId, { status: 'done', filesCount });
+      });
+    }
+
     // === WORKER COMPLETED — "Worker 1/7 (Go Backend Developer) completed: 5 files (65%)" ===
     const workerCompleteMatch = message.match(/Worker \d+\/\d+ \((.+?)\) completed:\s*(\d+)\s*files/i);
     if (workerCompleteMatch) {
