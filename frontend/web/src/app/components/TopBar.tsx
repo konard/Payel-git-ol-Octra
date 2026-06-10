@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft, BarChart3 } from 'lucide-react';
 import { useTaskStore } from '../../stores/taskStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../hooks/useI18n';
@@ -11,13 +11,14 @@ import { useCustomProvidersStore } from '../../stores/customProvidersStore';
 import { customProviderService } from '../../services/customProviderService';
 import { IntegrationCard } from '../../components/IntegrationCard';
 import { CustomProviderCard } from '../../components/CustomProviderCard';
+import { TokenStatistics } from '../../components/TokenStatistics';
 import { UserProfile } from '../../components/UserProfile';
 import lefineIcon from '../../images/lefine.pro.jpg';
 import telegramIcon from '../../images/Telegram.webp';
 import n8nIcon from '../../images/n8n-color.png';
 import octraMascot from '../../images/octra-mascot.png';
 
-type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations';
+type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations' | 'statistics';
 
 // Add Model Form Component
 function AddModelForm({ onSave, onCancel, providers }: {
@@ -112,6 +113,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'language', labelKey: 'settings.language', icon: Languages },
   { id: 'visibility', labelKey: 'settings.interface', icon: Eye },
   { id: 'integrations', labelKey: 'settings.integrations', icon: Puzzle },
+  { id: 'statistics', labelKey: 'settings.statistics', icon: BarChart3 },
 ];
 
 interface TopBarProps {
@@ -775,6 +777,8 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                      )}
                    </div>
                 )}
+
+                {activeTab === 'statistics' && <TokenStatistics />}
 
 
               </div>

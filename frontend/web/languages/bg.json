@@ -78,6 +78,7 @@
     "hideServerStatusHint": "Скрий лентата за състояние на сървъра",
     "hideConsole": "Скрий конзолата",
     "hideConsoleHint": "Скрий панела на конзолата",
+    "statistics": "Statistics",
     "apiTokens": "API и Токени",
     "language": "Език",
     "appearance": "Външен вид",
@@ -411,6 +412,22 @@
       "boss": "Top coordinator that distributes tasks among managers",
       "manager": "Manages a group of workers and controls the execution process",
       "worker": "Executes specific tasks and specializes in particular operations"
+    }
+  },
+  "statistics": {
+    "title": "Token usage statistics",
+    "description": "Tokens spent across all your tasks, grouped by category.",
+    "total": "Total tokens spent",
+    "tokensAxis": "tokens",
+    "chartLabel": "Tokens spent",
+    "filterAll": "All",
+    "empty": "No token usage recorded yet. Run a task to see statistics here.",
+    "clear": "Clear",
+    "categories": {
+      "search": "Search",
+      "development": "Development",
+      "presentation": "Presentation",
+      "document": "Document"
     }
   }
 }

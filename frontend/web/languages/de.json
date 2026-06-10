@@ -78,6 +78,7 @@
     "hideServerStatusHint": "Hide the server connection status bar",
     "hideConsole": "Hide console",
     "hideConsoleHint": "Hide the console panel",
+    "statistics": "Statistics",
     "apiTokens": "API & Token",
     "language": "Sprache",
     "appearance": "Erscheinungsbild",
@@ -438,6 +439,22 @@
       "product": "Produkt",
       "resources": "Ressourcen",
       "company": "Unternehmen"
+    }
+  },
+  "statistics": {
+    "title": "Token usage statistics",
+    "description": "Tokens spent across all your tasks, grouped by category.",
+    "total": "Total tokens spent",
+    "tokensAxis": "tokens",
+    "chartLabel": "Tokens spent",
+    "filterAll": "All",
+    "empty": "No token usage recorded yet. Run a task to see statistics here.",
+    "clear": "Clear",
+    "categories": {
+      "search": "Search",
+      "development": "Development",
+      "presentation": "Presentation",
+      "document": "Document"
     }
   }
 }
