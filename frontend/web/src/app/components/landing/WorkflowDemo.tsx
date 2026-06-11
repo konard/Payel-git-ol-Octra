@@ -59,6 +59,51 @@ const showcaseItems: ShowcaseItem[] = [
   },
 ];
 
+function TypewriterText({
+  text,
+  tag: Tag = 'p',
+  className = '',
+  speed = 40,
+  startDelay = 0,
+}: {
+  text: string;
+  tag?: 'p' | 'h1' | 'h2' | 'h3' | 'span' | 'div';
+  className?: string;
+  speed?: number;
+  startDelay?: number;
+}) {
+  const [displayedCount, setDisplayedCount] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setStarted(true), startDelay);
+    return () => clearTimeout(timer);
+  }, [startDelay]);
+
+  useEffect(() => {
+    if (!started || displayedCount >= text.length) return;
+
+    const timer = setTimeout(() => {
+      setDisplayedCount((c) => c + 1);
+    }, speed);
+
+    return () => clearTimeout(timer);
+  }, [started, displayedCount, text.length, speed]);
+
+  return (
+    <Tag className={className}>
+      {text.split('').map((char, i) => {
+        if (i >= displayedCount) return null;
+        return (
+          <span key={i} className="typewriter-char">
+            {char}
+          </span>
+        );
+      })}
+    </Tag>
+  );
+}
+
 export function WorkflowDemo() {
   const [activeId, setActiveId] = useState(showcaseItems[0].id);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -101,14 +146,27 @@ export function WorkflowDemo() {
     <section id="showcase" className="bg-[#050505] px-4 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
       <div className="mx-auto max-w-7xl">
         <div className="mb-14 max-w-3xl">
-          <p className="mb-4 text-sm font-semibold text-orange-300">One workspace, multiple outcomes</p>
-          <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            Built for code, research, text documents, and presentations.
-          </h2>
-          <p className="mt-5 text-lg leading-8 text-white/66">
-            The page stays calm while each example moves through the same Octra flow:
-            describe the task, let agents work, then inspect the finished result.
-          </p>
+          <TypewriterText
+            text="One workspace, multiple outcomes"
+            tag="p"
+            className="mb-4 text-sm font-semibold text-orange-300"
+            speed={35}
+            startDelay={300}
+          />
+          <TypewriterText
+            text="Built for code, research, text documents, and presentations."
+            tag="h2"
+            className="font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl"
+            speed={30}
+            startDelay={1700}
+          />
+          <TypewriterText
+            text="The page stays calm while each example moves through the same Octra flow: describe the task, let agents work, then inspect the finished result."
+            tag="p"
+            className="mt-5 text-lg leading-8 text-white/66"
+            speed={20}
+            startDelay={4200}
+          />
         </div>
 
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-16">

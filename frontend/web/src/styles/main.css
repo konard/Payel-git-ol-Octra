@@ -434,3 +434,13 @@
     }
 }
 
+@keyframes type-flash {
+    0% { color: #fb923c; }
+    25% { color: #fb923c; }
+    100% { color: inherit; }
+}
+
+.typewriter-char {
+    animation: type-flash 180ms ease-out;
+}
+
