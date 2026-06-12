@@ -35,10 +35,10 @@ func (c *Client) Generate(ctx context.Context, provider, model, prompt string, t
 	return c.rpc.Generate(ctx, provider, model, prompt, tokens, maxTokens, temperature)
 }
 
-// GenerateFromTask — обёртка с параметрами по умолчанию (4096 токенов, t=0.7)
+// GenerateFromTask — обёртка с параметрами по умолчанию (4096 токенов, t=0.2)
 func (c *Client) GenerateFromTask(ctx context.Context, provider, model, prompt string, tokens map[string]string) (string, error) {
 	log.Printf("Calling agents service (provider=%s, model=%s)", provider, model)
-	return c.Generate(ctx, provider, model, prompt, tokens, 4096, 0.7)
+	return c.Generate(ctx, provider, model, prompt, tokens, 4096, 0.2)
 }
 
 // Close — закрывает соединение

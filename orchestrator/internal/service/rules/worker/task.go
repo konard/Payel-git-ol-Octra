@@ -36,7 +36,7 @@ Create TASK.md file with detailed task breakdown for your role. Include:
 Return ONLY the content of TASK.md file.`, role, description, taskMD, contextSection)
 	}
 
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, 0.7)
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, 0.3)
 	if err != nil {
 		return "", err
 	}
