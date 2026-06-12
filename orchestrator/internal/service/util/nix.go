@@ -2,7 +2,11 @@ package util
 
 import (
 	"os/exec"
+	"regexp"
 )
+
+// NixPkgRe извлекает имя пакета из nix store path: /nix/store/hash-name-version' from
+var NixPkgRe = regexp.MustCompile(`/nix/store/[^-]+-(.+?)' from`)
 
 // NixAvailable проверяет доступность nix в системе
 func NixAvailable() bool {

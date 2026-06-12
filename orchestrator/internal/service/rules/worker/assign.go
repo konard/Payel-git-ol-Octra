@@ -64,7 +64,7 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 			})
 		}
 
-		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc)
+		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc, progress)
 		messages, err := agent.Process(ctx, &groupchat.Conversation{})
 		if err != nil {
 			return nil, fmt.Errorf("worker %s failed: %w", wr.Role, err)
@@ -129,7 +129,7 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	// Регистрируем агентов-воркеров
 	agents := make([]*WorkerAgent, len(req.WorkerRoles))
 	for i, wr := range req.WorkerRoles {
-		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc)
+		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc, progress)
 		agents[i] = agent
 		orch.RegisterAgent(agent)
 	}

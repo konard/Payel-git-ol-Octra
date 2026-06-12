@@ -1,9 +1,11 @@
 package worker
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -11,6 +13,7 @@ import (
 	"strings"
 
 	"orchestrator/internal/prompts"
+	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 )
 
@@ -40,12 +43,13 @@ var toolTechStacks = map[string]bool{
 
 // generateViaTools — генерирует код через реальные тулы внутри nix develop.
 // 1. AI планирует команды (scaffolding + депенденси)
-// 2. Команды выполняются внутри nix develop
+// 2. Команды выполняются внутри nix develop со стримингом вывода
 // 3. Новые файлы детектятся через git diff
 // 4. Результат возвращается как map[string]string (как от generateCode)
 func (s *Service) generateViaTools(
 	ctx context.Context, provider, model string, tokens map[string]string,
 	taskMD, role, description, managerRole, basePath, extCtx, techStack string,
+	progress rules.ProgressFunc,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -70,13 +74,19 @@ func (s *Service) generateViaTools(
 	}
 
 	log.Printf("[ToolExecutor] Role=%s: executing %d commands via nix develop", role, len(plan.Commands))
+	if progress != nil {
+		progress(30, fmt.Sprintf("Scaffolding project for role %s via %s tools...", role, techStack), nil)
+	}
 
-	for _, cmdStr := range plan.Commands {
+	for i, cmdStr := range plan.Commands {
 		cmdStr = strings.TrimSpace(cmdStr)
 		if cmdStr == "" {
 			continue
 		}
-		output, execErr := s.executeToolCommand(ctx, basePath, cmdStr)
+		if progress != nil {
+			progress(30+int32(i)*30/int32(len(plan.Commands)), cmdStr, nil)
+		}
+		output, execErr := s.executeToolCommand(ctx, basePath, cmdStr, progress)
 		if execErr != nil {
 			log.Printf("[ToolExecutor] Command failed: %q\nError: %v\nOutput: %s", cmdStr, execErr, output)
 		} else {
@@ -95,28 +105,50 @@ func (s *Service) generateViaTools(
 	return files, plan.Commands, nil
 }
 
-// executeToolCommand запускает команду внутри nix develop.
+// executeToolCommand запускает команду внутри nix develop со стримингом вывода.
 // Если nix недоступен — запускает команду напрямую (для локальной разработки).
-func (s *Service) executeToolCommand(ctx context.Context, projectPath, command string) (string, error) {
+func (s *Service) executeToolCommand(ctx context.Context, projectPath, command string, progress rules.ProgressFunc) (string, error) {
 	nixAvailable := false
 	if _, err := exec.LookPath("nix"); err == nil {
 		nixAvailable = true
 	}
 
+	var cmd *exec.Cmd
 	if nixAvailable {
-		// Используем flock, чтобы nix develop не конфликтовал с параллельными запусками
-		cmd := exec.CommandContext(ctx, "nix", "develop",
+		cmd = exec.CommandContext(ctx, "nix", "develop",
 			"--extra-experimental-features", "nix-command flakes",
 			"--command", "bash", "-c", command)
-		cmd.Dir = projectPath
-		out, err := cmd.CombinedOutput()
-		return string(out), err
+	} else {
+		cmd = exec.CommandContext(ctx, "bash", "-c", command)
+	}
+	cmd.Dir = projectPath
+
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("failed to start command: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", command)
-	cmd.Dir = projectPath
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	var output strings.Builder
+	reader := io.MultiReader(stdout, stderr)
+	scanner := bufio.NewScanner(reader)
+	scanner.Buffer(make([]byte, 1024*64), 1024*64)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		output.WriteString(line + "\n")
+		log.Printf("[nix] %s", line)
+
+		if progress != nil && strings.Contains(line, "copying path") {
+			if m := util.NixPkgRe.FindStringSubmatch(line); len(m) > 1 {
+				pkg := strings.TrimSpace(m[1])
+				progress(50, "Installing "+pkg+"...", nil)
+			}
+		}
+	}
+
+	err := cmd.Wait()
+	return output.String(), err
 }
 
 // detectNewFiles находит файлы, созданные инструментами, через git status --porcelain.

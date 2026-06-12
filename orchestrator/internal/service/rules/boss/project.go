@@ -15,6 +15,7 @@ import (
 
 	"orchestrator/internal/service/git"
 	gh "orchestrator/internal/service/github"
+	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 	"orchestrator/pkg/models"
 )
@@ -133,10 +134,10 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 // Использует FlakeBuilder для генерации богатого flake.nix с зависимостями
 // на основе techStack, определённого AI на этапе планирования.
 // После записи flake.nix генерирует flake.lock для закрепления версий зависимостей.
-func (s *Service) generateFlake(projectPath, taskID, title string, techStack []string) {
+func (s *Service) generateFlake(projectPath, taskID, title string, techStack []string, progress rules.ProgressFunc) {
 	packages := NewFlakeBuilder().ResolveFromTechStacks(techStack)
 	s.WriteFlake(projectPath, taskID, title, packages)
-	s.ensureFlakeLock(projectPath)
+	s.ensureFlakeLock(projectPath, progress)
 	s.nixFlakeCheck(projectPath)
 }
 

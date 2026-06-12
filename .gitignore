@@ -13,3 +13,4 @@ projects
 !.github/workflows
 !.github/workflows/**
 .playwright-mcp/
+opencode

@@ -80,7 +80,7 @@ func (s *Service) runOneWorker(
 		workerMode := os.Getenv("WORKER_MODE")
 		useTools := workerMode == "tool" || (isToolMode(meta.techStack) && workerMode != "no-tool")
 		if useTools {
-			files, commands, err = s.generateViaTools(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack)
+			files, commands, err = s.generateViaTools(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, progress)
 			if err != nil || len(files) == 0 {
 				log.Printf("[ToolExecutor] Fallback to AI generation (tool mode failed: %v, files=%d)", err, len(files))
 				files = nil

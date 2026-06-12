@@ -91,6 +91,32 @@ type chatWSMessage struct {
 	TaskPayload *requests.CreateTaskRequest `json:"taskPayload"`
 }
 
+// streamUpdateData is the canonical JSON payload for streaming updates to the
+// frontend and Redis. It replaces ad-hoc gin.H maps so we marshal once and
+// reuse the bytes for WebSocket + Redis state + history + PubSub.
+type streamUpdateData struct {
+	Type      string `json:"type"`
+	TaskID    string `json:"task_id"`
+	Message   string `json:"message"`
+	Progress  int32  `json:"progress"`
+	Timestamp int64  `json:"timestamp"`
+	Data      any    `json:"data,omitempty"`
+	Sender    string `json:"sender,omitempty"`
+	IsHistory bool   `json:"is_history,omitempty"`
+}
+
+func buildStreamUpdate(taskID, msgType, message string, progress int32, timestamp int64, data any, sender string) streamUpdateData {
+	return streamUpdateData{
+		Type:      msgType,
+		TaskID:    taskID,
+		Message:   message,
+		Progress:  progress,
+		Timestamp: timestamp,
+		Data:      data,
+		Sender:    sender,
+	}
+}
+
 // PingWriter periodically sends pings to keep connection alive
 func PingWriter(conn *websocket.Conn, done <-chan struct{}) {
 	ticker := time.NewTicker(25 * time.Second)
@@ -565,30 +591,37 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 
 		// Determine message type
 		messageType := update.Status
+		sender := ""
 		if update.IsChat {
 			messageType = "chat"
+			sender = "boss"
 		}
 
-		wsUpdate := gin.H{
-			"type":      messageType,
-			"task_id":   update.TaskId,
-			"message":   update.Message,
-			"progress":  update.Progress,
-			"timestamp": update.Timestamp,
-		}
-		if update.Data != nil {
-			wsUpdate["data"] = update.Data
+		su := buildStreamUpdate(streamID, messageType, update.Message, update.Progress, update.Timestamp, update.Data, sender)
+
+		data, err := json.Marshal(su)
+		if err != nil {
+			log.Printf("❌ Failed to marshal update: %v", err)
+			conn.WriteJSON(gin.H{
+				"type":    "error",
+				"message": "Failed to marshal update",
+			})
+			return
 		}
 
-		// Add sender for chat messages
-		if update.IsChat {
-			wsUpdate["sender"] = "boss"
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			log.Printf("❌ Failed to write to WebSocket: %v", err)
+			return
 		}
 
-		wsWriteJSONWithRedis(conn, streamID, wsUpdate)
+		if redisClient != nil && redisClient.IsEnabled() {
+			if err := redisClient.StoreStreamUpdate(context.Background(), streamID, data, su.Type, su.Progress, su.Message); err != nil {
+				log.Printf("❌ Redis StoreStreamUpdate error: %v", err)
+			}
+		}
 
 		if update.Status == "success" || update.Status == "error" {
-			wsHub.Broadcast(streamID, wsUpdate)
+			wsHub.Broadcast(streamID, su)
 			return
 		}
 	}
@@ -743,21 +776,28 @@ func handleTaskReconnectWS(c *gin.Context) {
 			return
 		}
 
-		wsUpdate := gin.H{
-			"type":      update.Status,
-			"task_id":   update.TaskId,
-			"message":   update.Message,
-			"progress":  update.Progress,
-			"timestamp": update.Timestamp,
-		}
-		if update.Data != nil {
-			wsUpdate["data"] = update.Data
+		su := buildStreamUpdate(req.TaskID, update.Status, update.Message, update.Progress, update.Timestamp, update.Data, "")
+
+		data, err := json.Marshal(su)
+		if err != nil {
+			log.Printf("❌ Failed to marshal update: %v", err)
+			conn.WriteJSON(gin.H{"type": "error", "message": "Failed to marshal update"})
+			return
 		}
 
-		wsWriteJSONWithRedis(conn, req.TaskID, wsUpdate)
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			log.Printf("❌ Failed to write to WebSocket: %v", err)
+			return
+		}
+
+		if redisClient != nil && redisClient.IsEnabled() {
+			if err := redisClient.StoreStreamUpdate(context.Background(), req.TaskID, data, su.Type, su.Progress, su.Message); err != nil {
+				log.Printf("❌ Redis StoreStreamUpdate error: %v", err)
+			}
+		}
 
 		if update.Status == "success" || update.Status == "error" {
-			wsHub.Broadcast(req.TaskID, wsUpdate)
+			wsHub.Broadcast(req.TaskID, su)
 			return
 		}
 	}
@@ -858,54 +898,53 @@ func wsWriteJSON(conn *websocket.Conn, taskID string, data gin.H) {
 	}
 }
 
-// wsWriteJSONWithRedis writes to WebSocket and stores update in Redis
+// wsWriteJSONWithRedis writes to WebSocket and stores update in Redis using
+// marshal-once + pipeline. It converts gin.H to streamUpdateData, marshals
+// once, writes raw JSON to WebSocket, then pipelines all Redis ops.
 func wsWriteJSONWithRedis(conn *websocket.Conn, taskID string, update gin.H) {
-	if err := conn.WriteJSON(update); err != nil {
+	su := streamUpdateData{
+		Type:    toString(update["type"]),
+		TaskID:  taskID,
+		Message: toString(update["message"]),
+	}
+	if p, ok := update["progress"].(int32); ok {
+		su.Progress = p
+	} else if p, ok := update["progress"].(int); ok {
+		su.Progress = int32(p)
+	}
+	if ts, ok := update["timestamp"].(int64); ok {
+		su.Timestamp = ts
+	} else {
+		su.Timestamp = time.Now().Unix()
+	}
+	if d, ok := update["data"]; ok {
+		su.Data = d
+	}
+	if s, ok := update["sender"].(string); ok {
+		su.Sender = s
+	}
+
+	data, err := json.Marshal(su)
+	if err != nil {
+		log.Printf("❌ Failed to marshal update: %v", err)
+		return
+	}
+
+	if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		log.Printf("❌ Failed to write to WebSocket: %v", err)
 		return
 	}
 
-	if redisClient != nil && redisClient.IsEnabled() {
-		ctx := context.Background()
-
-		status, _ := update["type"].(string)
-		message, _ := update["message"].(string)
-		progress := int32(0)
-		if p, ok := update["progress"].(int32); ok {
-			progress = p
-		} else if p, ok := update["progress"].(int); ok {
-			progress = int32(p)
-		}
-
-		state := redis.StreamState{
-			TaskID:   taskID,
-			UserID:   "",
-			Status:   status,
-			Progress: progress,
-			Message:  message,
-		}
-
-		if err := redisClient.UpdateStreamState(ctx, taskID, state); err != nil {
-			log.Printf("❌ Failed to update Redis stream state: %v", err)
-		}
-
-		streamUpdate := redis.StreamUpdate{
-			TaskID:    taskID,
-			Status:    status,
-			Progress:  progress,
-			Message:   message,
-			Data:      update["data"],
-			Timestamp: time.Now().Unix(),
-		}
-
-		if err := redisClient.AddStreamUpdate(ctx, taskID, streamUpdate); err != nil {
-			log.Printf("❌ Failed to add Redis stream update: %v", err)
-		}
-
-		if pubSubManager != nil {
-			if err := pubSubManager.Publish(ctx, taskID, streamUpdate); err != nil {
-				log.Printf("❌ Failed to publish to Redis PubSub: %v", err)
-			}
-		}
+	if redisClient == nil || !redisClient.IsEnabled() {
+		return
 	}
+
+	if err := redisClient.StoreStreamUpdate(context.Background(), taskID, data, su.Type, su.Progress, su.Message); err != nil {
+		log.Printf("❌ Redis StoreStreamUpdate error: %v", err)
+	}
+}
+
+func toString(v interface{}) string {
+	s, _ := v.(string)
+	return s
 }

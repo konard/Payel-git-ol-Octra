@@ -1,19 +1,24 @@
 package boss
 
 import (
+	"bufio"
+	"fmt"
+	"io"
 	"log"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"orchestrator/internal/service/rules"
+	"orchestrator/internal/service/util"
 )
 
 // ensureFlakeLock generates flake.lock by running nix flake lock in the project
 // directory. This pins all dependency versions (nixpkgs revision, etc.) for
 // reproducible builds. Non-fatal: if nix is unavailable or the command fails,
 // the pipeline continues with a warning.
-func (s *Service) ensureFlakeLock(projectPath string) {
-	if !nixAvailable() {
+func (s *Service) ensureFlakeLock(projectPath string, progress rules.ProgressFunc) {
+	if !util.NixAvailable() {
 		log.Printf("Nix not available, skipping flake.lock generation")
 		return
 	}
@@ -22,12 +27,19 @@ func (s *Service) ensureFlakeLock(projectPath string) {
 	exec.Command("git", "-C", projectPath, "add", "flake.nix").Run()
 
 	log.Printf("Generating flake.lock for project: %s", projectPath)
+	if progress != nil {
+		progress(65, "Generating flake.lock (pinning Nix dependencies)...", nil)
+	}
+
 	cmd := exec.Command("nix", "flake", "lock",
 		"--extra-experimental-features", "nix-command flakes")
 	cmd.Dir = projectPath
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Warning: nix flake lock failed (non-fatal): %v\nOutput: %s", err, string(out))
+
+	if err := streamCommandOutput(cmd, progress, "Resolving Nix dependencies..."); err != nil {
+		log.Printf("Warning: nix flake lock failed (non-fatal): %v", err)
+		emit(progress, 66, "flake.lock generation failed (non-fatal)", map[string]string{
+			"warning": err.Error(),
+		})
 		return
 	}
 	log.Printf("flake.lock generated at: %s", filepath.Join(projectPath, "flake.lock"))
@@ -38,19 +50,19 @@ func (s *Service) ensureFlakeLock(projectPath string) {
 // pipeline continues but logs a warning (nix may not be available, or there
 // may be environment-specific issues).
 func (s *Service) nixBuild(projectPath string, progress rules.ProgressFunc) {
-	if !nixAvailable() {
+	if !util.NixAvailable() {
 		log.Printf("Nix not available, skipping nix build")
 		return
 	}
 
-	emit(progress, 81, "Building project...", nil)
+	emit(progress, 81, "Building project with Nix...", nil)
 
 	cmd := exec.Command("nix", "build",
 		"--extra-experimental-features", "nix-command flakes")
 	cmd.Dir = projectPath
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Warning: nix build failed (non-fatal): %v\nOutput: %s", err, string(out))
+
+	if err := streamCommandOutput(cmd, progress, "Compiling project..."); err != nil {
+		log.Printf("Warning: nix build failed (non-fatal): %v", err)
 		emit(progress, 82, "Build completed with warnings", map[string]string{
 			"build": "failed",
 		})
@@ -65,7 +77,7 @@ func (s *Service) nixBuild(projectPath string, progress rules.ProgressFunc) {
 // nixFlakeCheck validates the flake health and structure.
 // Non-fatal: only logs warnings on failure.
 func (s *Service) nixFlakeCheck(projectPath string) {
-	if !nixAvailable() {
+	if !util.NixAvailable() {
 		return
 	}
 
@@ -80,8 +92,34 @@ func (s *Service) nixFlakeCheck(projectPath string) {
 	log.Printf("nix flake check passed: %s", projectPath)
 }
 
-// nixAvailable checks whether the nix binary is installed and usable.
-func nixAvailable() bool {
-	_, err := exec.LookPath("nix")
-	return err == nil
+// streamCommandOutput запускает команду, стримит stdout+stderr построчно в лог,
+// и отправляет прогресс при загрузке nix-пакетов.
+func streamCommandOutput(cmd *exec.Cmd, progress rules.ProgressFunc, defaultMsg string) error {
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdout pipe: %w", err)
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderr pipe: %w", err)
+	}
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start: %w", err)
+	}
+
+	scanner := bufio.NewScanner(io.MultiReader(stdout, stderr))
+	scanner.Buffer(make([]byte, 64*1024), 64*1024)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		log.Printf("[nix] %s", line)
+
+		if progress != nil && strings.Contains(line, "copying path") {
+			if m := util.NixPkgRe.FindStringSubmatch(line); len(m) > 1 {
+				progress(50, "Installing "+strings.TrimSpace(m[1])+"...", nil)
+			}
+		}
+	}
+
+	return cmd.Wait()
 }

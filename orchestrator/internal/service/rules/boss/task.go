@@ -86,7 +86,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, err.Error(), errorData())
 		return err
 	}
-	s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack)
+	s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
 
 	// Если это доработка существующего проекта — клонируем репозиторий с GitHub
 	if req.ExistingRepoUrl != "" {

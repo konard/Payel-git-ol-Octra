@@ -30,9 +30,10 @@ type WorkerAgent struct {
 	basePath           string
 	accumulatedContext string
 	selectedSlugs      []string // skill fragments, выбранные менеджером со склада
+	progress           rules.ProgressFunc
 }
 
-func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.WorkerRole, meta workerMeta, basePath, accCtx string) *WorkerAgent {
+func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.WorkerRole, meta workerMeta, basePath, accCtx string, progress rules.ProgressFunc) *WorkerAgent {
 	return &WorkerAgent{
 		id:                 uuid.New().String(),
 		role:               wr.Role,
@@ -43,6 +44,7 @@ func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.Worke
 		basePath:           basePath,
 		accumulatedContext: accCtx,
 		selectedSlugs:      wr.SelectedSkillSlugs,
+		progress:           progress,
 	}
 }
 
@@ -88,7 +90,7 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		useTools := workerMode == "tool" || (isToolMode(a.meta.techStack) && workerMode != "no-tool")
 		if useTools {
 			files, commands, err = a.service.generateViaTools(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-				taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack)
+				taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, a.progress)
 			if err != nil || len(files) == 0 {
 				log.Printf("[WorkerAgent %s] Tool fallback to AI: %v", a.role, err)
 				files = nil

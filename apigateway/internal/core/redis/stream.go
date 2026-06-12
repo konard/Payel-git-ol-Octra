@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -65,26 +66,81 @@ func (c *Client) UpdateStreamState(ctx context.Context, taskID string, state Str
 	return nil
 }
 
-// GetStreamState retrieves the current state of a task stream
+// GetStreamState retrieves the current state of a task stream.
+// Supports both the legacy format (JSON blob in "data" field) and
+// the current format (individual hash fields).
 func (c *Client) GetStreamState(ctx context.Context, taskID string) (*StreamState, error) {
 	if !c.enabled {
-		return nil, nil // Not an error, just no data
+		return nil, nil
 	}
 
 	key := streamStatePrefix + taskID
-	data, err := c.rdb.HGet(ctx, key, "data").Result()
-	if err == redis.Nil {
-		return nil, nil // Not found
-	} else if err != nil {
+	fields, err := c.rdb.HGetAll(ctx, key).Result()
+	if err != nil {
 		return nil, fmt.Errorf("failed to get stream state: %w", err)
 	}
-
-	var state StreamState
-	if err := json.Unmarshal([]byte(data), &state); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal stream state: %w", err)
+	if len(fields) == 0 {
+		return nil, nil
 	}
 
-	return &state, nil
+	// Legacy format: JSON blob in "data" field
+	if data, ok := fields["data"]; ok && data != "" {
+		var state StreamState
+		if err := json.Unmarshal([]byte(data), &state); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal stream state: %w", err)
+		}
+		return &state, nil
+	}
+
+	// Current format: individual hash fields
+	progress, _ := strconv.Atoi(fields["progress"])
+	return &StreamState{
+		TaskID:    fields["task_id"],
+		UserID:    fields["user_id"],
+		Status:    fields["status"],
+		Progress:  int32(progress),
+		Message:   fields["message"],
+		CreatedAt: fields["created_at"],
+		UpdatedAt: fields["updated_at"],
+	}, nil
+}
+
+// StoreStreamUpdate atomically persists a stream update in Redis using a single
+// pipeline round-trip. It updates the task state hash, appends the pre-marshaled
+// update to the history list (trimmed to maxUpdatesHistory), and publishes the
+// update on the task's PubSub channel.
+func (c *Client) StoreStreamUpdate(ctx context.Context, taskID string, data []byte, status string, progress int32, message string) error {
+	if !c.enabled {
+		return nil
+	}
+
+	pipe := c.rdb.Pipeline()
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	stateKey := streamStatePrefix + taskID
+	pipe.HSet(ctx, stateKey, map[string]any{
+		"task_id":    taskID,
+		"user_id":    "",
+		"status":     status,
+		"progress":   progress,
+		"message":    message,
+		"updated_at": now,
+	})
+	pipe.HSetNX(ctx, stateKey, "created_at", now)
+	pipe.Expire(ctx, stateKey, 24*time.Hour)
+
+	updatesKey := stateKey + streamUpdatesSuffix
+	pipe.RPush(ctx, updatesKey, data)
+	pipe.LTrim(ctx, updatesKey, int64(-maxUpdatesHistory), -1)
+	pipe.Expire(ctx, updatesKey, 24*time.Hour)
+
+	pipe.Publish(ctx, "CHANNEL:task:"+taskID, data)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to store stream update: %w", err)
+	}
+	return nil
 }
 
 // AddStreamUpdate adds an update to the stream updates list
