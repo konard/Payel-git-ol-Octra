@@ -94,6 +94,7 @@ RULES:
 }
 
 // parseMultiFileResponse — разбор формата `=== FILE: path === ... === COMMANDS === ...`
+// Также умеет извлекать файлы из heredoc-команд (cat > path << 'EOF' ... EOF) в секции COMMANDS.
 func parseMultiFileResponse(content string) (map[string]string, []string) {
 	files := make(map[string]string)
 	commandsMarker := "=== COMMANDS ==="
@@ -106,9 +107,6 @@ func parseMultiFileResponse(content string) (map[string]string, []string) {
 
 	re := regexp.MustCompile(`(?m)^=== FILE:\s+(.+?)\s+===\s*$`)
 	matches := re.FindAllStringSubmatchIndex(filesSection, -1)
-	if len(matches) == 0 {
-		return files, []string{}
-	}
 	for i, match := range matches {
 		path := strings.TrimSpace(filesSection[match[2]:match[3]])
 		if path == "" {
@@ -126,6 +124,7 @@ func parseMultiFileResponse(content string) (map[string]string, []string) {
 		fileContent = util.StripMarkdownCodeBlock(fileContent)
 		files[path] = fileContent
 	}
+
 	commands := []string{}
 	commandsText := strings.TrimSpace(commandsSection)
 	if commandsText != "" {
@@ -134,6 +133,79 @@ func parseMultiFileResponse(content string) (map[string]string, []string) {
 			commands[i] = strings.TrimSpace(cmd)
 		}
 	}
+
+	// Если FILE-секция пуста — парсим heredoc-команды из COMMANDS как файлы
+	if len(files) == 0 && len(commands) > 0 {
+		heredocFiles, usedIndices := parseHeredocCommands(commands)
+		if len(heredocFiles) > 0 {
+			log.Printf("[Worker] Extracted %d files from heredoc commands", len(heredocFiles))
+		}
+		for k, v := range heredocFiles {
+			files[k] = v
+		}
+		// Убираем строки, вошедшие в heredoc-блоки
+		used := make(map[int]bool)
+		for _, idx := range usedIndices {
+			used[idx] = true
+		}
+		var clean []string
+		for i, cmd := range commands {
+			if !used[i] {
+				clean = append(clean, cmd)
+			}
+		}
+		commands = clean
+	}
+
 	return files, commands
+}
+
+// heredocRe ищет cat > path << ['"]?DELIMITER['"]?
+var heredocRe = regexp.MustCompile(`^cat\s+>\s+(\S+)\s+<<\s+['"]?(\w+)['"]?\s*$`)
+
+// parseHeredocCommands извлекает файлы из списка heredoc-команд:
+//
+//	cat > path/to/file << 'EOF'
+//	content...
+//	EOF
+//
+// Возвращает файлы и индексы строк, вошедших в heredoc-блоки.
+func parseHeredocCommands(commands []string) (map[string]string, []int) {
+	files := make(map[string]string)
+	var used []int
+	for i := 0; i < len(commands); i++ {
+		cmd := strings.TrimSpace(commands[i])
+		m := heredocRe.FindStringSubmatch(cmd)
+		if m == nil {
+			continue
+		}
+		path := m[1]
+		delim := m[2]
+
+		// Ищем закрывающий разделитель
+		var contentLines []string
+		contentStart := i + 1
+		j := contentStart
+		for ; j < len(commands); j++ {
+			line := strings.TrimSpace(commands[j])
+			if line == delim {
+				break
+			}
+			contentLines = append(contentLines, commands[j])
+		}
+		end := j
+		if j >= len(commands) {
+			end = len(commands) - 1
+		}
+		for k := i; k <= end; k++ {
+			used = append(used, k)
+		}
+		content := strings.Join(contentLines, "\n")
+		if content != "" {
+			files[path] = content
+		}
+		i = end
+	}
+	return files, used
 }
 
