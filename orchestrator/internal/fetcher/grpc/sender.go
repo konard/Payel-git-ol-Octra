@@ -25,7 +25,7 @@ func newSender(grpcStream bosspb.BossService_CreateTaskStreamServer, taskID, use
 	s := &streamSender{
 		inner:  stream.NewSender(grpcStream, taskID, userID, redisClient),
 		taskID: taskID,
-		sendCh: make(chan *bosspb.TaskUpdate, 64),
+		sendCh: make(chan *bosspb.TaskUpdate, 256),
 		doneCh: make(chan struct{}),
 	}
 	go s.loop(grpcStream)
