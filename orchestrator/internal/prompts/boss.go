@@ -59,10 +59,26 @@ Build EXACTLY what the user asked for — the right KIND of deliverable, and not
   architecture_notes (e.g. "Minimal HTTP/HTTPS proxy, single file, stdlib only — no extra features").
 
 IMPORTANT (for code tasks):
-- Choose tech_stack based on user description ONLY
-- If description says "golang" or "на golang" → use Go
-- If description says "python" → use Python
-- If description says "node" or "js" → use Node.js
+- Choose tech_stack based on user description ONLY (1 item, the primary language)
+- If description explicitly names a language — use that language. Examples:
+  - "golang" / "на golang" / "go" → ["go"]
+  - "python" / "django" / "flask" → ["python"]
+  - "node" / "js" / "javascript" / "typescript" / "express" / "react" → ["nodejs"]
+  - "php" / "laravel" / "symfony" / "на php" / "php сервер" → ["php"]
+  - "rust" / "cargo" → ["rust"]
+  - "java" / "spring" / "maven" → ["java"]
+  - "c#" / "csharp" / "dotnet" / ".net" → ["dotnet"]
+  - "c++" / "cpp" / "cmake" → ["cpp"]
+  - "ruby" / "rails" → ["ruby"]
+  - "flutter" / "dart" → ["flutter"]
+  - "kotlin" → ["kotlin"]
+  - "swift" → ["swift"]
+  - "elixir" / "phoenix" → ["elixir"]
+  - "haskell" / "cabal" → ["haskell"]
+  - "scala" / "sbt" → ["scala"]
+  - "zig" → ["zig"]
+  - "r" → ["r"]
+- If NO language is mentioned at all, fall back to the most popular choice that fits the task description
 - If the task contains a concrete GitHub issue URL (https://github.com/{owner}/{repo}/issues/{number}), plan a focused fix for that existing repository and preserve its current structure
 - Treat ordinary repository, package, documentation, and library URLs as references only; do not plan to clone or rewrite them unless they are concrete GitHub issue URLs
 

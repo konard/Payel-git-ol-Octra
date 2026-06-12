@@ -29,8 +29,12 @@ Language: %s
 
 TASK: %s%s
 
+SCOPE FIDELITY: Build EXACTLY what the task asks for — nothing more.
+Do NOT add files for features the user did not request (no auth, database, user management, configs).
+If the task is simple or basic, use the MINIMUM number of files (1-2 source files + manifest).
+
 IMPORTANT: Write code in %s ONLY. NOT JavaScript, NOT TypeScript.
-Create 3-5 most important files for this project (use .%s extension).
+Create files for this project (use .%s extension).
 
 AFTER files, provide COMMANDS to execute in the project (mkdir, echo, etc.).
 
