@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -113,13 +112,12 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		return nil, fmt.Errorf("agent generate: %w", err)
 	}
 
-	// Выполняем команды (npm init, go mod init и т.д.) через shell
+	// Выполняем команды (npm init, go mod init и т.д.) через shell (с nix develop если доступен)
 	for _, cmd := range commands {
 		if cmd == "" {
 			continue
 		}
-		c := exec.Command("sh", "-c", cmd)
-		c.Dir = a.basePath
+		c := util.NixDevelopCmd(a.basePath, cmd)
 		if output, err := c.CombinedOutput(); err != nil {
 			log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, cmd, err, string(output))
 		}

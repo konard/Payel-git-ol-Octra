@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -113,9 +112,7 @@ func (s *Service) runOneWorker(
 		if cmd == "" {
 			continue
 		}
-		c := exec.Command("sh", "-c", cmd)
-		c.Dir = basePath
-		c.Run()
+		util.NixDevelopCmd(basePath, cmd).Run()
 	}
 	for path, content := range files {
 		fullPath, err := util.ValidateFilePath(basePath, path)

@@ -18,6 +18,9 @@ func (s *Service) ensureFlakeLock(projectPath string) {
 		return
 	}
 
+	// flake.nix must be tracked by git for nix commands to see it
+	exec.Command("git", "-C", projectPath, "add", "flake.nix").Run()
+
 	log.Printf("Generating flake.lock for project: %s", projectPath)
 	cmd := exec.Command("nix", "flake", "lock",
 		"--extra-experimental-features", "nix-command flakes")
