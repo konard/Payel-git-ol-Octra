@@ -130,6 +130,8 @@ func (s *Service) generateViaTools(
 }
 
 // executeToolCommand запускает команду внутри nix develop со стримингом вывода.
+// Использует --profile .octra/nix-profile для кэширования собранного окружения
+// между вызовами — nix пересоберёт только если flake.nix изменился.
 // Если nix недоступен — запускает команду напрямую (для локальной разработки).
 func (s *Service) executeToolCommand(ctx context.Context, projectPath, command string, progress rules.ProgressFunc) (string, error) {
 	nixAvailable := false
@@ -139,8 +141,11 @@ func (s *Service) executeToolCommand(ctx context.Context, projectPath, command s
 
 	var cmd *exec.Cmd
 	if nixAvailable {
+		profilePath := util.NixProfilePath(projectPath)
+		os.MkdirAll(filepath.Dir(profilePath), 0755)
 		cmd = exec.CommandContext(ctx, "nix", "develop",
 			"--extra-experimental-features", "nix-command flakes",
+			"--profile", profilePath,
 			"--command", "bash", "-c", command)
 	} else {
 		cmd = exec.CommandContext(ctx, "bash", "-c", command)
