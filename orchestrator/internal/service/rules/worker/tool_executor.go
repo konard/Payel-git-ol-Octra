@@ -81,6 +81,14 @@ func (s *Service) generateViaTools(
 			progress(30, fmt.Sprintf("Installing %s via nix develop...", strings.Join(plan.Install, ", ")), nil)
 		}
 		installCmds := instcore.Resolve(plan.Install)
+
+		// Апдейтим flake.nix с nix-пакетами, нужными для install-флагов
+		nixPkgs := instcore.ResolvePackages(plan.Install)
+		if len(nixPkgs) > 0 {
+			log.Printf("[ToolExecutor] Ensuring nix packages in flake: %v", nixPkgs)
+			instcore.EnsureNixPackages(basePath, nixPkgs)
+		}
+
 		allCommands = append(allCommands, installCmds...)
 	}
 
