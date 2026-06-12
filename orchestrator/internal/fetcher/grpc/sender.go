@@ -51,7 +51,7 @@ func (s *streamSender) loop(grpcStream bosspb.BossService_CreateTaskStreamServer
 }
 
 // asProgressFunc — возвращает callback, который оборачивает ProgressFunc
-// и кладёт TaskUpdate в очередь отправки
+// и кладёт TaskUpdate в очередь отправки (блокирующая отправка — не дропаем апдейты)
 func (s *streamSender) asProgressFunc() rules.ProgressFunc {
 	return func(progress int32, message string, data map[string]string) {
 		status := "processing"
@@ -62,18 +62,13 @@ func (s *streamSender) asProgressFunc() rules.ProgressFunc {
 			status = "error"
 			delete(data, "status")
 		}
-		update := &bosspb.TaskUpdate{
+		s.sendCh <- &bosspb.TaskUpdate{
 			TaskId:    s.taskID,
 			Message:   message,
 			Progress:  progress,
 			Status:    status,
 			Timestamp: time.Now().Unix(),
 			Data:      data,
-		}
-		select {
-		case s.sendCh <- update:
-		default:
-			log.Printf("stream send channel full, dropping update: %s", message)
 		}
 	}
 }
