@@ -61,7 +61,6 @@ func (p *CustomProvider) Generate(ctx context.Context, prompt string, tokens map
 				"content": prompt,
 			},
 		},
-		"stream": true,
 	}
 
 	jsonData, err := json.Marshal(requestBody)

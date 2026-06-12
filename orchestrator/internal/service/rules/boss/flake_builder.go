@@ -35,7 +35,7 @@ func NewFlakeBuilder() *FlakeBuilder {
 		packageMaps: map[string]TechStackPackages{
 			"go":         {BuildInputs: []string{"go"}, ShellInputs: []string{"go", "gopls", "gotools"}},
 			"golang":     {BuildInputs: []string{"go"}, ShellInputs: []string{"go", "gopls", "gotools"}},
-			"python":     {BuildInputs: []string{"python3", "pip"}, ShellInputs: []string{"python3", "pip", "black", "ruff"}},
+			"python":     {BuildInputs: []string{"python3", "python3Packages.pip"}, ShellInputs: []string{"python3", "python3Packages.pip", "black", "ruff"}},
 			"node":       {BuildInputs: []string{"nodejs"}, ShellInputs: []string{"nodejs", "typescript"}},
 			"nodejs":     {BuildInputs: []string{"nodejs"}, ShellInputs: []string{"nodejs", "typescript"}},
 			"typescript": {BuildInputs: []string{"nodejs", "typescript"}, ShellInputs: []string{"nodejs", "typescript"}},
