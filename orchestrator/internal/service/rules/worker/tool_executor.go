@@ -126,6 +126,23 @@ func (s *Service) generateViaTools(
 		files = readProjectFiles(basePath)
 	}
 
+	// Шлём каждый обнаруженный файл на фронтенд
+	i := 0
+	for path, content := range files {
+		if progress != nil {
+			pct := 60 + int32(i)*20/int32(len(files))
+			if pct > 80 {
+				pct = 80
+			}
+			progress(pct, "Scaffolded: "+path, map[string]string{
+				"file": path,
+				"type": "scaffold",
+				"size": fmt.Sprintf("%d", len(content)),
+			})
+			i++
+		}
+	}
+
 	return files, plan.Commands, nil
 }
 

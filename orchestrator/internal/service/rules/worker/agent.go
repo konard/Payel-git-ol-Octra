@@ -102,9 +102,15 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 				workerMode = "multypass"
 			}
 			if workerMode == "multypass" {
+				if a.progress != nil {
+					a.progress(40, "Generating code via AI multi-pass...", nil)
+				}
 				files, commands, err = a.service.generateCodeMultiPass(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
 					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
 			} else {
+				if a.progress != nil {
+					a.progress(40, "Generating code via AI...", nil)
+				}
 				files, commands, err = a.service.generateCode(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
 					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
 			}
@@ -123,17 +129,21 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		// (AI часто генерирует cd app после mvn archetype:generate, но проект может
 		// оказаться в корне)
 		resolvedCmd := resolveCD(a.basePath, cmd)
+		if a.progress != nil {
+			a.progress(45, "Running: "+cmd, nil)
+		}
 		c := util.NixDevelopCmd(a.basePath, resolvedCmd)
 		if output, err := c.CombinedOutput(); err != nil {
 			log.Printf("[WorkerAgent %s] cmd %q (resolved from %q) failed: %v\n%s", a.role, resolvedCmd, cmd, err, string(output))
 		}
 	}
 
-	// Если есть что писать — пишем на диск (для последующего git add/commit)
+	// Если есть что писать — пишем на диск (для последующего git add/commit) и шлём на фронтенд
 	if len(files) > 0 {
 		if err := os.MkdirAll(a.basePath, 0755); err != nil {
 			log.Printf("[WorkerAgent %s] mkdir %s: %v", a.role, a.basePath, err)
 		}
+		i := 0
 		for path, content := range files {
 			fullPath, pathErr := util.ValidateFilePath(a.basePath, path)
 			if pathErr != nil {
@@ -146,6 +156,17 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			}
 			if writeErr := os.WriteFile(fullPath, []byte(content), 0644); writeErr != nil {
 				log.Printf("[WorkerAgent %s] write %s: %v", a.role, path, writeErr)
+			} else if a.progress != nil {
+				pct := 50 + int32(i)*30/int32(len(files))
+				if pct > 80 {
+					pct = 80
+				}
+				a.progress(pct, "Writing file: "+path, map[string]string{
+					"file": path,
+					"type": "write",
+					"size": fmt.Sprintf("%d", len(content)),
+				})
+				i++
 			}
 		}
 	}

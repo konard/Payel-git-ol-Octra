@@ -127,6 +127,12 @@ func (s *Service) runOneWorker(
 		}
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			log.Printf("Warning: failed to write file %s: %v", path, err)
+		} else if progress != nil {
+			progress(50, "Writing file: "+path, map[string]string{
+				"file": path,
+				"type": "write",
+				"size": fmt.Sprintf("%d", len(content)),
+			})
 		}
 	}
 
