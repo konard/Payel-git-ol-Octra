@@ -4,17 +4,22 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 )
 
 // generateCodeMultiPass — single-pass генерация: все файлы за один LLM-запрос (-45% токенов)
 // skill — уже разрешённый контент скиллов (может быть пустым, используется только при fallback).
+// Каждый распарсенный файл сразу пишется на диск и шлётся на фронтенд через progress.
 func (s *Service) generateCodeMultiPass(
 	ctx context.Context, provider, model string, tokens map[string]string,
 	taskMD, role, description, managerRole, basePath, extCtx, techStack, skill string,
+	progress rules.ProgressFunc,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -75,10 +80,11 @@ RULES:
 	files, commands := parseMultiFileResponse(response)
 	if len(files) == 0 {
 		log.Printf("[Worker] Multi-pass parsing failed, falling back to N+1")
-		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, extCtx, techStack, skill)
+		return s.generateCode(ctx, provider, model, tokens, taskMD, role, description, managerRole, basePath, extCtx, techStack, skill, progress)
 	}
 
 	finalFiles := make(map[string]string, len(files))
+	i := 0
 	for path, content := range files {
 		normalizedPath := strings.TrimSpace(strings.ReplaceAll(path, "\\", "/"))
 		for strings.HasPrefix(normalizedPath, "./") {
@@ -88,6 +94,25 @@ RULES:
 			continue
 		}
 		finalFiles[normalizedPath] = content
+
+		// Пишем файл на диск сразу — без ожидания остальных
+		fullPath := filepath.Join(basePath, normalizedPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			log.Printf("[Worker] mkdir for %s: %v", normalizedPath, err)
+		} else if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			log.Printf("[Worker] write %s: %v", normalizedPath, err)
+		} else if progress != nil {
+			pct := 50 + int32(i)*30/int32(len(files))
+			if pct > 80 {
+				pct = 80
+			}
+			progress(pct, "Writing file: "+normalizedPath, map[string]string{
+				"file": normalizedPath,
+				"type": "write",
+				"size": fmt.Sprintf("%d", len(content)),
+			})
+		}
+		i++
 	}
 	log.Printf("[Worker] Multi-pass generated %d files and %d commands for role %s", len(finalFiles), len(commands), role)
 	return finalFiles, commands, nil

@@ -93,9 +93,9 @@ func (s *Service) runOneWorker(
 				workerMode = "multypass"
 			}
 			if workerMode == "multypass" {
-				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent)
+				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent, progress)
 			} else {
-				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent)
+				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent, progress)
 			}
 		}
 	}

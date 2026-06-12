@@ -3,19 +3,25 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"orchestrator/internal/prompts"
+	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 	"orchestrator/internal/skills"
 )
 
 // generateCode — N+1 подход: спланировать список файлов, потом сгенерировать каждый
 // skill — уже разрешённый контент скиллов (из Warehouse.Select() или Guidance()), может быть пустым.
+// Каждый сгенерированный файл сразу пишется на диск и шлётся на фронтенд через progress.
 func (s *Service) generateCode(
 	ctx context.Context, provider, model string, tokens map[string]string,
 	taskMD, role, description, managerRole, basePath, extCtx, techStack, skill string,
+	progress rules.ProgressFunc,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -66,6 +72,24 @@ func (s *Service) generateCode(
 			continue
 		}
 		files[normalizedPath] = content
+
+		// Пишем файл на диск сразу — не ждём остальных
+		fullPath := filepath.Join(basePath, normalizedPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			log.Printf("[Worker] mkdir for %s: %v", normalizedPath, err)
+		} else if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			log.Printf("[Worker] write %s: %v", normalizedPath, err)
+		} else if progress != nil {
+			pct := 50 + int32(i)*30/int32(len(plan.Files))
+			if pct > 80 {
+				pct = 80
+			}
+			progress(pct, "Writing file: "+normalizedPath, map[string]string{
+				"file": normalizedPath,
+				"type": "write",
+				"size": fmt.Sprintf("%d", len(content)),
+			})
+		}
 	}
 
 	commandsPrompt := prompts.WorkerGenerateCommands(role, description, taskMD, contextSection)

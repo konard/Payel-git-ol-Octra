@@ -85,7 +85,7 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			topic = a.req.TaskMd
 		}
 		files, commands, err = a.service.generateDocument(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
+				a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
 	} else {
 		useTools := workerMode == "tool" || (isToolMode(a.meta.techStack) && workerMode != "no-tool")
 		if useTools {
@@ -106,13 +106,13 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 					a.progress(40, "Generating code via AI multi-pass...", nil)
 				}
 				files, commands, err = a.service.generateCodeMultiPass(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
+					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent, a.progress)
 			} else {
 				if a.progress != nil {
 					a.progress(40, "Generating code via AI...", nil)
 				}
 				files, commands, err = a.service.generateCode(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent)
+					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent, a.progress)
 			}
 		}
 	}
