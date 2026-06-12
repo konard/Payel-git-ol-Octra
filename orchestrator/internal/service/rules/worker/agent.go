@@ -120,104 +120,50 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		return nil, fmt.Errorf("agent generate: %w", err)
 	}
 
-	// Выполняем команды и собираем вывод — отправляем AI на фикс при ошибках
-	const maxFixAttempts = 3
-	for attempt := 0; attempt <= maxFixAttempts; attempt++ {
-		if attempt > 0 && len(files) == 0 {
-			break
+	// Выполняем команды и логируем результат
+	for _, cmd := range commands {
+		if cmd == "" {
+			continue
 		}
-
-		var cmdOutputs []string
-		for _, cmd := range commands {
-			if cmd == "" {
-				continue
-			}
-			resolvedCmd := resolveCD(a.basePath, cmd)
-			if a.progress != nil {
-				a.progress(45, "Running: "+cmd, nil)
-			}
-			c := util.NixDevelopCmd(a.basePath, resolvedCmd)
-			output, err := c.CombinedOutput()
-			lines := strings.TrimSpace(string(output))
-			if lines != "" {
-				cmdOutputs = append(cmdOutputs, fmt.Sprintf("$ %s\n%s", cmd, lines))
-			}
-			if err != nil {
-				log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, resolvedCmd, err, lines)
-			}
+		resolvedCmd := resolveCD(a.basePath, cmd)
+		if a.progress != nil {
+			a.progress(45, "Running: "+cmd, nil)
 		}
+		c := util.NixDevelopCmd(a.basePath, resolvedCmd)
+		output, err := c.CombinedOutput()
+		if err != nil {
+			log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, resolvedCmd, err, string(output))
+			// Пытаемся починить: один запрос к AI с ошибкой
+			fixPrompt := fmt.Sprintf(`A command failed:
+$ %s
 
-		cmdResult := strings.Join(cmdOutputs, "\n\n")
-		if cmdResult == "" || attempt >= maxFixAttempts {
-			break
-		}
-
-		log.Printf("[WorkerAgent %s] Command output has %d chars, sending to AI for fix (attempt %d/%d)", a.role, len(cmdResult), attempt+1, maxFixAttempts)
-
-		var fileList string
-		for path, content := range files {
-			fileList += fmt.Sprintf("=== FILE: %s ===\n%s\n\n", path, content)
-		}
-
-		fixPrompt := fmt.Sprintf(`The following commands were executed and produced output:
-
+Error: %v
+Output:
 %s
 
-The current files are:
-%s
-
-Fix any errors. Update ONLY the files that need changes.
+Fix the code that caused this error. Return the FIXED files only.
 Return format:
 === FILE: path/to/file ===
-<fixed content>
+<fixed content>`, cmd, err, string(output))
 
-If no files need changes, return "=== OK ==="`, cmdResult, fileList)
-
-		fixResp, err := a.service.agentsClient.Generate(ctx, a.meta.provider, a.meta.model, fixPrompt, a.meta.tokens, 8192, 0.3)
-		if err != nil {
-			log.Printf("[WorkerAgent %s] Fix attempt %d failed: %v", a.role, attempt+1, err)
-			break
-		}
-
-		if strings.Contains(fixResp, "=== OK ===") {
-			log.Printf("[WorkerAgent %s] AI reports no fixes needed", a.role)
-			break
-		}
-
-		fixedFiles, newCommands := parseMultiFileResponse(fixResp)
-		if len(fixedFiles) == 0 {
-			log.Printf("[WorkerAgent %s] No files in fix response, stopping fix loop", a.role)
-			break
-		}
-
-		// Apply fixed files
-		for path, content := range fixedFiles {
-			files[path] = content
-		}
-		if len(newCommands) > 0 {
-			commands = newCommands
+			fixResp, fixErr := a.service.agentsClient.Generate(ctx, a.meta.provider, a.meta.model, fixPrompt, a.meta.tokens, 8192, 0.3)
+			if fixErr != nil {
+				log.Printf("[WorkerAgent %s] Fix attempt failed: %v", a.role, fixErr)
+				continue
+			}
+			fixedFiles, _ := parseMultiFileResponse(fixResp)
+			for path, content := range fixedFiles {
+				files[path] = content
+			}
 		}
 	}
 
-	// Если есть что писать — пишем на диск (для последующего git add/commit) и шлём на фронтенд
-	if len(files) > 0 {
-		if err := os.MkdirAll(a.basePath, 0755); err != nil {
-			log.Printf("[WorkerAgent %s] mkdir %s: %v", a.role, a.basePath, err)
-		}
-		i := 0
-		for path, content := range files {
-			fullPath, pathErr := util.ValidateFilePath(a.basePath, path)
-			if pathErr != nil {
-				log.Printf("[WorkerAgent %s] invalid path %s: %v", a.role, path, pathErr)
-				continue
-			}
-			if dirErr := os.MkdirAll(filepath.Dir(fullPath), 0755); dirErr != nil {
-				log.Printf("[WorkerAgent %s] mkdir for %s: %v", a.role, path, dirErr)
-				continue
-			}
-			if writeErr := os.WriteFile(fullPath, []byte(content), 0644); writeErr != nil {
-				log.Printf("[WorkerAgent %s] write %s: %v", a.role, path, writeErr)
-			} else if a.progress != nil {
+	// Для code-задач файлы уже записаны generateCode*, для document/research — пишем здесь
+	if a.meta.taskType == "" || a.meta.taskType == "code" {
+		// Только прогресс, файлы уже на диске
+		if a.progress != nil {
+			i := 0
+			for path, content := range files {
 				pct := 50 + int32(i)*30/int32(len(files))
 				if pct > 80 {
 					pct = 80
@@ -229,6 +175,16 @@ If no files need changes, return "=== OK ==="`, cmdResult, fileList)
 				})
 				i++
 			}
+		}
+	} else {
+		for path, content := range files {
+			fullPath, pathErr := util.ValidateFilePath(a.basePath, path)
+			if pathErr != nil {
+				log.Printf("[WorkerAgent %s] invalid path %s: %v", a.role, path, pathErr)
+				continue
+			}
+			os.MkdirAll(filepath.Dir(fullPath), 0755)
+			os.WriteFile(fullPath, []byte(content), 0644)
 		}
 	}
 
