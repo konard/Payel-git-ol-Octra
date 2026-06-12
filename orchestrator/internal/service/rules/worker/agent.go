@@ -120,21 +120,82 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		return nil, fmt.Errorf("agent generate: %w", err)
 	}
 
-	// Выполняем команды (npm init, go mod init и т.д.) через shell (с nix develop если доступен)
-	for _, cmd := range commands {
-		if cmd == "" {
-			continue
+	// Выполняем команды и собираем вывод — отправляем AI на фикс при ошибках
+	const maxFixAttempts = 3
+	for attempt := 0; attempt <= maxFixAttempts; attempt++ {
+		if attempt > 0 && len(files) == 0 {
+			break
 		}
-		// Если команда делает cd в несуществующую директорию — убираем cd-часть
-		// (AI часто генерирует cd app после mvn archetype:generate, но проект может
-		// оказаться в корне)
-		resolvedCmd := resolveCD(a.basePath, cmd)
-		if a.progress != nil {
-			a.progress(45, "Running: "+cmd, nil)
+
+		var cmdOutputs []string
+		for _, cmd := range commands {
+			if cmd == "" {
+				continue
+			}
+			resolvedCmd := resolveCD(a.basePath, cmd)
+			if a.progress != nil {
+				a.progress(45, "Running: "+cmd, nil)
+			}
+			c := util.NixDevelopCmd(a.basePath, resolvedCmd)
+			output, err := c.CombinedOutput()
+			lines := strings.TrimSpace(string(output))
+			if lines != "" {
+				cmdOutputs = append(cmdOutputs, fmt.Sprintf("$ %s\n%s", cmd, lines))
+			}
+			if err != nil {
+				log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, resolvedCmd, err, lines)
+			}
 		}
-		c := util.NixDevelopCmd(a.basePath, resolvedCmd)
-		if output, err := c.CombinedOutput(); err != nil {
-			log.Printf("[WorkerAgent %s] cmd %q (resolved from %q) failed: %v\n%s", a.role, resolvedCmd, cmd, err, string(output))
+
+		cmdResult := strings.Join(cmdOutputs, "\n\n")
+		if cmdResult == "" || attempt >= maxFixAttempts {
+			break
+		}
+
+		log.Printf("[WorkerAgent %s] Command output has %d chars, sending to AI for fix (attempt %d/%d)", a.role, len(cmdResult), attempt+1, maxFixAttempts)
+
+		var fileList string
+		for path, content := range files {
+			fileList += fmt.Sprintf("=== FILE: %s ===\n%s\n\n", path, content)
+		}
+
+		fixPrompt := fmt.Sprintf(`The following commands were executed and produced output:
+
+%s
+
+The current files are:
+%s
+
+Fix any errors. Update ONLY the files that need changes.
+Return format:
+=== FILE: path/to/file ===
+<fixed content>
+
+If no files need changes, return "=== OK ==="`, cmdResult, fileList)
+
+		fixResp, err := a.service.agentsClient.Generate(ctx, a.meta.provider, a.meta.model, fixPrompt, a.meta.tokens, 8192, 0.3)
+		if err != nil {
+			log.Printf("[WorkerAgent %s] Fix attempt %d failed: %v", a.role, attempt+1, err)
+			break
+		}
+
+		if strings.Contains(fixResp, "=== OK ===") {
+			log.Printf("[WorkerAgent %s] AI reports no fixes needed", a.role)
+			break
+		}
+
+		fixedFiles, newCommands := parseMultiFileResponse(fixResp)
+		if len(fixedFiles) == 0 {
+			log.Printf("[WorkerAgent %s] No files in fix response, stopping fix loop", a.role)
+			break
+		}
+
+		// Apply fixed files
+		for path, content := range fixedFiles {
+			files[path] = content
+		}
+		if len(newCommands) > 0 {
+			commands = newCommands
 		}
 	}
 
