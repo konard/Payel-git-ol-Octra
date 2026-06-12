@@ -15,6 +15,8 @@ import (
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
+	instcore "orchestrator/pkg/instralutions/core"
+	_ "orchestrator/pkg/instralutions"
 )
 
 // toolTechStacks — tech stack'и, для которых используется ToolExecutor вместо AI-генерации.
@@ -42,10 +44,11 @@ var toolTechStacks = map[string]bool{
 }
 
 // generateViaTools — генерирует код через реальные тулы внутри nix develop.
-// 1. AI планирует команды (scaffolding + депенденси)
-// 2. Команды выполняются внутри nix develop со стримингом вывода
-// 3. Новые файлы детектятся через git diff
-// 4. Результат возвращается как map[string]string (как от generateCode)
+// 1. AI планирует: возвращает install-флаги + post-generation команды
+// 2. install-флаги разрешаются в команды через instralutions registry
+// 3. Все команды выполняются внутри nix develop со стримингом вывода
+// 4. Новые файлы детектятся через git diff
+// 5. Результат возвращается как map[string]string (как от generateCode)
 func (s *Service) generateViaTools(
 	ctx context.Context, provider, model string, tokens map[string]string,
 	taskMD, role, description, managerRole, basePath, extCtx, techStack string,
@@ -63,28 +66,41 @@ func (s *Service) generateViaTools(
 	}
 
 	var plan struct {
+		Install  []string `json:"install"`
 		Commands []string `json:"commands"`
 	}
 	if err := json.Unmarshal([]byte(util.RepairJSON(util.ExtractJSONFromMarkdown(resp))), &plan); err != nil {
 		return nil, nil, fmt.Errorf("tool plan JSON parse failed: %w\nRaw: %s", err, resp)
 	}
 
-	if len(plan.Commands) == 0 {
-		return nil, nil, fmt.Errorf("AI returned empty commands list for tool mode")
+	// Шаг 1: resolve install-флагов в команды через instralutions registry
+	var allCommands []string
+	if len(plan.Install) > 0 {
+		log.Printf("[ToolExecutor] Role=%s: resolving install flags: %v", role, plan.Install)
+		if progress != nil {
+			progress(30, fmt.Sprintf("Installing %s via nix develop...", strings.Join(plan.Install, ", ")), nil)
+		}
+		installCmds := instcore.Resolve(plan.Install)
+		allCommands = append(allCommands, installCmds...)
 	}
 
-	log.Printf("[ToolExecutor] Role=%s: executing %d commands via nix develop", role, len(plan.Commands))
-	if progress != nil {
-		progress(30, fmt.Sprintf("Scaffolding project for role %s via %s tools...", role, techStack), nil)
+	// Шаг 2: AI-generated post-generation команды
+	allCommands = append(allCommands, plan.Commands...)
+
+	if len(allCommands) == 0 {
+		return nil, nil, fmt.Errorf("AI returned empty commands (no install flags, no commands)")
 	}
 
-	for i, cmdStr := range plan.Commands {
+	log.Printf("[ToolExecutor] Role=%s: executing %d commands (install:%d, commands:%d) via nix develop",
+		role, len(allCommands), len(plan.Install), len(plan.Commands))
+
+	for i, cmdStr := range allCommands {
 		cmdStr = strings.TrimSpace(cmdStr)
 		if cmdStr == "" {
 			continue
 		}
 		if progress != nil {
-			progress(30+int32(i)*30/int32(len(plan.Commands)), cmdStr, nil)
+			progress(30+int32(i)*30/int32(len(allCommands)), cmdStr, nil)
 		}
 		output, execErr := s.executeToolCommand(ctx, basePath, cmdStr, progress)
 		if execErr != nil {

@@ -1,5 +1,12 @@
 package prompts
 
+import (
+	"fmt"
+	"strings"
+
+	instcore "orchestrator/pkg/instralutions/core"
+)
+
 // WorkerPlanFiles — промпт для воркера: спланировать список файлов.
 // skill — опциональный блок экспертных рекомендаций из системных скиллов
 // (skills.Guidance), подобранный под роль/стек воркера. Если пусто — не влияет.
@@ -67,15 +74,16 @@ Focus on:
 4. Potential challenges`
 }
 
-// WorkerToolCommands — промпт для воркера: спланировать команды scaffolding
-// через реальные тулы (npm, cargo, flutter, composer, …) внутри nix develop.
-// Включает шпаргалку ToolCheatSheet для экономии токенов AI.
+// WorkerToolCommands — промпт для воркера: спланировать scaffolding через install-флаги.
+// AI возвращает install-флаги (выбирает из известных установщиков), а не полные команды.
+// Это надёжнее: установщики пишутся Go-разработчиком, AI не ошибается в синтаксисе тулов.
+// После install AI может добавить post-generation команды (сборка, миграции и т.д.).
 func WorkerToolCommands(role, desc, task, context, techStack string) string {
-	cheat := ToolCheatSheet(techStack)
-
-	cheatSection := ""
-	if cheat != "" {
-		cheatSection = "\n\nCHEAT SHEET (use these exact commands — do not guess):\n" + cheat
+	// Собираем список доступных install-флагов из instralutions registry
+	available := strings.Builder{}
+	available.WriteString("\n\nAVAILABLE INSTALL FLAGS (choose from these):\n")
+	for _, s := range instcore.All() {
+		available.WriteString(fmt.Sprintf("  - %s (requires: %s)\n", s.Name, strings.Join(s.Requires, ", ")))
 	}
 
 	return `You are a ` + role + ` developer using the ` + techStack + ` toolchain.
@@ -85,17 +93,22 @@ TASK: ` + task + context + `
 
 You have a BLANK project directory. Your job is to scaffold the project using
 REAL tools — NOT by writing code manually. The tools will be available via
-` + "`nix develop`" + ` (they are already in the environment).` + cheatSection + `
+` + "`nix develop`" + ` (they are already in the environment).
+
+HOW IT WORKS:
+1. Pick the RIGHT install flag(s) from the AVAILABLE INSTALL FLAGS list below that match the task.
+   For example: ["java", "spring"] for a Spring Boot project.
+2. Optionally add post-generation commands (e.g. "mvn package") in "commands".
+   Do NOT create scaffolding commands yourself — use install flags for that.
 
 RULES:
-1. Use REAL TOOLS to create the project structure — see CHEAT SHEET above.
-2. Install dependencies the project needs (runtime + dev).
-3. Keep it MINIMAL — only what the task asks for. No extra features.
-4. If the task is simple enough for a single source file, use: echo/cat to write it.
-5. Return a list of bash commands, one per line, executed IN ORDER in project root.
+- Use install flags for ALL scaffolding (project creation, dependency installation).
+- Post-generation commands (build, test, run) go in "commands" array.
+- Keep it MINIMAL — only what the task asks for. No extra features.
+- If the task is simple enough for a single source file, omit install and use echo/cat in commands.
 
 Return JSON ONLY:
-{"commands": ["cmd1", "cmd2", "cmd3"]}`
+{"install": ["flag1", "flag2"], "commands": ["cmd1", "cmd2"]}` + available.String()
 }
 
 // WorkerReview — промпт для воркера: переписать файл с учётом фидбэка
