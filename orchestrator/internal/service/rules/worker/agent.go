@@ -119,9 +119,13 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		if cmd == "" {
 			continue
 		}
-		c := util.NixDevelopCmd(a.basePath, cmd)
+		// Если команда делает cd в несуществующую директорию — убираем cd-часть
+		// (AI часто генерирует cd app после mvn archetype:generate, но проект может
+		// оказаться в корне)
+		resolvedCmd := resolveCD(a.basePath, cmd)
+		c := util.NixDevelopCmd(a.basePath, resolvedCmd)
 		if output, err := c.CombinedOutput(); err != nil {
-			log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, cmd, err, string(output))
+			log.Printf("[WorkerAgent %s] cmd %q (resolved from %q) failed: %v\n%s", a.role, resolvedCmd, cmd, err, string(output))
 		}
 	}
 
@@ -221,4 +225,30 @@ func persistWorkerDB(req *rules.AssignWorkersRequest, agentID, role, taskMD stri
 				"solution_md": workerModel.SolutionMD,
 			})
 	}
+}
+
+// resolveCD проверяет, существует ли директория, в которую делает cd команда.
+// Если нет — убирает cd-часть, чтобы остаток команды выполнился из корня проекта.
+// Пример: "cd app && mvn package" → "mvn package" (если app/ не существует)
+func resolveCD(basePath, cmd string) string {
+	if !strings.HasPrefix(cmd, "cd ") {
+		return cmd
+	}
+	parts := strings.SplitN(cmd, "&&", 2)
+	if len(parts) < 2 {
+		return cmd
+	}
+	cdPart := strings.TrimSpace(parts[0]) // "cd app"
+	rest := strings.TrimSpace(parts[1])   // "mvn package"
+
+	// Извлекаем имя директории из cd
+	dir := strings.TrimSpace(strings.TrimPrefix(cdPart, "cd "))
+	dir = strings.Trim(dir, `"'`) // убираем возможные кавычки
+
+	fullDir := filepath.Join(basePath, dir)
+	if _, err := os.Stat(fullDir); os.IsNotExist(err) {
+		log.Printf("[resolveCD] directory %q does not exist, stripping cd (cmd: %q)", fullDir, cmd)
+		return rest
+	}
+	return cmd
 }

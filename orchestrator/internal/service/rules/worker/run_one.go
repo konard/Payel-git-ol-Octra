@@ -112,7 +112,8 @@ func (s *Service) runOneWorker(
 		if cmd == "" {
 			continue
 		}
-		util.NixDevelopCmd(basePath, cmd).Run()
+		resolved := resolveCD(basePath, cmd)
+		util.NixDevelopCmd(basePath, resolved).Run()
 	}
 	for path, content := range files {
 		fullPath, err := util.ValidateFilePath(basePath, path)
