@@ -25,12 +25,11 @@ func switchToManagerBranch(repoPath, role string) error {
 
 // mergeWorkerBranches — мерджит ветки worker-{role} обратно в текущую (manager)
 func mergeWorkerBranches(repoPath string, results []*rules.WorkerResult) {
-	log.Printf("Merging worker branches into manager branch...")
 	for _, wr := range results {
 		branchName := fmt.Sprintf("worker-%s", wr.Role)
 		mergeMessage := fmt.Sprintf("Merge worker %s branch", wr.Role)
 		if err := git.MergeBranch(repoPath, branchName, mergeMessage); err != nil {
-			log.Printf("Failed to merge worker branch %s: %v", branchName, err)
+			log.Printf("Warning: failed to merge worker branch %s: %v", branchName, err)
 		} else {
 			log.Printf("Merged worker branch: %s", branchName)
 		}

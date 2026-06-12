@@ -113,11 +113,7 @@ func (s *Service) runOneWorker(
 		if cmd == "" {
 			continue
 		}
-		parts := strings.Fields(cmd)
-		if len(parts) == 0 {
-			continue
-		}
-		c := exec.Command(parts[0], parts[1:]...)
+		c := exec.Command("sh", "-c", cmd)
 		c.Dir = basePath
 		c.Run()
 	}

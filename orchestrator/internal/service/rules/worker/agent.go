@@ -69,6 +69,8 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		log.Printf("[WorkerAgent %s] createTaskMD failed: %v", a.role, err)
 		return nil, fmt.Errorf("agent think: %w", err)
 	}
+	log.Printf("[WorkerAgent %s] Starting code generation (taskType=%s, techStack=%s)...",
+		a.role, a.meta.taskType, a.meta.techStack)
 
 	// Генерация кода
 	workerMode := os.Getenv("WORKER_MODE")
@@ -111,16 +113,12 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		return nil, fmt.Errorf("agent generate: %w", err)
 	}
 
-	// Выполняем команды (npm init, go mod init и т.д.)
+	// Выполняем команды (npm init, go mod init и т.д.) через shell
 	for _, cmd := range commands {
 		if cmd == "" {
 			continue
 		}
-		parts := strings.Fields(cmd)
-		if len(parts) == 0 {
-			continue
-		}
-		c := exec.Command(parts[0], parts[1:]...)
+		c := exec.Command("sh", "-c", cmd)
 		c.Dir = a.basePath
 		if output, err := c.CombinedOutput(); err != nil {
 			log.Printf("[WorkerAgent %s] cmd %q failed: %v\n%s", a.role, cmd, err, string(output))

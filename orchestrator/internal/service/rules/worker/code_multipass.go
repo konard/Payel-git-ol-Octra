@@ -61,11 +61,12 @@ RULES:
 		techStack, techStack,
 		techStack, techStack, techStack, techStack, techStack, techStack, techStack, techStack)
 
+	log.Printf("[Worker] Multi-pass generating code for role %s (provider=%s, model=%s, max_tokens=16384, tech=%s)...", role, provider, model, techStack)
 	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
 	if err != nil {
 		return nil, nil, fmt.Errorf("multi-pass generation failed: %w", err)
 	}
-	log.Printf("[Worker] Multi-pass response length: %d chars", len(response))
+	log.Printf("[Worker] Multi-pass response length: %d chars for role %s", len(response), role)
 
 	files, commands := parseMultiFileResponse(response)
 	if len(files) == 0 {

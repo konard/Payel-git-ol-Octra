@@ -91,6 +91,14 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 	}
 	log.Printf("Boss decision: type=%s managers=%d stack=%v", decision.TaskType, decision.ManagersCount, decision.TechStack)
 
+	// Fallback: AI often returns empty tech stack — detect from task title/description
+	if len(decision.TechStack) == 0 {
+		decision.TechStack = detectTechStack(req.Title, req.Description)
+		if len(decision.TechStack) > 0 {
+			log.Printf("Boss: detected tech stack from keywords: %v", decision.TechStack)
+		}
+	}
+
 	// Final safeguard inside thinkOnce
 	if decision.ManagersCount <= 0 {
 		decision.ManagersCount = 1

@@ -59,6 +59,50 @@ func classifyTaskType(title, description string) string {
 	return TaskTypeCode
 }
 
+// detectTechStack — детектит tech stack из заголовка/описания задачи,
+// когда AI не смог определить (stack=[]).
+func detectTechStack(title, description string) []string {
+	text := strings.ToLower(title + " " + description)
+
+	type stackMatch struct {
+		keywords []string
+		stack    string
+	}
+	known := []stackMatch{
+		{[]string{"python", "django", "flask", "fastapi", "pytest"}, "python"},
+		{[]string{"php", "laravel", "symfony", "composer"}, "php"},
+		{[]string{"node", "nodejs", "express", "nestjs", "typescript", "javascript", "react", "vue", "angular", "npm", "yarn"}, "nodejs"},
+		{[]string{"golang", "go ", " go-", "go "}, "go"},
+		{[]string{"rust", "cargo"}, "rust"},
+		{[]string{"java", "maven", "gradle", "spring", "kotlin"}, "java"},
+		{[]string{"c#", "csharp", "dotnet", "asp.net", ".net"}, "dotnet"},
+		{[]string{"c++", "cpp", "cmake"}, "cpp"},
+		{[]string{"ruby", "rails", "gem"}, "ruby"},
+		{[]string{"flutter", "dart"}, "flutter"},
+		{[]string{"swift", "xcode"}, "swift"},
+		{[]string{"elixir", "phoenix"}, "elixir"},
+		{[]string{"haskell", "cabal"}, "haskell"},
+		{[]string{"scala", "sbt"}, "scala"},
+		{[]string{"r ", "rstats"}, "r"},
+		{[]string{"zig"}, "zig"},
+	}
+
+	matched := make(map[string]bool)
+	var result []string
+	for _, s := range known {
+		for _, kw := range s.keywords {
+			if strings.Contains(text, kw) {
+				if !matched[s.stack] {
+					matched[s.stack] = true
+					result = append(result, s.stack)
+				}
+				break
+			}
+		}
+	}
+	return result
+}
+
 // normalizeTaskType — приводит значение к одному из поддерживаемых типов.
 func normalizeTaskType(t string) string {
 	switch strings.ToLower(strings.TrimSpace(t)) {

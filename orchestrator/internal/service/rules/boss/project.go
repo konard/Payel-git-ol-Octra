@@ -88,6 +88,8 @@ func (s *Service) initGitRepo(repoPath string) error {
 	if err := git.InitRepo(repoPath); err != nil {
 		return err
 	}
+	// Ensure default branch name is "main" regardless of git version
+	exec.Command("git", "-C", repoPath, "branch", "-m", "main").Run()
 	userName := envOrDefault("GIT_USER_NAME", "CrewAI Bot")
 	userEmail := envOrDefault("GIT_USER_EMAIL", "bot@crewai.local")
 	if err := git.SetUser(repoPath, userName, userEmail); err != nil {
@@ -100,14 +102,22 @@ func (s *Service) initGitRepo(repoPath string) error {
 	return nil
 }
 
-// mergeManagerBranches — сливает manager-{role} ветки в итоговую ветку
+// mergeManagerBranches — сливает manager-{role} ветки в итоговую ветку.
+// Если targetBranch не указан или не существует, использует текущую ветку.
 func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRole, targetBranch string) {
 	if targetBranch == "" {
 		targetBranch = "main"
 	}
 	if err := git.CheckoutBranch(repoPath, targetBranch); err != nil {
-		log.Printf("Failed to checkout %s: %v", targetBranch, err)
-		return
+		// Возможно ветка называется master или мы уже на нужной — пробуем определить текущую
+		current, _ := git.GetCurrentBranch(repoPath)
+		if current != "" {
+			targetBranch = current
+			log.Printf("Falling back to current branch: %s", current)
+		} else {
+			log.Printf("Failed to checkout %s: %v", targetBranch, err)
+			return
+		}
 	}
 	for _, role := range roles {
 		branchName := fmt.Sprintf("manager-%s", role.Role)

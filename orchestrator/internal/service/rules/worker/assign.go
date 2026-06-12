@@ -53,8 +53,76 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 
 	acc := buildAccumulatedContext(nil, contextSummary) + projectCtx
 
-	// Создаём Group Chat оркестратор
-	// 2 раунда: 1-й генерация, 2-й кросс-ревью
+	// Fast path: single worker — no group chat overhead
+	if len(req.WorkerRoles) == 1 {
+		wr := req.WorkerRoles[0]
+		if progress != nil {
+			progress(10, "Running single worker: "+wr.Role, map[string]string{
+				"manager_id":   req.ManagerId,
+				"manager_role": req.ManagerRole,
+				"worker_role":  wr.Role,
+			})
+		}
+
+		agent := NewWorkerAgent(s, req, wr, meta, basePath, acc)
+		messages, err := agent.Process(ctx, &groupchat.Conversation{})
+		if err != nil {
+			return nil, fmt.Errorf("worker %s failed: %w", wr.Role, err)
+		}
+
+		allFiles := make(map[string]string)
+		for _, msg := range messages {
+			for k, v := range msg.Files {
+				allFiles[k] = v
+			}
+		}
+
+		if progress != nil {
+			progress(80, "Worker completed, writing files and committing", map[string]string{
+				"files": fmt.Sprintf("%d", len(allFiles)),
+			})
+		}
+
+		if len(allFiles) > 0 {
+			// Create worker branch so manager can merge it
+			branchName := fmt.Sprintf("worker-%s", wr.Role)
+			if err := git.CreateBranch(basePath, branchName); err != nil {
+				log.Printf("Warning: failed to create worker branch %s: %v", branchName, err)
+			}
+
+			if err := git.Add(basePath); err != nil {
+				log.Printf("Warning: git add failed: %v", err)
+			}
+			if err := git.Commit(basePath, fmt.Sprintf("Worker: %s", wr.Role)); err != nil {
+				log.Printf("Warning: git commit failed: %v", err)
+			}
+		}
+
+		persistWorkerDB(req, agent.id, wr.Role, "", allFiles, true)
+
+		workerResults := []*rules.WorkerResult{{
+			WorkerId:   agent.id,
+			Role:       wr.Role,
+			Files:      allFiles,
+			Success:    true,
+			SolutionMd: fmt.Sprintf("Generated %d files for role %s", len(allFiles), wr.Role),
+		}}
+
+		if progress != nil {
+			progress(100, "Single worker completed successfully", map[string]string{
+				"files_count": strconv.Itoa(len(allFiles)),
+			})
+		}
+
+		log.Printf("Single worker %s completed: %d files", wr.Role, len(allFiles))
+		return &rules.AssignWorkersResponse{
+			TaskId:        req.TaskId,
+			Status:        "success",
+			WorkerResults: workerResults,
+		}, nil
+	}
+
+	// Создаём Group Chat оркестратор (2+ workers)
 	orch := groupchat.NewOrchestrator(2)
 	orch.SetSelector(groupchat.NewAllAtOnceSelector())
 
@@ -68,8 +136,7 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 
 	// Условие завершения: после 1-го раунда (все сгенерировали) останавливаемся
 	orch.SetTerminationCondition(func(conv *groupchat.Conversation, round int) bool {
-		// После первого раунда у нас уже есть весь код
-		return round >= 1
+		return round > 1
 	})
 
 	if progress != nil {
@@ -87,28 +154,6 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	// Собираем результаты из чата
 	conv := orch.SnapshotConversation()
 	allFiles := conv.AllFiles()
-
-	// Собираем per-agent результаты
-	type agentResult struct {
-		agent  *WorkerAgent
-		taskMD string
-	}
-	agentResults := make([]agentResult, 0, len(agents))
-
-	// Ищем сообщения каждого агента и собираем taskMD
-	for _, msg := range conv.Messages {
-		if msg.Type == groupchat.MsgResponse && msg.Files != nil {
-			for _, a := range agents {
-				if msg.AgentID == a.id {
-					agentResults = append(agentResults, agentResult{
-						agent:  a,
-						taskMD: msg.Content,
-					})
-					break
-				}
-			}
-		}
-	}
 
 	if progress != nil {
 		progress(80, "All agents completed, writing files and committing", map[string]string{
