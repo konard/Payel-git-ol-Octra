@@ -41,6 +41,11 @@ Language: ` + techStack + `
 TASK: ` + task + `
 Role: ` + role + skill + `
 
+SCOPE FIDELITY: implement EXACTLY what the task asks for — nothing more. Do NOT pull in
+dependencies, imports, or features the task did not request (no database/ORM, auth/jwt/bcrypt,
+validation/zod, logging/winston, or frontend frameworks unless explicitly required). For a
+manifest (e.g. package.json), list ONLY the dependencies actually used by the requested code.
+
 IMPORTANT: Write COMPLETE ` + techStack + ` code. No placeholders. No TODOs.
 Use the standard file extension for ` + techStack + `.
 Return the file content as PLAIN TEXT. NO JSON. NO markdown. Just the raw code.`
@@ -104,7 +109,12 @@ HOW IT WORKS:
 RULES:
 - Use install flags for ALL scaffolding (project creation, dependency installation).
 - Post-generation commands (build, test, run) go in "commands" array.
-- Keep it MINIMAL — only what the task asks for. No extra features.
+- Keep it MINIMAL — only what the task LITERALLY asks for. No extra features.
+- SCOPE FIDELITY: pick ONLY the install flags the task requires. Do NOT add database
+  (prisma/ORM), auth (jwt/bcrypt), validation (zod), logging (winston), or frontend
+  (React) flags unless the task explicitly asks for them. A request like
+  "express hello world server" needs at most the runtime/framework — usually a single
+  source file and its manifest, with NO database/auth/logging/frontend dependencies.
 - If the task is simple enough for a single source file, omit install and use echo/cat in commands.
 
 Return JSON ONLY:
