@@ -101,3 +101,78 @@ func TestCollectCodeFilesPayloadIncludesWorkerFiles(t *testing.T) {
 	}
 }
 
+// TestCollectCodeFilesPayloadSkipsInfra — корневой тест issue #75 п.6: фронтенду
+// должны уходить РЕАЛЬНЫЕ файлы кода, а не служебное окружение (flake.nix,
+// flake.lock, .octra/context.json). Пользователь спросил: «зачем мне flake.nix и
+// context.json, если я просил express hello world».
+func TestCollectCodeFilesPayloadSkipsInfra(t *testing.T) {
+	results := []*rules.ManagerResult{
+		{
+			Role: "backend-manager",
+			WorkerResults: []*rules.WorkerResult{
+				{
+					Role: "backend",
+					Files: map[string]string{
+						"flake.nix":           "{ }",
+						"flake.lock":          "{}",
+						".octra/context.json": `{"x":1}`,
+						"result/bin/app":      "elf",
+						"index.js":            "const express = require('express')",
+						"package.json":        `{"name":"app"}`,
+					},
+				},
+			},
+		},
+	}
+
+	payload, total := collectCodeFilesPayload(results)
+	if payload == "" {
+		t.Fatal("expected non-empty payload (real code files present)")
+	}
+
+	var files []streamedSolutionFile
+	if err := json.Unmarshal([]byte(payload), &files); err != nil {
+		t.Fatalf("payload is not valid JSON: %v", err)
+	}
+
+	got := map[string]bool{}
+	for _, f := range files {
+		got[f.Path] = true
+	}
+	for _, infra := range []string{"flake.nix", "flake.lock", ".octra/context.json", "result/bin/app"} {
+		if got[infra] {
+			t.Errorf("infra file %q must NOT be in payload", infra)
+		}
+	}
+	if !got["index.js"] || !got["package.json"] {
+		t.Errorf("expected real code files in payload, got %v", got)
+	}
+	// total считает только показываемые файлы (инфраструктура исключена).
+	if total != 2 {
+		t.Errorf("total = %d, want 2 (index.js + package.json)", total)
+	}
+}
+
+// TestCollectCodeFilesPayloadOnlyInfra — если воркер выдал ТОЛЬКО инфраструктуру,
+// payload пустой (показывать нечего), и это сигнал, что код не сгенерировался.
+func TestCollectCodeFilesPayloadOnlyInfra(t *testing.T) {
+	results := []*rules.ManagerResult{
+		{
+			Role: "m",
+			WorkerResults: []*rules.WorkerResult{
+				{Role: "backend", Files: map[string]string{
+					"flake.nix":           "{ }",
+					".octra/context.json": "{}",
+				}},
+			},
+		},
+	}
+	payload, total := collectCodeFilesPayload(results)
+	if payload != "" {
+		t.Errorf("expected empty payload when only infra files present, got %q", payload)
+	}
+	if total != 0 {
+		t.Errorf("total = %d, want 0", total)
+	}
+}
+
