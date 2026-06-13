@@ -18,6 +18,8 @@ export interface AgentNode {
   repoUrl?: string;
   prUrl?: string;
   commitCount?: number;
+  // Human-readable reason shown when a node fails (issue #75 п.3: GitHub publish errors)
+  errorMessage?: string;
   // N8n automation
   n8nTrigger?: 'start' | 'end' | 'middle' | 'custom';
   n8nPercentage?: number;
