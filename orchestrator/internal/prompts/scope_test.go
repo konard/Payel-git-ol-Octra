@@ -26,47 +26,46 @@ func TestPlanArchitectureEnforcesScopeFidelity(t *testing.T) {
 	}
 }
 
-// TestCodeManagerThinkEnforcesScopeFidelity — менеджер кодовой команды не должен
-// нанимать лишних воркеров под незапрошенные фичи.
-func TestCodeManagerThinkEnforcesScopeFidelity(t *testing.T) {
+// TestCodeManagerThinkHasWorkerFormula — менеджер кодовой команды использует
+// единую формулу расчёта числа воркеров по grade_weight.
+func TestCodeManagerThinkHasWorkerFormula(t *testing.T) {
 	p := ManagerThink("backend", "Backend development", "Нужен мини прокси на go", "50", "code")
-	for _, want := range []string{"SCOPE FIDELITY", "EXACTLY what the task asks"} {
+	for _, want := range []string{"Worker count by grade_weight", "1-20:", "21-60:"} {
 		if !strings.Contains(p, want) {
-			t.Errorf("codeManagerThink must enforce scope fidelity, missing %q:\n%s", want, p)
+			t.Errorf("codeManagerThink must have worker count formula, missing %q:\n%s", want, p)
 		}
 	}
 }
 
-// TestWorkerPlanFilesEnforcesScopeFidelity — воркер должен планировать минимальный
-// набор файлов и не добавлять файлы под незапрошенные фичи.
-func TestWorkerPlanFilesEnforcesScopeFidelity(t *testing.T) {
+// TestWorkerPlanFilesReturnsFilesAndCommands — воркер планирует файлы и команды
+// в одном JSON (вместо отдельного LLM-вызова для команд).
+func TestWorkerPlanFilesReturnsFilesAndCommands(t *testing.T) {
 	p := WorkerPlanFiles("backend", "build it", "Нужен мини прокси на go", "", "go", "")
-	for _, want := range []string{"SCOPE FIDELITY", "MINIMUM set of files"} {
+	for _, want := range []string{"Return JSON ONLY", "files", "commands"} {
 		if !strings.Contains(p, want) {
-			t.Errorf("WorkerPlanFiles must enforce scope fidelity, missing %q:\n%s", want, p)
+			t.Errorf("WorkerPlanFiles must return files and commands in JSON, missing %q:\n%s", want, p)
 		}
 	}
 }
 
-// TestWorkerToolCommandsEnforcesScopeFidelity — регрессия на issue #75 п.5: для
-// «express hello world server» воркер ставил prisma/jwt/bcrypt/zod/winston/React.
-// Промпт выбора install-флагов теперь обязан запрещать незапрошенные флаги.
-func TestWorkerToolCommandsEnforcesScopeFidelity(t *testing.T) {
+// TestWorkerToolCommandsWarnsKeepMinimal — промпт выбора install-флагов напоминает
+// о минимальности через «Keep it MINIMAL».
+func TestWorkerToolCommandsWarnsKeepMinimal(t *testing.T) {
 	p := WorkerToolCommands("backend", "build it", "express hello world server", "", "nodejs")
-	for _, want := range []string{"SCOPE FIDELITY", "prisma", "jwt", "bcrypt", "zod", "winston", "React"} {
+	for _, want := range []string{"Keep it MINIMAL", "Return JSON ONLY"} {
 		if !strings.Contains(p, want) {
-			t.Errorf("WorkerToolCommands must warn against over-installing, missing %q:\n%s", want, p)
+			t.Errorf("WorkerToolCommands must encourage minimal install, missing %q:\n%s", want, p)
 		}
 	}
 }
 
-// TestWorkerGenerateFileEnforcesScopeFidelity — содержимое файла (в т.ч. манифеста)
-// не должно тянуть незапрошенные зависимости (issue #75 п.5).
-func TestWorkerGenerateFileEnforcesScopeFidelity(t *testing.T) {
+// TestWorkerGenerateFileRequiresCompleteCode — воркер получает команду писать
+// полный код без плейсхолдеров.
+func TestWorkerGenerateFileRequiresCompleteCode(t *testing.T) {
 	p := WorkerGenerateFile("package.json", "express hello world server", "backend", "nodejs", "")
-	for _, want := range []string{"SCOPE FIDELITY", "ONLY the dependencies actually used"} {
+	for _, want := range []string{"Write COMPLETE", "No placeholders. No TODOs"} {
 		if !strings.Contains(p, want) {
-			t.Errorf("WorkerGenerateFile must enforce scope fidelity, missing %q:\n%s", want, p)
+			t.Errorf("WorkerGenerateFile must require complete code, missing %q:\n%s", want, p)
 		}
 	}
 }

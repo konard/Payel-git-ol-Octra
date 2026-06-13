@@ -42,7 +42,8 @@ func (s *Service) generateCode(
 	}
 
 	var plan struct {
-		Files []string `json:"files"`
+		Files    []string `json:"files"`
+		Commands []string `json:"commands"`
 	}
 	// Fallback-файл должен соответствовать стеку: для Node.js это index.js, а не
 	// main.go. Раньше fallback всегда был "main.go" — из-за этого JS-код мог
@@ -58,7 +59,7 @@ func (s *Service) generateCode(
 	files := make(map[string]string)
 	for i, file := range plan.Files {
 		log.Printf("[Worker] Generating file %d/%d: %s for role %s", i+1, len(plan.Files), file, role)
-		contentPrompt := prompts.WorkerGenerateFile(file, taskMD, role, techStack, skill)
+		contentPrompt := prompts.WorkerGenerateFile(file, taskMD, role, techStack, "")
 		content, err := s.agentsClient.Generate(ctx, provider, model, contentPrompt, tokens, 8192, 0.3)
 		if err != nil {
 			log.Printf("Error generating file %s: %v", file, err)
@@ -96,20 +97,7 @@ func (s *Service) generateCode(
 		}
 	}
 
-	commandsPrompt := prompts.WorkerGenerateCommands(role, description, taskMD, contextSection)
-	commandsResp, err := s.agentsClient.Generate(ctx, provider, model, commandsPrompt, tokens, 1024, 0.3)
-	if err != nil {
-		log.Printf("Error generating commands: %v", err)
-		return files, []string{}, nil
-	}
-	var commandsStruct struct {
-		Commands []string `json:"commands"`
-	}
-	if err := json.Unmarshal([]byte(util.RepairJSON(util.ExtractJSONFromMarkdown(commandsResp))), &commandsStruct); err != nil {
-		log.Printf("Error parsing commands JSON: %v", err)
-		return files, []string{}, nil
-	}
-	log.Printf("Generated %d files and %d commands for role %s", len(files), len(commandsStruct.Commands), role)
-	return files, commandsStruct.Commands, nil
+	log.Printf("Generated %d files and %d commands for role %s", len(files), len(plan.Commands), role)
+	return files, plan.Commands, nil
 }
 
