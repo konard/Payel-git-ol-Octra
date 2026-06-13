@@ -34,9 +34,7 @@ Language: %s
 
 TASK: %s%s
 
-SCOPE FIDELITY: Build EXACTLY what the task asks for — nothing more.
-Do NOT add files for features the user did not request (no auth, database, user management, configs).
-If the task is simple or basic, use the MINIMUM number of files (1-2 source files + manifest).
+SCOPE FIDELITY: build EXACTLY what the task asks — nothing more. No unrequested features (auth, DB, configs); for simple tasks use the MINIMUM files (often 1-2 source files + manifest).
 
 IMPORTANT: Write code in %s ONLY. NOT JavaScript, NOT TypeScript.
 Create files for this project (use .%s extension).
