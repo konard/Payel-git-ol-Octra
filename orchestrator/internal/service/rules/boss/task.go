@@ -33,11 +33,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	emit(progress, 10, "Task saved to database", nil)
 
-	req.Grade = gradeTask(req.Title + "\n" + req.Description)
-	emit(progress, 12, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
-
 	provider, model := pickProviderModel(req.Meta)
-	emit(progress, 15, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+	emit(progress, 12, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+
+	req.Grade = s.gradeTaskViaAI(ctx, provider, model, req.Tokens, req.Title, req.Description)
+	emit(progress, 15, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
 
 	if req.Meta == nil {
 		req.Meta = make(map[string]string)
