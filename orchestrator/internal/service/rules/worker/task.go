@@ -27,10 +27,17 @@ TASK:
 %s
 %s
 
-Create TASK.md file with detailed task breakdown for your role. Include:
-1. Files to create
-2. Functionality to implement
-3. Dependencies
+SCOPE FIDELITY (critical): plan EXACTLY what the task asks for — nothing more.
+Do NOT invent requirements. If the task does not mention authentication, a database,
+an ORM, validation, logging, or a frontend framework, then DO NOT add them. A request
+like "express hello world server" needs ONE source file plus its manifest — no prisma,
+jwt, bcrypt, zod, winston, or React. Only list a dependency if the task literally
+requires it. When unsure, prefer fewer files and fewer dependencies.
+
+Create TASK.md file with a task breakdown for your role. Include:
+1. Files to create (the MINIMUM set)
+2. Functionality to implement (only what was requested)
+3. Dependencies (only those strictly required by the task — usually just the runtime/framework named)
 4. How your work integrates with other workers (if context provided)
 
 Return ONLY the content of TASK.md file.`, role, description, taskMD, contextSection)

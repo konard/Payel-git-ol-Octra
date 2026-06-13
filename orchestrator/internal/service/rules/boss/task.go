@@ -151,9 +151,10 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// не требуется (см. issue): результат отдаётся во вкладку Solution и в чат.
 	// Исключение — задача привязана к конкретному GitHub issue.
 	repoURL := ""
+	githubErr := ""
 	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
 	if isCodeTask || issueTarget != nil {
-		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
+		repoURL, githubErr = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
 	} else {
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}
@@ -194,6 +195,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL
+	}
+	// issue #75 п.3: если публикация не удалась — сообщаем причину пользователю,
+	// чтобы нода GitHub не висела вечно в статусе «building» без объяснения.
+	if repoURL == "" && githubErr != "" {
+		data["githubError"] = githubErr
 	}
 	if issueTarget != nil && repoURL != "" {
 		data["githubMode"] = "pull_request"

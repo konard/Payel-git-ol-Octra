@@ -101,17 +101,21 @@ type ManagerWorkflow struct {
 	Workers      []WorkerWorkflow
 }
 
-// DecisionResult — итог boss-планирования
+// DecisionResult — итог boss-планирования.
+// ВАЖНО: AI возвращает ключи в snake_case (managers_count, manager_roles, …).
+// Go json-декодер сопоставляет имена без учёта регистра, но НЕ игнорирует
+// подчёркивания, поэтому без явных тегов поля manager_roles/managers_count и
+// т.д. молча терялись — босс всегда видел 0 менеджеров и сваливался в fallback
+// с одним менеджером (issue #75, п.4: «создаётся всего 3 ноды»).
 type DecisionResult struct {
 	// TaskType — вид результата: "code" | "research" | "document" | "presentation".
-	// json-тег нужен, потому что AI возвращает snake_case ключ.
-	TaskType             string `json:"task_type"`
-	ManagersCount        int32
-	ManagerRoles         []models.ManagerRole
-	TechnicalDescription string
-	TechStack            []string
-	ArchitectureNotes    string
-	ManagerWorkflows     []ManagerWorkflow
+	TaskType             string               `json:"task_type"`
+	ManagersCount        int32                `json:"managers_count"`
+	ManagerRoles         []models.ManagerRole `json:"manager_roles"`
+	TechnicalDescription string               `json:"technical_description"`
+	TechStack            []string             `json:"tech_stack"`
+	ArchitectureNotes    string               `json:"architecture_notes"`
+	ManagerWorkflows     []ManagerWorkflow    `json:"manager_workflows,omitempty"`
 }
 
 // progressBridge — переходник между rules.ProgressFunc и progressCallback менеджеров
@@ -128,4 +132,3 @@ func (s *Service) bridge(progress rules.ProgressFunc) func(role string, p int, m
 		progress(int32(p), msg, payload)
 	}
 }
-
