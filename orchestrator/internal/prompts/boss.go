@@ -60,7 +60,9 @@ IMPORTANT (for code tasks):
 - If description explicitly names a language — use that language. Examples:
   - "golang" / "на golang" / "go" → ["go"]
   - "python" / "django" / "flask" → ["python"]
-  - "node" / "js" / "javascript" / "typescript" / "express" / "react" → ["nodejs"]
+   - "typescript" / "ts" / "tsx" / ".tsx" → ["typescript"]
+   - "jsx" / ".jsx" → ["nodejs"]
+   - "node" / "js" / "javascript" / "express" / "react" → ["nodejs"]
   - "php" / "laravel" / "symfony" / "на php" / "php сервер" → ["php"]
   - "rust" / "cargo" → ["rust"]
   - "java" / "spring" / "maven" → ["java"]

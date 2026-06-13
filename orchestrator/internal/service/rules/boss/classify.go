@@ -71,7 +71,8 @@ func detectTechStack(title, description string) []string {
 	known := []stackMatch{
 		{[]string{"python", "django", "flask", "fastapi", "pytest"}, "python"},
 		{[]string{"php", "laravel", "symfony", "composer"}, "php"},
-		{[]string{"node", "nodejs", "express", "nestjs", "typescript", "javascript", "react", "vue", "angular", "npm", "yarn"}, "nodejs"},
+		{[]string{"typescript", "ts", ".ts", ".tsx", "tsx"}, "typescript"},
+		{[]string{"node", "nodejs", "express", "nestjs", "javascript", "js", ".jsx", "jsx", "react", "vue", "angular", "npm", "yarn"}, "nodejs"},
 		{[]string{"golang", "go ", " go-", "go "}, "go"},
 		{[]string{"rust", "cargo"}, "rust"},
 		{[]string{"java", "maven", "gradle", "spring", "kotlin"}, "java"},
@@ -112,7 +113,9 @@ func canonicalStack(stack string) string {
 	switch s {
 	case "go", "golang":
 		return "go"
-	case "node", "nodejs", "node.js", "javascript", "js", "typescript", "ts",
+	case "typescript", "ts", "tsx":
+		return "typescript"
+	case "node", "nodejs", "node.js", "javascript", "js", "jsx",
 		"express", "expressjs", "nestjs", "next", "nextjs", "react", "vue", "angular", "svelte":
 		return "nodejs"
 	case "python", "django", "flask", "fastapi":

@@ -89,6 +89,9 @@ func (s *Service) initGitRepo(repoPath string) error {
 	if err := git.InitRepo(repoPath); err != nil {
 		return err
 	}
+	if err := git.WriteGitignore(repoPath); err != nil {
+		return fmt.Errorf("write .gitignore: %w", err)
+	}
 	// Ensure default branch name is "main" regardless of git version
 	exec.Command("git", "-C", repoPath, "branch", "-m", "main").Run()
 	userName := envOrDefault("GIT_USER_NAME", "CrewAI Bot")

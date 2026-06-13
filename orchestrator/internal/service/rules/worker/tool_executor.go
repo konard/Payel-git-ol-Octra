@@ -311,7 +311,7 @@ type liveCodeFile struct {
 // (issue #75 п.1). Инфраструктурные файлы (flake.nix/.octra/...) пропускаются,
 // бинарное содержимое кодируется в base64. Возвращает "" если файл показывать не надо.
 func liveCodeFilesPayload(role, path, content string) string {
-	if strings.TrimSpace(path) == "" || util.IsInfraPath(path) {
+	if strings.TrimSpace(path) == "" || util.IsIgnoredPath(path) {
 		return ""
 	}
 	encoding := ""

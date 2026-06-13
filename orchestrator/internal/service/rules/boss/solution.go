@@ -84,7 +84,7 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 				// служебные файлы окружения (flake.nix, flake.lock, .octra/context.json).
 				// Пользователь явно спросил: «зачем мне flake.nix и context.json, если
 				// я просил express hello world».
-				if util.IsInfraPath(path) {
+				if util.IsIgnoredPath(path) {
 					seen[path] = true
 					continue
 				}

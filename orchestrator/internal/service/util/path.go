@@ -86,6 +86,64 @@ func transliterateCyrillic(s string) string {
 	return b.String()
 }
 
+// IsIgnoredPath сообщает, что файл/папку не надо показывать во вкладке Solution,
+// стримить в чат или коммитить в git — это артефакты сборки, менеджеры пакетов,
+// кэш, бинарники и т.п. Пользователю они не нужны.
+func IsIgnoredPath(path string) bool {
+	clean := strings.TrimPrefix(filepath.ToSlash(path), "./")
+
+	// Исключаем всю инфраструктуру Octra/Nix
+	if IsInfraPath(clean) {
+		return true
+	}
+
+	// node_modules — рай для npm-мусора
+	if clean == "node_modules" || strings.HasPrefix(clean, "node_modules/") {
+		return true
+	}
+
+	// Папки сборки
+	buildDirs := []string{
+		"dist", "build", "out", "target", "bin", "obj",
+		".next", ".nuxt", ".output", ".cache",
+		"__pycache__", ".pytest_cache", "venv", ".venv",
+	}
+	for _, d := range buildDirs {
+		if clean == d || strings.HasPrefix(clean, d+"/") {
+			return true
+		}
+	}
+
+	// Lock-файлы (их содержимое не нужно пользователю)
+	base := strings.ToLower(filepath.Base(clean))
+	switch base {
+	case "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "pnpm-lock.yml":
+		return true
+	case "go.sum", "go.work.sum":
+		return true
+	case "cargo.lock", "gemfile.lock", "poetry.lock", "composer.lock":
+		return true
+	case ".ds_store", "thumbs.db":
+		return true
+	}
+
+	// Расширения файлов, которые не несут смысла для пользователя
+	switch strings.ToLower(filepath.Ext(clean)) {
+	case ".pyc", ".pyo", ".pyd":
+		return true
+	case ".exe", ".dll", ".so", ".dylib", ".o", ".a", ".lib", ".obj":
+		return true
+	case ".jar", ".class", ".war", ".ear":
+		return true
+	case ".swp", ".swo", ".swn", ".bak", ".orig":
+		return true
+	case ".log":
+		return true
+	}
+
+	return false
+}
+
 // IsInfraPath сообщает, что путь — служебный файл сборочного окружения/оркестратора
 // (flake.nix, flake.lock, .octra/*, .git/*, result/*), а не результат работы воркера.
 // Такие файлы НЕ показываются во вкладке Solution и не стримятся в чат, потому что
