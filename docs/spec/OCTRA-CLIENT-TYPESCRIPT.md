@@ -5,7 +5,7 @@
 ```ts
 import WebSocket from 'ws';
 
-const ws = new WebSocket('wss://your-domain.com/ws');
+const ws = new WebSocket('wss://octra.env.pm/ws');
 
 ws.on('open', () => {
   ws.send(JSON.stringify({
@@ -26,7 +26,7 @@ let taskId: string | null = null;
 let backoff = 1000;
 
 function connect() {
-  const ws = new WebSocket('wss://your-domain.com/ws');
+  const ws = new WebSocket('wss://octra.env.pm/ws');
 
   ws.on('open', () => {
     if (taskId) {
