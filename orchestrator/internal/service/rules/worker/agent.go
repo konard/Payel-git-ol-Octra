@@ -48,7 +48,7 @@ func NewWorkerAgent(s *Service, req *rules.AssignWorkersRequest, wr *rules.Worke
 	}
 }
 
-func (a *WorkerAgent) ID() string  { return a.id }
+func (a *WorkerAgent) ID() string   { return a.id }
 func (a *WorkerAgent) Role() string { return a.role }
 
 // Process вызывается оркестратором, когда этот агент выбран для выступления.
@@ -88,14 +88,14 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			topic = a.req.TaskMd
 		}
 		files, commands, err = a.service.generateDocument(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-				a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
+			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
 	} else {
 		useTools := workerMode == "tool" || (isToolMode(a.meta.techStack) && workerMode != "no-tool")
 		if useTools {
 			files, commands, err = a.service.generateViaTools(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
 				taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, a.progress)
-			if err != nil || len(files) == 0 {
-				log.Printf("[WorkerAgent %s] Tool fallback to AI: %v", a.role, err)
+			if err != nil || len(files) == 0 || !containsSourceCode(files) {
+				log.Printf("[WorkerAgent %s] Tool fallback to AI (err=%v, files=%d, hasSource=%v)", a.role, err, len(files), containsSourceCode(files))
 				files = nil
 				commands = nil
 			}
@@ -171,11 +171,16 @@ Return format:
 				if pct > 80 {
 					pct = 80
 				}
-				a.progress(pct, "Writing file: "+path, map[string]string{
+				data := map[string]string{
 					"file": path,
 					"type": "write",
 					"size": fmt.Sprintf("%d", len(content)),
-				})
+				}
+				// Стримим файл во вкладку Solution вживую (issue #75 п.1).
+				if cf := liveCodeFilesPayload(a.role, path, content); cf != "" {
+					data["code_files"] = cf
+				}
+				a.progress(pct, "Writing file: "+path, data)
 				i++
 			}
 		}
@@ -262,9 +267,9 @@ func persistWorkerDB(req *rules.AssignWorkersRequest, agentID, role, taskMD stri
 		database.Db.Model(&models.Worker{}).
 			Where("id = ?", workerID).
 			Updates(map[string]interface{}{
-				"status":     "done",
-				"success":    success,
-				"files":      util.MarshalJSON(files),
+				"status":      "done",
+				"success":     success,
+				"files":       util.MarshalJSON(files),
 				"solution_md": workerModel.SolutionMD,
 			})
 	}

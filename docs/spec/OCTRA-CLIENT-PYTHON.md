@@ -8,7 +8,7 @@ import websockets
 import json
 
 async def run_client():
-    uri = "wss://your-domain.com/ws"
+    uri = "wss://octra.env.pm/ws"
     task_id = None
     backoff = 1
 
@@ -53,7 +53,7 @@ task_id = None
 
 async def octra_listener():
     global task_id
-    uri = "wss://your-domain.com/ws"
+    uri = "wss://octra.env.pm/ws"
     backoff = 1
 
     while True:

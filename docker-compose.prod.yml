@@ -63,21 +63,6 @@ services:
       - octra-network
     restart: unless-stopped
 
-  grademodel:
-    build:
-      context: ./grademodel
-      dockerfile: Dockerfile
-    container_name: octra-grader
-    environment:
-      - PYTHONPATH=/app/src
-    ports:
-      - "50055:50055"
-    depends_on:
-      - orchestrator
-    networks:
-      - octra-network
-    restart: unless-stopped
-
   agents:
     build:
       context: ./agents

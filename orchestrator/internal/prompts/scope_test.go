@@ -48,3 +48,26 @@ func TestWorkerPlanFilesEnforcesScopeFidelity(t *testing.T) {
 	}
 }
 
+// TestWorkerToolCommandsEnforcesScopeFidelity — регрессия на issue #75 п.5: для
+// «express hello world server» воркер ставил prisma/jwt/bcrypt/zod/winston/React.
+// Промпт выбора install-флагов теперь обязан запрещать незапрошенные флаги.
+func TestWorkerToolCommandsEnforcesScopeFidelity(t *testing.T) {
+	p := WorkerToolCommands("backend", "build it", "express hello world server", "", "nodejs")
+	for _, want := range []string{"SCOPE FIDELITY", "prisma", "jwt", "bcrypt", "zod", "winston", "React"} {
+		if !strings.Contains(p, want) {
+			t.Errorf("WorkerToolCommands must warn against over-installing, missing %q:\n%s", want, p)
+		}
+	}
+}
+
+// TestWorkerGenerateFileEnforcesScopeFidelity — содержимое файла (в т.ч. манифеста)
+// не должно тянуть незапрошенные зависимости (issue #75 п.5).
+func TestWorkerGenerateFileEnforcesScopeFidelity(t *testing.T) {
+	p := WorkerGenerateFile("package.json", "express hello world server", "backend", "nodejs", "")
+	for _, want := range []string{"SCOPE FIDELITY", "ONLY the dependencies actually used"} {
+		if !strings.Contains(p, want) {
+			t.Errorf("WorkerGenerateFile must enforce scope fidelity, missing %q:\n%s", want, p)
+		}
+	}
+}
+

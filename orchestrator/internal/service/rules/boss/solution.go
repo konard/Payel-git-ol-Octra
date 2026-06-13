@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
+	"orchestrator/internal/service/util"
 )
 
 type streamedSolutionFile struct {
@@ -80,11 +80,19 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 				if strings.TrimSpace(path) == "" || seen[path] {
 					continue
 				}
+				// issue #75 п.6: фронтенд должен показывать РЕАЛЬНЫЙ код, а не
+				// служебные файлы окружения (flake.nix, flake.lock, .octra/context.json).
+				// Пользователь явно спросил: «зачем мне flake.nix и context.json, если
+				// я просил express hello world».
+				if util.IsInfraPath(path) {
+					seen[path] = true
+					continue
+				}
 				seen[path] = true
 				totalFiles++
-				language := languageForSolutionPath(path)
+				language := util.LanguageForPath(path)
 				encoding := ""
-				if isBinarySolutionPath(path) {
+				if util.IsBinaryPath(path) {
 					content = base64.StdEncoding.EncodeToString([]byte(content))
 					encoding = "base64"
 				}
@@ -123,52 +131,6 @@ func collectCodeFilesPayload(results []*rules.ManagerResult) (string, int) {
 		return "", totalFiles
 	}
 	return string(data), totalFiles
-}
-
-func isBinarySolutionPath(path string) bool {
-	switch strings.ToLower(filepath.Ext(path)) {
-	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
-		return true
-	default:
-		return false
-	}
-}
-
-func languageForSolutionPath(path string) string {
-	switch strings.ToLower(filepath.Ext(path)) {
-	case ".go":
-		return "go"
-	case ".js", ".mjs", ".cjs", ".jsx":
-		return "javascript"
-	case ".ts", ".tsx":
-		return "typescript"
-	case ".py":
-		return "python"
-	case ".java":
-		return "java"
-	case ".c":
-		return "c"
-	case ".cc", ".cpp", ".cxx", ".hpp", ".hxx":
-		return "cpp"
-	case ".css":
-		return "css"
-	case ".html", ".htm":
-		return "html"
-	case ".json":
-		return "json"
-	case ".md", ".markdown":
-		return "markdown"
-	case ".yml", ".yaml":
-		return "yaml"
-	case ".sh", ".bash":
-		return "shell"
-	case ".sql":
-		return "sql"
-	case ".pptx", ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip":
-		return "binary"
-	default:
-		return "plaintext"
-	}
 }
 
 // synthesizeSolution — менеджерский синтез: сливает Markdown-результаты
@@ -213,4 +175,3 @@ func (s *Service) buildChatSummary(
 	}
 	return strings.TrimSpace(resp)
 }
-

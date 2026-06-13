@@ -33,11 +33,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	emit(progress, 10, "Task saved to database", nil)
 
-	req.Grade = gradeTask(req.Title + "\n" + req.Description)
-	emit(progress, 12, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
-
 	provider, model := pickProviderModel(req.Meta)
-	emit(progress, 15, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+	emit(progress, 12, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+
+	req.Grade = s.gradeTaskViaAI(ctx, provider, model, req.Tokens, req.Title, req.Description)
+	emit(progress, 15, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
 
 	if req.Meta == nil {
 		req.Meta = make(map[string]string)
@@ -151,9 +151,10 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// не требуется (см. issue): результат отдаётся во вкладку Solution и в чат.
 	// Исключение — задача привязана к конкретному GitHub issue.
 	repoURL := ""
+	githubErr := ""
 	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
 	if isCodeTask || issueTarget != nil {
-		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
+		repoURL, githubErr = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
 	} else {
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}
@@ -194,6 +195,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL
+	}
+	// issue #75 п.3: если публикация не удалась — сообщаем причину пользователю,
+	// чтобы нода GitHub не висела вечно в статусе «building» без объяснения.
+	if repoURL == "" && githubErr != "" {
+		data["githubError"] = githubErr
 	}
 	if issueTarget != nil && repoURL != "" {
 		data["githubMode"] = "pull_request"
