@@ -56,9 +56,12 @@ func (a *WorkerAgent) Role() string { return a.role }
 func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation) ([]groupchat.Message, error) {
 	log.Printf("[WorkerAgent %s] Processing round, conversation has %d messages", a.role, len(conv.Messages))
 
-	// Собираем контекст из чата: что другие воркеры уже нагенерили
+	// Собираем контекст из чата: что другие воркеры уже нагенерили.
+	// Для одиночного воркера (нет чужих сообщений) buildChatContext вернёт "",
+	// и мы не подмешиваем пустую секцию — иначе в промпт воркера падал бы
+	// бессмысленный блок "CONTEXT FROM OTHER WORKERS" с пустой историей (issue #79).
 	chatContext := a.buildChatContext(conv)
-	fullContext := chatContext + "\n" + a.accumulatedContext
+	fullContext := strings.TrimSpace(chatContext + "\n" + a.accumulatedContext)
 
 	// Разрешаем skill fragments: используем то, что менеджер выбрал со склада
 	skillContent := buildSkillContext(a.selectedSlugs, a.role, a.meta.techStack, a.req.TaskMd, a.description)
@@ -209,29 +212,31 @@ Return format:
 
 // buildChatContext собирает из истории чата контекст для AI:
 // что другие воркеры уже сгенерировали, какие файлы создали.
+// Возвращает "" если чужих сообщений нет (одиночный воркер), чтобы не
+// раздувать промпт пустой секцией истории (issue #79).
 func (a *WorkerAgent) buildChatContext(conv *groupchat.Conversation) string {
-	var b strings.Builder
-	b.WriteString("=== GROUP CHAT HISTORY ===\n")
-
+	var body strings.Builder
 	for _, msg := range conv.Messages {
 		if msg.AgentID == a.id {
 			continue // свои сообщения не добавляем в контекст
 		}
-		b.WriteString(fmt.Sprintf("[%s - %s] %s\n", msg.Role, msg.Type, msg.Content))
+		body.WriteString(fmt.Sprintf("[%s - %s] %s\n", msg.Role, msg.Type, msg.Content))
 		if len(msg.Files) > 0 {
-			b.WriteString(fmt.Sprintf("  Files generated (%d):\n", len(msg.Files)))
+			body.WriteString(fmt.Sprintf("  Files generated (%d):\n", len(msg.Files)))
 			for path := range msg.Files {
-				b.WriteString(fmt.Sprintf("    - %s\n", path))
+				body.WriteString(fmt.Sprintf("    - %s\n", path))
 			}
 			// Показываем содержимое файлов других воркеров для контекста
 			for path, content := range msg.Files {
-				b.WriteString(fmt.Sprintf("\n--- %s ---\n%s\n", path, content))
+				body.WriteString(fmt.Sprintf("\n--- %s ---\n%s\n", path, content))
 			}
 		}
 	}
 
-	b.WriteString("=== END HISTORY ===")
-	return b.String()
+	if strings.TrimSpace(body.String()) == "" {
+		return ""
+	}
+	return "=== GROUP CHAT HISTORY ===\n" + body.String() + "=== END HISTORY ==="
 }
 
 // persistWorkerDB создаёт/обновляет запись воркера в БД.
