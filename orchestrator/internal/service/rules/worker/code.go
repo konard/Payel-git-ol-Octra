@@ -44,11 +44,15 @@ func (s *Service) generateCode(
 	var plan struct {
 		Files []string `json:"files"`
 	}
+	// Fallback-файл должен соответствовать стеку: для Node.js это index.js, а не
+	// main.go. Раньше fallback всегда был "main.go" — из-за этого JS-код мог
+	// оказаться в .go-файле, когда планирование файлов проваливалось.
+	mainFile := prompts.LangMainFile(techStack)
 	if err := json.Unmarshal([]byte(util.RepairJSON(util.ExtractJSONFromMarkdown(planResp))), &plan); err != nil {
-		plan.Files = []string{"main.go", "README.md"}
+		plan.Files = []string{mainFile, "README.md"}
 	}
 	if len(plan.Files) == 0 {
-		plan.Files = []string{"main.go"}
+		plan.Files = []string{mainFile}
 	}
 
 	files := make(map[string]string)
