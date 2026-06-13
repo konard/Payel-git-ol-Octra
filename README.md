@@ -36,6 +36,24 @@ setupProject() → FlakeBuilder(techStack) → ToolExecutor(generateViaTools)
 - **ToolExecutor** runs real scaffolding commands (`npm install`, `cargo init`, `composer create-project`, etc.)
 - Graceful fallback to AI generation if Nix or tool is unavailable
 
+## Command error auto-fix
+
+When a scaffolding command fails (non-zero exit), its output is fed back to the AI for automatic fixing:
+
+```
+Worker generates code → runs commands → exit code ≠ 0
+                                         ↓
+                  AI receives error + current files → returns fixed files
+                                         ↓
+                              patched files written to disk
+```
+
+Only errors trigger the fix (successful command output is ignored). Each failed command gets one fix attempt.
+
+## Stream reliability
+
+Progress updates from the Boss → Manager → Worker pipeline are delivered via a buffered channel (256 slots) with blocking sends — no updates are dropped. Previously used non-blocking sends with `select default:`, which silently dropped file-write progress when the channel was full.
+
 ## Structured tool guides (`pkg/guids`)
 
 Octra ships with a registry of structured tool guides — one file per tool, organized by language ecosystem:
@@ -301,8 +319,8 @@ This means projects take zero space when idle but can be restored at any time.
 
 | Service | Stack | Role |
 |---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding |
-| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, …) |
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding, command auto-fix |
+| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, Ollama/custom, …) — supports OpenAI-compatible streaming and non-streaming |
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
 | `frontend/web` | React, Vite, Electron | Interactive canvas + chat UI |
@@ -318,6 +336,7 @@ This means projects take zero space when idle but can be restored at any time.
 | `orchestrator/internal/service/rules/boss/project.go` | `snapshotProject()`, `RestoreProject()`, `generateFlake()` |
 | `orchestrator/internal/service/rules/boss/flake_builder.go` | Dynamic `flake.nix` generation per tech stack |
 | `orchestrator/internal/service/rules/boss/nix_build.go` | `nix build`, `nix flake check`, `nix flake lock` |
+| `orchestrator/internal/fetcher/grpc/sender.go` | Stream sender with blocking buffered channel (256 slots) — no dropped updates |
 | `orchestrator/internal/service/rules/worker/tool_executor.go` | Real tool scaffolding inside `nix develop` |
 | `orchestrator/pkg/guids/` | Structured tool guide registry (commands, packages, structure) |
 | `orchestrator/pkg/models/context_entry.go` | Context entry GORM model |
