@@ -19,7 +19,22 @@ User → API Gateway → Boss (architect)
 
 **Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
 **Managers** review and orchestrate workers.  
-**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding.  
+**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding. 
+
+## Philosophy
+
+Octra's core principle: **AI is a genius but untrustworthy brain — the system is a rigid shell that controls it.**
+
+AI tends to overcomplicate, add features no one asked for, hallucinate APIs, and deviate from the task. Octra does not fight this — it contains it:
+
+- **Divide and conquer** — a single complex task is broken into many small, narrow AI calls (Boss → Manager → Worker). Each call answers exactly one question, with no room for creativity.
+- **JSON-only responses** — every prompt demands structured output. AI does not narrate, justify, or explore — it answers precisely and moves on.
+- **Every step is validated** — Boss validates the final result, Manager reviews worker output, failed commands are retried with error context. No output is trusted without verification.
+- **No system prompt roleplay** — AI does not need to "act like a senior engineer." It needs to follow instructions exactly and produce parseable results.
+- **Determinism over creativity** — low temperatures, constrained output formats, explicit rules for every decision. Predictability is more valuable than cleverness.
+- **Context as a resource, not a story** — project context is stored as structured entries with scopes and importance flags, not as conversation history. AI does not "remember" — it is told what it needs to know.
+
+This is not a limitation — it is the feature. Octra treats AI as a reliable executor within a controlled system, not as an autonomous agent. 
 
 ## Tool scaffolding pipeline
 
