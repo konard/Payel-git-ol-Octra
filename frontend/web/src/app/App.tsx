@@ -243,6 +243,14 @@ export default function App() {
   useEffect(() => {
     if (status === 'done' && currentChatId) {
       void persistWorkflow(currentChatId);
+
+      // Save nix_store_path to chat history for later file loading
+      const { nixStorePath, nixTaskId } = useTaskStore.getState();
+      if (nixStorePath && nixTaskId) {
+        import('../services/chatHistoryService').then(({ updateChatNixPath }) => {
+          updateChatNixPath(currentChatId, nixTaskId, nixStorePath).catch(console.error);
+        });
+      }
     }
   }, [status, currentChatId]);
 
@@ -504,6 +512,9 @@ export default function App() {
       // Restore this chat's saved workflow (a full graph swap, empty if none).
       const { nodes, edges } = parseChatWorkflow(chat.workflow);
       useTaskStore.getState().setGraph(nodes, edges);
+
+      // Load solution files from Nix store
+      await useTaskStore.getState().loadProjectFiles(chatId);
     } catch (err) {
       console.error('Failed to load chat:', err);
     }

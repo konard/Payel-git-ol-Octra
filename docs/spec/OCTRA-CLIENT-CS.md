@@ -16,7 +16,7 @@ class OctraClient
 
     public async Task ConnectAsync()
     {
-        string uri = "wss://your-domain.com/ws";
+        string uri = "wss://octra.env.pm/ws";
 
         while (true)
         {
@@ -75,7 +75,7 @@ public class OctraBackgroundService : BackgroundService
             try
             {
                 using var ws = new ClientWebSocket();
-                await ws.ConnectAsync(new Uri("wss://your-domain.com/ws"), stoppingToken);
+                await ws.ConnectAsync(new Uri("wss://octra.env.pm/ws"), stoppingToken);
 
                 if (!string.IsNullOrEmpty(taskId))
                     await SendAsync(ws, $"{{\"type\":\"resume\",\"taskId\":\"{taskId}\"}}");

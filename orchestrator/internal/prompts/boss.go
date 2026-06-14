@@ -8,7 +8,10 @@ import (
 
 // PlanArchitecture — промпт для босса: спланировать архитектуру задачи.
 // Если skillCategories непустое (comma-separated), в промпт попадают только
-// фрагменты из указанных категорий — остальные исключаются.
+// фрагменты из указанных категорий. Если категории не заданы, каталог скиллов
+// НЕ добавляется вовсе: раньше сюда падал весь каталог даже для тривиальных задач
+// ("hello world"), зашумляя промпт нерелевантными специальностями (issue #79).
+// Каталог теперь opt-in — он нужен только когда пользователь явно запросил скиллы.
 func PlanArchitecture(title, desc string, grade int, skillCategories string) string {
 	return PlanArchitectureRanked(title, desc, grade, skillCategories, RankFull)
 }
@@ -34,12 +37,6 @@ The user requested these skill categories: %s
 
 Available expert fragments in those categories:
 %s`, skillCategories, catalog)
-			}
-		} else {
-			if catalog := skills.Catalog(); catalog != "" {
-				skillsSection = `
-The system has built-in EXPERT SKILLS covering these areas (pick manager/worker roles that map to them when relevant):
-` + catalog
 			}
 		}
 	}
@@ -78,7 +75,9 @@ IMPORTANT (for code tasks):
 - If description explicitly names a language — use that language. Examples:
   - "golang" / "на golang" / "go" → ["go"]
   - "python" / "django" / "flask" → ["python"]
-  - "node" / "js" / "javascript" / "typescript" / "express" / "react" → ["nodejs"]
+   - "typescript" / "ts" / "tsx" / ".tsx" → ["typescript"]
+   - "jsx" / ".jsx" → ["nodejs"]
+   - "node" / "js" / "javascript" / "express" / "react" → ["nodejs"]
   - "php" / "laravel" / "symfony" / "на php" / "php сервер" → ["php"]
   - "rust" / "cargo" → ["rust"]
   - "java" / "spring" / "maven" → ["java"]
@@ -110,7 +109,6 @@ ALWAYS create at least 1 manager (even for simple tasks). Only use 0 in extremel
 Reply ONLY with JSON:
 {
   "task_type": "code",
-  "grade_weight": ` + fmt.Sprintf("%d", grade*10) + `,
   "managers_count": 1,
   "manager_roles": [{"role": "backend", "description": "Backend development", "priority": 1}],
   "tech_stack": ["CHOOSE_FROM_DESCRIPTION"],

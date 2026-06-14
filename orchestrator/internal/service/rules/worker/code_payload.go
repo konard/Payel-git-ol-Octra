@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"orchestrator/internal/service/util"
 )
 
 type streamedCodeFile struct {
@@ -25,7 +27,7 @@ func buildCodeFilesPayload(files map[string]string, workerRole, managerRole stri
 
 	paths := make([]string, 0, len(files))
 	for path := range files {
-		if strings.TrimSpace(path) != "" && !isBinaryPath(path) {
+		if strings.TrimSpace(path) != "" && !isBinaryPath(path) && !util.IsIgnoredPath(path) {
 			paths = append(paths, path)
 		}
 	}

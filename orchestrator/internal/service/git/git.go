@@ -9,6 +9,72 @@ import (
 	"strings"
 )
 
+// defaultGitignore — содержимое .gitignore, которое пишется в каждый новый проект.
+// Исключает артефакты сборки, менеджеры пакетов, кэш, бинарники и OS-мусор.
+// Пользовательский код и конфиги (.gitignore, .editorconfig, .env.example) не исключаются.
+const defaultGitignore = `# Octra / Nix
+.octra/
+result/
+
+# Dependencies
+node_modules/
+vendor/
+.cache/
+
+# Lock files — регенерятся при сборке
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+go.sum
+go.work.sum
+Cargo.lock
+Gemfile.lock
+poetry.lock
+composer.lock
+
+# Build output
+dist/
+build/
+out/
+target/
+bin/
+obj/
+.next/
+.nuxt/
+.output/
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor temp files
+*.swp
+*.swo
+*.swn
+*.bak
+*.orig
+
+# Logs
+*.log
+
+# Environment (may contain secrets)
+.env
+.env.local
+.env.production
+`
+
+// WriteGitignore creates a .gitignore file in the repository directory.
+// If the file already exists (created by the AI worker), it is not overwritten.
+func WriteGitignore(dir string) error {
+	path := filepath.Join(dir, ".gitignore")
+	if _, err := os.Stat(path); err == nil {
+		return nil // уже есть — не перезаписываем
+	}
+	return os.WriteFile(path, []byte(defaultGitignore), 0644)
+}
+
 // InitRepo initializes a new Git repository in the specified directory
 func InitRepo(dir string) error {
 	cmd := exec.Command("git", "init")

@@ -49,10 +49,10 @@ services:
       - AGENTS_SERVICE_HOST=agents:50053
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
-      - WORKER_MODE=multypass
       - PROJECTS_DIR=/workspace/projects
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
       - GIT_USER_NAME=CrewAI Orchestrator
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - ORCHESTRATOR_GRPC_PORT=50052
     ports:
       - "50052:50052"
@@ -165,17 +165,6 @@ services:
         condition: service_started
       apigateway:
         condition: service_started
-    networks:
-      - octra-network
-    restart: unless-stopped
-
-  grademodel:
-    build:
-      context: ./grademodel
-      dockerfile: Dockerfile
-    container_name: octra-grader
-    ports:
-      - "50055:50055"
     networks:
       - octra-network
     restart: unless-stopped

@@ -25,8 +25,11 @@ func TestPromptRank(t *testing.T) {
 // TestPlanArchitectureLightDropsSkillCatalog — слабые модели не должны получать
 // громоздкий каталог скиллов (план фикса, пункт 9).
 func TestPlanArchitectureLightDropsSkillCatalog(t *testing.T) {
-	full := PlanArchitectureRanked("Build a proxy", "write a proxy", 5, "", RankFull)
-	light := PlanArchitectureRanked("Build a proxy", "write a proxy", 5, "", RankLight)
+	// The skills catalog is opt-in (issue #79): it is injected only when the
+	// user explicitly requests a category. A full-rank prompt with a requested
+	// category must therefore carry the catalog, while the light variant drops it.
+	full := PlanArchitectureRanked("Build a proxy", "write a proxy", 5, "Backend", RankFull)
+	light := PlanArchitectureRanked("Build a proxy", "write a proxy", 5, "Backend", RankLight)
 
 	if len(light) >= len(full) {
 		t.Fatalf("light prompt (%d) should be shorter than full (%d)", len(light), len(full))

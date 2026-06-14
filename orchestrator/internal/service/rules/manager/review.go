@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -52,7 +53,7 @@ func (s *Service) reviewWorkerResult(ctx context.Context, provider, model string
 	genCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	resp, err := s.agentsClient.Generate(genCtx, provider, model, prompt, tokens, 1024, 0.3)
+	resp, err := s.agentsClient.Generate(genCtx, provider, model, prompt, tokens, 1024, config.Temperature)
 	if err != nil {
 		return &reviewResult{Approved: true, Feedback: fmt.Sprintf("Review timeout/error: %v", err)}, nil
 	}

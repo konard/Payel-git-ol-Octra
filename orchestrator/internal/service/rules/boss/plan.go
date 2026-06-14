@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -21,21 +22,18 @@ func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, re
 		return decisionFromPredefinedWorkflow(req), nil
 	}
 
-	providers := []struct{ provider, model string }{
-		{provider, model},
-		{"openai", "gpt-4o-mini"},
-		{"anthropic", "claude-3-haiku-20240307"},
-		{"gemini", "gemini-pro"},
-	}
+	// Единый детерминированный список провайдеров (config.FallbackChain) —
+	// один источник правды для всех узлов, без хардкода в каждом месте.
+	providers := config.FallbackChain(provider, model)
 
 	var lastErr error
 	for _, p := range providers {
-		log.Printf("Boss trying AI provider: %s/%s", p.provider, p.model)
-		decision, err := s.thinkOnce(ctx, p.provider, p.model, req)
+		log.Printf("Boss trying AI provider: %s/%s", p.Provider, p.Model)
+		decision, err := s.thinkOnce(ctx, p.Provider, p.Model, req)
 		if err == nil {
 			return decision, nil
 		}
-		log.Printf("AI provider %s/%s failed: %v", p.provider, p.model, err)
+		log.Printf("AI provider %s/%s failed: %v", p.Provider, p.Model, err)
 		lastErr = err
 		if strings.Contains(err.Error(), "API key") || strings.Contains(err.Error(), "not found in tokens") {
 			break
@@ -93,12 +91,24 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 	}
 	log.Printf("Boss decision: type=%s managers=%d stack=%v", decision.TaskType, decision.ManagersCount, decision.TechStack)
 
-	// Fallback: AI often returns empty tech stack — detect from task title/description
+	// Tech stack reconciliation. The AI (especially cheap fallback models) sometimes
+	// ignores an explicitly named language and guesses the wrong one — e.g. it returns
+	// ["go"] for an "Express.js server" task, which makes the worker save JavaScript
+	// into main.go. The deterministic keyword detector is authoritative when the user
+	// explicitly named a language, so:
+	//   1. empty AI stack            -> use keyword detection (original fallback)
+	//   2. AI stack conflicts with an explicitly named language -> prefer the keyword
+	//      detection (the user was explicit; the AI hallucinated)
+	detected := detectTechStack(req.Title, req.Description)
 	if len(decision.TechStack) == 0 {
-		decision.TechStack = detectTechStack(req.Title, req.Description)
-		if len(decision.TechStack) > 0 {
+		if len(detected) > 0 {
+			decision.TechStack = detected
 			log.Printf("Boss: detected tech stack from keywords: %v", decision.TechStack)
 		}
+	} else if len(detected) > 0 && !stackMentioned(detected, decision.TechStack[0]) {
+		log.Printf("Boss: AI tech stack %v conflicts with explicitly requested %v — using requested",
+			decision.TechStack, detected)
+		decision.TechStack = detected
 	}
 
 	// Final safeguard inside thinkOnce

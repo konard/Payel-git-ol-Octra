@@ -15,7 +15,7 @@ import (
 func main() {
 	var taskID string
 	backoff := time.Second
-	uri := "wss://your-domain.com/ws"
+	uri := "wss://octra.env.pm/ws"
 
 	for {
 		conn, _, err := websocket.DefaultDialer.Dial(uri, nil)
