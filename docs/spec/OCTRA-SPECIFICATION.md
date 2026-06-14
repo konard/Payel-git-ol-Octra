@@ -17,13 +17,13 @@ The frontend uses the following relative paths (proxied through `/api`):
 
 **Full production URL examples**:
 ```
-wss://your-domain.com/api/task/create
-wss://your-domain.com/api/task/reconnect
+wss://octra.env.pm/api/task/create
+wss://octra.env.pm/api/task/reconnect
 ```
 
 **Local development** (via Vite proxy):
 ```
-ws://localhost:5173/api/task/create
+wss://octra.env.pm/api/task/create
 ```
 
 ---

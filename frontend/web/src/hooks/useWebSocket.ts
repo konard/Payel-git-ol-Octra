@@ -350,6 +350,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
             storeActions.setPullRequest(pullRequest);
           }
         }
+        // Save nix_store_path so App.tsx can persist it to the chat
+        if (msg.data?.nix_store_path && msg.task_id) {
+          useTaskStore.getState().setNixStorePath(msg.data.nix_store_path, msg.task_id);
+        }
         // Update all nodes to done
         finalizeAllNodes('done');
         // Clear stored task payload — task is complete, no need to resend
@@ -456,12 +460,17 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
 
   // Helper: add the publishing sink during code packaging, then attach the
   // repository URL when the backend returns one.
-  const addGitHubNode = (repoUrl?: string, prUrl?: string) => {
-    const nodeStatus: 'working' | 'done' = repoUrl || prUrl ? 'done' : 'working';
+  const addGitHubNode = (repoUrl?: string, prUrl?: string, errorMessage?: string) => {
+    const nodeStatus: 'working' | 'done' | 'error' = errorMessage
+      ? 'error'
+      : repoUrl || prUrl
+        ? 'done'
+        : 'working';
     if (zipNodeAdded.current) {
       storeActions.updateNode('github-archive', {
         ...(repoUrl ? { repoUrl } : {}),
         ...(prUrl ? { prUrl } : {}),
+        ...(errorMessage ? { errorMessage } : {}),
         status: nodeStatus,
       });
       return;
@@ -484,6 +493,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       status: nodeStatus,
       ...(repoUrl ? { repoUrl } : {}),
       ...(prUrl ? { prUrl } : {}),
+      ...(errorMessage ? { errorMessage } : {}),
       position: { x: centerX, y: 520 },
     });
 
@@ -824,6 +834,13 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     if (progress === 100 && msg.data?.repoUrl) {
       storeActions.setZipUrl(msg.data.repoUrl);
       addGitHubNode(msg.data.repoUrl, msg.data?.pullRequestUrl);
+    }
+
+    // === GITHUB PUBLISH FAILED (issue #75 п.3) ===
+    // Без этого нода GitHub зависала в статусе «building»: причину неудачи
+    // публикации показываем прямо на ноде, а не прячем в серверных логах.
+    if (progress === 100 && !msg.data?.repoUrl && msg.data?.githubError) {
+      addGitHubNode(undefined, undefined, msg.data.githubError);
     }
   };
 

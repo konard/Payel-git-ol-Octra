@@ -220,6 +220,45 @@ func DeleteChat(chatID string) error {
 	return nil
 }
 
+// UpdateChatNixPath сохраняет task_id и nix_store_path в чате
+func UpdateChatNixPath(chatID, taskID, nixStorePath string) error {
+	chatUUID, err := uuid.Parse(chatID)
+	if err != nil {
+		return errors.New("invalid chat ID")
+	}
+
+	result := database.Db.Model(&models.Chat{}).
+		Where("id = ?", chatUUID).
+		Updates(map[string]interface{}{
+			"task_id":        taskID,
+			"nix_store_path": nixStorePath,
+			"updated_at":     time.Now(),
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	invalidateChatCache(chatID)
+	return nil
+}
+
+// GetChatByID — получить чат по ID (без проверки user_id)
+func GetChatByID(chatID string) (*models.Chat, error) {
+	id, err := uuid.Parse(chatID)
+	if err != nil {
+		return nil, errors.New("invalid chat ID")
+	}
+
+	var chat models.Chat
+	err = database.Db.Where("id = ?", id).First(&chat).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &chat, nil
+}
+
 func invalidateChatCache(chatID string) {
 	if redisClient == nil {
 		return

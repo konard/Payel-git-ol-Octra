@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package boss;
+
+option go_package = "user/internal/grpc/bosspb";
+
+// Task update message for streaming
+message TaskUpdate {
+  string task_id = 1;
+  string message = 2;
+  int32 progress = 3;
+  string status = 4;
+  int64 timestamp = 5;
+  map<string, string> data = 6;
+  bool is_chat = 7;
+}
+
+// Worker configuration within a manager team
+message WorkerRole {
+  string role = 1;
+  string description = 2;
+}
+
+// Manager configuration with workers (for predefined workflow)
+message ManagerConfig {
+  string role = 1;
+  string description = 2;
+  int32 priority = 3;
+  repeated WorkerRole workers = 4;
+}
+
+// Request from apigateway to boss
+message CreateTaskRequest {
+  string user_id = 1;
+  string username = 2;
+  string title = 3;
+  string description = 4;
+  map<string, string> tokens = 5;  // provider -> API key
+  map<string, string> meta = 6;    // model, provider
+
+  // Predefined workflow (optional) — if provided, skip AI planning
+  bool use_ai_planning = 7;                        // default: true — use AI to plan architecture
+  repeated ManagerConfig predefined_managers = 8;   // user-defined managers with workers
+  string predefined_architecture = 9;               // user-defined technical description
+  repeated string predefined_tech_stack = 10;       // user-defined tech stack
+}
+
+// Manager role
+message ManagerRole {
+  string role = 1;
+  string description = 2;
+  int32 priority = 3;
+}
+
+// Boss decision with ZIP solution
+message BossDecision {
+  string task_id = 1;
+  string status = 2;  // done, error
+
+  int32 managers_count = 3;
+  repeated ManagerRole manager_roles = 4;
+
+  string technical_description = 5;
+  repeated string tech_stack = 6;
+  string architecture_notes = 7;
+
+  bytes solution = 8;  // ZIP archive
+  string error_message = 9;
+}
+
+// Task status request
+message TaskStatusRequest {
+  string task_id = 1;
+}
+
+message TaskStatusResponse {
+  string task_id = 1;
+  string status = 2;
+  string progress = 3;
+}
+
+// Resume task stream request
+message ResumeTaskStreamRequest {
+  string task_id = 1;
+  string user_id = 2;
+}
+
+// Stop task request
+message StopTaskRequest {
+  string task_id = 1;
+}
+
+// Restore project files request
+message RestoreProjectFilesRequest {
+  string nix_store_path = 1;
+  string task_id = 2;
+}
+
+// Single code file in the response
+message CodeFileEntry {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+  string encoding = 4;     // "base64" for binary files
+  string worker_role = 5;
+  string manager_role = 6;
+}
+
+// Restore project files response
+message RestoreProjectFilesResponse {
+  string task_id = 1;
+  repeated CodeFileEntry files = 2;
+  int32 total_files = 3;
+}
+
+service BossService {
+  // Streaming version
+  rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
+
+  // Resume existing task stream
+  rpc ResumeTaskStream(ResumeTaskStreamRequest) returns (stream TaskUpdate);
+
+  // Stop running task
+  rpc StopTask(StopTaskRequest) returns (TaskStatusResponse);
+
+  // Legacy unary version
+  rpc CreateTask(CreateTaskRequest) returns (BossDecision);
+  rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
+
+  // Restore project files from Nix store snapshot
+  rpc RestoreProjectFiles(RestoreProjectFilesRequest) returns (RestoreProjectFilesResponse);
+}

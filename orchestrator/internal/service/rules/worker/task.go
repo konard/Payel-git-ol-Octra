@@ -29,10 +29,11 @@ TASK:
 %s
 %s
 
-Create TASK.md file with detailed task breakdown for your role. Include:
-1. Files to create
-2. Functionality to implement
-3. Dependencies
+
+	Create TASK.md file with a task breakdown for your role. Include:
+1. Files to create (the MINIMUM set)
+2. Functionality to implement (only what was requested)
+3. Dependencies (only those strictly required by the task — usually just the runtime/framework named)
 4. How your work integrates with other workers (if context provided)
 
 Return ONLY the content of TASK.md file.`, role, description, taskMD, contextSection)

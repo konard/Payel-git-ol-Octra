@@ -12,7 +12,7 @@ use serde_json::json;
 async fn main() {
     let mut task_id: Option<String> = None;
     let mut backoff = 1;
-    let uri = "wss://your-domain.com/ws";
+    let uri = "wss://octra.env.pm/ws";
 
     loop {
         match tokio_tungstenite::connect_async(uri).await {

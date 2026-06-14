@@ -90,6 +90,29 @@ message StopTaskRequest {
   string task_id = 1;
 }
 
+// Restore project files request
+message RestoreProjectFilesRequest {
+  string nix_store_path = 1;
+  string task_id = 2;
+}
+
+// Single code file in the response
+message CodeFileEntry {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+  string encoding = 4;     // "base64" for binary files
+  string worker_role = 5;
+  string manager_role = 6;
+}
+
+// Restore project files response
+message RestoreProjectFilesResponse {
+  string task_id = 1;
+  repeated CodeFileEntry files = 2;
+  int32 total_files = 3;
+}
+
 service BossService {
   // Streaming version - отправляет обновления по мере выполнения
   rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
@@ -103,4 +126,7 @@ service BossService {
   // Legacy unary version (для совместимости)
   rpc CreateTask(CreateTaskRequest) returns (BossDecision);
   rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
+
+  // Restore project files from Nix store snapshot
+  rpc RestoreProjectFiles(RestoreProjectFilesRequest) returns (RestoreProjectFilesResponse);
 }
