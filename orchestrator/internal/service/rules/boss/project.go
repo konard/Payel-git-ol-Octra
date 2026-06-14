@@ -134,9 +134,9 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 // Использует FlakeBuilder для генерации богатого flake.nix с зависимостями
 // на основе techStack, определённого AI на этапе планирования.
 // После записи flake.nix:
-//   1. Генерирует flake.lock для закрепления версий зависимостей.
-//   2. Коммитит flake.nix + flake.lock в git, чтобы они не потерялись
-//      при последующих git-операциях (ветвление/мерж воркеров).
+//  1. Генерирует flake.lock для закрепления версий зависимостей.
+//  2. Коммитит flake.nix + flake.lock в git, чтобы они не потерялись
+//     при последующих git-операциях (ветвление/мерж воркеров).
 func (s *Service) generateFlake(projectPath, taskID, title string, techStack []string, progress rules.ProgressFunc) {
 	packages := NewFlakeBuilder().ResolveFromTechStacks(techStack)
 	s.WriteFlake(projectPath, taskID, title, packages)
@@ -224,7 +224,7 @@ func prepareSnapshotDir(projectPath string) (string, error) {
 		}
 		src := filepath.Join(projectPath, file)
 		dst := filepath.Join(stagingDir, file)
-		if err := copyFile(src, dst); err != nil {
+		if _, err := copyFile(src, dst); err != nil {
 			os.RemoveAll(stagingDir)
 			return "", fmt.Errorf("failed to copy %s: %w", file, err)
 		}
@@ -232,7 +232,7 @@ func prepareSnapshotDir(projectPath string) (string, error) {
 
 	flakeSrc := filepath.Join(projectPath, "flake.nix")
 	if _, err := os.Stat(flakeSrc); err == nil {
-		if err := copyFile(flakeSrc, filepath.Join(stagingDir, "flake.nix")); err != nil {
+		if _, err := copyFile(flakeSrc, filepath.Join(stagingDir, "flake.nix")); err != nil {
 			os.RemoveAll(stagingDir)
 			return "", fmt.Errorf("failed to copy flake.nix: %w", err)
 		}
@@ -241,25 +241,62 @@ func prepareSnapshotDir(projectPath string) (string, error) {
 	return stagingDir, nil
 }
 
-// copyFile — копирует файл с созданием родительских директорий
-func copyFile(src, dst string) error {
+// copyFile — копирует файл с созданием родительских директорий.
+// Возвращает (skipped=true, nil) для записей, которые нельзя/не нужно копировать
+// как обычный файл: симлинки в Nix store (например, `result` от `nix build`),
+// директории и битые симлинки. Раньше попытка скопировать такой `result` падала
+// с `copy_file_range: is a directory` и срывала весь снапшот проекта (issue #85).
+func copyFile(src, dst string) (skipped bool, err error) {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return false, err
+	}
+
+	// Симлинки: не идём по ссылке (это и вызывало падение на `result`,
+	// указывающем на директорию в /nix/store), а воссоздаём саму ссылку.
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, rerr := os.Readlink(src)
+		if rerr != nil {
+			return false, rerr
+		}
+		// Артефакты сборки Nix (`result`, `result-*`) не должны попадать в снапшот.
+		if strings.HasPrefix(target, "/nix/store") {
+			return true, nil
+		}
+		// Битый симлинк или указывает на директорию — пропускаем, чтобы не падать.
+		if resolved, serr := os.Stat(src); serr != nil || resolved.IsDir() {
+			return true, nil
+		}
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return false, err
+		}
+		return false, os.Symlink(target, dst)
+	}
+
+	// git ls-files не должен возвращать директории, но на всякий случай пропускаем.
+	if info.IsDir() {
+		return true, nil
+	}
+
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
+		return false, err
 	}
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer srcFile.Close()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer dstFile.Close()
 
-	_, err = io.Copy(dstFile, srcFile)
-	return err
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 // registerGCRoot — регистрирует store path как GC root, чтобы Nix не удалил его
@@ -401,4 +438,3 @@ func envOrDefault(key, def string) string {
 	}
 	return def
 }
-
