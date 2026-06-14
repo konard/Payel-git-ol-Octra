@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -36,7 +37,7 @@ func (s *Service) generateCode(
 
 	planPrompt := prompts.WorkerPlanFiles(role, description, taskMD, contextSection, techStack, skill)
 	log.Printf("[Worker] Planning files for role %s (provider=%s, model=%s)...", role, provider, model)
-	planResp, err := s.agentsClient.Generate(ctx, provider, model, planPrompt, tokens, 1024, 0.3)
+	planResp, err := s.agentsClient.Generate(ctx, provider, model, planPrompt, tokens, 1024, config.Temperature)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,7 +61,7 @@ func (s *Service) generateCode(
 	for i, file := range plan.Files {
 		log.Printf("[Worker] Generating file %d/%d: %s for role %s", i+1, len(plan.Files), file, role)
 		contentPrompt := prompts.WorkerGenerateFile(file, taskMD, role, techStack, "")
-		content, err := s.agentsClient.Generate(ctx, provider, model, contentPrompt, tokens, 8192, 0.3)
+		content, err := s.agentsClient.Generate(ctx, provider, model, contentPrompt, tokens, 8192, config.Temperature)
 		if err != nil {
 			log.Printf("Error generating file %s: %v", file, err)
 			continue

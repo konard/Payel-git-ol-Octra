@@ -6,6 +6,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"orchestrator/internal/config"
 )
 
 // gradeTaskViaAI оценивает сложность задачи через AI (1-10).
@@ -25,7 +27,7 @@ Task: %s
 
 Return ONLY a single number from 1 to 10. No explanation, no formatting.`, taskText)
 
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 64, 0.1)
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 64, config.Temperature)
 	if err != nil {
 		log.Printf("AI grading failed: %v, using default grade=3", err)
 		return 3

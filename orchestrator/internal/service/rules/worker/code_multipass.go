@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -33,7 +34,7 @@ func (s *Service) generateCodeMultiPass(
 	prompt := prompts.WorkerMultiPassCode(role, description, taskMD, contextSection, techStack)
 
 	log.Printf("[Worker] Multi-pass generating code for role %s (provider=%s, model=%s, max_tokens=16384, tech=%s)...", role, provider, model, techStack)
-	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
+	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, config.Temperature)
 	if err != nil {
 		return nil, nil, fmt.Errorf("multi-pass generation failed: %w", err)
 	}

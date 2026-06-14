@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/document"
 	"orchestrator/internal/service/util"
@@ -52,7 +53,7 @@ func (s *Service) generateDocument(
 		}
 		resolvedSkill := skillFallback("pptx markdown", topic)
 		prompt := prompts.PresentationWorker(role, topic, presentationContext, resolvedSkill)
-		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
+		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, config.Temperature)
 		if err != nil {
 			return nil, nil, fmt.Errorf("presentation generation failed: %w", err)
 		}
@@ -84,7 +85,7 @@ func (s *Service) generateDocument(
 		}
 		resolvedSkill := skillFallback("markdown", topic+" "+angle)
 		prompt := prompts.ResearchWorker(role, angle, topic, contextSection, searchBlock, resolvedSkill)
-		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
+		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, config.Temperature)
 		if err != nil {
 			return nil, nil, fmt.Errorf("research generation failed: %w", err)
 		}
@@ -95,7 +96,7 @@ func (s *Service) generateDocument(
 		docType := detectDocType(topic + " " + description)
 		resolvedSkill := skillFallback("markdown", topic+" "+description)
 		prompt := prompts.DocumentWorker(role, docType, topic, contextSection, resolvedSkill)
-		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.4)
+		resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, config.Temperature)
 		if err != nil {
 			return nil, nil, fmt.Errorf("document generation failed: %w", err)
 		}

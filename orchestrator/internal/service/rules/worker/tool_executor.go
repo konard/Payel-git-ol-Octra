@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -62,7 +63,7 @@ func (s *Service) generateViaTools(
 	}
 
 	prompt := prompts.WorkerToolCommands(role, description, taskMD, contextSection, techStack)
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, 0.3)
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, config.Temperature)
 	if err != nil {
 		return nil, nil, fmt.Errorf("tool planning failed: %w", err)
 	}

@@ -49,7 +49,6 @@ services:
       - AGENTS_SERVICE_HOST=agents:50053
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
-      - WORKER_MODE=multypass
       - PROJECTS_DIR=/workspace/projects
       - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
       - GIT_USER_NAME=CrewAI Orchestrator

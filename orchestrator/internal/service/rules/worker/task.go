@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+
+	"orchestrator/internal/config"
 )
 
 // createTaskMD — воркер пишет план работы (TASK.md) с помощью LLM.
@@ -37,7 +39,7 @@ TASK:
 Return ONLY the content of TASK.md file.`, role, description, taskMD, contextSection)
 	}
 
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, 0.3)
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, config.Temperature)
 	if err != nil {
 		return "", err
 	}

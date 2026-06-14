@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -21,21 +22,18 @@ func (s *Service) thinkAboutTask(ctx context.Context, provider, model string, re
 		return decisionFromPredefinedWorkflow(req), nil
 	}
 
-	providers := []struct{ provider, model string }{
-		{provider, model},
-		{"openai", "gpt-4o-mini"},
-		{"anthropic", "claude-3-haiku-20240307"},
-		{"gemini", "gemini-pro"},
-	}
+	// Единый детерминированный список провайдеров (config.FallbackChain) —
+	// один источник правды для всех узлов, без хардкода в каждом месте.
+	providers := config.FallbackChain(provider, model)
 
 	var lastErr error
 	for _, p := range providers {
-		log.Printf("Boss trying AI provider: %s/%s", p.provider, p.model)
-		decision, err := s.thinkOnce(ctx, p.provider, p.model, req)
+		log.Printf("Boss trying AI provider: %s/%s", p.Provider, p.Model)
+		decision, err := s.thinkOnce(ctx, p.Provider, p.Model, req)
 		if err == nil {
 			return decision, nil
 		}
-		log.Printf("AI provider %s/%s failed: %v", p.provider, p.model, err)
+		log.Printf("AI provider %s/%s failed: %v", p.Provider, p.Model, err)
 		lastErr = err
 		if strings.Contains(err.Error(), "API key") || strings.Contains(err.Error(), "not found in tokens") {
 			break
