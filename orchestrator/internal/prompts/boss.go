@@ -13,16 +13,31 @@ import (
 // ("hello world"), зашумляя промпт нерелевантными специальностями (issue #79).
 // Каталог теперь opt-in — он нужен только когда пользователь явно запросил скиллы.
 func PlanArchitecture(title, desc string, grade int, skillCategories string) string {
+	return PlanArchitectureRanked(title, desc, grade, skillCategories, RankFull)
+}
+
+// PlanArchitectureForModel — то же планирование, но ранг промпта выбирается по
+// имени модели (план фикса, пункт 9): слабые модели получают сокращённый промпт.
+func PlanArchitectureForModel(title, desc string, grade int, skillCategories, model string) string {
+	return PlanArchitectureRanked(title, desc, grade, skillCategories, PromptRank(model))
+}
+
+// PlanArchitectureRanked — сборка промпта планирования с заданным рангом.
+// При RankLight каталог экспертных скиллов исключается, чтобы не перегружать
+// слабую модель и улучшить следование инструкциям.
+func PlanArchitectureRanked(title, desc string, grade int, skillCategories, rank string) string {
 	skillsSection := ""
-	if skillCategories != "" {
-		areas := skills.ParseCategories(skillCategories)
-		warehouse := skills.NewWarehouse()
-		if catalog := warehouse.CatalogFiltered(areas...); catalog != "" {
-			skillsSection = fmt.Sprintf(`
+	if rank != RankLight {
+		if skillCategories != "" {
+			areas := skills.ParseCategories(skillCategories)
+			warehouse := skills.NewWarehouse()
+			if catalog := warehouse.CatalogFiltered(areas...); catalog != "" {
+				skillsSection = fmt.Sprintf(`
 The user requested these skill categories: %s
 
 Available expert fragments in those categories:
 %s`, skillCategories, catalog)
+			}
 		}
 	}
 	return `You are CTO. Analyze the task, classify what KIND of deliverable it is, and decide what manager roles are needed.

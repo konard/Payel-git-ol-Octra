@@ -8,7 +8,34 @@ const (
 	TaskTypeResearch     = "research"
 	TaskTypeDocument     = "document"
 	TaskTypePresentation = "presentation"
+	// TaskTypeGitHub — задача, привязанная к конкретному GitHub issue/PR. Ведёт
+	// себя как код (тот же конвейер и публикация), но Boss получает отдельный
+	// «паспорт» issue в Meta["github_context"] вместо засорённого Description
+	// (план фикса, пункт 1).
+	TaskTypeGitHub = "github"
 )
+
+// isCodeLikeTask — типы задач, которые проходят кодовый конвейер и публикуются в
+// GitHub: обычный код и github-issue задачи.
+func isCodeLikeTask(taskType string) bool {
+	return taskType == "" || taskType == TaskTypeCode || taskType == TaskTypeGitHub
+}
+
+// clampToSingleManager — сводит решение к одному менеджеру с одной ролью. Нужно
+// для тривиальных issue (план фикса, пункт 7): один целевой проход вместо всего
+// конвейера. Сохраняет первую AI-выбранную роль, если она есть.
+func clampToSingleManager(decision *DecisionResult) {
+	if decision == nil {
+		return
+	}
+	decision.ManagersCount = 1
+	if len(decision.ManagerRoles) > 1 {
+		decision.ManagerRoles = decision.ManagerRoles[:1]
+	}
+	if len(decision.ManagerWorkflows) > 1 {
+		decision.ManagerWorkflows = decision.ManagerWorkflows[:1]
+	}
+}
 
 // classifyTaskType — детерминированный fallback-классификатор по ключевым словам.
 // Используется, когда AI не вернул task_type (или JSON не распарсился). Поддерживает
@@ -176,6 +203,8 @@ func normalizeTaskType(t string) string {
 		return TaskTypePresentation
 	case TaskTypeCode, "software", "dev", "development":
 		return TaskTypeCode
+	case TaskTypeGitHub, "issue", "pull_request", "pr":
+		return TaskTypeGitHub
 	default:
 		return ""
 	}
@@ -189,4 +218,3 @@ func containsAny(text string, needles []string) bool {
 	}
 	return false
 }
-

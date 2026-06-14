@@ -56,7 +56,9 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 
 	// Inject project context into the prompt
 	contextBlock := s.contextClient.GetForPrompt(ctx, taskUUID, "boss", "")
-	prompt := prompts.PlanArchitecture(req.Title, req.Description+contextBlock, req.Grade, req.Meta["skill_categories"])
+	// Промпт адаптируется под модель: слабые fallback-модели (gpt-4o-mini,
+	// haiku, gemini-pro) получают сокращённый промпт (план фикса, пункт 9).
+	prompt := prompts.PlanArchitectureForModel(req.Title, req.Description+contextBlock, req.Grade, req.Meta["skill_categories"], model)
 
 	tokens := req.Tokens
 	if tokens == nil {
@@ -207,4 +209,3 @@ func (s *Service) validateSolution(
 	log.Printf("Boss validation: approved=%v feedback=%s", result.Approved, result.Feedback)
 	return &result
 }
-

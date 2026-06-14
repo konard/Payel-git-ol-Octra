@@ -52,6 +52,12 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, "AI planning failed: "+err.Error(), errorData())
 		return err
 	}
+	// Повышаем тип до "github" для issue-привязанных задач (план фикса, пункт 1).
+	// Конвейер и публикация остаются кодовыми (isCodeLikeTask), но Boss/Manager
+	// видят, что работают с реальным репозиторием по паспорту issue.
+	if issueTarget != nil && isCodeLikeTask(decision.TaskType) {
+		decision.TaskType = TaskTypeGitHub
+	}
 	// Safeguard: AI sometimes returns 0 managers or empty roles
 	if decision.ManagersCount <= 0 {
 		decision.ManagersCount = 1
@@ -64,6 +70,13 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		decision.ManagersCount = 1
 		decision.ManagerRoles = []models.ManagerRole{fallbackManagerRole(decision.TaskType)}
 		log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
+	}
+
+	// Тривиальный GitHub issue (опечатка/однофайловый фикс) не нужно гонять через
+	// весь конвейер (план фикса, пункт 7): сводим к одному менеджеру/воркеру.
+	if req.Meta["github_trivial"] == "true" {
+		clampToSingleManager(decision)
+		log.Printf("Trivial GitHub issue: pipeline capped to a single manager")
 	}
 
 	architectureData := map[string]string{
@@ -151,7 +164,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// Исключение — задача привязана к конкретному GitHub issue.
 	repoURL := ""
 	githubErr := ""
-	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
+	isCodeTask := isCodeLikeTask(decision.TaskType)
 	if isCodeTask || issueTarget != nil {
 		repoURL, githubErr = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
 	} else {
@@ -187,7 +200,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 
 	// Для не-кодовых задач (research/document/presentation) босс отдаёт короткий
 	// ответ в чат, а полный результат уже лежит в папке solution/ (вкладка Solution).
-	if decision.TaskType != "" && decision.TaskType != TaskTypeCode {
+	if !isCodeLikeTask(decision.TaskType) {
 		fullDoc, docCount := collectSolutionMarkdown(managerResults)
 		// Когда воркеров несколько, менеджерский синтез сливает их результаты
 		// в один документ, проверяя факты (как описано в issue: «менеджер
@@ -336,4 +349,3 @@ func util_stack(stack []string) string {
 	b, _ := json.Marshal(stack)
 	return string(b)
 }
-
