@@ -70,11 +70,12 @@ func (s *Server) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.B
 		bossReq.PredefinedManagers = append(bossReq.PredefinedManagers, workflowManager)
 	}
 
-	if err := s.boss.ExecuteTask(ctx, bossReq, progress); err != nil {
+	err := s.boss.ExecuteTask(ctx, bossReq, progress)
+	sender.flush() // всегда вызываем flush, и при успехе, и при ошибке
+	if err != nil {
 		log.Printf("ExecuteTask error: %v", err)
 		return err
 	}
-	sender.flush()
 	return nil
 }
 
