@@ -18,7 +18,12 @@ type Client struct {
 
 // NewClient подключается к boss сервису
 func NewClient(address string) (*Client, error) {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(100*1024*1024),
+		),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to boss service: %w", err)
 	}

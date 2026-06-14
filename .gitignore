@@ -14,3 +14,7 @@ projects
 !.github/workflows/**
 .playwright-mcp/
 opencode
+docs\hive-mind
+PLAN_FIX.md
+docs\compose\plans
+docs\promts

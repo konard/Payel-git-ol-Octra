@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package userfiles;
+
+message GetProjectFilesRequest {
+  string chat_id = 1;
+}
+
+message CodeFileEntry {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+  string encoding = 4;
+}
+
+message GetProjectFilesResponse {
+  string chat_id = 1;
+  string task_id = 2;
+  repeated CodeFileEntry files = 3;
+  int32 total_files = 4;
+}
+
+service UserFilesService {
+  rpc GetProjectFiles(GetProjectFilesRequest) returns (GetProjectFilesResponse);
+}

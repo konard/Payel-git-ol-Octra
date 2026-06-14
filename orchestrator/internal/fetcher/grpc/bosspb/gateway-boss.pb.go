@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.0
-// source: gateway-boss.proto
+// source: proto/gateway-boss.proto
 
 package bosspb
 
@@ -37,7 +37,7 @@ type TaskUpdate struct {
 
 func (x *TaskUpdate) Reset() {
 	*x = TaskUpdate{}
-	mi := &file_gateway_boss_proto_msgTypes[0]
+	mi := &file_proto_gateway_boss_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +49,7 @@ func (x *TaskUpdate) String() string {
 func (*TaskUpdate) ProtoMessage() {}
 
 func (x *TaskUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[0]
+	mi := &file_proto_gateway_boss_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *TaskUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskUpdate.ProtoReflect.Descriptor instead.
 func (*TaskUpdate) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{0}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *TaskUpdate) GetTaskId() string {
@@ -125,7 +125,7 @@ type WorkerRole struct {
 
 func (x *WorkerRole) Reset() {
 	*x = WorkerRole{}
-	mi := &file_gateway_boss_proto_msgTypes[1]
+	mi := &file_proto_gateway_boss_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -137,7 +137,7 @@ func (x *WorkerRole) String() string {
 func (*WorkerRole) ProtoMessage() {}
 
 func (x *WorkerRole) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[1]
+	mi := &file_proto_gateway_boss_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -150,7 +150,7 @@ func (x *WorkerRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerRole.ProtoReflect.Descriptor instead.
 func (*WorkerRole) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{1}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WorkerRole) GetRole() string {
@@ -180,7 +180,7 @@ type ManagerConfig struct {
 
 func (x *ManagerConfig) Reset() {
 	*x = ManagerConfig{}
-	mi := &file_gateway_boss_proto_msgTypes[2]
+	mi := &file_proto_gateway_boss_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -192,7 +192,7 @@ func (x *ManagerConfig) String() string {
 func (*ManagerConfig) ProtoMessage() {}
 
 func (x *ManagerConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[2]
+	mi := &file_proto_gateway_boss_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -205,7 +205,7 @@ func (x *ManagerConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagerConfig.ProtoReflect.Descriptor instead.
 func (*ManagerConfig) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{2}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ManagerConfig) GetRole() string {
@@ -256,7 +256,7 @@ type CreateTaskRequest struct {
 
 func (x *CreateTaskRequest) Reset() {
 	*x = CreateTaskRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[3]
+	mi := &file_proto_gateway_boss_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -268,7 +268,7 @@ func (x *CreateTaskRequest) String() string {
 func (*CreateTaskRequest) ProtoMessage() {}
 
 func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[3]
+	mi := &file_proto_gateway_boss_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -281,7 +281,7 @@ func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskRequest.ProtoReflect.Descriptor instead.
 func (*CreateTaskRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{3}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateTaskRequest) GetUserId() string {
@@ -366,7 +366,7 @@ type ManagerRole struct {
 
 func (x *ManagerRole) Reset() {
 	*x = ManagerRole{}
-	mi := &file_gateway_boss_proto_msgTypes[4]
+	mi := &file_proto_gateway_boss_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +378,7 @@ func (x *ManagerRole) String() string {
 func (*ManagerRole) ProtoMessage() {}
 
 func (x *ManagerRole) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[4]
+	mi := &file_proto_gateway_boss_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +391,7 @@ func (x *ManagerRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagerRole.ProtoReflect.Descriptor instead.
 func (*ManagerRole) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{4}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ManagerRole) GetRole() string {
@@ -433,7 +433,7 @@ type BossDecision struct {
 
 func (x *BossDecision) Reset() {
 	*x = BossDecision{}
-	mi := &file_gateway_boss_proto_msgTypes[5]
+	mi := &file_proto_gateway_boss_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +445,7 @@ func (x *BossDecision) String() string {
 func (*BossDecision) ProtoMessage() {}
 
 func (x *BossDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[5]
+	mi := &file_proto_gateway_boss_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +458,7 @@ func (x *BossDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BossDecision.ProtoReflect.Descriptor instead.
 func (*BossDecision) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{5}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BossDecision) GetTaskId() string {
@@ -534,7 +534,7 @@ type TaskStatusRequest struct {
 
 func (x *TaskStatusRequest) Reset() {
 	*x = TaskStatusRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[6]
+	mi := &file_proto_gateway_boss_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -546,7 +546,7 @@ func (x *TaskStatusRequest) String() string {
 func (*TaskStatusRequest) ProtoMessage() {}
 
 func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[6]
+	mi := &file_proto_gateway_boss_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,7 +559,7 @@ func (x *TaskStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskStatusRequest.ProtoReflect.Descriptor instead.
 func (*TaskStatusRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{6}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TaskStatusRequest) GetTaskId() string {
@@ -580,7 +580,7 @@ type TaskStatusResponse struct {
 
 func (x *TaskStatusResponse) Reset() {
 	*x = TaskStatusResponse{}
-	mi := &file_gateway_boss_proto_msgTypes[7]
+	mi := &file_proto_gateway_boss_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -592,7 +592,7 @@ func (x *TaskStatusResponse) String() string {
 func (*TaskStatusResponse) ProtoMessage() {}
 
 func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[7]
+	mi := &file_proto_gateway_boss_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +605,7 @@ func (x *TaskStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskStatusResponse.ProtoReflect.Descriptor instead.
 func (*TaskStatusResponse) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{7}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TaskStatusResponse) GetTaskId() string {
@@ -640,7 +640,7 @@ type ResumeTaskStreamRequest struct {
 
 func (x *ResumeTaskStreamRequest) Reset() {
 	*x = ResumeTaskStreamRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[8]
+	mi := &file_proto_gateway_boss_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +652,7 @@ func (x *ResumeTaskStreamRequest) String() string {
 func (*ResumeTaskStreamRequest) ProtoMessage() {}
 
 func (x *ResumeTaskStreamRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[8]
+	mi := &file_proto_gateway_boss_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -665,7 +665,7 @@ func (x *ResumeTaskStreamRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeTaskStreamRequest.ProtoReflect.Descriptor instead.
 func (*ResumeTaskStreamRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{8}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ResumeTaskStreamRequest) GetTaskId() string {
@@ -692,7 +692,7 @@ type StopTaskRequest struct {
 
 func (x *StopTaskRequest) Reset() {
 	*x = StopTaskRequest{}
-	mi := &file_gateway_boss_proto_msgTypes[9]
+	mi := &file_proto_gateway_boss_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -704,7 +704,7 @@ func (x *StopTaskRequest) String() string {
 func (*StopTaskRequest) ProtoMessage() {}
 
 func (x *StopTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_boss_proto_msgTypes[9]
+	mi := &file_proto_gateway_boss_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -717,7 +717,7 @@ func (x *StopTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTaskRequest.ProtoReflect.Descriptor instead.
 func (*StopTaskRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_boss_proto_rawDescGZIP(), []int{9}
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *StopTaskRequest) GetTaskId() string {
@@ -727,11 +727,210 @@ func (x *StopTaskRequest) GetTaskId() string {
 	return ""
 }
 
-var File_gateway_boss_proto protoreflect.FileDescriptor
+// Restore project files request
+type RestoreProjectFilesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NixStorePath  string                 `protobuf:"bytes,1,opt,name=nix_store_path,json=nixStorePath,proto3" json:"nix_store_path,omitempty"`
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_gateway_boss_proto_rawDesc = "" +
+func (x *RestoreProjectFilesRequest) Reset() {
+	*x = RestoreProjectFilesRequest{}
+	mi := &file_proto_gateway_boss_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreProjectFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreProjectFilesRequest) ProtoMessage() {}
+
+func (x *RestoreProjectFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_gateway_boss_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreProjectFilesRequest.ProtoReflect.Descriptor instead.
+func (*RestoreProjectFilesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RestoreProjectFilesRequest) GetNixStorePath() string {
+	if x != nil {
+		return x.NixStorePath
+	}
+	return ""
+}
+
+func (x *RestoreProjectFilesRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+// Single code file in the response
+type CodeFileEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Language      string                 `protobuf:"bytes,3,opt,name=language,proto3" json:"language,omitempty"`
+	Encoding      string                 `protobuf:"bytes,4,opt,name=encoding,proto3" json:"encoding,omitempty"` // "base64" for binary files
+	WorkerRole    string                 `protobuf:"bytes,5,opt,name=worker_role,json=workerRole,proto3" json:"worker_role,omitempty"`
+	ManagerRole   string                 `protobuf:"bytes,6,opt,name=manager_role,json=managerRole,proto3" json:"manager_role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CodeFileEntry) Reset() {
+	*x = CodeFileEntry{}
+	mi := &file_proto_gateway_boss_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CodeFileEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CodeFileEntry) ProtoMessage() {}
+
+func (x *CodeFileEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_gateway_boss_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CodeFileEntry.ProtoReflect.Descriptor instead.
+func (*CodeFileEntry) Descriptor() ([]byte, []int) {
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CodeFileEntry) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *CodeFileEntry) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *CodeFileEntry) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
+}
+
+func (x *CodeFileEntry) GetEncoding() string {
+	if x != nil {
+		return x.Encoding
+	}
+	return ""
+}
+
+func (x *CodeFileEntry) GetWorkerRole() string {
+	if x != nil {
+		return x.WorkerRole
+	}
+	return ""
+}
+
+func (x *CodeFileEntry) GetManagerRole() string {
+	if x != nil {
+		return x.ManagerRole
+	}
+	return ""
+}
+
+// Restore project files response
+type RestoreProjectFilesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Files         []*CodeFileEntry       `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	TotalFiles    int32                  `protobuf:"varint,3,opt,name=total_files,json=totalFiles,proto3" json:"total_files,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreProjectFilesResponse) Reset() {
+	*x = RestoreProjectFilesResponse{}
+	mi := &file_proto_gateway_boss_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreProjectFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreProjectFilesResponse) ProtoMessage() {}
+
+func (x *RestoreProjectFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_gateway_boss_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreProjectFilesResponse.ProtoReflect.Descriptor instead.
+func (*RestoreProjectFilesResponse) Descriptor() ([]byte, []int) {
+	return file_proto_gateway_boss_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RestoreProjectFilesResponse) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *RestoreProjectFilesResponse) GetFiles() []*CodeFileEntry {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *RestoreProjectFilesResponse) GetTotalFiles() int32 {
+	if x != nil {
+		return x.TotalFiles
+	}
+	return 0
+}
+
+var File_proto_gateway_boss_proto protoreflect.FileDescriptor
+
+const file_proto_gateway_boss_proto_rawDesc = "" +
 	"\n" +
-	"\x12gateway-boss.proto\x12\x04boss\"\x93\x02\n" +
+	"\x18proto/gateway-boss.proto\x12\x04boss\"\x93\x02\n" +
 	"\n" +
 	"TaskUpdate\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x18\n" +
@@ -796,88 +995,110 @@ const file_gateway_boss_proto_rawDesc = "" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"*\n" +
 	"\x0fStopTaskRequest\x12\x17\n" +
-	"\atask_id\x18\x01 \x01(\tR\x06taskId2\xd1\x02\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\"[\n" +
+	"\x1aRestoreProjectFilesRequest\x12$\n" +
+	"\x0enix_store_path\x18\x01 \x01(\tR\fnixStorePath\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\"\xb9\x01\n" +
+	"\rCodeFileEntry\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1a\n" +
+	"\blanguage\x18\x03 \x01(\tR\blanguage\x12\x1a\n" +
+	"\bencoding\x18\x04 \x01(\tR\bencoding\x12\x1f\n" +
+	"\vworker_role\x18\x05 \x01(\tR\n" +
+	"workerRole\x12!\n" +
+	"\fmanager_role\x18\x06 \x01(\tR\vmanagerRole\"\x82\x01\n" +
+	"\x1bRestoreProjectFilesResponse\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12)\n" +
+	"\x05files\x18\x02 \x03(\v2\x13.boss.CodeFileEntryR\x05files\x12\x1f\n" +
+	"\vtotal_files\x18\x03 \x01(\x05R\n" +
+	"totalFiles2\xad\x03\n" +
 	"\vBossService\x12?\n" +
 	"\x10CreateTaskStream\x12\x17.boss.CreateTaskRequest\x1a\x10.boss.TaskUpdate0\x01\x12E\n" +
 	"\x10ResumeTaskStream\x12\x1d.boss.ResumeTaskStreamRequest\x1a\x10.boss.TaskUpdate0\x01\x12;\n" +
 	"\bStopTask\x12\x15.boss.StopTaskRequest\x1a\x18.boss.TaskStatusResponse\x129\n" +
 	"\n" +
 	"CreateTask\x12\x17.boss.CreateTaskRequest\x1a\x12.boss.BossDecision\x12B\n" +
-	"\rGetTaskStatus\x12\x17.boss.TaskStatusRequest\x1a\x18.boss.TaskStatusResponseB#Z!boss/internal/fetcher/grpc/bosspbb\x06proto3"
+	"\rGetTaskStatus\x12\x17.boss.TaskStatusRequest\x1a\x18.boss.TaskStatusResponse\x12Z\n" +
+	"\x13RestoreProjectFiles\x12 .boss.RestoreProjectFilesRequest\x1a!.boss.RestoreProjectFilesResponseB+Z)orchestrator/internal/fetcher/grpc/bosspbb\x06proto3"
 
 var (
-	file_gateway_boss_proto_rawDescOnce sync.Once
-	file_gateway_boss_proto_rawDescData []byte
+	file_proto_gateway_boss_proto_rawDescOnce sync.Once
+	file_proto_gateway_boss_proto_rawDescData []byte
 )
 
-func file_gateway_boss_proto_rawDescGZIP() []byte {
-	file_gateway_boss_proto_rawDescOnce.Do(func() {
-		file_gateway_boss_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_gateway_boss_proto_rawDesc), len(file_gateway_boss_proto_rawDesc)))
+func file_proto_gateway_boss_proto_rawDescGZIP() []byte {
+	file_proto_gateway_boss_proto_rawDescOnce.Do(func() {
+		file_proto_gateway_boss_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_gateway_boss_proto_rawDesc), len(file_proto_gateway_boss_proto_rawDesc)))
 	})
-	return file_gateway_boss_proto_rawDescData
+	return file_proto_gateway_boss_proto_rawDescData
 }
 
-var file_gateway_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
-var file_gateway_boss_proto_goTypes = []any{
-	(*TaskUpdate)(nil),              // 0: boss.TaskUpdate
-	(*WorkerRole)(nil),              // 1: boss.WorkerRole
-	(*ManagerConfig)(nil),           // 2: boss.ManagerConfig
-	(*CreateTaskRequest)(nil),       // 3: boss.CreateTaskRequest
-	(*ManagerRole)(nil),             // 4: boss.ManagerRole
-	(*BossDecision)(nil),            // 5: boss.BossDecision
-	(*TaskStatusRequest)(nil),       // 6: boss.TaskStatusRequest
-	(*TaskStatusResponse)(nil),      // 7: boss.TaskStatusResponse
-	(*ResumeTaskStreamRequest)(nil), // 8: boss.ResumeTaskStreamRequest
-	(*StopTaskRequest)(nil),         // 9: boss.StopTaskRequest
-	nil,                             // 10: boss.TaskUpdate.DataEntry
-	nil,                             // 11: boss.CreateTaskRequest.TokensEntry
-	nil,                             // 12: boss.CreateTaskRequest.MetaEntry
+var file_proto_gateway_boss_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_proto_gateway_boss_proto_goTypes = []any{
+	(*TaskUpdate)(nil),                  // 0: boss.TaskUpdate
+	(*WorkerRole)(nil),                  // 1: boss.WorkerRole
+	(*ManagerConfig)(nil),               // 2: boss.ManagerConfig
+	(*CreateTaskRequest)(nil),           // 3: boss.CreateTaskRequest
+	(*ManagerRole)(nil),                 // 4: boss.ManagerRole
+	(*BossDecision)(nil),                // 5: boss.BossDecision
+	(*TaskStatusRequest)(nil),           // 6: boss.TaskStatusRequest
+	(*TaskStatusResponse)(nil),          // 7: boss.TaskStatusResponse
+	(*ResumeTaskStreamRequest)(nil),     // 8: boss.ResumeTaskStreamRequest
+	(*StopTaskRequest)(nil),             // 9: boss.StopTaskRequest
+	(*RestoreProjectFilesRequest)(nil),  // 10: boss.RestoreProjectFilesRequest
+	(*CodeFileEntry)(nil),               // 11: boss.CodeFileEntry
+	(*RestoreProjectFilesResponse)(nil), // 12: boss.RestoreProjectFilesResponse
+	nil,                                 // 13: boss.TaskUpdate.DataEntry
+	nil,                                 // 14: boss.CreateTaskRequest.TokensEntry
+	nil,                                 // 15: boss.CreateTaskRequest.MetaEntry
 }
-var file_gateway_boss_proto_depIdxs = []int32{
-	10, // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
+var file_proto_gateway_boss_proto_depIdxs = []int32{
+	13, // 0: boss.TaskUpdate.data:type_name -> boss.TaskUpdate.DataEntry
 	1,  // 1: boss.ManagerConfig.workers:type_name -> boss.WorkerRole
-	11, // 2: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
-	12, // 3: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
+	14, // 2: boss.CreateTaskRequest.tokens:type_name -> boss.CreateTaskRequest.TokensEntry
+	15, // 3: boss.CreateTaskRequest.meta:type_name -> boss.CreateTaskRequest.MetaEntry
 	2,  // 4: boss.CreateTaskRequest.predefined_managers:type_name -> boss.ManagerConfig
 	4,  // 5: boss.BossDecision.manager_roles:type_name -> boss.ManagerRole
-	3,  // 6: boss.BossService.CreateTaskStream:input_type -> boss.CreateTaskRequest
-	8,  // 7: boss.BossService.ResumeTaskStream:input_type -> boss.ResumeTaskStreamRequest
-	9,  // 8: boss.BossService.StopTask:input_type -> boss.StopTaskRequest
-	3,  // 9: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
-	6,  // 10: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
-	0,  // 11: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
-	0,  // 12: boss.BossService.ResumeTaskStream:output_type -> boss.TaskUpdate
-	7,  // 13: boss.BossService.StopTask:output_type -> boss.TaskStatusResponse
-	5,  // 14: boss.BossService.CreateTask:output_type -> boss.BossDecision
-	7,  // 15: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	11, // 6: boss.RestoreProjectFilesResponse.files:type_name -> boss.CodeFileEntry
+	3,  // 7: boss.BossService.CreateTaskStream:input_type -> boss.CreateTaskRequest
+	8,  // 8: boss.BossService.ResumeTaskStream:input_type -> boss.ResumeTaskStreamRequest
+	9,  // 9: boss.BossService.StopTask:input_type -> boss.StopTaskRequest
+	3,  // 10: boss.BossService.CreateTask:input_type -> boss.CreateTaskRequest
+	6,  // 11: boss.BossService.GetTaskStatus:input_type -> boss.TaskStatusRequest
+	10, // 12: boss.BossService.RestoreProjectFiles:input_type -> boss.RestoreProjectFilesRequest
+	0,  // 13: boss.BossService.CreateTaskStream:output_type -> boss.TaskUpdate
+	0,  // 14: boss.BossService.ResumeTaskStream:output_type -> boss.TaskUpdate
+	7,  // 15: boss.BossService.StopTask:output_type -> boss.TaskStatusResponse
+	5,  // 16: boss.BossService.CreateTask:output_type -> boss.BossDecision
+	7,  // 17: boss.BossService.GetTaskStatus:output_type -> boss.TaskStatusResponse
+	12, // 18: boss.BossService.RestoreProjectFiles:output_type -> boss.RestoreProjectFilesResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_gateway_boss_proto_init() }
-func file_gateway_boss_proto_init() {
-	if File_gateway_boss_proto != nil {
+func init() { file_proto_gateway_boss_proto_init() }
+func file_proto_gateway_boss_proto_init() {
+	if File_proto_gateway_boss_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_boss_proto_rawDesc), len(file_gateway_boss_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_gateway_boss_proto_rawDesc), len(file_proto_gateway_boss_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_gateway_boss_proto_goTypes,
-		DependencyIndexes: file_gateway_boss_proto_depIdxs,
-		MessageInfos:      file_gateway_boss_proto_msgTypes,
+		GoTypes:           file_proto_gateway_boss_proto_goTypes,
+		DependencyIndexes: file_proto_gateway_boss_proto_depIdxs,
+		MessageInfos:      file_proto_gateway_boss_proto_msgTypes,
 	}.Build()
-	File_gateway_boss_proto = out.File
-	file_gateway_boss_proto_goTypes = nil
-	file_gateway_boss_proto_depIdxs = nil
+	File_proto_gateway_boss_proto = out.File
+	file_proto_gateway_boss_proto_goTypes = nil
+	file_proto_gateway_boss_proto_depIdxs = nil
 }
-

@@ -2,6 +2,7 @@ package boss
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
@@ -33,20 +34,32 @@ func (s *Service) detectGitHubIssueTask(ctx context.Context, req *CreateTaskRequ
 	req.Meta["github_repository"] = ref.Owner + "/" + ref.Repo
 	req.Meta["github_issue_number"] = fmt.Sprintf("%d", ref.Number)
 	req.Meta["github_branch"] = target.BranchName
+	// task_kind помечает задачу как github-тип (план фикса, пункт 1), не мутируя
+	// AI-классификацию task_type. Boss затем повышает task_type до "github".
+	req.Meta["github_task_kind"] = TaskTypeGitHub
 
 	if s.githubClient != nil {
-		if issue, err := s.githubClient.GetIssue(ctx, ref.Owner, ref.Repo, ref.Number); err != nil {
-			log.Printf("Failed to fetch GitHub issue %s: %v", ref.URL, err)
+		// Собираем полный паспорт issue ДО пайплайна (план фикса, пункты 1-2):
+		// тело целиком, комментарии, метки, состояние, открытые PR.
+		if instruction, err := s.githubClient.AnalyzeIssue(ctx, *ref); err != nil {
+			log.Printf("Failed to analyze GitHub issue %s: %v", ref.URL, err)
 		} else {
-			target.IssueTitle = issue.Title
-			target.IssueBody = issue.Body
-			target.IssueURL = firstNonEmpty(issue.HTMLURL, ref.URL)
-		}
-		if repo, err := s.githubClient.GetRepository(ctx, ref.Owner, ref.Repo); err != nil {
-			log.Printf("Failed to fetch GitHub repository %s/%s: %v", ref.Owner, ref.Repo, err)
-		} else {
-			target.BaseBranch = firstNonEmpty(repo.DefaultBranch, target.BaseBranch)
-			target.RepositoryURL = repo.HTMLURL
+			target.Instruction = instruction
+			target.IssueTitle = instruction.Title
+			target.IssueBody = instruction.Body
+			target.IssueURL = firstNonEmpty(instruction.URL, ref.URL)
+			target.BaseBranch = firstNonEmpty(instruction.DefaultBranch, target.BaseBranch)
+			target.RepositoryURL = instruction.RepositoryURL
+
+			// Паспорт кладётся в Meta как JSON и передаётся по конвейеру без
+			// пересборки и дрейфа (план фикса, пункт 2).
+			if encoded, err := json.Marshal(instruction); err == nil {
+				req.Meta["github_context"] = string(encoded)
+			}
+			if gh.IsTrivialIssue(instruction) {
+				req.Meta["github_trivial"] = "true"
+				log.Printf("GitHub issue %s detected as trivial (pipeline bypass eligible)", ref.URL)
+			}
 		}
 	}
 
@@ -85,8 +98,32 @@ func withGitHubIssueContext(description string, target *gh.IssueTarget) string {
 	}
 	if target.IssueBody != "" {
 		b.WriteString(fmt.Sprintf("\n%s body:\n", kind))
-		b.WriteString(limitText(target.IssueBody, 4000))
+		// Тело передаётся целиком (план фикса, пункт 2): больше не режем до 4000.
+		b.WriteString(target.IssueBody)
 		b.WriteString("\n")
+	}
+	if in := target.Instruction; in != nil {
+		if in.State != "" {
+			b.WriteString(fmt.Sprintf("- State: %s\n", in.State))
+		}
+		if len(in.Labels) > 0 {
+			b.WriteString(fmt.Sprintf("- Labels: %s\n", strings.Join(in.Labels, ", ")))
+		}
+		if len(in.OpenPRs) > 0 {
+			b.WriteString("- Existing open pull requests for this issue:\n")
+			for _, pr := range in.OpenPRs {
+				b.WriteString(fmt.Sprintf("  - #%d %s (%s) %s\n", pr.Number, pr.Title, pr.State, pr.URL))
+			}
+		}
+		if len(in.Comments) > 0 {
+			b.WriteString("\nComments:\n")
+			for _, comment := range in.Comments {
+				author := firstNonEmpty(comment.Author, "unknown")
+				b.WriteString(fmt.Sprintf("--- %s (%s):\n", author, comment.CreatedAt))
+				b.WriteString(comment.Body)
+				b.WriteString("\n")
+			}
+		}
 	}
 	b.WriteString("\nExecution rules:\n")
 	if target.IsPullRequest {
@@ -155,13 +192,6 @@ func shouldSkipRepoDir(rel string) bool {
 	}
 }
 
-func limitText(text string, max int) string {
-	if len(text) <= max {
-		return text
-	}
-	return text[:max] + "\n[truncated]"
-}
-
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if value != "" {
@@ -170,4 +200,3 @@ func firstNonEmpty(values ...string) string {
 	}
 	return ""
 }
-

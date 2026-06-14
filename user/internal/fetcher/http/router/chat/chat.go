@@ -132,6 +132,27 @@ func RegisterRoutes(r *gin.Engine) {
 		c.JSON(200, gin.H{"status": "success"})
 	})
 
+	// PUT /chat/:id/nix-path
+	r.PUT("/chat/:id/nix-path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		chatID := c.Param("id")
+
+		var req struct {
+			TaskID       string `json:"task_id"`
+			NixStorePath string `json:"nix_store_path"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"status": "error", "error": "Invalid request body"})
+			return
+		}
+
+		err := services.UpdateChatNixPath(chatID, req.TaskID, req.NixStorePath)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"status": "success"})
+	})
+
 	// Workflow library and saved workflow routes.
 	r.POST("/workflows", middleware.AuthMiddleware(), WorkflowsPost)
 	r.GET("/workflows/library", WorkflowsLibrary)

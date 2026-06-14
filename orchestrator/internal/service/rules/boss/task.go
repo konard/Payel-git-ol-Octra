@@ -33,11 +33,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	emit(progress, 10, "Task saved to database", nil)
 
-	req.Grade = gradeTask(req.Title + "\n" + req.Description)
-	emit(progress, 12, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
-
 	provider, model := pickProviderModel(req.Meta)
-	emit(progress, 15, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+	emit(progress, 12, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
+
+	req.Grade = s.gradeTaskViaAI(ctx, provider, model, req.Tokens, req.Title, req.Description)
+	emit(progress, 15, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
 
 	if req.Meta == nil {
 		req.Meta = make(map[string]string)
@@ -52,6 +52,12 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, "AI planning failed: "+err.Error(), errorData())
 		return err
 	}
+	// Повышаем тип до "github" для issue-привязанных задач (план фикса, пункт 1).
+	// Конвейер и публикация остаются кодовыми (isCodeLikeTask), но Boss/Manager
+	// видят, что работают с реальным репозиторием по паспорту issue.
+	if issueTarget != nil && isCodeLikeTask(decision.TaskType) {
+		decision.TaskType = TaskTypeGitHub
+	}
 	// Safeguard: AI sometimes returns 0 managers or empty roles
 	if decision.ManagersCount <= 0 {
 		decision.ManagersCount = 1
@@ -64,6 +70,13 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		decision.ManagersCount = 1
 		decision.ManagerRoles = []models.ManagerRole{fallbackManagerRole(decision.TaskType)}
 		log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
+	}
+
+	// Тривиальный GitHub issue (опечатка/однофайловый фикс) не нужно гонять через
+	// весь конвейер (план фикса, пункт 7): сводим к одному менеджеру/воркеру.
+	if req.Meta["github_trivial"] == "true" {
+		clampToSingleManager(decision)
+		log.Printf("Trivial GitHub issue: pipeline capped to a single manager")
 	}
 
 	architectureData := map[string]string{
@@ -102,7 +115,6 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 			log.Printf("Failed to clone existing repo: %v", err)
 		}
 	}
-	defer s.cleanupProject(projectPath, taskID.String())
 	if issueTarget != nil && issueTarget.Cloned {
 		appendRepositoryContext(decision, projectPath)
 	}
@@ -158,7 +170,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	// не требуется (см. issue): результат отдаётся во вкладку Solution и в чат.
 	// Исключение — задача привязана к конкретному GitHub issue.
 	repoURL := ""
-	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
+	githubErr := ""
+	isCodeTask := isCodeLikeTask(decision.TaskType)
 	switch {
 	case gateEnabled && !approved:
 		log.Printf("Skipping GitHub publish: boss validation rejected the solution")
@@ -167,10 +180,16 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 			"bossReview": validation.Feedback,
 		})
 	case isCodeTask || issueTarget != nil:
-		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
+		repoURL, githubErr = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
 	default:
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}
+
+	// Snapshot project to Nix store BEFORE building the data map,
+	// so NixStorePath is available for the final emit.
+	s.cleanupProject(projectPath, taskID.String())
+	// Reload task to get NixStorePath saved by cleanupProject.
+	database.Db.First(task, "id = ?", taskID)
 
 	if gateEnabled && !approved {
 		task.Status = "rejected"
@@ -192,10 +211,14 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		data["code_files"] = codeFiles
 		data["filesCount"] = strconv.Itoa(filesCount)
 	}
+	if task.NixStorePath != "" {
+		data["nix_store_path"] = task.NixStorePath
+		data["task_id"] = taskID.String()
+	}
 
 	// Для не-кодовых задач (research/document/presentation) босс отдаёт короткий
 	// ответ в чат, а полный результат уже лежит в папке solution/ (вкладка Solution).
-	if decision.TaskType != "" && decision.TaskType != TaskTypeCode {
+	if !isCodeLikeTask(decision.TaskType) {
 		fullDoc, docCount := collectSolutionMarkdown(managerResults)
 		// Когда воркеров несколько, менеджерский синтез сливает их результаты
 		// в один документ, проверяя факты (как описано в issue: «менеджер
@@ -212,6 +235,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	if repoURL != "" && strings.HasPrefix(repoURL, "https://") {
 		data["repoUrl"] = repoURL
+	}
+	// issue #75 п.3: если публикация не удалась — сообщаем причину пользователю,
+	// чтобы нода GitHub не висела вечно в статусе «building» без объяснения.
+	if repoURL == "" && githubErr != "" {
+		data["githubError"] = githubErr
 	}
 	if issueTarget != nil && repoURL != "" {
 		data["githubMode"] = "pull_request"

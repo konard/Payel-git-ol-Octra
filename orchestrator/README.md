@@ -49,8 +49,14 @@ API Gateway ──gRPC──► Orchestrator (50051)
 | `GIT_USER_NAME` | `CrewAI Bot` | Git commit author name |
 | `GIT_USER_EMAIL` | `bot@crewai.local` | Git commit author email |
 | `PROJECTS_DIR` | `/workspace/projects` | Workspace directory |
-| `WORKER_MODE` | `multypass` | Code generation mode |
+| `OCTRA_DISABLE_TOOLS` | `false` | Force deterministic AI multi-pass instead of native toolchain scaffolding (for tool-less environments) |
 | `WEB_SEARCH_DISABLED` | — | Disable web search |
+
+> **Determinism note:** the code generation path is chosen deterministically per
+> tech stack (native tool scaffolding when available, otherwise AI multi-pass).
+> The former `WORKER_MODE` flag has been removed — there is exactly one path per
+> task. All roles (Boss, Manager, Worker) share a single low sampling temperature
+> defined in `internal/config` for maximum reproducibility.
 
 ## Development
 

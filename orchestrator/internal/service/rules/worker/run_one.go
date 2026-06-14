@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/service/git"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -77,26 +78,22 @@ func (s *Service) runOneWorker(
 		emit := s.searchEmitterFor(progress, basePct, req, role)
 		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit, skillContent)
 	} else {
-		workerMode := os.Getenv("WORKER_MODE")
-		useTools := workerMode == "tool" || (isToolMode(meta.techStack) && workerMode != "no-tool")
-		if useTools {
+		// Путь генерации выбирается детерминированно по tech stack
+		// (config.ResolveGenerationMode), без переменной окружения WORKER_MODE —
+		// одна и та же задача всегда идёт одним маршрутом.
+		mode := config.ResolveGenerationMode(meta.techStack, isToolMode)
+		if mode == config.ModeTool {
 			files, commands, err = s.generateViaTools(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, progress)
-			if err != nil || len(files) == 0 {
-				log.Printf("[ToolExecutor] Fallback to AI generation (tool mode failed: %v, files=%d)", err, len(files))
+			if err != nil || len(files) == 0 || !containsSourceCode(files) {
+				log.Printf("[ToolExecutor] Fallback to AI generation (tool mode failed: %v, files=%d, hasSource=%v)", err, len(files), containsSourceCode(files))
 				files = nil
 				commands = nil
-				useTools = false
+				mode = config.ModeMultiPass
 			}
 		}
-		if !useTools {
-			if workerMode == "" || workerMode == "tool" {
-				workerMode = "multypass"
-			}
-			if workerMode == "multypass" {
-				files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent, progress)
-			} else {
-				files, commands, err = s.generateCode(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent, progress)
-			}
+		if mode == config.ModeMultiPass {
+			// generateCodeMultiPass внутри откатывается на N+1, если парсинг ответа провалится.
+			files, commands, err = s.generateCodeMultiPass(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, skillContent, progress)
 		}
 	}
 	if err != nil {
@@ -128,11 +125,16 @@ func (s *Service) runOneWorker(
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			log.Printf("Warning: failed to write file %s: %v", path, err)
 		} else if progress != nil {
-			progress(50, "Writing file: "+path, map[string]string{
+			data := map[string]string{
 				"file": path,
 				"type": "write",
 				"size": fmt.Sprintf("%d", len(content)),
-			})
+			}
+			// Стримим файл во вкладку Solution вживую (issue #75 п.1).
+			if cf := liveCodeFilesPayload(role, path, content); cf != "" {
+				data["code_files"] = cf
+			}
+			progress(50, "Writing file: "+path, data)
 		}
 	}
 
@@ -183,4 +185,3 @@ func (s *Service) runOneWorker(
 	log.Printf("Worker (%s) completed: %d files", role, len(files))
 	return result, nil
 }
-

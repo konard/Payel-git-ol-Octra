@@ -63,6 +63,9 @@ func Resolve(names []string) []string {
 
 // ResolvePackages returns all unique nix packages required by the given install names.
 // Used by FlakeBuilder to ensure the flake includes the right buildInputs.
+// Package names are sanitized via SanitizeNixPackage so that tool aliases that
+// are NOT standalone nixpkgs attributes (e.g. "npm", "pip") never leak into
+// flake.nix and break the build with "undefined variable".
 func ResolvePackages(names []string) []string {
 	seen := map[string]bool{}
 	var pkgs []string
@@ -72,14 +75,50 @@ func ResolvePackages(names []string) []string {
 			continue
 		}
 		for _, p := range s.Requires {
-			if seen[p] {
+			pkg, ok := SanitizeNixPackage(p)
+			if !ok || seen[pkg] {
 				continue
 			}
-			seen[p] = true
-			pkgs = append(pkgs, p)
+			seen[pkg] = true
+			pkgs = append(pkgs, pkg)
 		}
 	}
 	return pkgs
+}
+
+// nixPackageAliases maps common tool names to their real nixpkgs attribute, or
+// to "" when the tool ships bundled with its runtime (so it must NOT be added as
+// a separate package). Nix has no standalone "npm"/"mix"/"npx" derivations — they
+// come with nodejs / elixir — and "pip"/"cabal"/"dotnet"/"composer" live under a
+// different attribute path than their bare name.
+var nixPackageAliases = map[string]string{
+	"npm":      "", // bundled with nodejs
+	"npx":      "", // bundled with nodejs
+	"mix":      "", // bundled with elixir
+	"gradlew":  "", // project wrapper, not a package
+	"pip":      "python3Packages.pip",
+	"pip3":     "python3Packages.pip",
+	"cabal":    "cabal-install",
+	"dotnet":   "dotnet-sdk",
+	"composer": "php83Packages.composer",
+	"go-tools": "gotools",
+}
+
+// SanitizeNixPackage maps a requested package/tool name to a valid nixpkgs
+// attribute. It returns (attr, true) for a usable package and ("", false) when
+// the name should be skipped entirely (e.g. tools bundled with their runtime).
+func SanitizeNixPackage(name string) (string, bool) {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return "", false
+	}
+	if mapped, ok := nixPackageAliases[strings.ToLower(trimmed)]; ok {
+		if mapped == "" {
+			return "", false
+		}
+		return mapped, true
+	}
+	return trimmed, true
 }
 
 // EnsureNixPackages updates the project's flake.nix to include the given Nix packages
@@ -133,9 +172,9 @@ func addPackagesToFlake(flake string, packages []string) string {
 		if len(parts) < 4 {
 			return match
 		}
-		header := parts[1]   // "buildInputs = with pkgs; ["
-		body := parts[2]     // existing entries
-		closer := parts[3]   // "]"
+		header := parts[1] // "buildInputs = with pkgs; ["
+		body := parts[2]   // existing entries
+		closer := parts[3] // "]"
 
 		// Collect existing package names
 		existing := map[string]bool{}

@@ -14,6 +14,7 @@ interface GitHubNodeProps {
     repoUrl?: string;
     prUrl?: string;
     commitCount?: number;
+    errorMessage?: string;
     scale?: number;
   };
 }
@@ -34,6 +35,7 @@ function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
   const repoUrl = data.repoUrl || '';
   const prUrl = data.prUrl || '';
   const commitCount = data.commitCount;
+  const errorMessage = data.errorMessage || '';
   const { scale: currentScale, handleResize } = useNodeResize(id, data.scale || 1);
   const isActive = status === 'working';
   const hasLink = !!(repoUrl || prUrl);
@@ -85,6 +87,12 @@ function GitHubNodeComponent({ id, data }: GitHubNodeProps) {
           <div className="agent-node__meta">
             <span className="agent-node__meta-label">Commits:</span>
             <span className="agent-node__meta-value">{commitCount}</span>
+          </div>
+        )}
+
+        {status === 'error' && errorMessage && (
+          <div className="text-xs text-red-500 whitespace-pre-wrap break-words" title={errorMessage}>
+            {errorMessage}
           </div>
         )}
       </div>

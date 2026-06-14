@@ -49,7 +49,6 @@ jobs:
             docker compose -f ${{ env.COMPOSE_FILE }} build user
             docker compose -f ${{ env.COMPOSE_FILE }} build orchestrator
             docker compose -f ${{ env.COMPOSE_FILE }} build apigateway
-            docker compose -f ${{ env.COMPOSE_FILE }} build grademodel
             docker compose -f ${{ env.COMPOSE_FILE }} build agents
 
             # Start all services

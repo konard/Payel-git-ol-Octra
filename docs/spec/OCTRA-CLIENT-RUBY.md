@@ -8,7 +8,7 @@ require 'json'
 
 task_id = nil
 backoff = 1
-uri = "wss://your-domain.com/ws"
+uri = "wss://octra.env.pm/ws"
 
 loop do
   begin

@@ -12,6 +12,8 @@ type Chat struct {
 	Title        string       `gorm:"type:varchar(255)" json:"title"`
 	LastMessage  string       `gorm:"type:text" json:"last_message"`
 	Workflow    string       `gorm:"type:text" json:"workflow,omitempty"`
+	TaskId       string       `gorm:"type:varchar(36)" json:"task_id,omitempty"`
+	NixStorePath string       `gorm:"type:text" json:"nix_store_path,omitempty"`
 	Provider    string       `gorm:"type:varchar(100)" json:"provider,omitempty"`
 	Model       string       `gorm:"type:varchar(100)" json:"model,omitempty"`
 	Messages    []ChatMessage `gorm:"foreignKey:ChatId" json:"messages,omitempty"`
