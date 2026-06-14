@@ -13,7 +13,7 @@ public class OctraClient {
     private int backoff = 1000;
 
     public void connect() {
-        String uri = "wss://your-domain.com/ws";
+        String uri = "wss://octra.env.pm/ws";
 
         HttpClient.newHttpClient().newWebSocketBuilder()
             .buildAsync(URI.create(uri), new WebSocket.Listener() {
@@ -63,7 +63,7 @@ public class OctraSpringClient implements WebSocketHandler {
     private int backoff = 1000;
 
     public void connect() {
-        String url = "wss://your-domain.com/ws";
+        String url = "wss://octra.env.pm/ws";
         WebSocketConnectionManager manager = new WebSocketConnectionManager(
                 new StandardWebSocketClient(), this, url);
         manager.start();

@@ -84,8 +84,8 @@ func (s *Service) runOneWorker(
 		mode := config.ResolveGenerationMode(meta.techStack, isToolMode)
 		if mode == config.ModeTool {
 			files, commands, err = s.generateViaTools(ctx, meta.provider, meta.model, meta.tokens, taskMD, role, description, req.ManagerRole, basePath, accumulatedContext, meta.techStack, progress)
-			if err != nil || len(files) == 0 {
-				log.Printf("[ToolExecutor] Fallback to AI multi-pass generation (tool mode failed: %v, files=%d)", err, len(files))
+			if err != nil || len(files) == 0 || !containsSourceCode(files) {
+				log.Printf("[ToolExecutor] Fallback to AI generation (tool mode failed: %v, files=%d, hasSource=%v)", err, len(files), containsSourceCode(files))
 				files = nil
 				commands = nil
 				mode = config.ModeMultiPass
@@ -125,11 +125,16 @@ func (s *Service) runOneWorker(
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			log.Printf("Warning: failed to write file %s: %v", path, err)
 		} else if progress != nil {
-			progress(50, "Writing file: "+path, map[string]string{
+			data := map[string]string{
 				"file": path,
 				"type": "write",
 				"size": fmt.Sprintf("%d", len(content)),
-			})
+			}
+			// Стримим файл во вкладку Solution вживую (issue #75 п.1).
+			if cf := liveCodeFilesPayload(role, path, content); cf != "" {
+				data["code_files"] = cf
+			}
+			progress(50, "Writing file: "+path, data)
 		}
 	}
 
@@ -180,4 +185,3 @@ func (s *Service) runOneWorker(
 	log.Printf("Worker (%s) completed: %d files", role, len(files))
 	return result, nil
 }
-

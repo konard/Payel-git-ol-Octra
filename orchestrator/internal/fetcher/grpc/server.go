@@ -2,7 +2,9 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -130,6 +132,48 @@ func (s *Server) GetTaskStatus(ctx context.Context, req *bosspb.TaskStatusReques
 		return nil, err
 	}
 	return &bosspb.TaskStatusResponse{TaskId: task.ID.String(), Status: task.Status, Progress: "50%"}, nil
+}
+
+// RestoreProjectFiles — восстанавливает проект из Nix store и возвращает файлы
+func (s *Server) RestoreProjectFiles(ctx context.Context, req *bosspb.RestoreProjectFilesRequest) (*bosspb.RestoreProjectFilesResponse, error) {
+	if req.NixStorePath == "" {
+		return nil, fmt.Errorf("nix_store_path is required")
+	}
+
+	// Create temp dir for restore
+	tmpDir, err := os.MkdirTemp("", "octra-restore-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Restore from Nix store
+	if err := s.boss.RestoreProjectFromNix(req.NixStorePath, tmpDir); err != nil {
+		return nil, fmt.Errorf("failed to restore from nix store: %w", err)
+	}
+
+	// Read files
+	codeFiles, err := boss.ReadProjectFiles(tmpDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read project files: %w", err)
+	}
+
+	// Convert to proto
+	entries := make([]*bosspb.CodeFileEntry, 0, len(codeFiles))
+	for _, f := range codeFiles {
+		entries = append(entries, &bosspb.CodeFileEntry{
+			Path:     f.Path,
+			Content:  f.Content,
+			Language: f.Language,
+			Encoding: f.Encoding,
+		})
+	}
+
+	return &bosspb.RestoreProjectFilesResponse{
+		TaskId:     req.TaskId,
+		Files:      entries,
+		TotalFiles: int32(len(entries)),
+	}, nil
 }
 
 // CreateTask — legacy unary эндпоинт. Сейчас просто возвращает not-implemented.

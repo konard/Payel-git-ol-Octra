@@ -3,6 +3,7 @@ package boss
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -145,6 +146,22 @@ func sameWorkflowRole(a, b string) bool {
 	return normalize(a) == normalize(b)
 }
 
+// gradeWeight переводит оценку сложности босса (1-10) в шкалу 0-100, которую
+// видит менеджер ("grade_weight: N/100"). Раньше здесь был хардкод "10", из-за
+// чего босс и менеджер получали рассогласованные сигналы о сложности одной и той
+// же задачи (issue #79). Теперь обе стороны исходят из одной оценки: менеджер
+// видит grade*10, ровно как босс возвращает в JSON-шаблоне. Для неоценённых
+// задач (grade<=0) сохраняем прежний минимум "10".
+func gradeWeight(grade int) string {
+	if grade <= 0 {
+		return "10"
+	}
+	if grade > 10 {
+		grade = 10
+	}
+	return strconv.Itoa(grade * 10)
+}
+
 // buildManagerMetadata — формирует метадату для менеджеров
 func buildManagerMetadata(req *CreateTaskRequest, decision *DecisionResult) map[string]string {
 	techStack := "go"
@@ -161,7 +178,7 @@ func buildManagerMetadata(req *CreateTaskRequest, decision *DecisionResult) map[
 		"provider":         req.Meta["provider"],
 		"title":            req.Title,
 		"description":      req.Description,
-		"grade_weight":     "10",
+		"grade_weight":     gradeWeight(req.Grade),
 		"tech_stack":       techStack,
 		"task_type":        taskType,
 		"skill_categories": req.Meta["skill_categories"],

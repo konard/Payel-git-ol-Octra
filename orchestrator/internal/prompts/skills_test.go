@@ -7,15 +7,20 @@ import (
 	"orchestrator/internal/skills"
 )
 
-// TestPlanArchitectureListsSkillCatalog — босс видит каталог системных скиллов,
-// чтобы подбирать роли под реальные специальности.
-func TestPlanArchitectureListsSkillCatalog(t *testing.T) {
-	p := PlanArchitecture("Build a proxy", "write a reverse proxy in Go", 5, "")
-	if !strings.Contains(p, "EXPERT SKILLS") {
-		t.Errorf("plan prompt should mention expert skills catalog:\n%s", p)
+// TestPlanArchitectureSkillCatalogOptIn — каталог скиллов теперь opt-in (issue #79):
+// без запрошенных категорий босс НЕ получает каталог (меньше шума для простых задач),
+// а с явными категориями — получает только релевантные фрагменты.
+func TestPlanArchitectureSkillCatalogOptIn(t *testing.T) {
+	// Без категорий: каталог не должен попадать в промпт.
+	noCat := PlanArchitecture("hello world", "напиши hello world на express js", 8, "")
+	if strings.Contains(noCat, "SKILL WAREHOUSE CATALOG") || strings.Contains(noCat, "skill categories") {
+		t.Errorf("plan prompt must NOT dump the skill catalog when no categories requested:\n%s", noCat)
 	}
-	if !strings.Contains(p, "Proxy") {
-		t.Errorf("plan prompt should list the Proxy area:\n%s", p)
+
+	// С явными категориями: релевантный фрагмент должен присутствовать.
+	withCat := PlanArchitecture("Build a proxy", "write a reverse proxy in Go", 5, "proxy")
+	if !strings.Contains(withCat, "skill categories") {
+		t.Errorf("plan prompt should mention requested skill categories:\n%s", withCat)
 	}
 }
 

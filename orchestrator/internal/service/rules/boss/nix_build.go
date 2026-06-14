@@ -28,14 +28,14 @@ func (s *Service) ensureFlakeLock(projectPath string, progress rules.ProgressFun
 
 	log.Printf("Generating flake.lock for project: %s", projectPath)
 	if progress != nil {
-		progress(65, "Generating flake.lock (pinning Nix dependencies)...", nil)
+		progress(65, "Pinning dependency versions...", nil)
 	}
 
 	cmd := exec.Command("nix", "flake", "lock",
 		"--extra-experimental-features", "nix-command flakes")
 	cmd.Dir = projectPath
 
-	if err := streamCommandOutput(cmd, progress, "Resolving Nix dependencies..."); err != nil {
+	if err := streamCommandOutput(cmd, progress, "Resolving dependencies..."); err != nil {
 		log.Printf("Warning: nix flake lock failed (non-fatal): %v", err)
 		emit(progress, 66, "flake.lock generation failed (non-fatal)", map[string]string{
 			"warning": err.Error(),
@@ -55,7 +55,7 @@ func (s *Service) nixBuild(projectPath string, progress rules.ProgressFunc) {
 		return
 	}
 
-	emit(progress, 81, "Building project with Nix...", nil)
+	emit(progress, 81, "Building project...", nil)
 
 	cmd := exec.Command("nix", "build",
 		"--extra-experimental-features", "nix-command flakes")
