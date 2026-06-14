@@ -25,17 +25,19 @@ Task:
 
 Task complexity (grade_weight): ` + gradeWeight + `/100
 
-
-	Worker count by grade_weight:
+Worker count by grade_weight:
 - 1-20: 1 worker
 - 21-60: 2 workers
 - 61-100: 3 workers max
 
-IMPORTANT: Only list workers that belong to YOUR team (` + role + `).
+CRITICAL RULES:
+1. Only list workers that belong to YOUR team (` + role + `).
+2. DO NOT create a "reviewer" or "QA" worker — you (the manager) will review all work yourself after workers finish.
+3. Hire only IMPLEMENTERS: developers, frontend devs, backend devs, designers, etc.
 
 Reply ONLY with JSON:
 {
-  "worker_roles": [{"role": "developer", "description": "Backend developer"}]
+  "worker_roles": [{"role": "developer", "description": "Backend developer implementing the Express.js server"}]
 }`
 }
 
@@ -67,8 +69,10 @@ Worker count by grade_weight:
 - 21-60: 2 analysts
 - 61-100: 3 analysts (4 max for broad topics)
 
-The "description" field MUST state the unique SEARCH RANGE (links/tags/news/information) and
-method for that analyst, because the worker will run a real web search within that range.
+CRITICAL RULES:
+1. The "description" field MUST state the unique SEARCH RANGE for that analyst.
+2. DO NOT create a "reviewer" or "validator" worker — you (the manager) will review all findings yourself.
+3. Hire only RESEARCHERS/ANALYSTS who gather information.
 
 Reply ONLY with JSON:
 {
@@ -95,7 +99,10 @@ Worker count by grade_weight:
 - 1-40: 1 writer
 - 41-100: up to 2 writers
 
-The "description" field MUST describe the writer's focus or perspective on the document.
+CRITICAL RULES:
+1. The "description" field MUST describe the writer's focus or perspective on the document.
+2. DO NOT create a "reviewer", "editor", or "proofreader" worker — you (the manager) will review all work yourself.
+3. Hire only WRITERS/AUTHORS who produce content.
 
 Reply ONLY with JSON:
 {
@@ -115,6 +122,10 @@ Task complexity (grade_weight): ` + gradeWeight + `/100
 
 A presentation must be ONE coherent deck, so hire exactly 1 presentation designer who produces
 the entire slide deck. Do NOT split a single deck across multiple workers.
+
+CRITICAL RULES:
+1. DO NOT create a "reviewer" or "editor" worker — you (the manager) will review the deck yourself.
+2. Hire only DESIGNERS who create visual content.
 
 Reply ONLY with JSON:
 {
