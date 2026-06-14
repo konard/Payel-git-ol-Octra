@@ -51,6 +51,13 @@ func parseWorkerMetadata(metadata map[string]string) workerMeta {
 	return m
 }
 
+// isCodeTask — true для кодовых задач (включая дефолтный пустой тип).
+// Для них пустой результат воркеров считается провалом (issue #85), тогда как
+// для document/research пустой набор файлов кода допустим.
+func isCodeTask(taskType string) bool {
+	return taskType == "" || taskType == "code"
+}
+
 // resolveBasePath — определяет директорию проекта для группы воркеров
 func resolveBasePath(req *rules.AssignWorkersRequest) string {
 	if req.ProjectPath != "" {
@@ -102,4 +109,3 @@ func writeContextFile(basePath, taskID, managerID, managerRole string, workerRol
 	os.MkdirAll(octraDir, 0755)
 	os.WriteFile(filepath.Join(octraDir, "context.json"), contextJSON, 0644)
 }
-

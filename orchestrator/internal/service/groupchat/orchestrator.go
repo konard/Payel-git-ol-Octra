@@ -16,6 +16,9 @@ type Orchestrator struct {
 	terminateFn TerminationCondition
 	mu          sync.RWMutex
 	eventCh     chan Event
+
+	errsMu sync.Mutex
+	errs   []error
 }
 
 func NewOrchestrator(maxRounds int) *Orchestrator {
@@ -27,6 +30,25 @@ func NewOrchestrator(maxRounds int) *Orchestrator {
 		maxRounds:  maxRounds,
 		eventCh:    make(chan Event, 100),
 	}
+}
+
+// recordError — сохраняет ошибку агента, чтобы вызывающий код мог понять,
+// что воркер реально провалился (раньше ошибки только эмитились в events и
+// молча терялись, из-за чего менеджер репортил success при пустом результате — issue #85).
+func (o *Orchestrator) recordError(err error) {
+	if err == nil {
+		return
+	}
+	o.errsMu.Lock()
+	o.errs = append(o.errs, err)
+	o.errsMu.Unlock()
+}
+
+// Errors — возвращает ошибки агентов, накопленные за время прогона.
+func (o *Orchestrator) Errors() []error {
+	o.errsMu.Lock()
+	defer o.errsMu.Unlock()
+	return append([]error(nil), o.errs...)
 }
 
 func (o *Orchestrator) SetSelector(s SpeakerSelector) {
@@ -197,6 +219,7 @@ func (o *Orchestrator) runSingle(ctx context.Context, agentID string, round int)
 	conv := o.SnapshotConversation()
 	messages, err := agent.Process(ctx, conv)
 	if err != nil {
+		o.recordError(fmt.Errorf("agent %s: %w", agentID, err))
 		o.setAgentStatus(agentID, AgentError)
 		o.emit(Event{Type: EventError, AgentID: agentID, Error: err.Error(), Round: round})
 		return
@@ -237,6 +260,7 @@ func (o *Orchestrator) runConcurrentRound(ctx context.Context, round int) {
 
 			messages, err := a.Process(ctx, conv)
 			if err != nil {
+				o.recordError(fmt.Errorf("agent %s: %w", agentID, err))
 				o.setAgentStatus(agentID, AgentError)
 				o.emit(Event{Type: EventError, AgentID: agentID, Error: err.Error(), Round: round})
 				return

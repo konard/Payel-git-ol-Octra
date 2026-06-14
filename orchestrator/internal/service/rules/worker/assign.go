@@ -77,6 +77,14 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 			}
 		}
 
+		// Гейт результата (issue #85): для кодовых задач воркер обязан реально
+		// создать хотя бы один файл. Иначе менеджер раньше репортил success при
+		// пустом результате (например, при таймауте генерации ollama), и босс
+		// создавал пустой PR.
+		if isCodeTask(meta.taskType) && len(allFiles) == 0 {
+			return nil, fmt.Errorf("worker %s produced no files (generation likely failed)", wr.Role)
+		}
+
 		if progress != nil {
 			progress(80, "Worker completed, writing files and committing", map[string]string{
 				"files": fmt.Sprintf("%d", len(allFiles)),
@@ -154,6 +162,16 @@ func (s *Service) AssignWorkersAndWait(ctx context.Context, req *rules.AssignWor
 	// Собираем результаты из чата
 	conv := orch.SnapshotConversation()
 	allFiles := conv.AllFiles()
+
+	// Гейт результата (issue #85): ошибки агентов в group chat раньше молча
+	// терялись (orch.Run возвращал nil), и менеджер репортил success даже когда
+	// все воркеры упали. Если ничего не сгенерировано — это провал, а не успех.
+	if agentErrs := orch.Errors(); len(agentErrs) > 0 && len(allFiles) == 0 {
+		return nil, fmt.Errorf("all workers failed, no files generated: %w", agentErrs[0])
+	}
+	if isCodeTask(meta.taskType) && len(allFiles) == 0 {
+		return nil, fmt.Errorf("workers produced no files (generation likely failed)")
+	}
 
 	if progress != nil {
 		progress(80, "All agents completed, writing files and committing", map[string]string{
