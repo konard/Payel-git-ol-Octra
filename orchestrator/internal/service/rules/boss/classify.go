@@ -21,6 +21,22 @@ func isCodeLikeTask(taskType string) bool {
 	return taskType == "" || taskType == TaskTypeCode || taskType == TaskTypeGitHub
 }
 
+// clampToSingleManager — сводит решение к одному менеджеру с одной ролью. Нужно
+// для тривиальных issue (план фикса, пункт 7): один целевой проход вместо всего
+// конвейера. Сохраняет первую AI-выбранную роль, если она есть.
+func clampToSingleManager(decision *DecisionResult) {
+	if decision == nil {
+		return
+	}
+	decision.ManagersCount = 1
+	if len(decision.ManagerRoles) > 1 {
+		decision.ManagerRoles = decision.ManagerRoles[:1]
+	}
+	if len(decision.ManagerWorkflows) > 1 {
+		decision.ManagerWorkflows = decision.ManagerWorkflows[:1]
+	}
+}
+
 // classifyTaskType — детерминированный fallback-классификатор по ключевым словам.
 // Используется, когда AI не вернул task_type (или JSON не распарсился). Поддерживает
 // русский и английский, так как пользователи Octra пишут на обоих языках.

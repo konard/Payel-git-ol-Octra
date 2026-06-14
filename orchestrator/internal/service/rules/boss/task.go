@@ -72,6 +72,13 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
 	}
 
+	// Тривиальный GitHub issue (опечатка/однофайловый фикс) не нужно гонять через
+	// весь конвейер (план фикса, пункт 7): сводим к одному менеджеру/воркеру.
+	if req.Meta["github_trivial"] == "true" {
+		clampToSingleManager(decision)
+		log.Printf("Trivial GitHub issue: pipeline capped to a single manager")
+	}
+
 	architectureData := map[string]string{
 		"managers":  strconv.Itoa(int(decision.ManagersCount)),
 		"task_type": decision.TaskType,
