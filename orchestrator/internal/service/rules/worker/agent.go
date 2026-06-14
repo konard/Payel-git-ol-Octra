@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/service/groupchat"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -73,8 +74,9 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 	log.Printf("[WorkerAgent %s] Starting code generation (taskType=%s, techStack=%s)...",
 		a.role, a.meta.taskType, a.meta.techStack)
 
-	// Генерация кода
-	workerMode := os.Getenv("WORKER_MODE")
+	// Генерация кода. Путь выбирается детерминированно по tech stack
+	// (config.ResolveGenerationMode), без переменной окружения WORKER_MODE —
+	// одна и та же задача всегда идёт одним маршрутом.
 	var files map[string]string
 	var commands []string
 
@@ -87,33 +89,24 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 		files, commands, err = a.service.generateDocument(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
 				a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
 	} else {
-		useTools := workerMode == "tool" || (isToolMode(a.meta.techStack) && workerMode != "no-tool")
-		if useTools {
+		mode := config.ResolveGenerationMode(a.meta.techStack, isToolMode)
+		if mode == config.ModeTool {
 			files, commands, err = a.service.generateViaTools(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
 				taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, a.progress)
 			if err != nil || len(files) == 0 {
-				log.Printf("[WorkerAgent %s] Tool fallback to AI: %v", a.role, err)
+				log.Printf("[WorkerAgent %s] Tool fallback to AI multi-pass: %v", a.role, err)
 				files = nil
 				commands = nil
+				mode = config.ModeMultiPass
 			}
 		}
-		if !useTools || len(files) == 0 {
-			if workerMode == "" || workerMode == "tool" {
-				workerMode = "multypass"
+		if mode == config.ModeMultiPass {
+			if a.progress != nil {
+				a.progress(40, "Generating code via AI multi-pass...", nil)
 			}
-			if workerMode == "multypass" {
-				if a.progress != nil {
-					a.progress(40, "Generating code via AI multi-pass...", nil)
-				}
-				files, commands, err = a.service.generateCodeMultiPass(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent, a.progress)
-			} else {
-				if a.progress != nil {
-					a.progress(40, "Generating code via AI...", nil)
-				}
-				files, commands, err = a.service.generateCode(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-					taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent, a.progress)
-			}
+			// generateCodeMultiPass внутри откатывается на N+1, если парсинг ответа провалится.
+			files, commands, err = a.service.generateCodeMultiPass(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
+				taskMD, a.role, a.description, a.req.ManagerRole, a.basePath, fullContext, a.meta.techStack, skillContent, a.progress)
 		}
 	}
 	if err != nil {
@@ -146,7 +139,7 @@ Return format:
 === FILE: path/to/file ===
 <fixed content>`, cmd, err, string(output))
 
-			fixResp, fixErr := a.service.agentsClient.Generate(ctx, a.meta.provider, a.meta.model, fixPrompt, a.meta.tokens, 8192, 0.3)
+			fixResp, fixErr := a.service.agentsClient.Generate(ctx, a.meta.provider, a.meta.model, fixPrompt, a.meta.tokens, 8192, config.Temperature)
 			if fixErr != nil {
 				log.Printf("[WorkerAgent %s] Fix attempt failed: %v", a.role, fixErr)
 				continue

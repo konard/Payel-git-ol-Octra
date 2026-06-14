@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/service/document"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
@@ -80,7 +81,7 @@ FIX the code based on the feedback. Return the FULL corrected file as PLAIN TEXT
 				req.WorkerRole, filePath, req.Feedback, oldContent)
 		}
 
-		fixedContent, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, 0.3)
+		fixedContent, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 8192, config.Temperature)
 		if err != nil {
 			log.Printf("Error fixing file %s: %v", filePath, err)
 			continue

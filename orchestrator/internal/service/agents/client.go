@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"orchestrator/internal/config"
+
 	"agents/pkg/fetcher/grpc"
 )
 
@@ -35,10 +37,11 @@ func (c *Client) Generate(ctx context.Context, provider, model, prompt string, t
 	return c.rpc.Generate(ctx, provider, model, prompt, tokens, maxTokens, temperature)
 }
 
-// GenerateFromTask — обёртка с параметрами по умолчанию (4096 токенов, t=0.2)
+// GenerateFromTask — обёртка с параметрами по умолчанию (4096 токенов, единая
+// детерминированная температура config.Temperature)
 func (c *Client) GenerateFromTask(ctx context.Context, provider, model, prompt string, tokens map[string]string) (string, error) {
 	log.Printf("Calling agents service (provider=%s, model=%s)", provider, model)
-	return c.Generate(ctx, provider, model, prompt, tokens, 4096, 0.2)
+	return c.Generate(ctx, provider, model, prompt, tokens, 4096, config.Temperature)
 }
 
 // Close — закрывает соединение

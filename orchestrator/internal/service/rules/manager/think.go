@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/util"
 	"orchestrator/pkg/models"
@@ -24,7 +25,7 @@ func (s *Service) think(ctx context.Context, provider, model string, tokens map[
 	genCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	resp, err := s.agentsClient.Generate(genCtx, provider, model, prompt, tokens, 2048, 0.7)
+	resp, err := s.agentsClient.Generate(genCtx, provider, model, prompt, tokens, 2048, config.Temperature)
 	if err != nil {
 		return []models.WorkerRole{fallbackWorkerRole(taskType, "fallback due to timeout")}, nil
 	}
