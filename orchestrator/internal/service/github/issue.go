@@ -33,6 +33,10 @@ type IssueTarget struct {
 	RepositoryURL string
 	Cloned        bool
 
+	// Instruction — структурированный паспорт issue (комментарии, метки,
+	// состояние, открытые PR). Заполняется AnalyzeIssue (план фикса, пункты 1-2).
+	Instruction *IssueInstruction
+
 	// Поля результата — заполняются после создания pull request, чтобы фронтенд
 	// мог показать обзор PR без перехода на GitHub (issue #44, часть 2).
 	PullRequestNumber int
@@ -45,11 +49,39 @@ type IssueTarget struct {
 
 // IssueResponse — минимальные поля issue из GitHub API.
 type IssueResponse struct {
-	HTMLURL string `json:"html_url"`
-	Number  int    `json:"number"`
-	Title   string `json:"title"`
-	Body    string `json:"body"`
-	State   string `json:"state"`
+	HTMLURL string       `json:"html_url"`
+	Number  int          `json:"number"`
+	Title   string       `json:"title"`
+	Body    string       `json:"body"`
+	State   string       `json:"state"`
+	Labels  []LabelLabel `json:"labels"`
+}
+
+// LabelLabel — метка issue (bug, enhancement, ...).
+type LabelLabel struct {
+	Name string `json:"name"`
+}
+
+// CommentResponse — комментарий issue из GitHub API.
+type CommentResponse struct {
+	Body      string    `json:"body"`
+	CreatedAt string    `json:"created_at"`
+	User      UserField `json:"user"`
+}
+
+// UserField — автор комментария / pull request'а.
+type UserField struct {
+	Login string `json:"login"`
+}
+
+// PullRequestListItem — открытый pull request в репозитории.
+type PullRequestListItem struct {
+	Number  int       `json:"number"`
+	State   string    `json:"state"`
+	Title   string    `json:"title"`
+	HTMLURL string    `json:"html_url"`
+	Body    string    `json:"body"`
+	User    UserField `json:"user"`
 }
 
 // RepositoryResponse — минимальные поля repository из GitHub API.
@@ -124,6 +156,27 @@ func (c *Client) GetRepository(ctx context.Context, owner, repo string) (*Reposi
 	return &repository, nil
 }
 
+// GetIssueComments — возвращает все комментарии issue (постранично).
+func (c *Client) GetIssueComments(ctx context.Context, owner, repo string, number int) ([]CommentResponse, error) {
+	var comments []CommentResponse
+	path := fmt.Sprintf("/repos/%s/%s/issues/%d/comments?per_page=100", owner, repo, number)
+	if err := c.doJSON(ctx, "GET", path, nil, &comments, 200); err != nil {
+		return nil, err
+	}
+	return comments, nil
+}
+
+// ListOpenPullRequests — возвращает открытые pull request'ы репозитория. Нужны,
+// чтобы понять, есть ли уже PR на этот issue (план фикса, пункт 2).
+func (c *Client) ListOpenPullRequests(ctx context.Context, owner, repo string) ([]PullRequestListItem, error) {
+	var prs []PullRequestListItem
+	path := fmt.Sprintf("/repos/%s/%s/pulls?state=open&per_page=100", owner, repo)
+	if err := c.doJSON(ctx, "GET", path, nil, &prs, 200); err != nil {
+		return nil, err
+	}
+	return prs, nil
+}
+
 func (c *Client) CreatePullRequest(ctx context.Context, req PullRequestRequest) (*PullRequestResponse, error) {
 	if req.Owner == "" || req.Repo == "" {
 		return nil, fmt.Errorf("owner and repo are required")
@@ -138,4 +191,3 @@ func (c *Client) CreatePullRequest(ctx context.Context, req PullRequestRequest) 
 	}
 	return &pr, nil
 }
-
