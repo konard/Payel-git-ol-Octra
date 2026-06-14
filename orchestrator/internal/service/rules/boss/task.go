@@ -142,23 +142,41 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	}
 	tokens["title"] = req.Title
 	validation := s.validateSolution(ctx, provider, model, tokens, decision, managerResults)
-	if !validation.Approved {
+	approved := validation == nil || validation.Approved
+	if !approved {
 		log.Printf("Boss validation rejected: %s", validation.Feedback)
 	}
 
 	emit(progress, 90, "Packaging project", nil)
+	// Валидация как гейт (issue #85): если босс не аппрувнул решение, мы НЕ
+	// публикуем его в GitHub (не создаём PR с заведомо неверным кодом). Результат
+	// всё равно отдаётся во вкладку Solution с фидбеком босса, чтобы пользователь
+	// видел, что было сгенерировано и почему отклонено. Гейт можно отключить через
+	// VALIDATION_GATE=off (fail-open для отладки).
+	gateEnabled := strings.ToLower(os.Getenv("VALIDATION_GATE")) != "off"
 	// Для не-кодовых задач (research/document/presentation) публикация в GitHub
 	// не требуется (см. issue): результат отдаётся во вкладку Solution и в чат.
 	// Исключение — задача привязана к конкретному GitHub issue.
 	repoURL := ""
 	isCodeTask := decision.TaskType == "" || decision.TaskType == TaskTypeCode
-	if isCodeTask || issueTarget != nil {
+	switch {
+	case gateEnabled && !approved:
+		log.Printf("Skipping GitHub publish: boss validation rejected the solution")
+		emit(progress, 90, "Boss rejected the solution — skipping GitHub publish", map[string]string{
+			"status":     "rejected",
+			"bossReview": validation.Feedback,
+		})
+	case isCodeTask || issueTarget != nil:
 		repoURL = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
-	} else {
+	default:
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}
 
-	task.Status = "done"
+	if gateEnabled && !approved {
+		task.Status = "rejected"
+	} else {
+		task.Status = "done"
+	}
 	database.Db.Save(task)
 
 	data := map[string]string{
@@ -217,6 +235,11 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 				data["pullRequestFiles"] = string(encoded)
 			}
 		}
+	}
+	if gateEnabled && !approved {
+		data["status"] = "rejected"
+		emit(progress, 100, "Solution rejected by boss validation — see review for required fixes", data)
+		return nil
 	}
 	emit(progress, 100, "Project ready! "+task.Title+" created successfully", data)
 	return nil
@@ -321,4 +344,3 @@ func util_stack(stack []string) string {
 	b, _ := json.Marshal(stack)
 	return string(b)
 }
-
