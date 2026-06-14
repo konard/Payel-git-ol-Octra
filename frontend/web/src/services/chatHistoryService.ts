@@ -184,3 +184,23 @@ export async function deleteChat(chatId: string): Promise<void> {
     throw new Error('Failed to delete chat');
   }
 }
+
+export async function updateChatNixPath(
+  chatId: string,
+  taskId: string,
+  nixStorePath: string
+): Promise<void> {
+  const response = await fetch(`${AUTH_API_URL}/chat/${chatId}/nix-path`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    credentials: 'include',
+    body: JSON.stringify({ task_id: taskId, nix_store_path: nixStorePath }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update nix path');
+  }
+}

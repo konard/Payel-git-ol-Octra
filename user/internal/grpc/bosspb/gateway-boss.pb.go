@@ -1019,7 +1019,7 @@ const file_proto_gateway_boss_proto_rawDesc = "" +
 	"\n" +
 	"CreateTask\x12\x17.boss.CreateTaskRequest\x1a\x12.boss.BossDecision\x12B\n" +
 	"\rGetTaskStatus\x12\x17.boss.TaskStatusRequest\x1a\x18.boss.TaskStatusResponse\x12Z\n" +
-	"\x13RestoreProjectFiles\x12 .boss.RestoreProjectFilesRequest\x1a!.boss.RestoreProjectFilesResponseB+Z)orchestrator/internal/fetcher/grpc/bosspbb\x06proto3"
+	"\x13RestoreProjectFiles\x12 .boss.RestoreProjectFilesRequest\x1a!.boss.RestoreProjectFilesResponseB\x1bZ\x19user/internal/grpc/bosspbb\x06proto3"
 
 var (
 	file_proto_gateway_boss_proto_rawDescOnce sync.Once

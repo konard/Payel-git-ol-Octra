@@ -31,13 +31,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BossServiceClient interface {
-	// Streaming version - отправляет обновления по мере выполнения
+	// Streaming version
 	CreateTaskStream(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
-	// Resume existing task stream - reconnects to running task
+	// Resume existing task stream
 	ResumeTaskStream(ctx context.Context, in *ResumeTaskStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TaskUpdate], error)
 	// Stop running task
 	StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
-	// Legacy unary version (для совместимости)
+	// Legacy unary version
 	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*BossDecision, error)
 	GetTaskStatus(ctx context.Context, in *TaskStatusRequest, opts ...grpc.CallOption) (*TaskStatusResponse, error)
 	// Restore project files from Nix store snapshot
@@ -134,13 +134,13 @@ func (c *bossServiceClient) RestoreProjectFiles(ctx context.Context, in *Restore
 // All implementations must embed UnimplementedBossServiceServer
 // for forward compatibility.
 type BossServiceServer interface {
-	// Streaming version - отправляет обновления по мере выполнения
+	// Streaming version
 	CreateTaskStream(*CreateTaskRequest, grpc.ServerStreamingServer[TaskUpdate]) error
-	// Resume existing task stream - reconnects to running task
+	// Resume existing task stream
 	ResumeTaskStream(*ResumeTaskStreamRequest, grpc.ServerStreamingServer[TaskUpdate]) error
 	// Stop running task
 	StopTask(context.Context, *StopTaskRequest) (*TaskStatusResponse, error)
-	// Legacy unary version (для совместимости)
+	// Legacy unary version
 	CreateTask(context.Context, *CreateTaskRequest) (*BossDecision, error)
 	GetTaskStatus(context.Context, *TaskStatusRequest) (*TaskStatusResponse, error)
 	// Restore project files from Nix store snapshot

@@ -111,6 +111,8 @@ interface TaskState {
   searchPhase: SearchPhase;
   searchStepsCount: number;
   pullRequest: PullRequestInfo | null;
+  nixStorePath: string | null;
+  nixTaskId: string | null;
 
   // Actions
   setTaskId: (taskId: string) => void;
@@ -130,6 +132,8 @@ interface TaskState {
   recordSearchStep: (step: string, phase: SearchPhase, count: number) => void;
   clearSearchSteps: () => void;
   setPullRequest: (pr: PullRequestInfo | null) => void;
+  setNixStorePath: (path: string | null, taskId: string | null) => void;
+  loadProjectFiles: (chatId: string) => Promise<void>;
   setTokensUsed: (tokens: number) => void;
   setStartTime: (time: number) => void;
   getWorkflow: () => WorkflowConfig | null;
@@ -193,6 +197,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   searchPhase: 'idle',
   searchStepsCount: 0,
   pullRequest: null,
+  nixStorePath: null,
+  nixTaskId: null,
 
   setTaskId: (taskId) => set({ taskId }),
   
@@ -289,6 +295,43 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   setPullRequest: (pr) => set({ pullRequest: pr }),
 
+  setNixStorePath: (path, taskId) => set({ nixStorePath: path, nixTaskId: taskId }),
+
+  loadProjectFiles: async (chatId: string) => {
+    try {
+      const authApiUrl = (import.meta as any).env?.VITE_AUTH_URL || '';
+      const response = await fetch(`${authApiUrl}/chat/${chatId}/files`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        console.warn('[loadProjectFiles] HTTP', response.status);
+        return;
+      }
+
+      const json = await response.json();
+      const files = json?.data?.files;
+      if (!Array.isArray(files) || files.length === 0) return;
+
+      const codeFiles = files.map((f: any) => ({
+        path: f.path,
+        name: f.path.split('/').filter(Boolean).at(-1) || f.path,
+        language: f.language || 'plaintext',
+        encoding: f.encoding || undefined,
+        content: f.content,
+        status: 'ready' as const,
+        updatedAt: Date.now(),
+      }));
+
+      set({
+        codeFiles,
+        latestCodeFilePath: codeFiles[codeFiles.length - 1]?.path ?? null,
+      });
+    } catch (err) {
+      console.error('Failed to load project files:', err);
+    }
+  },
+
   setTokensUsed: (tokens) => set({ tokensUsed: tokens }),
 
   setStartTime: (time) => set({ startTime: time }),
@@ -316,6 +359,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     searchPhase: 'idle',
     searchStepsCount: 0,
     pullRequest: null,
+    nixStorePath: null,
+    nixTaskId: null,
   }),
 
   resetTask: () => set((state) => {
@@ -351,6 +396,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       searchPhase: 'idle',
       searchStepsCount: 0,
       pullRequest: null,
+      nixStorePath: null,
+      nixTaskId: null,
     };
   }),
 
@@ -369,6 +416,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     searchPhase: 'idle',
     searchStepsCount: 0,
     pullRequest: null,
+    nixStorePath: null,
+    nixTaskId: null,
     // Keep nodes, edges, and workflow
   })),
 }));

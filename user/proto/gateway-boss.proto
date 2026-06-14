@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package boss;
 
-option go_package = "orchestrator/internal/fetcher/grpc/bosspb";
+option go_package = "user/internal/grpc/bosspb";
 
 // Task update message for streaming
 message TaskUpdate {
@@ -63,7 +63,7 @@ message BossDecision {
   string technical_description = 5;
   repeated string tech_stack = 6;
   string architecture_notes = 7;
-  
+
   bytes solution = 8;  // ZIP archive
   string error_message = 9;
 }
@@ -114,16 +114,16 @@ message RestoreProjectFilesResponse {
 }
 
 service BossService {
-  // Streaming version - отправляет обновления по мере выполнения
+  // Streaming version
   rpc CreateTaskStream(CreateTaskRequest) returns (stream TaskUpdate);
 
-  // Resume existing task stream - reconnects to running task
+  // Resume existing task stream
   rpc ResumeTaskStream(ResumeTaskStreamRequest) returns (stream TaskUpdate);
 
   // Stop running task
   rpc StopTask(StopTaskRequest) returns (TaskStatusResponse);
 
-  // Legacy unary version (для совместимости)
+  // Legacy unary version
   rpc CreateTask(CreateTaskRequest) returns (BossDecision);
   rpc GetTaskStatus(TaskStatusRequest) returns (TaskStatusResponse);
 

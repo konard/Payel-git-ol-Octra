@@ -350,6 +350,10 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
             storeActions.setPullRequest(pullRequest);
           }
         }
+        // Save nix_store_path so App.tsx can persist it to the chat
+        if (msg.data?.nix_store_path && msg.task_id) {
+          useTaskStore.getState().setNixStorePath(msg.data.nix_store_path, msg.task_id);
+        }
         // Update all nodes to done
         finalizeAllNodes('done');
         // Clear stored task payload — task is complete, no need to resend

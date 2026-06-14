@@ -102,7 +102,6 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 			log.Printf("Failed to clone existing repo: %v", err)
 		}
 	}
-	defer s.cleanupProject(projectPath, taskID.String())
 	if issueTarget != nil && issueTarget.Cloned {
 		appendRepositoryContext(decision, projectPath)
 	}
@@ -159,6 +158,12 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}
 
+	// Snapshot project to Nix store BEFORE building the data map,
+	// so NixStorePath is available for the final emit.
+	s.cleanupProject(projectPath, taskID.String())
+	// Reload task to get NixStorePath saved by cleanupProject.
+	database.Db.First(task, "id = ?", taskID)
+
 	task.Status = "done"
 	database.Db.Save(task)
 
@@ -174,6 +179,10 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	if codeFiles, filesCount := collectCodeFilesPayload(managerResults); codeFiles != "" {
 		data["code_files"] = codeFiles
 		data["filesCount"] = strconv.Itoa(filesCount)
+	}
+	if task.NixStorePath != "" {
+		data["nix_store_path"] = task.NixStorePath
+		data["task_id"] = taskID.String()
 	}
 
 	// Для не-кодовых задач (research/document/presentation) босс отдаёт короткий
