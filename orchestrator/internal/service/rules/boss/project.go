@@ -2,6 +2,7 @@ package boss
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -88,6 +89,9 @@ func ensureCloneTarget(projectPath string) error {
 func (s *Service) initGitRepo(repoPath string) error {
 	if err := git.InitRepo(repoPath); err != nil {
 		return err
+	}
+	if err := git.WriteGitignore(repoPath); err != nil {
+		return fmt.Errorf("write .gitignore: %w", err)
 	}
 	// Ensure default branch name is "main" regardless of git version
 	exec.Command("git", "-C", repoPath, "branch", "-m", "main").Run()
@@ -355,6 +359,60 @@ func (s *Service) restoreProjectFromStore(storePath, destPath string) error {
 
 	log.Printf("Project restored successfully to: %s", destPath)
 	return nil
+}
+
+// ReadProjectFiles — читает файлы проекта из директории, фильтруя игнорируемые
+func ReadProjectFiles(projectPath string) ([]streamedSolutionFile, error) {
+	var files []streamedSolutionFile
+	seen := map[string]bool{}
+
+	err := filepath.Walk(projectPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // skip unreadable files
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(projectPath, path)
+		if err != nil {
+			return nil
+		}
+		relPath = filepath.ToSlash(relPath)
+
+		if util.IsIgnoredPath(relPath) || seen[relPath] {
+			return nil
+		}
+		seen[relPath] = true
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+
+		encoding := ""
+		contentStr := string(content)
+		if util.IsBinaryPath(relPath) {
+			contentStr = base64.StdEncoding.EncodeToString(content)
+			encoding = "base64"
+		}
+
+		files = append(files, streamedSolutionFile{
+			Path:     relPath,
+			Content:  contentStr,
+			Language: util.LanguageForPath(relPath),
+			Encoding: encoding,
+			Status:   "ready",
+		})
+		return nil
+	})
+
+	return files, err
+}
+
+// RestoreProjectFromNix — публичный метод для восстановления из Nix store
+func (s *Service) RestoreProjectFromNix(nixStorePath, destPath string) error {
+	return s.restoreProjectFromStore(nixStorePath, destPath)
 }
 
 // resolveStorePath — учитывает NIX_STORE env, если store настроен на нестандартный путь

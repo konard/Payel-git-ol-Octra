@@ -1,40 +1,45 @@
 package boss
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"time"
+	"log"
+	"strconv"
+	"strings"
+
+	"orchestrator/internal/config"
 )
 
-// gradeTask calls the HTTP grader and returns complexity 1-10 (default 5 on error)
-func gradeTask(taskText string) int {
-	client := &http.Client{Timeout: 5 * time.Second}
-	body := map[string]string{"task": taskText}
-	b, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "http://octra-grader:50055/grade", bytes.NewReader(b))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return 5
+// gradeTaskViaAI оценивает сложность задачи через AI (1-10).
+// Использует того же провайдера/модель, что и пользователь.
+// При ошибке возвращает grade=3 (базовый уровень).
+func (s *Service) gradeTaskViaAI(ctx context.Context, provider, model string, tokens map[string]string, title, description string) int {
+	taskText := title + "\n" + description
+	if len(taskText) > 500 {
+		taskText = taskText[:500]
 	}
-	defer resp.Body.Close()
-	var res struct {
-		Grade int `json:"grade"`
-	}
-	if json.NewDecoder(resp.Body).Decode(&res) == nil && res.Grade >= 1 && res.Grade <= 10 {
-		return res.Grade
-	}
-	// fallback: try to read raw int from body
-	raw, _ := io.ReadAll(resp.Body)
-	if len(raw) > 0 {
-		var g int
-		if _, err := fmt.Sscanf(string(raw), "%d", &g); err == nil && g >= 1 && g <= 10 {
-			return g
-		}
-	}
-	return 5
-}
 
+	prompt := fmt.Sprintf(`Rate the complexity of this task from 1 to 10.
+1 = absolutely trivial (hello world, one function, minimal script)
+10 = extremely complex (distributed system, ML pipeline, 10+ microservices)
+
+Task: %s
+
+Return ONLY a single number from 1 to 10. No explanation, no formatting.`, taskText)
+
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 64, config.Temperature)
+	if err != nil {
+		log.Printf("AI grading failed: %v, using default grade=3", err)
+		return 3
+	}
+
+	resp = strings.TrimSpace(resp)
+	grade, err := strconv.Atoi(resp)
+	if err != nil || grade < 1 || grade > 10 {
+		log.Printf("AI grading returned invalid grade: %q, using default grade=3", resp)
+		return 3
+	}
+
+	log.Printf("AI graded task as %d/10", grade)
+	return grade
+}

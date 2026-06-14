@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"orchestrator/internal/config"
+	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 )
@@ -29,49 +31,10 @@ func (s *Service) generateCodeMultiPass(
 		techStack = "Go"
 	}
 
-	prompt := fmt.Sprintf(`You are a %s developer. Role: %s
-Language: %s
-
-TASK: %s%s
-
-SCOPE FIDELITY: Build EXACTLY what the task asks for — nothing more.
-Do NOT add files for features the user did not request (no auth, database, user management, configs).
-If the task is simple or basic, use the MINIMUM number of files (1-2 source files + manifest).
-
-IMPORTANT: Write code in %s ONLY. NOT JavaScript, NOT TypeScript.
-Create files for this project (use .%s extension).
-
-AFTER files, provide COMMANDS to execute in the project (mkdir, echo, etc.).
-
-RETURN FORMAT (STRICT - follow exactly):
-=== FILE: path/to/file1.%s ===
-<complete code for file1.%s - no placeholders, no TODOs>
-=== FILE: path/to/file2.%s ===
-<complete code for file2.%s - no placeholders, no TODOs>
-=== FILE: path/to/file3.%s ===
-<complete code for file3.%s - no placeholders, no TODOs>
-=== COMMANDS ===
-mkdir -p dir
-echo 'content' > file.txt
-# other bash commands
-
-RULES:
-1. Each file MUST start with "=== FILE: <path> ===" on its own line
-2. File paths should be relative to project root (e.g., main.%s, cmd/server/main.%s) - DO NOT include project name in path
-3. File content MUST be complete code - no placeholders, no TODOs, no "implement later"
-4. Use proper imports and exports
-5. Keep code compact but functional (300-500 lines max per file)
-6. Do NOT include markdown code fences around the entire response
-7. If you can't create a file, skip it and move to the next one
-8. COMMANDS: List bash commands to run in project root, one per line
-9. Return ONLY the files and commands, no explanations`,
-		role, description, techStack,
-		taskMD, contextSection,
-		techStack, techStack,
-		techStack, techStack, techStack, techStack, techStack, techStack, techStack, techStack)
+	prompt := prompts.WorkerMultiPassCode(role, description, taskMD, contextSection, techStack)
 
 	log.Printf("[Worker] Multi-pass generating code for role %s (provider=%s, model=%s, max_tokens=16384, tech=%s)...", role, provider, model, techStack)
-	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, 0.3)
+	response, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 16384, config.Temperature)
 	if err != nil {
 		return nil, nil, fmt.Errorf("multi-pass generation failed: %w", err)
 	}

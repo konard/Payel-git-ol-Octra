@@ -3,6 +3,7 @@ package worker
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,12 +12,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
-	instcore "orchestrator/pkg/instralutions/core"
 	_ "orchestrator/pkg/instralutions"
+	instcore "orchestrator/pkg/instralutions/core"
 )
 
 // toolTechStacks — tech stack'и, для которых используется ToolExecutor вместо AI-генерации.
@@ -60,7 +63,7 @@ func (s *Service) generateViaTools(
 	}
 
 	prompt := prompts.WorkerToolCommands(role, description, taskMD, contextSection, techStack)
-	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, 0.3)
+	resp, err := s.agentsClient.Generate(ctx, provider, model, prompt, tokens, 2048, config.Temperature)
 	if err != nil {
 		return nil, nil, fmt.Errorf("tool planning failed: %w", err)
 	}
@@ -134,11 +137,16 @@ func (s *Service) generateViaTools(
 			if pct > 80 {
 				pct = 80
 			}
-			progress(pct, "Scaffolded: "+path, map[string]string{
+			data := map[string]string{
 				"file": path,
 				"type": "scaffold",
 				"size": fmt.Sprintf("%d", len(content)),
-			})
+			}
+			// Стримим наскаффоленный файл во вкладку Solution вживую (issue #75 п.1).
+			if cf := liveCodeFilesPayload(role, path, content); cf != "" {
+				data["code_files"] = cf
+			}
+			progress(pct, "Scaffolded: "+path, data)
 			i++
 		}
 	}
@@ -272,4 +280,76 @@ func readProjectFiles(projectPath string) map[string]string {
 // isToolMode проверяет, нужно ли использовать ToolExecutor для данного tech stack.
 func isToolMode(techStack string) bool {
 	return toolTechStacks[strings.ToLower(strings.TrimSpace(techStack))]
+}
+
+// sourceExtensions — расширения, которые считаются «настоящим» исходным кодом
+// (в отличие от манифестов/локов/инфраструктуры).
+var sourceExtensions = map[string]bool{
+	".go": true, ".js": true, ".mjs": true, ".cjs": true, ".jsx": true,
+	".ts": true, ".tsx": true, ".py": true, ".java": true, ".kt": true,
+	".rs": true, ".rb": true, ".php": true, ".c": true, ".h": true,
+	".cc": true, ".cpp": true, ".cxx": true, ".hpp": true, ".hxx": true,
+	".cs": true, ".scala": true, ".ex": true, ".exs": true, ".hs": true,
+	".dart": true, ".html": true, ".htm": true, ".css": true, ".scss": true,
+	".vue": true, ".svelte": true, ".swift": true, ".sh": true, ".sql": true,
+	".zig": true, ".clj": true, ".erl": true,
+}
+
+// liveCodeFile — форма одного файла для инкрементального code_files-апдейта.
+// Совпадает с StreamedCodeFile на фронтенде (hooks/useWebSocket.ts).
+type liveCodeFile struct {
+	Path       string `json:"path"`
+	Content    string `json:"content"`
+	Language   string `json:"language"`
+	Encoding   string `json:"encoding,omitempty"`
+	WorkerRole string `json:"worker_role"`
+	Status     string `json:"status"`
+	UpdatedAt  int64  `json:"updated_at"`
+}
+
+// liveCodeFilesPayload собирает code_files-JSON для ОДНОГО только что записанного
+// файла, чтобы вкладка Solution обновлялась вживую по мере создания файлов
+// (issue #75 п.1). Инфраструктурные файлы (flake.nix/.octra/...) пропускаются,
+// бинарное содержимое кодируется в base64. Возвращает "" если файл показывать не надо.
+func liveCodeFilesPayload(role, path, content string) string {
+	if strings.TrimSpace(path) == "" || util.IsIgnoredPath(path) {
+		return ""
+	}
+	encoding := ""
+	if util.IsBinaryPath(path) {
+		content = base64.StdEncoding.EncodeToString([]byte(content))
+		encoding = "base64"
+	}
+	entry := liveCodeFile{
+		Path:       path,
+		Content:    content,
+		Language:   util.LanguageForPath(path),
+		Encoding:   encoding,
+		WorkerRole: role,
+		Status:     "streaming",
+		UpdatedAt:  time.Now().Unix(),
+	}
+	data, err := json.Marshal([]liveCodeFile{entry})
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+// containsSourceCode сообщает, есть ли среди файлов хотя бы один непустой файл с
+// исходным кодом. Манифесты и инфраструктура (package.json, flake.nix, .gitignore,
+// lock-файлы) НЕ считаются. Когда tool-режим наскаффолдил только их (например
+// `npm init -y` создал лишь package.json), воркер обязан уйти в AI-генерацию,
+// чтобы реальный код фичи (index.js express-сервера и т.п.) всё-таки появился.
+// Это корневая причина issue #75 п.6: фронтенду уезжали только flake.nix/context.json.
+func containsSourceCode(files map[string]string) bool {
+	for path, content := range files {
+		if strings.TrimSpace(content) == "" {
+			continue
+		}
+		if sourceExtensions[strings.ToLower(filepath.Ext(path))] {
+			return true
+		}
+	}
+	return false
 }

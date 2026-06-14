@@ -2,34 +2,27 @@ package prompts
 
 import (
 	"fmt"
-	"strings"
-
-	instcore "orchestrator/pkg/instralutions/core"
 )
 
 // WorkerPlanFiles — промпт для воркера: спланировать список файлов.
 // skill — опциональный блок экспертных рекомендаций из системных скиллов
 // (skills.Guidance), подобранный под роль/стек воркера. Если пусто — не влияет.
 func WorkerPlanFiles(role, desc, task, context, techStack, skill string) string {
-	cheat := ToolCheatSheet(techStack)
-	structureLine := ""
-	if cheat != "" {
-		structureLine = "\nPROJECT STRUCTURE for " + techStack + " (typical files):" + cheat
+	extHint := ""
+	if ext := LangExtension(techStack); ext != "" {
+		extHint = " (e.g. ." + ext + ")"
 	}
 
 	return `You are a ` + role + ` developer. Role: ` + desc + `
 Language: ` + techStack + `
 
-TASK: ` + task + context + skill + structureLine + `
+TASK: ` + task + context + skill + `
 
-SCOPE FIDELITY: plan the MINIMUM set of files that builds EXACTLY what the task asks for — nothing more.
-Do NOT add files for features the user did not request (no auth, database, user management, extra
-services, configs). If the task is minimal ("mini", "simple", "small", "basic", "мини", "минимальный",
-"простой"), a single source file plus the language manifest is usually enough.
-
-IMPORTANT: Write code in ` + techStack + ` ONLY. Use the standard source file extension for ` + techStack + `.
+IMPORTANT: Write code in ` + techStack + ` ONLY. Use the standard source file extension for ` + techStack + extHint + `
+— do NOT use another language's extension.
+Use the SPECIFIC frameworks/libraries named in the task (e.g. if it says "Express", use Express — not the bare stdlib).
 Return JSON ONLY:
-{"files": ["path1.ext", "path2.ext", "path3.ext"]}`
+{"files": ["path1.ext", "path2.ext", "path3.ext"], "commands": ["mkdir -p dir", "echo 'content' > file.txt"]}`
 }
 
 // WorkerGenerateFile — промпт для воркера: сгенерировать содержимое одного файла.
@@ -41,19 +34,67 @@ Language: ` + techStack + `
 TASK: ` + task + `
 Role: ` + role + skill + `
 
-IMPORTANT: Write COMPLETE ` + techStack + ` code. No placeholders. No TODOs.
+
+	IMPORTANT: Write COMPLETE ` + techStack + ` code. No placeholders. No TODOs.
 Use the standard file extension for ` + techStack + `.
 Return the file content as PLAIN TEXT. NO JSON. NO markdown. Just the raw code.`
 }
 
-// WorkerGenerateCommands — промпт для воркера: bash-команды для инициализации проекта
-func WorkerGenerateCommands(role, desc, task, context string) string {
-	return `You are a ` + role + ` developer. Role: ` + desc + `
+// WorkerMultiPassCode — промпт single-pass генерации: все файлы за один LLM-запрос.
+// Раньше этот промпт жил инлайном в worker и был жёстко заточен под Go: подставлял
+// сам techStack как расширение (".%s" → ".nodejs") и содержал хардкод
+// "NOT JavaScript, NOT TypeScript". Из-за этого задача про Express.js сохранялась
+// в main.go. Теперь язык/расширение/точку входа берём из единой карты Lang*.
+func WorkerMultiPassCode(role, description, task, context, techStack string) string {
+	langDisplay := LangDisplay(techStack)
+	ext := LangExtension(techStack)
+	if ext == "" {
+		ext = "txt"
+	}
+	mainFile := LangMainFile(techStack)
 
-TASK: ` + task + context + `
+	return fmt.Sprintf(`You are a %s developer. Role: %s
+Language: %s
 
-Based on the files created, provide bash commands to execute in the project root (mkdir, echo, etc.).
-Return JSON ONLY: {"commands": ["cmd1", "cmd2"]}`
+TASK: %s%s
+
+
+	IMPORTANT:
+- Write all code in %s. Use the SPECIFIC frameworks/libraries the task names (e.g. if the task says
+  "Express", use Express — do not substitute the language's bare standard library).
+- Use the correct source file extension for this language: .%s — do NOT rename files to another
+  language's extension (e.g. never put JavaScript into a .go file).
+- Create a .gitignore file if the project generates artifacts (node_modules/, dist/, *.sum, etc.).
+  Add meaningful comments so the user knows what is excluded and why.
+
+AFTER files, provide COMMANDS to execute in the project (mkdir, echo, etc.).
+
+RETURN FORMAT (STRICT - follow exactly):
+=== FILE: %s ===
+<complete code - no placeholders, no TODOs>
+=== FILE: path/to/another.%s ===
+<complete code - no placeholders, no TODOs>
+=== COMMANDS ===
+mkdir -p dir
+echo 'content' > file.txt
+# other bash commands
+
+RULES:
+1. Each file MUST start with "=== FILE: <path> ===" on its own line
+2. File paths are relative to project root (e.g., %s) - DO NOT include project name in path
+3. File content MUST be complete code - no placeholders, no TODOs, no "implement later"
+4. Use proper imports and exports
+5. Keep code compact but functional (300-500 lines max per file)
+6. Do NOT include markdown code fences around the entire response
+7. If you can't create a file, skip it and move to the next one
+8. COMMANDS: List bash commands to run in project root, one per line
+9. Return ONLY the files and commands, no explanations`,
+		role, description, langDisplay,
+		task, context,
+		langDisplay,
+		ext,
+		mainFile, ext,
+		mainFile)
 }
 
 // WorkerTask — промпт для воркера: написать TASK.md
@@ -79,13 +120,6 @@ Focus on:
 // Это надёжнее: установщики пишутся Go-разработчиком, AI не ошибается в синтаксисе тулов.
 // После install AI может добавить post-generation команды (сборка, миграции и т.д.).
 func WorkerToolCommands(role, desc, task, context, techStack string) string {
-	// Собираем список доступных install-флагов из instralutions registry
-	available := strings.Builder{}
-	available.WriteString("\n\nAVAILABLE INSTALL FLAGS (choose from these):\n")
-	for _, s := range instcore.All() {
-		available.WriteString(fmt.Sprintf("  - %s (requires: %s)\n", s.Name, strings.Join(s.Requires, ", ")))
-	}
-
 	return `You are a ` + role + ` developer using the ` + techStack + ` toolchain.
 
 ROLE: ` + desc + `
@@ -96,7 +130,7 @@ REAL tools — NOT by writing code manually. The tools will be available via
 ` + "`nix develop`" + ` (they are already in the environment).
 
 HOW IT WORKS:
-1. Pick the RIGHT install flag(s) from the AVAILABLE INSTALL FLAGS list below that match the task.
+1. Pick the RIGHT install flag(s) that match the task and tech stack (` + techStack + `).
    For example: ["java", "spring"] for a Spring Boot project.
 2. Optionally add post-generation commands (e.g. "mvn package") in "commands".
    Do NOT create scaffolding commands yourself — use install flags for that.
@@ -104,11 +138,11 @@ HOW IT WORKS:
 RULES:
 - Use install flags for ALL scaffolding (project creation, dependency installation).
 - Post-generation commands (build, test, run) go in "commands" array.
-- Keep it MINIMAL — only what the task asks for. No extra features.
+- Keep it MINIMAL — only what the task LITERALLY asks for. No extra features.
 - If the task is simple enough for a single source file, omit install and use echo/cat in commands.
 
 Return JSON ONLY:
-{"install": ["flag1", "flag2"], "commands": ["cmd1", "cmd2"]}` + available.String()
+{"install": ["flag1", "flag2"], "commands": ["cmd1", "cmd2"]}`
 }
 
 // WorkerReview — промпт для воркера: переписать файл с учётом фидбэка

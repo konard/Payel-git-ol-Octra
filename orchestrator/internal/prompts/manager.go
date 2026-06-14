@@ -25,18 +25,11 @@ Task:
 
 Task complexity (grade_weight): ` + gradeWeight + `/100
 
-SCOPE FIDELITY: hire only the workers needed to build EXACTLY what the task asks for — nothing more.
-Do NOT add workers for features, layers or infrastructure the user did not request (auth, database,
-extra services, etc.). If the task is minimal ("mini", "simple", "small", "basic", "мини",
-"минимальный", "простой"), hire exactly 1 worker and keep the build minimal. The grade_weight only
-hints at effort — it must NEVER push you to add scope beyond what was requested.
 
-Use this formula:
-- grade 1-20: 1 worker ONLY
-- grade 21-40: 1-2 workers
-- grade 41-60: 2 workers
-- grade 61-80: 2-3 workers
-- grade 81-100: max 2 workers
+	Worker count by grade_weight:
+- 1-20: 1 worker
+- 21-60: 2 workers
+- 61-100: 3 workers max
 
 IMPORTANT: Only list workers that belong to YOUR team (` + role + `).
 
@@ -69,11 +62,10 @@ SEARCH RANGE for every analyst — the kind of material they should look for, ex
 Examples of distinct ranges: official documentation & links, news & current events,
 statistics & data, expert opinions, academic sources, opposing viewpoints, primary sources.
 
-Use this formula for the number of analysts:
-- grade 1-20: 1 analyst
-- grade 21-40: 2 analysts
-- grade 41-70: 3 analysts
-- grade 71-100: 4 analysts
+Worker count by grade_weight:
+- 1-20: 1 analyst
+- 21-60: 2 analysts
+- 61-100: 3 analysts (4 max for broad topics)
 
 The "description" field MUST state the unique SEARCH RANGE (links/tags/news/information) and
 method for that analyst, because the worker will run a real web search within that range.
@@ -99,9 +91,9 @@ Decide how many writers to hire. Each writer produces a complete, well-structure
 document so the manager can later synthesize the best one. For short documents 1 writer is enough;
 for longer/complex documents hire up to 2 so their drafts can be merged and fact-checked.
 
-Use this formula:
-- grade 1-40: 1 writer
-- grade 41-100: 2 writers
+Worker count by grade_weight:
+- 1-40: 1 writer
+- 41-100: up to 2 writers
 
 The "description" field MUST describe the writer's focus or perspective on the document.
 
