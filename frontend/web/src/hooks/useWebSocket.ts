@@ -512,6 +512,13 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     const progress = msg.progress || 0;
     const message = msg.message || '';
 
+    // Update task_id from data if available (real UUID from DB, not timestamp-based)
+    if (msg.data?.task_id && msg.data.task_id !== activeTaskId.current) {
+      activeTaskId.current = msg.data.task_id;
+      storeActions.setTaskId(msg.data.task_id);
+      console.log('[WS] Task ID updated from data:', msg.data.task_id);
+    }
+
     console.log('[WS] handleProgressMessage:', message, 'progress:', progress);
 
     const taskType = normalizeTaskType(msg.data?.taskType || msg.data?.task_type);

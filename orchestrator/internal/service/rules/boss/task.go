@@ -31,7 +31,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, "Database error: "+err.Error(), errorData())
 		return err
 	}
-	emit(progress, 10, "Task saved to database", nil)
+	emit(progress, 10, "Task saved to database", map[string]string{"task_id": taskID.String()})
 
 	provider, model := pickProviderModel(req.Meta)
 	emit(progress, 12, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
