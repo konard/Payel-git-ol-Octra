@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"orchestrator/internal/service/git"
 	gh "orchestrator/internal/service/github"
@@ -89,16 +90,28 @@ func (s *Service) createPullRequest(ctx context.Context, task *models.Task, proj
 		log.Printf("Failed to checkout pull request branch: %v", err)
 		return ""
 	}
+	headRef := target.BranchName
 	if err := s.githubClient.PushBranch(ctx, projectPath, target.BranchName); err != nil {
-		log.Printf("Failed to push pull request branch: %v", err)
-		return ""
+		// 403 → нет прав на запись в upstream. Раньше пайплайн просто падал и PR
+		// не создавался (issue #85). Теперь форкаем репозиторий и пушим в форк.
+		if gh.IsPermissionError(err) {
+			log.Printf("Push denied (no write access to %s/%s) — falling back to fork-based pull request", target.Owner, target.Repo)
+			forkHead := s.pushBranchToFork(ctx, projectPath, target)
+			if forkHead == "" {
+				return ""
+			}
+			headRef = forkHead
+		} else {
+			log.Printf("Failed to push pull request branch: %v", err)
+			return ""
+		}
 	}
 	prTitle := pullRequestTitle(task, target)
 	pr, err := s.githubClient.CreatePullRequest(ctx, gh.PullRequestRequest{
 		Owner: target.Owner,
 		Repo:  target.Repo,
 		Title: prTitle,
-		Head:  target.BranchName,
+		Head:  headRef,
 		Base:  firstNonEmpty(target.BaseBranch, "main"),
 		Body:  pullRequestBody(task, target),
 	})
@@ -124,6 +137,31 @@ func (s *Service) createPullRequest(ctx context.Context, task *models.Task, proj
 	task.ProjectJSON = pr.HTMLURL
 	database.Db.Save(task)
 	return pr.HTMLURL
+}
+
+// pushBranchToFork — форкает upstream-репозиторий и пушит ветку в форк.
+// Возвращает head-ссылку вида "forkOwner:branch" для кросс-репозиторного PR,
+// либо "" при ошибке. Вызывается, когда у бота нет прав на запись в upstream.
+func (s *Service) pushBranchToFork(ctx context.Context, projectPath string, target *gh.IssueTarget) string {
+	fork, err := s.githubClient.ForkRepository(ctx, target.Owner, target.Repo)
+	if err != nil {
+		log.Printf("Fork fallback failed: %v", err)
+		return ""
+	}
+	if err := s.githubClient.WaitForRepository(ctx, fork.Owner.Login, target.Repo, 60*time.Second); err != nil {
+		log.Printf("Fork not ready: %v", err)
+		return ""
+	}
+	forkURL := fork.CloneURL
+	if forkURL == "" {
+		forkURL = fmt.Sprintf("https://github.com/%s/%s.git", fork.Owner.Login, target.Repo)
+	}
+	if err := s.githubClient.PushBranchToRemote(ctx, projectPath, target.BranchName, forkURL, "octra-fork"); err != nil {
+		log.Printf("Failed to push branch to fork: %v", err)
+		return ""
+	}
+	log.Printf("Pushed branch to fork %s/%s, opening cross-repo pull request", fork.Owner.Login, target.Repo)
+	return fmt.Sprintf("%s:%s", fork.Owner.Login, target.BranchName)
 }
 
 func pullRequestTitle(task *models.Task, target *gh.IssueTarget) string {
@@ -165,4 +203,3 @@ func extractRemoteURL(projectPath string) string {
 	}
 	return strings.TrimSpace(string(out))
 }
-
