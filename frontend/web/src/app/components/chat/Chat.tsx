@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, CircleDotDashed, Download, GitBranch, Globe, Loader2, UserRound } from 'lucide-react';
-import octraMascot from '../../images/octra-mascot.png';
-import { useTaskStore } from '../../stores/taskStore';
+import octraMascot from '../../../images/octra-mascot.png';
+import { useTaskStore } from '../../../stores/taskStore';
 
 export interface ChatMessage {
   id: string;

@@ -23,21 +23,21 @@ import {
   Presentation,
   X,
 } from 'lucide-react';
-import { FileTypeIcon } from '../../lib/FileTypeIcon';
-import { useTaskStore, type CodeFile } from '../../stores/taskStore';
-import { useThemeStore } from '../../stores/themeStore';
-import { useDesktopStore } from '../../desktop/desktopStore';
+import { FileTypeIcon } from '../../../lib/FileTypeIcon';
+import { useTaskStore, type CodeFile } from '../../../stores/taskStore';
+import { useThemeStore } from '../../../stores/themeStore';
+import { useDesktopStore } from '../../../desktop/desktopStore';
 import {
   isMarkdownPath,
   isBinaryPath,
   binaryFileLabel,
   isDocumentSolution,
   paginateMarkdown,
-} from '../../lib/markdown';
-import { findPresentationPreviewFile, parsePresentationMarkdown } from '../../lib/presentation';
-import { choosePreferredCodeFilePath } from '../../lib/solutionFiles';
+} from '../../../lib/markdown';
+import { findPresentationPreviewFile, parsePresentationMarkdown } from '../../../lib/presentation';
+import { choosePreferredCodeFilePath } from '../../../lib/solutionFiles';
 import { PullRequestSummary } from './PullRequestSummary';
-import '../../styles/markdown.css';
+import '../../../styles/markdown.css';
 
 interface TreeNode {
   name: string;

@@ -1,5 +1,5 @@
 import { GitMerge, GitPullRequest, GitPullRequestClosed, FileText, ExternalLink } from 'lucide-react';
-import type { PullRequestInfo } from '../../stores/taskStore';
+import type { PullRequestInfo } from '../../../stores/taskStore';
 
 // PullRequestSummary renders an at-a-glance overview of the pull request that
 // Octra opened for a GitHub issue/PR task, so the user does not have to leave the

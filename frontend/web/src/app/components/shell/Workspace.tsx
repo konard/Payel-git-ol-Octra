@@ -1,11 +1,11 @@
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Canvas } from './Canvas';
-import { Chat, type ChatMessage } from './Chat';
-import { SolutionViewer } from './SolutionViewer';
-import { BottomInput, type TaskData } from './BottomInput';
-import { Sidebar } from '../../components/Sidebar';
-import { DesktopFileExplorer } from '../../desktop/DesktopFileExplorer';
-import { isDesktopApp } from '../../desktop/bridge';
+import { Canvas } from '../canvas/Canvas';
+import { Chat, type ChatMessage } from '../chat/Chat';
+import { SolutionViewer } from '../solution/SolutionViewer';
+import { BottomInput, type TaskData } from '../chat/BottomInput';
+import { Sidebar } from '../../../components/Sidebar';
+import { DesktopFileExplorer } from '../../../desktop/DesktopFileExplorer';
+import { isDesktopApp } from '../../../desktop/bridge';
 
 interface WorkspaceProps {
   // The Canvas needs a mode prop to decide whether to show its "add agent"

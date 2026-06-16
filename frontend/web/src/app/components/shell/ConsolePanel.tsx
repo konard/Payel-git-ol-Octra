@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useTaskStore } from '../../stores/taskStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useTaskStore } from '../../../stores/taskStore';
+import { useSettingsStore } from '../../../stores/settingsStore';
 import { ChevronDown, ChevronUp, Terminal, XCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-import { t } from '../../hooks/useI18n';
+import { t } from '../../../hooks/useI18n';
 
 export function ConsolePanel() {
   const logs = useTaskStore((state) => state.logs);

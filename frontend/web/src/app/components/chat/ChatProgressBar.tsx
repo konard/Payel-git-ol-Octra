@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useTaskStore } from '../../stores/taskStore';
+import { useTaskStore } from '../../../stores/taskStore';
 
 interface ChatProgressBarProps {
   progress?: number;

@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
-import { PROVIDERS } from '../../config/providers';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useCustomProvidersStore } from '../../stores/customProvidersStore';
-import { t } from '../../hooks/useI18n';
+import { PROVIDERS } from '../../../config/providers';
+import { useSettingsStore } from '../../../stores/settingsStore';
+import { useCustomProvidersStore } from '../../../stores/customProvidersStore';
+import { t } from '../../../hooks/useI18n';
 
 // Destination for the globe / search button. In development Lefine runs on the
 // local Vite server; in production it lives at lefine.pro. An explicit

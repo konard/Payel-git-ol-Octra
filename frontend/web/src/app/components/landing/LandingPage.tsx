@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { HeroSection } from './landing/HeroSection';
-import { WorkflowDemo } from './landing/WorkflowDemo';
-import { ProvidersSection } from './landing/ProvidersSection';
-import { AgentsSection } from './landing/AgentsSection';
-import { FooterSection } from './landing/FooterSection';
-import octraMascot from '../../images/octra-mascot.png';
+import { HeroSection } from './HeroSection';
+import { WorkflowDemo } from './WorkflowDemo';
+import { ProvidersSection } from './ProvidersSection';
+import { AgentsSection } from './AgentsSection';
+import { FooterSection } from './FooterSection';
+import octraMascot from '../../../images/octra-mascot.png';
 
 export default function LandingPage() {
   useEffect(() => {

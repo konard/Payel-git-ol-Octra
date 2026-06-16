@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Brain } from 'lucide-react';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../../hooks/useI18n';
 import { AgentNodeShell } from './AgentNodeShell';
 
 interface BossNodeData {

@@ -15,15 +15,15 @@ import {
   type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useTaskStore, type AgentNodeType, type AgentNode } from '../../stores/taskStore';
+import { useTaskStore, type AgentNodeType, type AgentNode } from '../../../stores/taskStore';
 import { BossNode, ManagerNode, WorkerNode, GitHubNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
 
-import { WorkflowLibrary } from '../../components/WorkflowLibrary';
-import { WorkflowExport } from '../../components/WorkflowExport';
-import { useI18n } from '../../hooks/useI18n';
-import { buildWorkflowConfigFromGraph } from '../taskPayload';
+import { WorkflowLibrary } from '../../../components/WorkflowLibrary';
+import { WorkflowExport } from '../../../components/WorkflowExport';
+import { useI18n } from '../../../hooks/useI18n';
+import { buildWorkflowConfigFromGraph } from '../../taskPayload';
 
 const nodeTypes = {
   boss: BossNode,

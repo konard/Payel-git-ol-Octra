@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Wifi, WifiOff, Clock, Coins } from 'lucide-react';
-import { useTaskStore } from '../../stores/taskStore';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { t } from '../../hooks/useI18n';
+import { useTaskStore } from '../../../stores/taskStore';
+import { useSettingsStore } from '../../../stores/settingsStore';
+import { t } from '../../../hooks/useI18n';
 
 export function StatusBar() {
   const isConnected = useTaskStore((state) => state.isConnected);

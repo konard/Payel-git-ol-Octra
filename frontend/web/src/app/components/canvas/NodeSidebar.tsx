@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Brain, Bot, Cpu, X, GripVertical, Library, Trash2, Workflow as WorkflowIcon } from 'lucide-react';
-import { useI18n } from '../../hooks/useI18n';
-import { useTaskStore } from '../../stores/taskStore';
-import { getMyWorkflows, deleteWorkflow, type Workflow } from '../../services/workflowService';
+import { useI18n } from '../../../hooks/useI18n';
+import { useTaskStore } from '../../../stores/taskStore';
+import { getMyWorkflows, deleteWorkflow, type Workflow } from '../../../services/workflowService';
 
 interface NodeTemplate {
   type: 'boss' | 'manager' | 'worker';

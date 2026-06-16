@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { useI18n } from '../../../hooks/useI18n';
-import { useNodeResize } from '../../../hooks/useNodeResize';
-import type { AgentNodeStatus } from '../../../stores/taskStore';
+import { useI18n } from '../../../../hooks/useI18n';
+import { useNodeResize } from '../../../../hooks/useNodeResize';
+import type { AgentNodeStatus } from '../../../../stores/taskStore';
 
 interface AgentNodeShellProps {
   id: string;

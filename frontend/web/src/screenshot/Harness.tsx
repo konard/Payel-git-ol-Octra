@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { TopBar } from '../app/components/TopBar';
-import { SolutionViewer } from '../app/components/SolutionViewer';
-import { Chat, type ChatMessage } from '../app/components/Chat';
+import { TopBar } from '../app/components/shell/TopBar';
+import { SolutionViewer } from '../app/components/solution/SolutionViewer';
+import { Chat, type ChatMessage } from '../app/components/chat/Chat';
 import { useI18nStore } from '../stores/i18nStore';
 
 interface HarnessProps {

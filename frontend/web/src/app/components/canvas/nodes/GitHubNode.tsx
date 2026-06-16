@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import type { AgentNodeStatus } from '../../../stores/taskStore';
-import { t } from '../../../hooks/useI18n';
-import { useNodeResize } from '../../../hooks/useNodeResize';
-import githubImage from '../../../images/github-image.png';
+import type { AgentNodeStatus } from '../../../../stores/taskStore';
+import { t } from '../../../../hooks/useI18n';
+import { useNodeResize } from '../../../../hooks/useNodeResize';
+import githubImage from '../../../../images/github-image.png';
 
 interface GitHubNodeProps {
   id: string;

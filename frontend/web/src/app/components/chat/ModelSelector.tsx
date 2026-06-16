@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Star, Check, Loader2, Puzzle } from 'lucide-react';
-import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel, type ProviderConfig } from '../../config/providers';
-import { useCustomProvidersStore, type CustomModel } from '../../stores/customProvidersStore';
-import { t } from '../../hooks/useI18n';
+import { PROVIDERS, getProviders, fetchOpenRouterModels, type ProviderModel, type ProviderConfig } from '../../../config/providers';
+import { useCustomProvidersStore, type CustomModel } from '../../../stores/customProvidersStore';
+import { t } from '../../../hooks/useI18n';
 
 interface ModelSelectorProps {
   selectedProvider: string;

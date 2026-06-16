@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Brain, Bot, Cpu, Archive, Zap, Copy, Trash2 } from 'lucide-react';
-import { useTaskStore, type AgentNodeType } from '../../stores/taskStore';
-import { useIntegrationStore } from '../../stores/integrationStore';
-import { n8nService, type N8nWorkflow } from '../../services/n8nService';
-import { useI18n } from '../../hooks/useI18n';
+import { useTaskStore, type AgentNodeType } from '../../../stores/taskStore';
+import { useIntegrationStore } from '../../../stores/integrationStore';
+import { n8nService, type N8nWorkflow } from '../../../services/n8nService';
+import { useI18n } from '../../../hooks/useI18n';
 
 
 const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string }>> = {

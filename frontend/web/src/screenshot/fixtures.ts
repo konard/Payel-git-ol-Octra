@@ -7,7 +7,7 @@
 // same UI is captured every time. See scripts/capture-landing.mjs.
 
 import { useTaskStore } from '../stores/taskStore';
-import type { ChatMessage } from '../app/components/Chat';
+import type { ChatMessage } from '../app/components/chat/Chat';
 
 export type Surface = 'code-view' | 'research-progress' | 'document-reader' | 'presentation-deck';
 
