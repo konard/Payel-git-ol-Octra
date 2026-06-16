@@ -3,6 +3,7 @@ package boss
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -48,7 +49,69 @@ func (s *Service) setupProject(ctx context.Context, taskID, title string, issueT
 			return "", err
 		}
 
-		// Проверяем права и форкаем репозиторий при необходимости
+		// Проверяем, есть ли предыдущий task для этого issue
+		existingTask := s.findExistingTaskByIssue(ctx, issueTarget.IssueURL)
+		if existingTask != nil {
+			log.Printf("Found existing task %s for issue %s — reusing fork", existingTask.ID.String(), issueTarget.IssueURL)
+
+			// Извлекаем fork-инфу из Meta предыдущей задачи
+			existingMeta := s.parseTaskMeta(existingTask)
+			if forkOwner, ok := existingMeta["github_fork_owner"]; ok && forkOwner != "" {
+				issueTarget.Forked = true
+				issueTarget.ForkOwner = forkOwner
+				issueTarget.ForkCloneURL = existingMeta["github_fork_clone_url"]
+				log.Printf("Reusing existing fork: %s/%s", forkOwner, issueTarget.Repo)
+			}
+
+			targetOwner := issueTarget.Owner
+			targetRepo := issueTarget.Repo
+			if issueTarget.ForkOwner != "" {
+				targetOwner = issueTarget.ForkOwner
+			}
+
+			// Клонируем форк (или оригинал, если прав хватало)
+			repository, cloneErr := s.githubClient.CloneRepository(ctx, targetOwner, targetRepo, projectPath)
+			if cloneErr != nil {
+				return "", fmt.Errorf("clone repo: %w", cloneErr)
+			}
+			issueTarget.BaseBranch = firstNonEmpty(repository.DefaultBranch, issueTarget.BaseBranch, "main")
+			issueTarget.RepositoryURL = firstNonEmpty(repository.HTMLURL, issueTarget.RepositoryURL)
+
+			if err := git.SetUser(projectPath, envOrDefault("GIT_USER_NAME", "CrewAI Bot"), envOrDefault("GIT_USER_EMAIL", "bot@crewai.local")); err != nil {
+				return "", fmt.Errorf("failed to configure git user: %w", err)
+			}
+
+			// Добавляем upstream если форк
+			if issueTarget.ForkOwner != "" {
+				upstreamURL := fmt.Sprintf("https://github.com/%s/%s.git", issueTarget.Owner, issueTarget.Repo)
+				if err := s.githubClient.AddUpstream(projectPath, upstreamURL); err != nil {
+					return "", fmt.Errorf("add upstream: %w", err)
+				}
+				if err := s.githubClient.SyncWithUpstream(ctx, projectPath, issueTarget.BaseBranch); err != nil {
+					log.Printf("Warning: upstream sync failed: %v", err)
+				}
+			}
+
+			// Читаем новые комментарии с даты последней задачи
+			newComments, commentErr := s.githubClient.GetIssueCommentsSince(ctx, issueTarget.Owner, issueTarget.Repo, issueTarget.Number, existingTask.UpdatedAt)
+			if commentErr != nil {
+				log.Printf("Warning: failed to fetch new comments: %v", commentErr)
+			} else {
+				issueTarget.NewComments = newComments
+				if len(newComments) > 0 {
+					log.Printf("Found %d new comments since %s", len(newComments), existingTask.UpdatedAt)
+				}
+			}
+
+			if err := git.CreateBranch(projectPath, issueTarget.BranchName); err != nil {
+				return "", fmt.Errorf("failed to create branch: %w", err)
+			}
+			issueTarget.Cloned = true
+			log.Printf("Project restored for existing issue at: %s (branch %s)", projectPath, issueTarget.BranchName)
+			return projectPath, nil
+		}
+
+		// Новый issue — проверяем права и форкаем при необходимости
 		forkOwner, forkCloneURL, forkErr := s.ensureFork(ctx, issueTarget)
 		if forkErr != nil {
 			return "", fmt.Errorf("fork setup: %w", forkErr)
@@ -100,6 +163,41 @@ func (s *Service) setupProject(ctx context.Context, taskID, title string, issueT
 		return "", fmt.Errorf("failed to init git: %w", err)
 	}
 	return projectPath, nil
+}
+
+// findExistingTaskByIssue — ищет предыдущий task с таким же issue URL.
+// Возвращает самую свежую выполненную задачу с NixStorePath.
+func (s *Service) findExistingTaskByIssue(ctx context.Context, issueURL string) *models.Task {
+	if issueURL == "" || s.db == nil {
+		return nil
+	}
+	var tasks []models.Task
+	// Ищем по JSONB полю Meta: {"github_issue_url": "<url>"}
+	likeQuery := `%{"github_issue_url":"` + issueURL + `"}%`
+	if err := s.db.Where("meta LIKE ? AND status = 'done' AND nix_store_path != ''", likeQuery).
+		Order("updated_at DESC").
+		Limit(1).
+		Find(&tasks).Error; err != nil {
+		log.Printf("findExistingTaskByIssue: %v", err)
+		return nil
+	}
+	if len(tasks) == 0 {
+		return nil
+	}
+	return &tasks[0]
+}
+
+// parseTaskMeta — достаёт map[string]string из JSONB поля Meta задачи.
+func (s *Service) parseTaskMeta(task *models.Task) map[string]string {
+	if task == nil || task.Meta == "" {
+		return nil
+	}
+	var meta map[string]string
+	if err := json.Unmarshal([]byte(task.Meta), &meta); err != nil {
+		log.Printf("parseTaskMeta: %v", err)
+		return nil
+	}
+	return meta
 }
 
 // ensureFork — проверяет права на запись в репозиторий и, при необходимости,

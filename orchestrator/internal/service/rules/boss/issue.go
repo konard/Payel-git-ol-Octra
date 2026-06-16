@@ -125,6 +125,17 @@ func withGitHubIssueContext(description string, target *gh.IssueTarget) string {
 			}
 		}
 	}
+	if len(target.NewComments) > 0 {
+		b.WriteString("\nNEW COMMENTS (since last run):\n")
+		for _, comment := range target.NewComments {
+			author := firstNonEmpty(comment.Author, "unknown")
+			b.WriteString(fmt.Sprintf("--- %s (%s):\n", author, comment.CreatedAt))
+			b.WriteString(comment.Body)
+			b.WriteString("\n")
+		}
+		b.WriteString("--- END NEW COMMENTS ---\n")
+		b.WriteString("Consider these new comments when making changes. They may contain feedback or clarifications.\n")
+	}
 	if target.Forked {
 		b.WriteString(fmt.Sprintf("- Repository has been forked to %s/%s for pull request creation.\n", target.ForkOwner, target.Repo))
 	}

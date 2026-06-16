@@ -277,6 +277,47 @@ Octra can automatically publish generated projects to GitHub and create pull req
 | Publish new projects to GitHub | `publish_repositories` | Creates a new GitHub repository and pushes the generated code |
 | Create pull requests | `create_pull_requests` | Creates a PR for issue-linked tasks (pushes code to a branch in any case) |
 
+### Auto-fork for PRs
+
+When Octra targets a GitHub issue but the bot account lacks write permission, it **automatically forks** the repository under the bot's account:
+
+```
+Octra detects issue URL
+  │
+  ├── Has write permission? ──→ clone original → push branch → PR
+  │
+  └── No write permission
+        │
+        ├── CheckWritePermission(owner/repo) → false
+        ├── ForkRepository(owner/repo) → fork created
+        ├── WaitForkReady → clone fork
+        ├── AddUpstream → SyncWithUpstream
+        └── Push to fork → PR from forkOwner:branch → owner:base
+```
+
+Cross-repo PRs use the `head: "forkOwner:branchName"` format. Fork info (`github_fork_owner`, `github_fork_clone_url`) is persisted in task metadata for subsequent runs — no re-fork on repeat.
+
+### Existing task reuse
+
+If the same issue URL is submitted again, Octra detects the previous task and **reuses its fork**:
+
+```
+detectGitHubIssueTask()
+  │
+  └── findExistingTaskByIssue(issueURL)
+        │
+        ├── Found in DB (status=done, nix_store_path != '')
+        │     │
+        │     ├── Read github_fork_owner from previous task's Meta
+        │     ├── Clone fork directly (skip permission check + fork creation)
+        │     ├── GetIssueCommentsSince(previousTask.UpdatedAt)
+        │     └── Inject "NEW COMMENTS" section into AI prompt
+        │
+        └── Not found → standard flow (permission check → fork → clone)
+```
+
+This ensures repeat runs on the same issue are fast (no re-fork) and incorporate user feedback from new comments.
+
 ### Data flow
 
 ```
@@ -300,24 +341,12 @@ Settings (UI) → meta.publish_repositories / meta.create_pull_requests
 - If a repository is published — the node shows "GitHub" as role and opens the repo URL on click
 - The click handler respects `prUrl` over `repoUrl` when both are present
 
-### Key files
-
-| File | Purpose |
-|------|---------|
-| `orchestrator/internal/service/rules/boss/github.go` | `pushToGitHub()` with flag-aware repo/PR creation |
-| `orchestrator/internal/service/rules/boss/task.go` | Passes `req.Meta` to `pushToGitHub` |
-| `frontend/web/src/app/App.tsx` | Sends flags in task creation payload |
-| `frontend/web/src/hooks/useWebSocket.ts` | Conditionally adds GitHub node based on flags and response data |
-| `frontend/web/src/app/components/nodes/GitHubNode.tsx` | Renders repo/PR link, supports `prUrl` field |
-| `frontend/web/src/stores/taskStore.ts` | `AgentNode.prUrl` field |
-| `frontend/web/src/components/IntegrationForm.tsx` | UI toggles for publish/PR settings |
-
 ## Project lifecycle with Nix
 
 ```
-setupProject() → generate flake.nix → AI generates code → nix-store --add → cleanup
-                                                                 ↓
-                                                          RestoreProject(taskID)
+New issue:   setupProject() → generate flake.nix → AI generates code → nix-store --add → cleanup
+                                                                              ↓
+Repeat issue: findExistingTask() → clone fork → AI with new comments → nix-store --add → cleanup
 ```
 
 Each project:
@@ -327,6 +356,7 @@ Each project:
 3. On completion: **snapshotted to `/nix/store/`** via `nix-store --add`
 4. Working directory is removed (zero disk waste)
 5. **`RestoreProject(taskID)`** recovers the project from the Nix store instantly
+6. **Repeat runs** on the same GitHub issue detect the previous snapshot and skip the fork step — only new comments are fetched and fed to AI
 
 This means projects take zero space when idle but can be restored at any time.
 
@@ -339,30 +369,6 @@ This means projects take zero space when idle but can be restored at any time.
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
 | `frontend/web` | React, Vite, Electron | Interactive canvas + chat UI |
-| `grademodel` | Python, scikit-learn | Task complexity grading |
-
-## Nix integration
-
-| File | Purpose |
-|------|---------|
-| `orchestrator/flake.nix` | Builds orchestrator binary via `buildGoModule` |
-| `orchestrator/nix/module.nix` | NixOS module (systemd service) |
-| `orchestrator/Dockerfile` | Based on `nixos/nix` — includes Nix in container |
-| `orchestrator/internal/service/rules/boss/project.go` | `snapshotProject()`, `RestoreProject()`, `generateFlake()` |
-| `orchestrator/internal/service/rules/boss/flake_builder.go` | Dynamic `flake.nix` generation per tech stack |
-| `orchestrator/internal/service/rules/boss/nix_build.go` | `nix build`, `nix flake check`, `nix flake lock` |
-| `orchestrator/internal/fetcher/grpc/sender.go` | Stream sender with blocking buffered channel (256 slots) — no dropped updates |
-| `orchestrator/internal/service/rules/worker/tool_executor.go` | Real tool scaffolding inside `nix develop` |
-| `orchestrator/pkg/guids/` | Structured tool guide registry (commands, packages, structure) |
-| `orchestrator/pkg/models/context_entry.go` | Context entry GORM model |
-| `orchestrator/internal/service/context/` | Context management (Redis + Postgres, 3 scopes, auto-cleanup) |
-| `projects/<taskID>/flake.nix` | Auto-generated per project |
-| `internal/service/groupchat/` | Group Chat orchestration (star topology, concurrent rounds) |
-| `internal/service/rules/worker/agent.go` | `WorkerAgent` — group chat participant with AI generation |
-| `internal/skills/warehouse.go` | Skill Warehouse — catalog, search, select, category filtering |
-| `internal/skills/fragments/` | 42 atomic skill fragments (3-6 lines each, one per topic) |
-| `internal/skills/skills.go` | Legacy skill system (backward compat) |
-| `internal/service/rules/worker/skill.go` | `buildSkillContext()` — warehouse fragment resolution |
 
 Run with NixOS:
 

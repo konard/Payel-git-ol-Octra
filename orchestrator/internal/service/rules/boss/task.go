@@ -99,6 +99,16 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		emit(progress, 0, err.Error(), errorData())
 		return err
 	}
+
+	// Сохраняем fork-инфу в Meta задачи (для последующих запусков)
+	if issueTarget != nil && issueTarget.Forked {
+		req.Meta["github_forked"] = "true"
+		req.Meta["github_fork_owner"] = issueTarget.ForkOwner
+		req.Meta["github_fork_clone_url"] = issueTarget.ForkCloneURL
+		metaJSON, _ := json.Marshal(req.Meta)
+		database.Db.Model(&models.Task{}).Where("id = ?", taskID).Update("meta", string(metaJSON))
+	}
+
 	s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
 
 	// Если это доработка существующего проекта — клонируем репозиторий с GitHub

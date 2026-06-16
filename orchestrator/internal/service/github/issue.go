@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // issueURLPattern распознаёт как issue-ссылки (.../issues/N), так и
@@ -39,6 +40,15 @@ type IssueTarget struct {
 	ForkOwner string
 	// ForkCloneURL — clone URL форка.
 	ForkCloneURL string
+
+	// Restored — true, если проект восстановлен из Nix store (повторный запуск).
+	Restored bool
+	// ExistingTaskID — ID предыдущей задачи, из которой восстановились.
+	ExistingTaskID string
+	// ExistingNixStorePath — Nix store path предыдущей задачи.
+	ExistingNixStorePath string
+	// NewComments — новые комментарии, появившиеся после предыдущего запуска.
+	NewComments []IssueComment
 
 	// Instruction — структурированный паспорт issue (комментарии, метки,
 	// состояние, открытые PR). Заполняется AnalyzeIssue (план фикса, пункты 1-2).
@@ -171,6 +181,35 @@ func (c *Client) GetIssueComments(ctx context.Context, owner, repo string, numbe
 		return nil, err
 	}
 	return comments, nil
+}
+
+// GetIssueCommentsSince — возвращает комментарии, созданные после указанной даты.
+func (c *Client) GetIssueCommentsSince(ctx context.Context, owner, repo string, number int, since time.Time) ([]IssueComment, error) {
+	allComments, err := c.GetIssueComments(ctx, owner, repo, number)
+	if err != nil {
+		return nil, err
+	}
+	var filtered []IssueComment
+	for _, c := range allComments {
+		createdAt, parseErr := time.Parse(time.RFC3339, c.CreatedAt)
+		if parseErr != nil {
+			// Если не можем распарсить — включаем комментарий
+			filtered = append(filtered, IssueComment{
+				Author:    c.User.Login,
+				Body:      c.Body,
+				CreatedAt: c.CreatedAt,
+			})
+			continue
+		}
+		if createdAt.After(since) {
+			filtered = append(filtered, IssueComment{
+				Author:    c.User.Login,
+				Body:      c.Body,
+				CreatedAt: c.CreatedAt,
+			})
+		}
+	}
+	return filtered, nil
 }
 
 // ListOpenPullRequests — возвращает открытые pull request'ы репозитория. Нужны,
