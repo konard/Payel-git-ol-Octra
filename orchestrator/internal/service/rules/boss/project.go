@@ -383,6 +383,15 @@ func prepareSnapshotDir(projectPath string) (string, error) {
 		}
 		src := filepath.Join(projectPath, file)
 		dst := filepath.Join(stagingDir, file)
+
+		// Пропускаем директории (git ls-files может вернуть их, а copyFile копирует только файлы)
+		if info, statErr := os.Stat(src); statErr != nil {
+			log.Printf("Warning: cannot stat %s: %v", src, statErr)
+			continue
+		} else if info.IsDir() {
+			continue
+		}
+
 		if err := copyFile(src, dst); err != nil {
 			os.RemoveAll(stagingDir)
 			return "", fmt.Errorf("failed to copy %s: %w", file, err)

@@ -156,14 +156,19 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		integrationBranch = issueTarget.BranchName
 	}
 	s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
+
+	// Используем detached context для критических операций (nix build, валидация, push, cleanup),
+	// чтобы потеря WebSocket (stream context cancellation) не убивала пайплайн.
+	bgCtx := context.Background()
 	s.nixBuild(projectPath, progress)
 	emit(progress, 83, "Boss validating solution...", nil)
+
 	tokens := req.Tokens
 	if tokens == nil {
 		tokens = map[string]string{}
 	}
 	tokens["title"] = req.Title
-	validation := s.validateSolution(ctx, provider, model, tokens, decision, managerResults)
+	validation := s.validateSolution(bgCtx, provider, model, tokens, decision, managerResults)
 	if !validation.Approved {
 		log.Printf("Boss validation rejected: %s", validation.Feedback)
 	}
@@ -176,7 +181,7 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	githubErr := ""
 	isCodeTask := isCodeLikeTask(decision.TaskType)
 	if isCodeTask || issueTarget != nil {
-		repoURL, githubErr = s.pushToGitHub(ctx, task, projectPath, issueTarget, req.Meta)
+		repoURL, githubErr = s.pushToGitHub(bgCtx, task, projectPath, issueTarget, req.Meta)
 	} else {
 		log.Printf("Skipping GitHub publish for %s task (delivered to Solution tab)", decision.TaskType)
 	}

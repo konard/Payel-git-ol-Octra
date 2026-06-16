@@ -336,18 +336,38 @@ func liveCodeFilesPayload(role, path, content string) string {
 	return string(data)
 }
 
+// содержит ли файл реальный код, а не только TODO-заглушки и комментарии.
+func hasRealCode(content string) bool {
+	cleaned := strings.TrimSpace(content)
+	if cleaned == "" {
+		return false
+	}
+	lines := strings.Split(cleaned, "\n")
+	nonStubLines := 0
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*") {
+			continue
+		}
+		nonStubLines++
+	}
+	// В файле должно быть хотя бы 3 строки реального кода (не комментариев)
+	return nonStubLines >= 3
+}
+
 // containsSourceCode сообщает, есть ли среди файлов хотя бы один непустой файл с
 // исходным кодом. Манифесты и инфраструктура (package.json, flake.nix, .gitignore,
 // lock-файлы) НЕ считаются. Когда tool-режим наскаффолдил только их (например
 // `npm init -y` создал лишь package.json), воркер обязан уйти в AI-генерацию,
 // чтобы реальный код фичи (index.js express-сервера и т.п.) всё-таки появился.
 // Это корневая причина issue #75 п.6: фронтенду уезжали только flake.nix/context.json.
+// Дополнительно проверяется, что код не состоит из одних TODO-заглушек (issue #98).
 func containsSourceCode(files map[string]string) bool {
 	for path, content := range files {
-		if strings.TrimSpace(content) == "" {
+		if !sourceExtensions[strings.ToLower(filepath.Ext(path))] {
 			continue
 		}
-		if sourceExtensions[strings.ToLower(filepath.Ext(path))] {
+		if hasRealCode(content) {
 			return true
 		}
 	}
