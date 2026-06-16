@@ -63,6 +63,33 @@ func TestContainsSourceCode(t *testing.T) {
 	}
 }
 
+// TestHasRealCode проверяет, что короткий настоящий код считается реальным
+// (issue #75 п.6), а пустые/комментарийные/заглушечные файлы — нет (issue #98).
+func TestHasRealCode(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{"one-line express", "const express = require('express'); express().listen(3000)", true},
+		{"two-line go", "package main\nfunc main() {}", true},
+		{"empty", "   \n\t\n", false},
+		{"only line comments", "// TODO: implement\n// later", false},
+		{"only hash comments", "# TODO\n# nothing here", false},
+		{"only block comment", "/* placeholder */\n*", false},
+		{"python pass stub", "# TODO\npass", false},
+		{"ellipsis stub", "...", false},
+		{"real code after comment", "// header\nprint('hi')", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := hasRealCode(tc.content); got != tc.want {
+				t.Fatalf("hasRealCode(%q) = %v, want %v", tc.content, got, tc.want)
+			}
+		})
+	}
+}
+
 // TestLiveCodeFilesPayloadSkipsInfra проверяет issue #75 п.1+п.6: инфраструктурные
 // файлы (flake.nix, .octra/context.json) не должны стримиться во вкладку Solution.
 func TestLiveCodeFilesPayloadSkipsInfra(t *testing.T) {

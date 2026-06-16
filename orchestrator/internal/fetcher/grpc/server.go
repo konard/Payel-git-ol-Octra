@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"orchestrator/internal/fetcher/grpc/bosspb"
+	"orchestrator/internal/memory"
 	"orchestrator/internal/redis"
 	"orchestrator/internal/service/rules/boss"
 )
@@ -72,6 +73,13 @@ func (s *Server) CreateTaskStream(req *bosspb.CreateTaskRequest, stream bosspb.B
 
 	err := s.boss.ExecuteTask(ctx, bossReq, progress)
 	sender.flush() // всегда вызываем flush, и при успехе, и при ошибке
+
+	// Задача завершена: все промежуточные буферы (результаты воркеров,
+	// прочитанные файлы, вывод команд) стали мусором. Возвращаем память ОС,
+	// чтобы RSS опускался к холостому уровню, а не копился между задачами
+	// (issue #89).
+	memory.ReleaseToOS()
+
 	if err != nil {
 		log.Printf("ExecuteTask error: %v", err)
 		return err
