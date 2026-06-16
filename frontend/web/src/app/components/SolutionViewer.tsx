@@ -749,14 +749,16 @@ export function SolutionViewer() {
     <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">
         <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsExplorerOpen((value) => !value)}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
-            title={isExplorerOpen ? 'Hide explorer' : 'Show explorer'}
-          >
-            {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-          </button>
+          {!pullRequest && (
+            <button
+              type="button"
+              onClick={() => setIsExplorerOpen((value) => !value)}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--code-text-muted)] transition-colors hover:bg-[var(--code-tree-hover)] hover:text-[var(--code-text)]"
+              title={isExplorerOpen ? 'Hide explorer' : 'Show explorer'}
+            >
+              {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+            </button>
+          )}
           <Files size={16} className="text-[var(--code-text-muted)]" />
           <span className="truncate text-sm font-medium">Solution</span>
         </div>
@@ -784,7 +786,7 @@ export function SolutionViewer() {
       )}
 
       <div className="flex min-h-0 flex-1">
-        {isExplorerOpen && (
+        {isExplorerOpen && !pullRequest && (
           <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[var(--code-border)] bg-[var(--code-surface)] md:flex">
             <div className="border-b border-[var(--code-border)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--code-text-muted)]">
               Explorer
