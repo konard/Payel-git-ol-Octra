@@ -65,7 +65,8 @@
     "title": "Console",
     "empty": "Task not started yet. Create a task to see logs.",
     "connectionLost": "Connection lost, reconnecting...",
-    "reconnecting": "Reconnecting to task..."
+    "reconnecting": "Reconnecting to task...",
+    "placeholder": "Type 'clear' or 'cls' to clear console"
   },
   "bottomInput": {
     "provider": "Provider",

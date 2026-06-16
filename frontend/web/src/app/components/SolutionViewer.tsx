@@ -729,7 +729,7 @@ export function SolutionViewer() {
       <div className="flex h-full min-h-0 flex-col bg-[var(--code-bg)] text-[var(--code-text)]" style={CODE_VIEW_THEME}>
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--code-border)] bg-[var(--code-surface)] px-3">
           <Files size={16} className="text-[var(--code-text-muted)]" />
-          <span className="truncate text-sm font-medium">Solution files</span>
+          <span className="truncate text-sm font-medium">Solution</span>
         </div>
         {pullRequest ? (
           <div className="min-h-0 flex-1 overflow-auto p-3">
@@ -758,7 +758,7 @@ export function SolutionViewer() {
             {isExplorerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
           </button>
           <Files size={16} className="text-[var(--code-text-muted)]" />
-          <span className="truncate text-sm font-medium">Solution files</span>
+          <span className="truncate text-sm font-medium">Solution</span>
         </div>
         <div className="text-xs text-[var(--code-text-muted)]">
           {codeFiles.length} {codeFiles.length === 1 ? 'file' : 'files'}

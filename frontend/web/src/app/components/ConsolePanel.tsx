@@ -6,8 +6,11 @@ import { t } from '../../hooks/useI18n';
 
 export function ConsolePanel() {
   const logs = useTaskStore((state) => state.logs);
+  const status = useTaskStore((state) => state.status);
+  const clearLogs = useTaskStore((state) => state.clearLogs);
   const hideConsole = useSettingsStore((state) => state.hideConsole);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [commandInput, setCommandInput] = useState('');
   const logsEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -17,6 +20,21 @@ export function ConsolePanel() {
       logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [logs, isCollapsed]);
+
+  const isTaskRunning = status === 'creating' || status === 'planning' || status === 'executing';
+
+  const handleCommandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const trimmed = commandInput.trim().toLowerCase();
+      if (trimmed === 'clear' || trimmed === 'cls') {
+        clearLogs();
+      }
+      setCommandInput('');
+    } else if (e.key === 'Escape') {
+      setCommandInput('');
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   if (hideConsole) return null;
 
@@ -95,24 +113,38 @@ export function ConsolePanel() {
 
       {/* Logs — visible when expanded */}
       {!isCollapsed && (
-        <div className="max-h-48 overflow-y-auto px-4 pb-3 font-mono text-xs space-y-0.5">
-          {logs.length === 0 ? (
-            <div className="text-[var(--text-muted)] py-4 text-center">
-              {t('console.empty')}
-            </div>
-          ) : (
-            logs.map((log) => (
-              <div key={log.id} className="flex items-start gap-2 py-0.5">
-                <span className="text-[var(--text-muted)] flex-shrink-0">
-                  {formatTime(log.timestamp)}
-                </span>
-                {getLogIcon(log.type)}
-                <span className={`min-w-0 break-words ${getLogColor(log.type)}`}>{log.message}</span>
+        <>
+          <div className="max-h-48 overflow-y-auto px-4 pb-3 font-mono text-xs space-y-0.5">
+            {logs.length === 0 ? (
+              <div className="text-[var(--text-muted)] py-4 text-center">
+                {t('console.empty')}
               </div>
-            ))
-          )}
-          <div ref={logsEndRef} />
-        </div>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="flex items-start gap-2 py-0.5">
+                  <span className="text-[var(--text-muted)] flex-shrink-0">
+                    {formatTime(log.timestamp)}
+                  </span>
+                  {getLogIcon(log.type)}
+                  <span className={`min-w-0 break-words ${getLogColor(log.type)}`}>{log.message}</span>
+                </div>
+              ))
+            )}
+            <div ref={logsEndRef} />
+          </div>
+          <div className="border-t border-[var(--border)] flex items-center gap-1.5 px-4 py-1.5">
+            <span className="text-[var(--text-muted)] font-mono text-xs leading-none">&gt;</span>
+            <input
+              type="text"
+              value={commandInput}
+              onChange={(e) => setCommandInput(e.target.value)}
+              onKeyDown={handleCommandKeyDown}
+              placeholder={isTaskRunning ? '' : t('console.placeholder')}
+              disabled={isTaskRunning}
+              className="flex-1 bg-transparent outline-none border-0 p-0 text-xs font-mono text-[var(--text)] placeholder:text-[var(--text-muted)]/50"
+            />
+          </div>
+        </>
       )}
     </div>
   );

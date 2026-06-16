@@ -122,6 +122,7 @@ interface TaskState {
   removeNode: (id: string) => void;
   addEdge: (edge: Edge) => void;
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
+  clearLogs: () => void;
   setSolutionZip: (blob: Blob) => void;
   setZipUrl: (url: string) => void;
   upsertCodeFiles: (files: Array<Partial<CodeFile> & { path: string; content: string }>) => void;
@@ -229,6 +230,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   addLog: (log) => set((state) => ({
     logs: [...state.logs, { ...log, id: `log-${Date.now()}`, timestamp: new Date() }],
   })),
+  
+  clearLogs: () => set({ logs: [] }),
   
   setSolutionZip: (blob) => set({ solutionZip: blob }),
   
