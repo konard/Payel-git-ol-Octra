@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"orchestrator/internal/fetcher/grpc"
+	"orchestrator/internal/memory"
 	"orchestrator/internal/redis"
 	"orchestrator/internal/service/agents"
 	ctxsvc "orchestrator/internal/service/context"
@@ -19,6 +20,8 @@ import (
 // через gRPC; теперь все три роли живут в одном процессе и зовут друг друга
 // напрямую через Go.
 func main() {
+	memory.Configure()
+
 	database.InitDb()
 
 	agentsClient, err := agents.NewClient()
