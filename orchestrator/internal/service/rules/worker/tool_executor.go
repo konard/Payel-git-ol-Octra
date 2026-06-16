@@ -394,23 +394,38 @@ func liveCodeFilesPayload(role, path, content string) string {
 	return string(data)
 }
 
-// содержит ли файл реальный код, а не только TODO-заглушки и комментарии.
+// hasRealCode сообщает, содержит ли файл хотя бы одну строку настоящего кода, а
+// не только пустые строки, комментарии и TODO-заглушки (issue #98). Даже короткий
+// исходник (однострочный express-сервер, `package main` + `func main`) считается
+// реальным кодом (issue #75 п.6) — поэтому достаточно одной непустой строки,
+// которая не является комментарием или пустой заглушкой вроде `pass`/`...`.
 func hasRealCode(content string) bool {
 	cleaned := strings.TrimSpace(content)
 	if cleaned == "" {
 		return false
 	}
-	lines := strings.Split(cleaned, "\n")
-	nonStubLines := 0
-	for _, line := range lines {
+	for _, line := range strings.Split(cleaned, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*") {
+		if trimmed == "" || isStubLine(trimmed) {
 			continue
 		}
-		nonStubLines++
+		return true
 	}
-	// В файле должно быть хотя бы 3 строки реального кода (не комментариев)
-	return nonStubLines >= 3
+	return false
+}
+
+// isStubLine — строка, которая не несёт реального кода: комментарий или типовая
+// пустая заглушка (TODO/FIXME, `pass`, `...`, голые скобки).
+func isStubLine(trimmed string) bool {
+	switch trimmed {
+	case "pass", "...", "{", "}", "{}", "()", ";":
+		return true
+	}
+	if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#") ||
+		strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*") {
+		return true
+	}
+	return false
 }
 
 // containsSourceCode сообщает, есть ли среди файлов хотя бы один непустой файл с
