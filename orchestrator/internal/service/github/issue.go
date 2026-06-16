@@ -33,6 +33,13 @@ type IssueTarget struct {
 	RepositoryURL string
 	Cloned        bool
 
+	// Forked — true, если репозиторий был форкнут под аккаунтом бота.
+	Forked bool
+	// ForkOwner — login владельца форка (пусто, если не форк).
+	ForkOwner string
+	// ForkCloneURL — clone URL форка.
+	ForkCloneURL string
+
 	// Instruction — структурированный паспорт issue (комментарии, метки,
 	// состояние, открытые PR). Заполняется AnalyzeIssue (план фикса, пункты 1-2).
 	Instruction *IssueInstruction

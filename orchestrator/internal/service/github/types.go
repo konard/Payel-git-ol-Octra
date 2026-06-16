@@ -42,6 +42,16 @@ type OpenPullRequest struct {
 	URL    string `json:"url"`
 }
 
+// ForkResponse — ответ GitHub API на создание форка.
+type ForkResponse struct {
+	Owner struct {
+		Login string `json:"login"`
+	} `json:"owner"`
+	HTMLURL       string `json:"html_url"`
+	CloneURL      string `json:"clone_url"`
+	DefaultBranch string `json:"default_branch"`
+}
+
 // HasLabel — true, если у issue есть метка с таким именем (регистронезависимо).
 func (in *IssueInstruction) HasLabel(name string) bool {
 	name = strings.ToLower(strings.TrimSpace(name))

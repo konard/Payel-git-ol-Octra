@@ -99,12 +99,20 @@ func (s *Service) createPullRequest(ctx context.Context, task *models.Task, proj
 		log.Printf("Failed to push pull request branch: %v", err)
 		return "", fmt.Sprintf("Failed to push pull request branch %q: %v", target.BranchName, err)
 	}
+
+	// Для cross-repo PR из форка head должен быть в формате "forkOwner:branchName"
+	head := target.BranchName
+	if target.Forked && target.ForkOwner != "" {
+		head = target.ForkOwner + ":" + target.BranchName
+		log.Printf("Cross-repo PR: head = %s", head)
+	}
+
 	prTitle := pullRequestTitle(task, target)
 	pr, err := s.githubClient.CreatePullRequest(ctx, gh.PullRequestRequest{
 		Owner: target.Owner,
 		Repo:  target.Repo,
 		Title: prTitle,
-		Head:  target.BranchName,
+		Head:  head,
 		Base:  firstNonEmpty(target.BaseBranch, "main"),
 		Body:  pullRequestBody(task, target),
 	})

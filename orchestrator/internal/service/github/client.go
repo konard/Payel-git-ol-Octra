@@ -123,6 +123,55 @@ func (c *Client) apiURL(path string) string {
 	return base + path
 }
 
+// CheckWritePermission — проверяет, есть ли у токена права на запись в репозиторий.
+func (c *Client) CheckWritePermission(ctx context.Context, owner, repo string) (bool, error) {
+	var resp struct {
+		Permissions struct {
+			Push     bool `json:"push"`
+			Admin    bool `json:"admin"`
+			Maintain bool `json:"maintain"`
+		} `json:"permissions"`
+	}
+	path := fmt.Sprintf("/repos/%s/%s", owner, repo)
+	if err := c.doJSON(ctx, "GET", path, nil, &resp, 200); err != nil {
+		return false, fmt.Errorf("check permission: %w", err)
+	}
+	return resp.Permissions.Push || resp.Permissions.Admin || resp.Permissions.Maintain, nil
+}
+
+// ForkRepository — создаёт форк репозитория под аккаунтом аутентифицированного пользователя.
+// GitHub возвращает 202 Accepted; форк может создаваться асинхронно.
+func (c *Client) ForkRepository(ctx context.Context, owner, repo string) (*ForkResponse, error) {
+	reqBody := struct{}{}
+	var fork ForkResponse
+	path := fmt.Sprintf("/repos/%s/%s/forks", owner, repo)
+	if err := c.doJSON(ctx, "POST", path, reqBody, &fork, 202); err != nil {
+		return nil, fmt.Errorf("fork repository: %w", err)
+	}
+	return &fork, nil
+}
+
+// WaitForkReady — ожидает, пока форк станет доступен (клон завершён на GitHub).
+func (c *Client) WaitForkReady(ctx context.Context, forkOwner, repo string) error {
+	path := fmt.Sprintf("/repos/%s/%s", forkOwner, repo)
+	for i := 0; i < 30; i++ {
+		var resp struct {
+			ID int `json:"id"`
+		}
+		err := c.doJSON(ctx, "GET", path, nil, &resp, 200)
+		if err == nil {
+			return nil
+		}
+		log.Printf("Waiting for fork to be ready (%d/30): %v", i+1, err)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+	return fmt.Errorf("fork not ready after 60 seconds")
+}
+
 // PushToRepository — добавляет файлы, коммитит и пушит проект в GitHub
 func (c *Client) PushToRepository(ctx context.Context, task *models.Task, repoPath string, repoURL string) error {
 	if err := c.configureGit(repoPath); err != nil {

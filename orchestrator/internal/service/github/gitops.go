@@ -164,6 +164,47 @@ func (c *Client) gitPush(dir string) error {
 	return nil
 }
 
+// ChangeRemoteOrigin — меняет URL remote origin (для переключения на форк).
+func (c *Client) ChangeRemoteOrigin(dir, newURL string) error {
+	authURL := c.authenticatedGitURL(newURL)
+	cmd := exec.Command("git", "remote", "set-url", "origin", authURL)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("change remote origin: %w - %s", err, c.sanitize(string(out)))
+	}
+	return nil
+}
+
+// AddUpstream — добавляет upstream remote (оригинальный репозиторий) в форк.
+func (c *Client) AddUpstream(dir, upstreamURL string) error {
+	url := c.authenticatedGitURL(upstreamURL)
+	cmd := exec.Command("git", "remote", "add", "upstream", url)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("add upstream: %w - %s", err, c.sanitize(string(out)))
+	}
+	return nil
+}
+
+// SyncWithUpstream — фетчит upstream и перебазирует текущую ветку на upstream/ветку.
+func (c *Client) SyncWithUpstream(ctx context.Context, dir, branch string) error {
+	fetchCmd := exec.CommandContext(ctx, "git", "fetch", "upstream")
+	fetchCmd.Dir = dir
+	if out, err := fetchCmd.CombinedOutput(); err != nil {
+		log.Printf("Warning: fetch upstream failed: %v - %s", err, c.sanitize(string(out)))
+		return nil // не фатально
+	}
+
+	rebaseCmd := exec.CommandContext(ctx, "git", "rebase", fmt.Sprintf("upstream/%s", branch))
+	rebaseCmd.Dir = dir
+	if out, err := rebaseCmd.CombinedOutput(); err != nil {
+		log.Printf("Warning: rebase onto upstream/%s failed: %v - %s", branch, err, c.sanitize(string(out)))
+	}
+	return nil
+}
+
 // PushBranch — пушит указанную ветку в origin.
 func (c *Client) PushBranch(ctx context.Context, dir, branch string) error {
 	if branch == "" {

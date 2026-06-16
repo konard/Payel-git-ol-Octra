@@ -83,7 +83,7 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 	var files map[string]string
 	var commands []string
 
-	if a.meta.taskType != "" && a.meta.taskType != "code" {
+	if a.meta.taskType != "" && a.meta.taskType != "code" && a.meta.taskType != "github" {
 		// Документный путь
 		topic := strings.TrimSpace(a.meta.title + "\n\n" + a.meta.description)
 		if strings.TrimSpace(topic) == "" {

@@ -125,6 +125,9 @@ func withGitHubIssueContext(description string, target *gh.IssueTarget) string {
 			}
 		}
 	}
+	if target.Forked {
+		b.WriteString(fmt.Sprintf("- Repository has been forked to %s/%s for pull request creation.\n", target.ForkOwner, target.Repo))
+	}
 	b.WriteString("\nExecution rules:\n")
 	if target.IsPullRequest {
 		b.WriteString("- Treat this as a pull request task that continues the work described by the referenced GitHub pull request.\n")

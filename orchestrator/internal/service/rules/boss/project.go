@@ -47,7 +47,20 @@ func (s *Service) setupProject(ctx context.Context, taskID, title string, issueT
 		if err := ensureCloneTarget(projectPath); err != nil {
 			return "", err
 		}
-		repository, err := s.githubClient.CloneRepository(ctx, issueTarget.Owner, issueTarget.Repo, projectPath)
+
+		// Проверяем права и форкаем репозиторий при необходимости
+		forkOwner, forkCloneURL, forkErr := s.ensureFork(ctx, issueTarget)
+		if forkErr != nil {
+			return "", fmt.Errorf("fork setup: %w", forkErr)
+		}
+
+		targetOwner := issueTarget.Owner
+		targetRepo := issueTarget.Repo
+		if forkOwner != "" {
+			targetOwner = forkOwner
+		}
+
+		repository, err := s.githubClient.CloneRepository(ctx, targetOwner, targetRepo, projectPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to clone GitHub issue repository: %w", err)
 		}
@@ -56,6 +69,22 @@ func (s *Service) setupProject(ctx context.Context, taskID, title string, issueT
 		if err := git.SetUser(projectPath, envOrDefault("GIT_USER_NAME", "CrewAI Bot"), envOrDefault("GIT_USER_EMAIL", "bot@crewai.local")); err != nil {
 			return "", fmt.Errorf("failed to configure git user: %w", err)
 		}
+
+		// Если используем форк — добавляем upstream remote
+		if forkOwner != "" {
+			upstreamURL := fmt.Sprintf("https://github.com/%s/%s.git", issueTarget.Owner, issueTarget.Repo)
+			if err := s.githubClient.AddUpstream(projectPath, upstreamURL); err != nil {
+				return "", fmt.Errorf("failed to add upstream remote: %w", err)
+			}
+			if err := s.githubClient.SyncWithUpstream(ctx, projectPath, issueTarget.BaseBranch); err != nil {
+				log.Printf("Warning: upstream sync failed: %v", err)
+			}
+			issueTarget.Forked = true
+			issueTarget.ForkOwner = forkOwner
+			issueTarget.ForkCloneURL = forkCloneURL
+			log.Printf("Fork %s/%s in use, upstream added: %s/%s", forkOwner, issueTarget.Repo, issueTarget.Owner, issueTarget.Repo)
+		}
+
 		if err := git.CreateBranch(projectPath, issueTarget.BranchName); err != nil {
 			return "", fmt.Errorf("failed to create pull request branch: %w", err)
 		}
@@ -71,6 +100,34 @@ func (s *Service) setupProject(ctx context.Context, taskID, title string, issueT
 		return "", fmt.Errorf("failed to init git: %w", err)
 	}
 	return projectPath, nil
+}
+
+// ensureFork — проверяет права на запись в репозиторий и, при необходимости,
+// создаёт форк под аккаунтом бота. Возвращает owner и clone URL форка
+// (или пустые строки, если форк не нужен).
+func (s *Service) ensureFork(ctx context.Context, target *gh.IssueTarget) (forkOwner, forkCloneURL string, err error) {
+	canWrite, permErr := s.githubClient.CheckWritePermission(ctx, target.Owner, target.Repo)
+	if permErr != nil {
+		log.Printf("Warning: cannot check write permission for %s/%s: %v — proceeding without fork", target.Owner, target.Repo, permErr)
+		return "", "", nil
+	}
+	if canWrite {
+		log.Printf("Write permission confirmed for %s/%s — no fork needed", target.Owner, target.Repo)
+		return "", "", nil
+	}
+
+	log.Printf("No write permission for %s/%s — creating fork", target.Owner, target.Repo)
+	fork, err := s.githubClient.ForkRepository(ctx, target.Owner, target.Repo)
+	if err != nil {
+		return "", "", fmt.Errorf("fork %s/%s: %w", target.Owner, target.Repo, err)
+	}
+
+	if err := s.githubClient.WaitForkReady(ctx, fork.Owner.Login, target.Repo); err != nil {
+		return "", "", fmt.Errorf("wait for fork %s/%s: %w", fork.Owner.Login, target.Repo, err)
+	}
+
+	log.Printf("Repository forked to %s/%s", fork.Owner.Login, target.Repo)
+	return fork.Owner.Login, fork.CloneURL, nil
 }
 
 func ensureCloneTarget(projectPath string) error {
