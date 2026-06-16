@@ -151,13 +151,33 @@ func decisionFromPredefinedWorkflow(req *CreateTaskRequest) *DecisionResult {
 		architecture = "User-defined workflow"
 	}
 
+	// The technical description becomes each worker's TASK.md, so it MUST carry
+	// the real user request — not the workflow label. Previously this used the
+	// architecture string ("Custom workflow with Boss and N managers"), so every
+	// worker was told to implement a meaningless label instead of the actual task
+	// and produced no code (issue #87). The architecture stays in ArchitectureNotes
+	// for the Boss validation/context.
+	technical := strings.TrimSpace(req.Title + "\n" + req.Description)
+	if technical == "" {
+		technical = architecture
+	}
+
+	// Honour the user-provided tech stack, but when the custom workflow omits it
+	// (e.g. the Boss node has no stack configured) fall back to keyword detection
+	// so workers don't silently default to Go for, say, a Python task — mirroring
+	// the AI-planning path in thinkOnce.
+	techStack := append([]string(nil), req.PredefinedTechStack...)
+	if len(techStack) == 0 {
+		techStack = detectTechStack(req.Title, req.Description)
+	}
+
 	return &DecisionResult{
 		TaskType:             taskType,
 		ManagersCount:        int32(len(managerRoles)),
 		ManagerRoles:         managerRoles,
 		ManagerWorkflows:     req.PredefinedManagers,
-		TechnicalDescription: firstNonEmpty(architecture, req.Title+"\n"+req.Description),
-		TechStack:            append([]string(nil), req.PredefinedTechStack...),
+		TechnicalDescription: technical,
+		TechStack:            techStack,
 		ArchitectureNotes:    architecture,
 	}
 }
