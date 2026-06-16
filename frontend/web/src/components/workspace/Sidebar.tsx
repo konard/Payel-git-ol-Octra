@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, BookOpen, MoreHorizontal, Edit2, Trash2, X } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
-import { getChatHistory, createChat, deleteChat, type ChatHistoryItem } from '../services/chatHistoryService';
-import { t } from '../hooks/useI18n';
+import { useAuthStore } from '../../stores/authStore';
+import { getChatHistory, createChat, deleteChat, type ChatHistoryItem } from '../../services/chatHistoryService';
+import { t } from '../../hooks/useI18n';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -135,7 +135,7 @@ export function Sidebar({ isOpen, onClose, onSelectChat, onNewChat, variant = 'o
       return;
     }
     try {
-      const { updateChatTitle } = await import('../services/chatHistoryService');
+      const { updateChatTitle } = await import('../../services/chatHistoryService');
       await updateChatTitle(chatId, editTitle.trim());
       setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: editTitle.trim() } : c));
       setEditingId(null);

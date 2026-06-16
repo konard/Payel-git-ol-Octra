@@ -20,8 +20,8 @@ import { BossNode, ManagerNode, WorkerNode, GitHubNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
 
-import { WorkflowLibrary } from '../../../components/WorkflowLibrary';
-import { WorkflowExport } from '../../../components/WorkflowExport';
+import { WorkflowLibrary } from '../../../components/workspace/WorkflowLibrary';
+import { WorkflowExport } from '../../../components/workspace/WorkflowExport';
 import { useI18n } from '../../../hooks/useI18n';
 import { buildWorkflowConfigFromGraph } from '../../taskPayload';
 

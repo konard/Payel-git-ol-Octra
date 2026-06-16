@@ -9,8 +9,8 @@ import { InputComponent, TextareaComponent } from './InputComponent';
 import { LabelComponent } from './LabelComponent';
 import { SelectComponent } from './SelectComponent';
 import { BadgeComponent } from './BadgeComponent';
-import type { NodeData, AgentParameter } from '../models/Types';
-import { getAgentInfo, getAgentParameters } from '../models/AgentDefinitions';
+import type { NodeData, AgentParameter } from '../../models/Types';
+import { getAgentInfo, getAgentParameters } from '../../models/AgentDefinitions';
 
 export interface PropertiesPanelOptions {
     width?: number;

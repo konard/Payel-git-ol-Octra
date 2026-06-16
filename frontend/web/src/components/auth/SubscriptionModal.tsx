@@ -12,8 +12,8 @@ import {
   createPaymentSession,
   simulatePaymentSuccess,
   type SubscriptionPlan,
-} from '../services/subscriptionService';
-import { useAuthStore } from '../stores/authStore';
+} from '../../services/subscriptionService';
+import { useAuthStore } from '../../stores/authStore';
 
 interface SubscriptionModalProps {
   onClose: () => void;
@@ -185,7 +185,7 @@ export function SubscriptionModal({ onClose, onSubscribe }: SubscriptionModalPro
                     : 'border-[var(--border)] bg-[var(--background)] text-[var(--text-secondary)] hover:text-[var(--text)]'
                 }`}
               >
-                💳 Карта
+                Карта
               </button>
               <button
                 onClick={() => setPaymentMethod('promo')}

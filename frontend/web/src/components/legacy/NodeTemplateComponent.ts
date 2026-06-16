@@ -4,8 +4,8 @@
  */
 
 import { BaseComponent } from './BaseComponent';
-import type { AgentType, AgentCategory } from '../models/Types';
-import { getAgentInfo } from '../models/AgentDefinitions';
+import type { AgentType, AgentCategory } from '../../models/Types';
+import { getAgentInfo } from '../../models/AgentDefinitions';
 
 export interface NodeTemplateOptions {
     type: AgentType;

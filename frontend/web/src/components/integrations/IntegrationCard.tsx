@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plug, Check, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n } from '../../hooks/useI18n';
 import { IntegrationForm } from './IntegrationForm';
-import type { IntegrationType, IntegrationConfig } from '../stores/integrationStore';
+import type { IntegrationType, IntegrationConfig } from '../../stores/integrationStore';
 
 interface IntegrationCardProps {
   type: IntegrationType;

@@ -12,10 +12,10 @@ import {
   downloadWorkflow,
   getWorkflowCategories,
   type Workflow,
-} from '../services/workflowService';
-import { useAuthStore } from '../stores/authStore';
-import { useTaskStore } from '../stores/taskStore';
-import { useI18n } from '../hooks/useI18n';
+} from '../../services/workflowService';
+import { useAuthStore } from '../../stores/authStore';
+import { useTaskStore } from '../../stores/taskStore';
+import { useI18n } from '../../hooks/useI18n';
 
 type LibraryView = 'public' | 'my';
 

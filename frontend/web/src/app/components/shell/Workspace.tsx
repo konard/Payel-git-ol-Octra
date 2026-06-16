@@ -3,7 +3,7 @@ import { Canvas } from '../canvas/Canvas';
 import { Chat, type ChatMessage } from '../chat/Chat';
 import { SolutionViewer } from '../solution/SolutionViewer';
 import { BottomInput, type TaskData } from '../chat/BottomInput';
-import { Sidebar } from '../../../components/Sidebar';
+import { Sidebar } from '../../../components/workspace/Sidebar';
 import { DesktopFileExplorer } from '../../../desktop/DesktopFileExplorer';
 import { isDesktopApp } from '../../../desktop/bridge';
 

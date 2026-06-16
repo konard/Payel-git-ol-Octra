@@ -4,8 +4,8 @@
  */
 
 import { BaseComponent } from './BaseComponent';
-import type { Point, ConnectionData } from '../models/Types';
-import { bezierPoint, bezierLength } from '../utils/MathUtils';
+import type { Point, ConnectionData } from '../../models/Types';
+import { bezierPoint, bezierLength } from '../../utils/MathUtils';
 
 export interface ConnectionLayerOptions {
     selectedConnectionId?: string;

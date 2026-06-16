@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Mail, Crown, Calendar, Edit2, Check, X, Copy } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
-import { t } from '../hooks/useI18n';
-import { createAvatarDataUrl } from '../utils/avatar';
+import { useAuthStore } from '../../stores/authStore';
+import { t } from '../../hooks/useI18n';
+import { createAvatarDataUrl } from '../../utils/avatar';
 
 interface UserProfileProps {
   onClose: () => void;

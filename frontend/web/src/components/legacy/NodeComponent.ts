@@ -4,8 +4,8 @@
  */
 
 import { BaseComponent } from './BaseComponent';
-import type { NodeData, Point } from '../models/Types';
-import { getAgentInfo } from '../models/AgentDefinitions';
+import type { NodeData, Point } from '../../models/Types';
+import { getAgentInfo } from '../../models/AgentDefinitions';
 
 export interface NodeComponentOptions {
     nodeData: NodeData;

@@ -4,11 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
-import { useI18n } from '../hooks/useI18n';
-import googleIcon from '../images/google-auth.png';
-import githubIcon from '../images/github-image.png';
-import lefineIcon from '../images/lefine.pro.jpg';
+import { useAuthStore } from '../../stores/authStore';
+import { useI18n } from '../../hooks/useI18n';
+import googleIcon from '../../images/google-auth.png';
+import githubIcon from '../../images/github-image.png';
+import lefineIcon from '../../images/lefine.pro.jpg';
 // import ReCAPTCHA from '@google-recaptcha/react';  // temporarily disabled for Docker build (package not in package.json)
 
 type AuthView = 'login' | 'register';

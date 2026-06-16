@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 
 export function PaymentSuccess() {
   const { checkAuth } = useAuthStore();

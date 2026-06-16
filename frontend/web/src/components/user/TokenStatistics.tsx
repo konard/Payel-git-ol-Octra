@@ -16,9 +16,9 @@ import {
   TASK_CATEGORIES,
   CATEGORY_COLORS,
   type TaskCategory,
-} from '../stores/statisticsStore';
-import { useThemeStore } from '../stores/themeStore';
-import { useI18n } from '../hooks/useI18n';
+} from '../../stores/statisticsStore';
+import { useThemeStore } from '../../stores/themeStore';
+import { useI18n } from '../../hooks/useI18n';
 
 // Chart.js is tree-shakeable: only the pieces the bar chart needs are registered
 // so the bundle does not pull in the whole library.

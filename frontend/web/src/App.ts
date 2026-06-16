@@ -5,14 +5,14 @@
 
 import { NodeEngine } from './core/NodeEngine';
 import { CanvasEngine } from './core/CanvasEngine';
-import { HeaderComponent } from './components/HeaderComponent';
-import { AgentSidebarComponent } from './components/AgentSidebarComponent';
-import { PropertiesPanelComponent } from './components/PropertiesPanelComponent';
-import { ToolbarComponent } from './components/ToolbarComponent';
-import { NodeComponent } from './components/NodeComponent';
-import { ConnectionLayerComponent } from './components/ConnectionLayerComponent';
-import { MinimapComponent } from './components/MinimapComponent';
-import { NodeTemplateComponent } from './components/NodeTemplateComponent';
+import { HeaderComponent } from './components/legacy/HeaderComponent';
+import { AgentSidebarComponent } from './components/legacy/AgentSidebarComponent';
+import { PropertiesPanelComponent } from './components/legacy/PropertiesPanelComponent';
+import { ToolbarComponent } from './components/legacy/ToolbarComponent';
+import { NodeComponent } from './components/legacy/NodeComponent';
+import { ConnectionLayerComponent } from './components/legacy/ConnectionLayerComponent';
+import { MinimapComponent } from './components/legacy/MinimapComponent';
+import { NodeTemplateComponent } from './components/legacy/NodeTemplateComponent';
 import type { NodeData, Point, AgentType, ConnectionData } from './models/Types';
 import { saveProject, loadProject, exportProjectToFile, importProjectFromFile } from './utils/StorageUtils';
 import { AppEvents } from './utils/EventDispatcher';

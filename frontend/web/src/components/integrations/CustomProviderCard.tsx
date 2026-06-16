@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Settings2, ChevronDown, ChevronUp, Trash2, Edit, Plus } from 'lucide-react';
-import { useI18n } from '../hooks/useI18n';
-import { customProviderService } from '../services/customProviderService';
-import { CustomProvider } from '../stores/customProvidersStore';
+import { useI18n } from '../../hooks/useI18n';
+import { customProviderService } from '../../services/customProviderService';
+import { CustomProvider } from '../../stores/customProvidersStore';
 
 interface CustomProviderCardProps {
   provider?: CustomProvider;

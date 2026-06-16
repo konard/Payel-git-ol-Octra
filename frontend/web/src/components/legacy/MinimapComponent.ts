@@ -4,7 +4,7 @@
  */
 
 import { BaseComponent } from './BaseComponent';
-import type { Point, Rectangle } from '../models/Types';
+import type { Point, Rectangle } from '../../models/Types';
 
 export interface MinimapOptions {
     width?: number;

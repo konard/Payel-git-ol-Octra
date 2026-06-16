@@ -4,10 +4,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useTaskStore } from '../stores/taskStore';
-import { useAuthStore } from '../stores/authStore';
-import { useI18n } from '../hooks/useI18n';
-import { exportOcaweText } from '../services/ocaweService';
+import { useTaskStore } from '../../stores/taskStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useI18n } from '../../hooks/useI18n';
+import { exportOcaweText } from '../../services/ocaweService';
 
 interface WorkflowExportProps {
   onImportJSON: (json: string) => void;

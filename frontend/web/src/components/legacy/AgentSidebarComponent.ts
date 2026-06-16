@@ -11,8 +11,8 @@ import {
     getAllCategories,
     getAgentsByCategory,
     searchAgents,
-} from '../models/AgentDefinitions';
-import type { AgentType, AgentCategory } from '../models/Types';
+} from '../../models/AgentDefinitions';
+import type { AgentType, AgentCategory } from '../../models/Types';
 
 export interface AgentSidebarOptions {
     collapsible?: boolean;
