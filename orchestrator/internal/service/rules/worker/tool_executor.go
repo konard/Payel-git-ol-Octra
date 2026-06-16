@@ -183,7 +183,11 @@ func (s *Service) executeToolCommand(ctx context.Context, projectPath, command s
 		return "", fmt.Errorf("failed to start command: %w", err)
 	}
 
-	var output strings.Builder
+	// Вывод сборочных команд (nix develop, npm install, cargo build, …) может
+	// достигать сотен мегабайт. Полностью он нужен только для диагностики
+	// ошибки, поэтому держим в памяти лишь последний фрагмент — этого хватает,
+	// чтобы увидеть причину падения, но RSS не разрастается (issue #89).
+	output := newBoundedBuffer(maxToolOutputBytes)
 	reader := io.MultiReader(stdout, stderr)
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 1024*64), 1024*64)
@@ -203,6 +207,44 @@ func (s *Service) executeToolCommand(ctx context.Context, projectPath, command s
 
 	err := cmd.Wait()
 	return output.String(), err
+}
+
+// maxToolOutputBytes — сколько байт вывода команды держим в памяти. Хранится
+// «хвост» (последние байты), потому что причина падения сборки обычно в конце.
+const maxToolOutputBytes = 64 * 1024
+
+// boundedBuffer накапливает текст, но удерживает в памяти не более limit
+// последних байт. При переполнении старые данные отбрасываются с начала.
+type boundedBuffer struct {
+	buf       []byte
+	limit     int
+	truncated bool
+}
+
+func newBoundedBuffer(limit int) *boundedBuffer {
+	if limit <= 0 {
+		limit = maxToolOutputBytes
+	}
+	return &boundedBuffer{limit: limit}
+}
+
+func (b *boundedBuffer) WriteString(s string) {
+	b.buf = append(b.buf, s...)
+	if len(b.buf) > b.limit {
+		// Копируем хвост в свежий слайс, чтобы старый backing-массив (с
+		// отброшенными байтами) собрался сборщиком мусора, а не держался в RSS.
+		tail := make([]byte, b.limit)
+		copy(tail, b.buf[len(b.buf)-b.limit:])
+		b.buf = tail
+		b.truncated = true
+	}
+}
+
+func (b *boundedBuffer) String() string {
+	if b.truncated {
+		return "[...output truncated...]\n" + string(b.buf)
+	}
+	return string(b.buf)
 }
 
 // detectNewFiles находит файлы, созданные инструментами, через git status --porcelain.
@@ -243,6 +285,12 @@ func detectNewFiles(projectPath string) map[string]string {
 				path = strings.TrimSpace(parts[1])
 			}
 		}
+		// Не читаем в память артефакты сборки и менеджеры пакетов
+		// (node_modules, target, dist, …): для npm/cargo-проектов это сотни
+		// мегабайт мусора, который никому не нужен (issue #89).
+		if util.IsIgnoredPath(path) {
+			continue
+		}
 		content, readErr := os.ReadFile(filepath.Join(projectPath, path))
 		if readErr != nil {
 			continue
@@ -257,14 +305,24 @@ func detectNewFiles(projectPath string) map[string]string {
 func readProjectFiles(projectPath string) map[string]string {
 	files := make(map[string]string)
 	_ = filepath.Walk(projectPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+		if err != nil {
 			return nil
 		}
 		rel, err := filepath.Rel(projectPath, path)
 		if err != nil {
 			return nil
 		}
-		if strings.HasPrefix(rel, ".git") || strings.HasPrefix(rel, ".octra") {
+		rel = filepath.ToSlash(rel)
+		// Артефакты сборки и менеджеры пакетов (node_modules, target, dist, …)
+		// не спускаемся внутрь целиком — это сотни мегабайт мусора, который
+		// иначе целиком оказался бы в памяти (issue #89).
+		if info.IsDir() {
+			if rel != "." && util.IsIgnoredPath(rel) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if util.IsIgnoredPath(rel) {
 			return nil
 		}
 		content, err := os.ReadFile(path)
