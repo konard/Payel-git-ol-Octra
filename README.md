@@ -21,6 +21,32 @@ User → API Gateway → Boss (architect)
 **Managers** review and orchestrate workers.  
 **Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding. 
 
+## Universal node (trivial-task fast path)
+
+Divide-and-conquer is the right tool for complex projects, but the same machinery
+over-engineers trivial requests: *"write hello world in Python"* would spawn
+managers and workers and emit a tree of files with unclear logic instead of the one
+obvious line of code.
+
+Octra avoids this by judging complexity first. The Boss grades every task `1-10`
+from a **pure analysis of the work required — not trigger words**. When the model
+itself rates a task as trivial (grade ≤ `2` by default), Octra skips the full
+pipeline and routes it to a single **universal node**:
+
+```
+User → API Gateway → Boss (grades complexity 1-10)
+                        ├── trivial (≤2)  → Universal node → instant minimal answer
+                        └── otherwise     → Manager × N → Worker × N (full pipeline)
+```
+
+- The universal node is one unconstrained AI call that returns the smallest correct
+  result (`{"files": {...}}`), then flows through the same disk/validation/publish
+  steps — no manager/worker fan-out.
+- If the universal node produces nothing usable, Octra transparently falls back to
+  the full pipeline, so trivial tasks never fail.
+- Operators can tune the threshold with `OCTRA_UNIVERSAL_MAX_GRADE` (0-10) or turn
+  the fast path off entirely with `OCTRA_DISABLE_UNIVERSAL_NODE=true`.
+
 ## Philosophy
 
 Octra's core principle: **AI is a genius but untrustworthy brain — the system is a rigid shell that controls it.**

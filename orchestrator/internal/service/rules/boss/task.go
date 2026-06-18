@@ -134,13 +134,27 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		log.Printf("Refinement mode enabled — skipping project restore")
 	}
 
-	emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
-	managerResults, err := s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
-	if err != nil {
-		task.Status = "error"
-		database.Db.Save(task)
-		emit(progress, 0, "Managers failed: "+err.Error(), errorData())
-		return err
+	// Тривиальные задачи (issue #91) решает одна «универсальная нода» вместо
+	// полного конвейера: нет смысла плодить менеджеров/воркеров ради hello world
+	// или математического вопроса. Если нода не справилась — откатываемся на
+	// полный конвейер, чтобы не провалить задачу.
+	var managerResults []*rules.ManagerResult
+	universalUsed := false
+	if shouldUseUniversalNode(req, decision, issueTarget) {
+		emit(progress, 40, fmt.Sprintf("Trivial task (%d/10) — using a single universal node", req.Grade), nil)
+		managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
+		universalUsed = len(managerResults) > 0
+	}
+
+	if !universalUsed {
+		emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
+		managerResults, err = s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
+		if err != nil {
+			task.Status = "error"
+			database.Db.Save(task)
+			emit(progress, 0, "Managers failed: "+err.Error(), errorData())
+			return err
+		}
 	}
 	if len(managerResults) == 0 {
 		log.Printf("Boss: No manager results. decision.ManagersCount=%d, ManagerRoles=%v",
@@ -151,11 +165,15 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		return fmt.Errorf("no solution generated")
 	}
 
-	integrationBranch := "main"
-	if issueTarget != nil && issueTarget.Cloned && issueTarget.BranchName != "" {
-		integrationBranch = issueTarget.BranchName
+	// Универсальная нода коммитит прямо в текущую ветку и не создаёт manager-веток,
+	// поэтому слияние ей не нужно (и нечего сливать).
+	if !universalUsed {
+		integrationBranch := "main"
+		if issueTarget != nil && issueTarget.Cloned && issueTarget.BranchName != "" {
+			integrationBranch = issueTarget.BranchName
+		}
+		s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
 	}
-	s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
 
 	// Используем detached context для критических операций (nix build, валидация, push, cleanup),
 	// чтобы потеря WebSocket (stream context cancellation) не убивала пайплайн.
