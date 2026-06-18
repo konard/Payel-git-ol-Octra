@@ -33,6 +33,7 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
   const searchStepsCount = useTaskStore((state) => state.searchStepsCount);
   const managers = nodes.filter((node) => node.type === 'manager');
   const workers = nodes.filter((node) => node.type === 'worker');
+  const universalNodes = nodes.filter((node) => node.type === 'universal');
   const [searchCollapsed, setSearchCollapsed] = useState(false);
   const isSearching = searchPhase === 'searching';
   const completedSteps = searchStepsCount || searchSteps.length;
@@ -165,13 +166,28 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
             </div>
           )}
 
-          {(managers.length > 0 || workers.length > 0) && (
+          {(managers.length > 0 || workers.length > 0 || universalNodes.length > 0) && (
             <div className="ml-12 max-w-2xl border-l border-[var(--border)] pl-5">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
                 <GitBranch size={16} />
                 Workflow activity
               </div>
               <div className="space-y-3">
+                {universalNodes.map((node) => (
+                  <div key={node.id} className="flex items-center gap-3 text-sm">
+                    {node.status === 'done' ? (
+                      <CheckCircle2 size={16} className="text-[var(--success)]" />
+                    ) : node.status === 'working' || node.status === 'reviewing' ? (
+                      <CircleDotDashed size={16} className="animate-spin text-[var(--accent)]" />
+                    ) : (
+                      <Circle size={16} className="text-[var(--text-muted)]" />
+                    )}
+                    <span className="text-[var(--text)]">{node.role}</span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {node.filesCount ? `${node.filesCount} files` : node.status}
+                    </span>
+                  </div>
+                ))}
                 {managers.map((manager) => (
                   <div key={manager.id} className="flex items-center gap-3 text-sm">
                     {manager.status === 'done' ? (

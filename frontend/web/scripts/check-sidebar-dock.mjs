@@ -56,7 +56,7 @@ try {
 
   useI18nStore.setState({ language: 'ru' });
 
-  const { Sidebar } = await server.ssrLoadModule('/src/components/Sidebar.tsx');
+  const { Sidebar } = await server.ssrLoadModule('/src/components/workspace/Sidebar.tsx');
   useAuthStore.setState({
     user: null,
     accessToken: null,

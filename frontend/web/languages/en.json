@@ -188,6 +188,11 @@
       "type": "Developer",
       "description": "Generates code for the task"
     },
+    "universal": {
+      "label": "Universal",
+      "type": "Direct AI",
+      "description": "Solves easy tasks directly without a full team"
+    },
     "tip": {
       "title": "Tip:",
       "items": [

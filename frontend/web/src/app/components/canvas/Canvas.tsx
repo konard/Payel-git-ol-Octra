@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTaskStore, type AgentNodeType, type AgentNode } from '../../../stores/taskStore';
-import { BossNode, ManagerNode, WorkerNode, GitHubNode } from './nodes';
+import { BossNode, ManagerNode, WorkerNode, UniversalNode, GitHubNode } from './nodes';
 import { NodeSidebar } from './NodeSidebar';
 import { NodeContextMenu } from './NodeContextMenu';
 
@@ -25,17 +25,26 @@ import { WorkflowExport } from '../../../components/workspace/WorkflowExport';
 import { useI18n } from '../../../hooks/useI18n';
 import { buildWorkflowConfigFromGraph } from '../../taskPayload';
 
+type DraggableAgentNodeType = Exclude<AgentNodeType, 'github'>;
+
 const nodeTypes = {
   boss: BossNode,
   manager: ManagerNode,
   worker: WorkerNode,
+  universal: UniversalNode,
   github: GitHubNode,
 };
 
-const nodeRoleDefaults: Record<string, string> = {
+const draggableNodeTypes: readonly DraggableAgentNodeType[] = ['boss', 'manager', 'worker', 'universal'];
+
+const isDraggableAgentNodeType = (type: string): type is DraggableAgentNodeType =>
+  draggableNodeTypes.includes(type as DraggableAgentNodeType);
+
+const nodeRoleDefaults: Record<DraggableAgentNodeType, string> = {
   boss: 'CEO',
   manager: 'Coordinator',
   worker: 'Specialist',
+  universal: 'Universal',
 };
 
 interface CanvasProps {
@@ -176,8 +185,8 @@ export function Canvas({ mode }: CanvasProps) {
         }
       }
 
-      const type = event.dataTransfer.getData('application/reactflow/node-type') as 'boss' | 'manager' | 'worker';
-      if (type && reactFlowInstance) {
+      const type = event.dataTransfer.getData('application/reactflow/node-type');
+      if (isDraggableAgentNodeType(type) && reactFlowInstance) {
         event.preventDefault();
         const position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX,
@@ -208,7 +217,7 @@ export function Canvas({ mode }: CanvasProps) {
     }
   }, [handleImportWorkflow]);
 
-  const onDragStartFromSidebar = useCallback((type: 'boss' | 'manager' | 'worker', event: React.DragEvent) => {
+  const onDragStartFromSidebar = useCallback((type: DraggableAgentNodeType, event: React.DragEvent) => {
     event.dataTransfer.setData('application/reactflow/node-type', type);
     event.dataTransfer.effectAllowed = 'move';
   }, []);

@@ -28,12 +28,12 @@ assert.match(
 );
 
 // The Statistics component must be mounted behind its own settings tab.
-const topBarSource = readFileSync(resolve(process.cwd(), 'src/app/components/TopBar.tsx'), 'utf8');
+const topBarSource = readFileSync(resolve(process.cwd(), 'src/app/components/shell/TopBar.tsx'), 'utf8');
 assert.match(topBarSource, /id: 'statistics'/, 'a statistics settings tab should exist');
 assert.match(topBarSource, /<TokenStatistics \/>/, 'the statistics tab should render TokenStatistics');
 
 // The chart component must use Chart.js (issue requirement).
-const chartSource = readFileSync(resolve(process.cwd(), 'src/components/TokenStatistics.tsx'), 'utf8');
+const chartSource = readFileSync(resolve(process.cwd(), 'src/components/user/TokenStatistics.tsx'), 'utf8');
 assert.match(chartSource, /react-chartjs-2/, 'the chart must be built with Chart.js (react-chartjs-2)');
 
 const server = await createServer({

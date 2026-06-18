@@ -4,7 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 
 const requiredFiles = [
-  'src/app/components/LandingPage.tsx',
+  'src/app/components/landing/LandingPage.tsx',
   'src/app/components/landing/HeroSection.tsx',
   'src/app/components/landing/WorkflowDemo.tsx',
   'src/app/components/landing/ProvidersSection.tsx',

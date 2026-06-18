@@ -105,3 +105,43 @@ func TestResolveGenerationModeEscapeHatch(t *testing.T) {
 		t.Errorf("without escape hatch: got %q, want %q", got, ModeTool)
 	}
 }
+
+// TestUniversalNodeMaxGradeResolved documents the issue #91 fast-path threshold:
+// trivial tasks (low model grade) are handled by a single universal node instead
+// of the full pipeline. The threshold is operator-overridable and can be disabled.
+func TestUniversalNodeMaxGradeResolved(t *testing.T) {
+	t.Run("default threshold", func(t *testing.T) {
+		os.Unsetenv("OCTRA_DISABLE_UNIVERSAL_NODE")
+		os.Unsetenv("OCTRA_UNIVERSAL_MAX_GRADE")
+		if got := UniversalNodeMaxGradeResolved(); got != UniversalNodeMaxGrade {
+			t.Fatalf("UniversalNodeMaxGradeResolved() = %d, want %d", got, UniversalNodeMaxGrade)
+		}
+	})
+
+	t.Run("disabled via env returns 0", func(t *testing.T) {
+		t.Setenv("OCTRA_DISABLE_UNIVERSAL_NODE", "true")
+		if got := UniversalNodeMaxGradeResolved(); got != 0 {
+			t.Fatalf("disabled threshold = %d, want 0", got)
+		}
+	})
+
+	t.Run("env override within range", func(t *testing.T) {
+		os.Unsetenv("OCTRA_DISABLE_UNIVERSAL_NODE")
+		t.Setenv("OCTRA_UNIVERSAL_MAX_GRADE", "4")
+		if got := UniversalNodeMaxGradeResolved(); got != 4 {
+			t.Fatalf("override threshold = %d, want 4", got)
+		}
+	})
+
+	t.Run("invalid override falls back to default", func(t *testing.T) {
+		os.Unsetenv("OCTRA_DISABLE_UNIVERSAL_NODE")
+		t.Setenv("OCTRA_UNIVERSAL_MAX_GRADE", "99")
+		if got := UniversalNodeMaxGradeResolved(); got != UniversalNodeMaxGrade {
+			t.Fatalf("invalid override threshold = %d, want default %d", got, UniversalNodeMaxGrade)
+		}
+		t.Setenv("OCTRA_UNIVERSAL_MAX_GRADE", "notanumber")
+		if got := UniversalNodeMaxGradeResolved(); got != UniversalNodeMaxGrade {
+			t.Fatalf("non-numeric override threshold = %d, want default %d", got, UniversalNodeMaxGrade)
+		}
+	})
+}

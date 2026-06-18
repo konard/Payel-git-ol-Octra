@@ -15,12 +15,12 @@ const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
 // --- 1. Source-level wiring assertions. -----------------------------------
-const viewer = read('src/app/components/SolutionViewer.tsx');
+const viewer = read('src/app/components/solution/SolutionViewer.tsx');
 assert.match(viewer, /from '\.\/PullRequestSummary'/, 'SolutionViewer must import PullRequestSummary');
 assert.match(viewer, /useTaskStore\(\(state\) => state\.pullRequest\)/, 'SolutionViewer must read pullRequest from the store');
 assert.match(viewer, /<PullRequestSummary pr=\{pullRequest\} \/>/, 'SolutionViewer must render the PR summary');
 
-const summary = read('src/app/components/PullRequestSummary.tsx');
+const summary = read('src/app/components/solution/PullRequestSummary.tsx');
 assert.match(summary, /export function PullRequestSummary\(/, 'PullRequestSummary must be exported');
 assert.match(summary, /Merge Pull Request/, 'PR summary must offer a Merge button');
 assert.match(summary, /Review/, 'PR summary must offer a Review button');

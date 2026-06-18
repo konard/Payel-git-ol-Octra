@@ -19,7 +19,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
-const selector = read('src/app/components/ModelSelector.tsx');
+const selector = read('src/app/components/chat/ModelSelector.tsx');
 
 // The outside-click handler must consult the anchor ref, not just the menu, so a
 // click on the trigger is not treated as an outside click.

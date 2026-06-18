@@ -1,5 +1,5 @@
 import { resolveDefaultToken } from '../config/defaultSettings';
-import type { AgentNode, Edge, WorkflowConfig } from '../stores/taskStore';
+import { isGeneratedAgentNodeId, type AgentNode, type Edge, type WorkflowConfig } from '../stores/taskStore';
 
 interface CustomProviderAuth {
   base_url: string;
@@ -18,12 +18,7 @@ interface TaskProviderAuth {
   tokens: Record<string, string>;
 }
 
-const isCustomWorkflowNode = (node: AgentNode): boolean =>
-  !node.id.startsWith('boss-') &&
-  !node.id.startsWith('manager-') &&
-  !node.id.startsWith('worker-') &&
-  node.id !== 'github-archive' &&
-  node.id !== 'zip-archive';
+const isCustomWorkflowNode = (node: AgentNode): boolean => !isGeneratedAgentNodeId(node.id);
 
 function firstConfiguredToken(...tokens: Array<string | null | undefined>): string {
   for (const token of tokens) {

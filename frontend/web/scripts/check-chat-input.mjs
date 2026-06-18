@@ -12,7 +12,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
-const chatInput = read('src/app/components/ChatInput.tsx');
+const chatInput = read('src/app/components/chat/ChatInput.tsx');
 
 // The textarea must wire up a keydown handler.
 assert.match(chatInput, /onKeyDown=\{handleKeyDown\}/, 'ChatInput textarea must have an onKeyDown handler');

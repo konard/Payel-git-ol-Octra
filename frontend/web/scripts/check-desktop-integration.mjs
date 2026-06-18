@@ -43,7 +43,7 @@ assert.match(main, /DesktopTitleBar/, 'main.tsx must mount DesktopTitleBar');
 // The workspace must only add the Explorer dock inside the desktop app, and must
 // NOT mount a separate desktop file viewer window — opened files render in the
 // "Solution files" panel instead (issue #50 owner feedback).
-const workspace = read('app/components/Workspace.tsx');
+const workspace = read('app/components/shell/Workspace.tsx');
 assert.match(workspace, /isDesktopApp\(\)/, 'Workspace must gate the explorer on isDesktopApp');
 assert.match(workspace, /DesktopFileExplorer/, 'Workspace must render the explorer');
 assert.doesNotMatch(workspace, /DesktopFileViewer/, 'Workspace must not render a separate file viewer window');
@@ -63,7 +63,7 @@ assert.match(store, /useTaskStore/, 'desktop store must push opened files into t
 assert.match(store, /upsertCodeFiles/, 'desktop store must upsert opened files as solution files');
 
 // The Solution files panel focuses the file opened from the desktop Explorer.
-const solutionViewer = read('app/components/SolutionViewer.tsx');
+const solutionViewer = read('app/components/solution/SolutionViewer.tsx');
 assert.match(solutionViewer, /useDesktopStore/, 'SolutionViewer must observe the desktop open-file signal');
 assert.match(solutionViewer, /openNonce/, 'SolutionViewer must focus the freshly opened desktop file');
 
