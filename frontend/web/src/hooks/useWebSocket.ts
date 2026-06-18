@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useTaskStore } from '../stores/taskStore';
+import { isGeneratedAgentNodeId, useTaskStore } from '../stores/taskStore';
 import { useIntegrationStore } from '../stores/integrationStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 import { parsePullRequestInfo } from '../lib/pullRequest';
@@ -113,6 +113,12 @@ function normalizeRoleKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9а-яё]+/gi, '');
 }
 
+function filesCountFromData(data: Record<string, any> | undefined): number | undefined {
+  const raw = data?.filesCount ?? data?.files_count;
+  const value = Number.parseInt(String(raw ?? ''), 10);
+  return Number.isNaN(value) ? undefined : value;
+}
+
 function solutionMarkdownFile(data: Record<string, any> | undefined, currentTaskType: string): StreamedCodeFile | null {
   if (!data) return null;
 
@@ -177,12 +183,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     nodes: () => useTaskStore.getState().nodes,
   };
 
-  const isGeneratedNode = (node: { id: string }) =>
-    node.id.startsWith('boss-') ||
-    node.id.startsWith('manager-') ||
-    node.id.startsWith('worker-') ||
-    node.id === 'github-archive' ||
-    node.id === 'zip-archive';
+  const isGeneratedNode = (node: { id: string }) => isGeneratedAgentNodeId(node.id);
 
   const hasUserNodes = () => {
     const nodes = storeActions.nodes();
@@ -458,6 +459,44 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     });
   };
 
+  const addUniversalNode = (
+    status: 'pending' | 'working' | 'done' | 'error' = 'working',
+    filesCount?: number,
+  ) => {
+    const nodes = storeActions.nodes();
+    const updates = {
+      status,
+      ...(filesCount !== undefined ? { filesCount } : {}),
+    };
+    const existingGenerated = nodes.find((node) => node.id === 'universal-1');
+    if (existingGenerated) {
+      storeActions.updateNode(existingGenerated.id, updates);
+      return;
+    }
+
+    const reusableUniversal = nodes.find((node) => node.type === 'universal' && !isGeneratedNode(node));
+    if (reusableUniversal) {
+      storeActions.updateNode(reusableUniversal.id, updates);
+      return;
+    }
+
+    if (hasUserNodes()) {
+      return;
+    }
+
+    storeActions.addNode({
+      id: 'universal-1',
+      type: 'universal',
+      role: 'Universal',
+      status,
+      ...(filesCount !== undefined ? { filesCount } : {}),
+      position: { x: 400, y: 250 },
+    });
+    if (nodes.some((node) => node.id === 'boss-1')) {
+      storeActions.addEdge({ from: 'boss-1', to: 'universal-1' });
+    }
+  };
+
   // Helper: add the publishing sink during code packaging, then attach the
   // repository URL when the backend returns one.
   const addGitHubNode = (repoUrl?: string, prUrl?: string, errorMessage?: string) => {
@@ -477,13 +516,14 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     }
     zipNodeAdded.current = true;
 
-    // Find all worker nodes
+    // Find all solution-producing nodes
     const nodes = storeActions.nodes();
     const workerNodes = nodes.filter(n => n.type === 'worker');
     const managerNodes = nodes.filter(n => n.type === 'manager');
+    const universalNodes = nodes.filter(n => n.type === 'universal');
 
     // Calculate center position
-    const allX = [...workerNodes, ...managerNodes].map(n => n.position?.x || 0);
+    const allX = [...workerNodes, ...managerNodes, ...universalNodes].map(n => n.position?.x || 0);
     const centerX = allX.length > 0 ? Math.min(...allX) + (Math.max(...allX) - Math.min(...allX)) / 2 : 400;
 
     storeActions.addNode({
@@ -497,8 +537,8 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
       position: { x: centerX, y: 520 },
     });
 
-    // Add edges from all workers to ZIP (or managers if no workers)
-    const edgeSources = workerNodes.length > 0 ? workerNodes : managerNodes;
+    // Add edges from all solution-producing nodes to GitHub.
+    const edgeSources = workerNodes.length > 0 ? workerNodes : universalNodes.length > 0 ? universalNodes : managerNodes;
     edgeSources.forEach((node) => {
       storeActions.addEdge({ from: node.id, to: 'github-archive' });
     });
@@ -552,6 +592,7 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     // Update progress in chat if this is a boss progress message
     if (onProgressUpdate && (message.includes('AI is planning') ||
                             message.includes('Creating') ||
+                            message.includes('Universal node') ||
                             message.includes('completed') ||
                             message.includes('packaging') ||
                             message.includes('Boss validating'))) {
@@ -588,6 +629,24 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
           position: { x: 400, y: 50 },
         });
       }
+    }
+
+    // === UNIVERSAL NODE ===
+    if (
+      message.includes('using a single universal node') ||
+      message.includes('Universal node solving') ||
+      (message.includes('Writing file:') && msg.data?.current_role === 'universal')
+    ) {
+      storeActions.setTaskStatus('executing');
+      addUniversalNode('working', filesCountFromData(msg.data));
+    }
+
+    if (message.includes('Universal node produced')) {
+      addUniversalNode('working', filesCountFromData(msg.data));
+    }
+
+    if (message.includes('Universal node finished')) {
+      addUniversalNode('done', filesCountFromData(msg.data));
     }
 
     // === MANAGERS — "Starting manager: Project Lead / Architect" ===

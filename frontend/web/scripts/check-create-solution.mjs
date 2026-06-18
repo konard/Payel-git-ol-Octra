@@ -34,7 +34,7 @@ assert.match(
 );
 
 // --- 2. Canvas starts zoomed out and never recentres on new nodes. ---
-const canvasSource = readFileSync(resolve(process.cwd(), 'src/app/components/Canvas.tsx'), 'utf8');
+const canvasSource = readFileSync(resolve(process.cwd(), 'src/app/components/canvas/Canvas.tsx'), 'utf8');
 assert.doesNotMatch(
   canvasSource,
   /^\s*fitView\s*$/m,

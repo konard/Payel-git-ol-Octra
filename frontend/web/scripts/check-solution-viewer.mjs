@@ -15,18 +15,18 @@ const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
 // --- 1. Source-level rename assertions. -----------------------------------
 const app = read('src/app/App.tsx');
-assert.match(app, /from '\.\/components\/SolutionViewer'/, 'App must import SolutionViewer');
+assert.match(app, /from '\.\/components\/solution\/SolutionViewer'/, 'App must import SolutionViewer');
 assert.match(app, /<SolutionViewer \/>/, 'App must render <SolutionViewer />');
 assert.match(app, /'canvas' \| 'chat' \| 'solution'/, "App mode union must use 'solution'");
 assert.doesNotMatch(app, /CodeViewer/, 'App must not reference the old CodeViewer');
 assert.doesNotMatch(app, /mode === 'code'/, "App must not use the old 'code' mode");
 
-const topBar = read('src/app/components/TopBar.tsx');
+const topBar = read('src/app/components/shell/TopBar.tsx');
 assert.match(topBar, /onModeChange\('solution'\)/, "TopBar tab must switch to 'solution'");
 assert.match(topBar, />\s*Solution\s*</, 'TopBar tab label must read "Solution"');
 assert.doesNotMatch(topBar, /onModeChange\('code'\)/, "TopBar must not switch to the old 'code' mode");
 
-const viewer = read('src/app/components/SolutionViewer.tsx');
+const viewer = read('src/app/components/solution/SolutionViewer.tsx');
 assert.match(viewer, /export function SolutionViewer\(/, 'SolutionViewer must be exported');
 assert.match(viewer, /react-markdown/, 'SolutionViewer must use react-markdown');
 assert.match(viewer, /remark-gfm/, 'SolutionViewer must use remark-gfm (tables, task lists)');

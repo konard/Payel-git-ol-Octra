@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'github';
+export type AgentNodeType = 'boss' | 'manager' | 'worker' | 'universal' | 'github';
 export type AgentNodeStatus = 'pending' | 'thinking' | 'working' | 'reviewing' | 'done' | 'error';
 export type TaskStatus = 'idle' | 'creating' | 'planning' | 'executing' | 'done' | 'error' | 'cancelled';
 
@@ -147,6 +147,14 @@ interface TaskState {
 let nodeIdCounter = 0;
 
 const getFileName = (path: string): string => path.split('/').filter(Boolean).at(-1) || path || 'Untitled';
+
+export const isGeneratedAgentNodeId = (id: string): boolean =>
+  id.startsWith('boss-') ||
+  id.startsWith('manager-') ||
+  id.startsWith('worker-') ||
+  id.startsWith('universal-') ||
+  id === 'github-archive' ||
+  id === 'zip-archive';
 
 const normalizeCodeFile = (
   file: Partial<CodeFile> & { path: string; content: string },
@@ -367,13 +375,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   }),
 
   resetTask: () => set((state) => {
-    // Keep user-created nodes (not auto-generated ones like boss-1, manager-*, worker-*)
-    const userNodes = state.nodes.filter(node =>
-      !node.id.startsWith('boss-') &&
-      !node.id.startsWith('manager-') &&
-      !node.id.startsWith('worker-') &&
-      node.id !== 'github-archive'
-    );
+    // Keep user-created nodes, not auto-generated runtime nodes.
+    const userNodes = state.nodes.filter(node => !isGeneratedAgentNodeId(node.id));
     const userNodeIds = new Set(userNodes.map(node => node.id));
 
     // Keep only edges fully inside the preserved user workflow

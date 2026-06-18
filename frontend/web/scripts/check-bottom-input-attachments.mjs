@@ -12,7 +12,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
-const bottomInput = read('src/app/components/BottomInput.tsx');
+const bottomInput = read('src/app/components/chat/BottomInput.tsx');
 
 assert.match(bottomInput, /type AttachedFileItem =/, 'BottomInput must keep attachment metadata for rendering previews');
 assert.match(bottomInput, /previewUrl/, 'image attachments must get object URLs for thumbnails');

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Brain, Bot, Cpu, Archive, Zap, Copy, Trash2 } from 'lucide-react';
+import { Brain, Bot, Cpu, Sparkles, Archive, Zap, Copy, Trash2 } from 'lucide-react';
 import { useTaskStore, type AgentNodeType } from '../../../stores/taskStore';
 import { useIntegrationStore } from '../../../stores/integrationStore';
 import { n8nService, type N8nWorkflow } from '../../../services/n8nService';
@@ -10,6 +10,7 @@ const nodeIcons: Record<AgentNodeType, React.ComponentType<{ className?: string 
   boss: Brain,
   manager: Bot,
   worker: Cpu,
+  universal: Sparkles,
   github: Archive,
 };
 
@@ -18,6 +19,7 @@ const nodeAccents: Record<AgentNodeType, string> = {
   boss: '#f97316',
   manager: '#7c4dff',
   worker: '#22c55e',
+  universal: '#ffffff',
   github: '#6e7681',
 };
 
@@ -34,6 +36,7 @@ const roleOptions: Record<AgentNodeType, string[]> = {
   boss: ['CEO', 'CTO', 'Technical Director', 'Architect'],
   manager: ['Coordinator', 'Research Lead', 'Content Lead', 'Backend', 'Frontend', 'QA Lead'],
   worker: ['Specialist', 'Researcher', 'Designer', 'Writer', 'Developer', 'Tester'],
+  universal: ['Universal', 'Direct AI', 'Fast Solver'],
   github: ['GitHub'],
 };
 
@@ -62,6 +65,8 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
 
   const accent = nodeAccents[nodeType] || nodeAccents.worker;
   const IconComponent = nodeIcons[nodeType];
+  const isUniversalNode = nodeType === 'universal';
+  const iconClassName = isUniversalNode ? 'w-5 h-5 text-neutral-950' : 'w-5 h-5 text-white';
 
   // Close on outside click
   useEffect(() => {
@@ -222,9 +227,13 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
       <div className="px-3 py-3 flex items-center gap-3 border-b border-[var(--border)]">
         <div
           className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: accent, boxShadow: `0 2px 8px ${accent}66` }}
+          style={{
+            backgroundColor: accent,
+            boxShadow: `0 2px 8px ${accent}66`,
+            border: isUniversalNode ? '1px solid var(--border)' : undefined,
+          }}
         >
-          {IconComponent && <IconComponent className="w-5 h-5 text-white" />}
+          {IconComponent && <IconComponent className={iconClassName} />}
         </div>
         <div className="min-w-0">
           <div className="text-[11px] font-bold tracking-wider text-[var(--text-muted)]">
@@ -249,7 +258,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                 className="text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors truncate"
                 style={
                   active
-                    ? { backgroundColor: accent, color: '#fff' }
+                    ? { backgroundColor: accent, color: isUniversalNode ? '#111111' : '#fff' }
                     : undefined
                 }
                 onMouseEnter={(e) => {
@@ -351,7 +360,7 @@ export function NodeContextMenu({ x, y, nodeId, nodeType, nodeRole, onClose }: C
                 key={opt.label}
                 onClick={() => handleScaleChange(opt.value)}
                 className="flex-1 py-1 text-xs font-medium rounded-md transition-colors"
-                style={active ? { backgroundColor: accent, color: '#fff' } : { color: 'var(--text-muted)' }}
+                style={active ? { backgroundColor: accent, color: isUniversalNode ? '#111111' : '#fff' } : { color: 'var(--text-muted)' }}
               >
                 {opt.label}
               </button>

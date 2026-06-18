@@ -95,8 +95,8 @@ if (esbuild) {
 }
 
 // --- 3. The export modal wires up the ocawe format -------------------------
-const modal = read('src/components/WorkflowExport.tsx');
-assert.match(modal, /from '\.\.\/services\/ocaweService'/, 'modal must use the ocawe service');
+const modal = read('src/components/workspace/WorkflowExport.tsx');
+assert.match(modal, /from '\.\.\/\.\.\/services\/ocaweService'/, 'modal must use the ocawe service');
 assert.match(modal, /exportOcaweText/, 'modal must call exportOcaweText');
 assert.match(modal, /workflowLibrary\.formatOcawe/, 'modal must render the Ocawe format toggle');
 assert.match(modal, /workflowLibrary\.formatJson/, 'modal must render the JSON format toggle');

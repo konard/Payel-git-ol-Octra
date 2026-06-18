@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, Bot, Cpu, X, GripVertical, Library, Trash2, Workflow as WorkflowIcon } from 'lucide-react';
+import { Brain, Bot, Cpu, Sparkles, X, GripVertical, Library, Trash2, Workflow as WorkflowIcon } from 'lucide-react';
 import { useI18n } from '../../../hooks/useI18n';
-import { useTaskStore } from '../../../stores/taskStore';
+import { useTaskStore, type AgentNodeType } from '../../../stores/taskStore';
 import { getMyWorkflows, deleteWorkflow, type Workflow } from '../../../services/workflowService';
 
+type DraggableAgentNodeType = Exclude<AgentNodeType, 'github'>;
+
 interface NodeTemplate {
-  type: 'boss' | 'manager' | 'worker';
+  type: DraggableAgentNodeType;
   label: string;
   typeLabel: string;
   description: string;
   accent: string;
+  iconClassName?: string;
+  typeLabelColor?: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
 interface NodeSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onDragStart: (type: 'boss' | 'manager' | 'worker', event: React.DragEvent) => void;
+  onDragStart: (type: DraggableAgentNodeType, event: React.DragEvent) => void;
   onOpenWorkflowLibrary?: () => void;
 }
 
@@ -25,7 +29,7 @@ export function NodeSidebar({ isOpen, onClose, onOpenWorkflowLibrary }: NodeSide
   // Subscribe so the sidebar re-renders if the store is reset elsewhere.
   useTaskStore((state) => state.nodes.length);
 
-  const [draggingType, setDraggingType] = useState<'boss' | 'manager' | 'worker' | null>(null);
+  const [draggingType, setDraggingType] = useState<DraggableAgentNodeType | null>(null);
   const [draggingWorkflowId, setDraggingWorkflowId] = useState<string | null>(null);
   const [myWorkflows, setMyWorkflows] = useState<Workflow[]>([]);
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
@@ -51,6 +55,11 @@ export function NodeSidebar({ isOpen, onClose, onOpenWorkflowLibrary }: NodeSide
     }
   }, [isOpen, loadedOnce, loadWorkflows]);
 
+  const tFallback = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
+
   const templates: NodeTemplate[] = [
     {
       type: 'boss',
@@ -75,6 +84,16 @@ export function NodeSidebar({ isOpen, onClose, onOpenWorkflowLibrary }: NodeSide
       description: t('sidebar.worker.description'),
       accent: '#22c55e',
       icon: Cpu,
+    },
+    {
+      type: 'universal',
+      label: tFallback('sidebar.universal.label', 'Universal'),
+      typeLabel: tFallback('sidebar.universal.type', 'Direct AI'),
+      description: tFallback('sidebar.universal.description', 'Solves easy tasks directly without a full team'),
+      accent: '#ffffff',
+      iconClassName: 'w-5 h-5 text-neutral-950',
+      typeLabelColor: '#111111',
+      icon: Sparkles,
     },
   ];
 
@@ -167,16 +186,20 @@ export function NodeSidebar({ isOpen, onClose, onOpenWorkflowLibrary }: NodeSide
                     >
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: template.accent, boxShadow: `0 2px 8px ${template.accent}55` }}
+                        style={{
+                          backgroundColor: template.accent,
+                          boxShadow: `0 2px 8px ${template.accent}55`,
+                          border: template.type === 'universal' ? '1px solid var(--border)' : undefined,
+                        }}
                       >
-                        <Icon className="w-5 h-5 text-white" />
+                        <Icon className={template.iconClassName || 'w-5 h-5 text-white'} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-[var(--text)]">{template.label}</span>
                           <span
                             className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                            style={{ backgroundColor: `${template.accent}22`, color: template.accent }}
+                            style={{ backgroundColor: `${template.accent}22`, color: template.typeLabelColor || template.accent }}
                           >
                             {template.typeLabel}
                           </span>

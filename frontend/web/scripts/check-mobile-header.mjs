@@ -14,7 +14,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
-const topbar = read('src/app/components/TopBar.tsx');
+const topbar = read('src/app/components/shell/TopBar.tsx');
 
 // The <header> itself must NOT rely on flex-wrap any more — that is exactly what
 // let the action group spill onto extra rows on phones.
