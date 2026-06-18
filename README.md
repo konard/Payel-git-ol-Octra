@@ -2,20 +2,31 @@
 
 Octra is a multi-agent AI orchestrator that builds software projects using a Boss → Manager → Worker pipeline. Every project is snapshotted into the [Nix](https://nixos.org) store, enabling instant rollback and zero-storage recovery.
 
-## Architecture (Boss → Manager → Worker)
+## Architecture
 
 > Full API specification for custom clients → [`docs/spec/`](docs/spec/OCTRA-SPECIFICATION.md)
 
 ![Octra logic](docs/icons/octra-nix.png)
 
 ```
-User → API Gateway → Boss (architect)
-                        ├── Manager (backend) → Worker × N
-                        ├── Manager (frontend) → Worker × N
-                        └── Manager (devops)  → Worker × N
-                              ↓
-                        Agents Service → Claude / Gemini / GPT / ...
+User → API Gateway → Execution engine
+                        ├── Canvas workflow (user-defined) → direct pipeline
+                        │     ├── Universal node → single AI call
+                        │     └── Manager × N → Worker × N
+                        │
+                        └── Auto mode (no canvas)
+                              ├── AI complexity check (1-10)
+                              │     ├── trivial (≤2) → Universal node
+                              │     └── otherwise → Boss → Manager → Worker
+                              └── Agents Service → Claude / Gemini / GPT / ...
 ```
+
+**Canvas workflow** — when the user places nodes on the canvas, Octra executes
+exactly what was laid out. No AI planning, no complexity grading, no fallback.
+The user takes full responsibility for the architecture.
+
+**Auto mode** — Octra grades complexity via AI, then chooses the fast path
+(universal node for trivial tasks) or the full Boss → Manager → Worker pipeline.
 
 **Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
 **Managers** review and orchestrate workers.  
@@ -28,11 +39,23 @@ over-engineers trivial requests: *"write hello world in Python"* would spawn
 managers and workers and emit a tree of files with unclear logic instead of the one
 obvious line of code.
 
-Octra avoids this by judging complexity before boss planning. A lightweight AI
-complexity check grades every task `1-10` from a **pure analysis of the work
-required — not trigger words**. When the model itself rates a task as trivial
-(grade ≤ `2` by default), Octra skips the Boss → Manager → Worker workflow and
-routes it straight to a single **universal node**:
+Octra avoids this by routing trivial tasks through a single **universal node** —
+one unconstrained AI call that returns the smallest correct result. The universal
+node is available through two paths:
+
+### Explicit canvas node
+
+Place a universal node on the canvas — Octra executes it directly, no questions
+asked. If the AI call fails, the task fails (no fallback to Boss). The user owns
+the workflow.
+
+### Auto-detected trivial task
+
+When no canvas workflow exists, a lightweight AI complexity check grades every
+task `1-10` from a **pure analysis of the work required — not trigger words**.
+If the model rates the task as trivial (grade ≤ `2` by default), Octra skips the
+Boss → Manager → Worker pipeline and routes it to the universal node. If the
+universal node produces nothing usable, Octra falls back to the full pipeline.
 
 ```
 User → API Gateway → AI complexity check (1-10)
@@ -40,13 +63,19 @@ User → API Gateway → AI complexity check (1-10)
                         └── otherwise     → Boss → Manager × N → Worker × N
 ```
 
-- The universal node is one unconstrained AI call that returns the smallest correct
-  result (`{"files": {...}}`), then flows through the same disk/package/publish
-  steps — no boss planning and no manager/worker fan-out.
-- If the universal node produces nothing usable, Octra transparently falls back to
-  the full pipeline, so trivial tasks never fail.
-- Operators can tune the threshold with `OCTRA_UNIVERSAL_MAX_GRADE` (0-10) or turn
-  the fast path off entirely with `OCTRA_DISABLE_UNIVERSAL_NODE=true`.
+### Smart dependency detection
+
+The AI includes a `"dependencies": true/false` flag in its JSON response. When
+the code uses only the language's standard library (no external frameworks,
+libraries, or packages), Octra skips Nix dependency pinning (`nix flake lock`).
+This saves ~37 seconds on trivial single-file tasks like hello world.
+
+### Configuration
+
+| Variable | Effect |
+|----------|--------|
+| `OCTRA_UNIVERSAL_MAX_GRADE` | Threshold (0-10) for auto-detected trivial tasks. Default `2`. |
+| `OCTRA_DISABLE_UNIVERSAL_NODE` | Set `true` to force all tasks through Boss → Manager → Worker. |
 
 ## Philosophy
 
