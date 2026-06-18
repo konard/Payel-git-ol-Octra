@@ -36,7 +36,9 @@ try {
     [{ id: 'canvas-universal', type: 'universal', role: 'Universal', status: 'pending', position: { x: 0, y: 0 } }],
     [],
   );
-  assert.equal(universalOnly, null, 'a manual universal node must not force an unsupported predefined workflow');
+  assert.ok(universalOnly, 'a manual universal node must produce a predefined workflow with role universal');
+  assert.equal(universalOnly.managers.length, 1);
+  assert.equal(universalOnly.managers[0].role, 'universal');
 
   const workflow = buildWorkflowConfigFromGraph(
     [
