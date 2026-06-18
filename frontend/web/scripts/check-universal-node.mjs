@@ -67,6 +67,26 @@ try {
   );
   assert.equal(state.edges.length, 0, 'edges touching generated universal nodes must be removed on reset');
 
+  store.setGraph(
+    [
+      { id: 'boss-1', type: 'boss', role: 'CEO', status: 'done', position: { x: 0, y: 0 } },
+      { id: 'universal-1', type: 'universal', role: 'Universal', status: 'done', position: { x: 0, y: 120 } },
+      { id: 'canvas-universal', type: 'universal', role: 'Direct AI', status: 'pending', position: { x: 20, y: 20 } },
+    ],
+    [
+      { from: 'boss-1', to: 'universal-1' },
+      { from: 'universal-1', to: 'canvas-universal' },
+    ],
+  );
+  store.resetTaskExecution();
+  const executionResetState = useTaskStore.getState();
+  assert.deepEqual(
+    executionResetState.nodes.map((node) => node.id),
+    ['canvas-universal'],
+    'new task execution must remove generated Boss/Universal runtime nodes',
+  );
+  assert.equal(executionResetState.edges.length, 0, 'new task execution must remove stale generated-node edges');
+
   console.log('check-universal-node: all assertions passed');
 } finally {
   await server.close();

@@ -11,8 +11,8 @@ import (
 
 	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
-	gh "orchestrator/internal/service/github"
 	"orchestrator/internal/service/git"
+	gh "orchestrator/internal/service/github"
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/util"
 
@@ -31,13 +31,17 @@ const universalRole = "universal"
 // как тривиальную (grade в пределах порога). Сложные задачи как и раньше идут
 // через полный конвейер.
 //
+// Важно: это решение принимается ДО boss-планирования. Универсальная нода не
+// является веткой Boss → Universal; для тривиальных задач Boss вообще не
+// строит архитектуру.
+//
 // Быстрый путь намеренно не применяется, когда:
 //   - порог отключён (OCTRA_DISABLE_UNIVERSAL_NODE) или grade вне диапазона;
 //   - пользователь задал собственный workflow (PredefinedManagers) — его надо уважать;
 //   - это доработка существующего репозитория (ExistingRepoUrl/IsRefinement);
 //   - задача привязана к GitHub issue — у неё свой конвейер публикации PR.
-func shouldUseUniversalNode(req *CreateTaskRequest, decision *DecisionResult, issueTarget *gh.IssueTarget) bool {
-	if req == nil || decision == nil {
+func shouldUseUniversalNode(req *CreateTaskRequest, issueTarget *gh.IssueTarget) bool {
+	if req == nil {
 		return false
 	}
 	maxGrade := config.UniversalNodeMaxGradeResolved()
@@ -59,10 +63,80 @@ func shouldUseUniversalNode(req *CreateTaskRequest, decision *DecisionResult, is
 	return true
 }
 
+// universalDecisionFromRequest builds the small amount of metadata the shared
+// packaging tail needs after the direct universal path. It intentionally does
+// not invent managers or call the Boss planner.
+func universalDecisionFromRequest(req *CreateTaskRequest) *DecisionResult {
+	if req == nil {
+		return &DecisionResult{TaskType: TaskTypeCode}
+	}
+	taskType := normalizeTaskType(req.Meta["task_type"])
+	techStack := detectTechStack(req.Title, req.Description)
+	if taskType == "" {
+		taskType = classifyTaskType(req.Title, req.Description)
+		if taskType == TaskTypeCode && looksLikeDirectAnswer(req.Title, req.Description, len(techStack) > 0) {
+			taskType = TaskTypeDocument
+		}
+	}
+	if taskType == "" {
+		taskType = TaskTypeCode
+	}
+	return &DecisionResult{
+		TaskType:             taskType,
+		ManagersCount:        0,
+		TechnicalDescription: strings.TrimSpace(req.Title + "\n" + req.Description),
+		TechStack:            techStack,
+		ArchitectureNotes:    "Direct universal node execution; boss planning skipped.",
+	}
+}
+
+func looksLikeDirectAnswer(title, description string, hasTechStack bool) bool {
+	text := strings.ToLower(strings.TrimSpace(title + "\n" + description))
+	if text == "" {
+		return false
+	}
+	strongCodeSignals := []string{
+		"hello world", "script", "program", "function", "server", "app",
+		"application", "component", "class", "method", "implement", "bug",
+		"fix ", "write in ", "write a ", "write an ", "create a ", "build a ",
+		"код", "скрипт", "программ", "функци", "сервер", "приложени",
+		"реализ", "создай", "сделай", "напиши",
+	}
+	if containsAny(text, strongCodeSignals) {
+		return false
+	}
+	stackCodeSignals := []string{"code", "api", "апи"}
+	if hasTechStack && containsAny(text, stackCodeSignals) {
+		return false
+	}
+	answerSignals := []string{
+		"?", "what is", "why", "how many", "calculate", "solve", "logic",
+		"math", "proof", "explain", "сколько", "что такое", "почему", "объясни",
+		"реши", "посчитай", "математ", "логичес", "доказ",
+	}
+	if containsAny(text, answerSignals) {
+		return true
+	}
+	return strings.ContainsAny(text, "+=*/<>")
+}
+
+func directUniversalChatSummary(fullDoc string) string {
+	fullDoc = strings.TrimSpace(fullDoc)
+	if fullDoc == "" {
+		return "The universal node finished the direct answer."
+	}
+	const maxSummary = 1200
+	runes := []rune(fullDoc)
+	if len(runes) <= maxSummary {
+		return fullDoc
+	}
+	return strings.TrimSpace(string(runes[:maxSummary])) + "\n\n..."
+}
+
 // solveUniversal запускает универсальную ноду: один AI-вызов выдаёт минимальный
 // корректный результат, который упаковывается в один синтетический результат
 // менеджера/воркера. Благодаря этому остальной конвейер ExecuteTask (запись на
-// диск, nix, валидация, публикация, вкладка Solution) работает без изменений.
+// диск, nix, публикация, вкладка Solution) работает без отдельного Boss-плана.
 //
 // Возвращает (nil, nil), если нода не смогла дать осмысленный результат — тогда
 // вызывающий код откатывается на полный конвейер.

@@ -28,20 +28,21 @@ over-engineers trivial requests: *"write hello world in Python"* would spawn
 managers and workers and emit a tree of files with unclear logic instead of the one
 obvious line of code.
 
-Octra avoids this by judging complexity first. The Boss grades every task `1-10`
-from a **pure analysis of the work required — not trigger words**. When the model
-itself rates a task as trivial (grade ≤ `2` by default), Octra skips the full
-pipeline and routes it to a single **universal node**:
+Octra avoids this by judging complexity before boss planning. A lightweight AI
+complexity check grades every task `1-10` from a **pure analysis of the work
+required — not trigger words**. When the model itself rates a task as trivial
+(grade ≤ `2` by default), Octra skips the Boss → Manager → Worker workflow and
+routes it straight to a single **universal node**:
 
 ```
-User → API Gateway → Boss (grades complexity 1-10)
+User → API Gateway → AI complexity check (1-10)
                         ├── trivial (≤2)  → Universal node → instant minimal answer
-                        └── otherwise     → Manager × N → Worker × N (full pipeline)
+                        └── otherwise     → Boss → Manager × N → Worker × N
 ```
 
 - The universal node is one unconstrained AI call that returns the smallest correct
-  result (`{"files": {...}}`), then flows through the same disk/validation/publish
-  steps — no manager/worker fan-out.
+  result (`{"files": {...}}`), then flows through the same disk/package/publish
+  steps — no boss planning and no manager/worker fan-out.
 - If the universal node produces nothing usable, Octra transparently falls back to
   the full pipeline, so trivial tasks never fail.
 - Operators can tune the threshold with `OCTRA_UNIVERSAL_MAX_GRADE` (0-10) or turn

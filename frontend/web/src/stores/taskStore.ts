@@ -407,25 +407,37 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     };
   }),
 
-  // New method to clear only task execution state but keep user workflow
-  resetTaskExecution: () => set((state) => ({
-    taskId: null,
-    status: 'idle',
-    logs: [],
-    solutionZip: null,
-    zipUrl: null,
-    codeFiles: [],
-    latestCodeFilePath: null,
-    tokensUsed: 0,
-    startTime: null,
-    searchSteps: [],
-    searchPhase: 'idle',
-    searchStepsCount: 0,
-    pullRequest: null,
-    nixStorePath: null,
-    nixTaskId: null,
-    // Keep nodes, edges, and workflow
-  })),
+  // Clear execution state for a new run while preserving only user-authored
+  // workflow nodes. Generated runtime nodes from the previous task must not
+  // leak into the next graph (for example a stale Boss before a direct
+  // Universal run).
+  resetTaskExecution: () => set((state) => {
+    const userNodes = state.nodes.filter(node => !isGeneratedAgentNodeId(node.id));
+    const userNodeIds = new Set(userNodes.map(node => node.id));
+    const userEdges = state.edges.filter(edge =>
+      userNodeIds.has(edge.from) && userNodeIds.has(edge.to)
+    );
+
+    return {
+      taskId: null,
+      status: 'idle',
+      nodes: userNodes,
+      edges: userEdges,
+      logs: [],
+      solutionZip: null,
+      zipUrl: null,
+      codeFiles: [],
+      latestCodeFilePath: null,
+      tokensUsed: 0,
+      startTime: null,
+      searchSteps: [],
+      searchPhase: 'idle',
+      searchStepsCount: 0,
+      pullRequest: null,
+      nixStorePath: null,
+      nixTaskId: null,
+    };
+  }),
 }));
 
 // Dev-only handle to inspect/seed the task store from the browser console

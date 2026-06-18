@@ -68,23 +68,23 @@ func FallbackChain(primaryProvider, primaryModel string) []ProviderModel {
 }
 
 // UniversalNodeMaxGrade is the highest AI-graded complexity (1-10) that is still
-// handled by the single "universal node" fast path instead of the full
-// Boss → Manager → Worker fan-out.
+// handled by the single "universal node" fast path before the full Boss →
+// Manager → Worker fan-out starts.
 //
 // Octra's pipeline is built for divide-and-conquer on complex tasks, but the same
 // machinery massively over-engineers trivial requests: "write hello world in
 // Python" would spawn managers and workers and emit a tree of files with unclear
 // logic instead of the one obvious line of code (issue #91). For tasks the model
 // itself grades as trivial, a single universal node produces the minimal, correct
-// answer immediately — no extra nodes, no big workflow.
+// answer immediately — no Boss planning, no extra nodes, no big workflow.
 //
 // The threshold is derived purely from the model's complexity analysis (not from
 // trigger words), so a 1-2/10 task takes the fast path while anything heavier
 // keeps the full pipeline.
 const UniversalNodeMaxGrade = 2
 
-// envUniversalNodeDisabled is an explicit escape hatch to force every task — even
-// trivial ones — through the full Boss → Manager → Worker pipeline. It does not
+// envUniversalNodeDisabled is an explicit escape hatch to force every task, even
+// trivial ones, through the full Boss → Manager → Worker pipeline. It does not
 // add a second behavior; it merely opts out of the fast path for environments
 // that want the classic flow.
 func envUniversalNodeDisabled() bool {
