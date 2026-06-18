@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	gh "orchestrator/internal/service/github"
+	"orchestrator/internal/service/rules/universal"
 )
 
 // TestShouldUseUniversalNode — быстрый путь для тривиальных задач (issue #91).
@@ -149,10 +150,10 @@ func TestUniversalDecisionFromRequest(t *testing.T) {
 	})
 }
 
-// TestParseUniversalFiles — разбор строгого JSON-контракта универсальной ноды.
+// TestParseFiles — разбор строгого JSON-контракта универсальной ноды.
 func TestParseUniversalFiles(t *testing.T) {
 	t.Run("plain json", func(t *testing.T) {
-		files := parseUniversalFiles(`{"files": {"main.py": "print('Hello, World!')"}}`)
+		files := universal.ParseFiles(`{"files": {"main.py": "print('Hello, World!')"}}`)
 		if len(files) != 1 || files["main.py"] != "print('Hello, World!')" {
 			t.Fatalf("unexpected files: %#v", files)
 		}
@@ -160,21 +161,21 @@ func TestParseUniversalFiles(t *testing.T) {
 
 	t.Run("json wrapped in markdown fences", func(t *testing.T) {
 		raw := "```json\n{\"files\": {\"main.go\": \"package main\"}}\n```"
-		files := parseUniversalFiles(raw)
+		files := universal.ParseFiles(raw)
 		if files["main.go"] != "package main" {
 			t.Fatalf("unexpected files: %#v", files)
 		}
 	})
 
 	t.Run("normalizes ./ prefix", func(t *testing.T) {
-		files := parseUniversalFiles(`{"files": {"./src/app.js": "x"}}`)
+		files := universal.ParseFiles(`{"files": {"./src/app.js": "x"}}`)
 		if _, ok := files["src/app.js"]; !ok {
 			t.Fatalf("path not normalized: %#v", files)
 		}
 	})
 
 	t.Run("rejects traversal and absolute paths", func(t *testing.T) {
-		files := parseUniversalFiles(`{"files": {"../escape": "x", "/etc/passwd": "y", "ok.txt": "z"}}`)
+		files := universal.ParseFiles(`{"files": {"../escape": "x", "/etc/passwd": "y", "ok.txt": "z"}}`)
 		if len(files) != 1 {
 			t.Fatalf("expected only the safe file, got: %#v", files)
 		}
@@ -184,14 +185,14 @@ func TestParseUniversalFiles(t *testing.T) {
 	})
 
 	t.Run("skips empty content", func(t *testing.T) {
-		files := parseUniversalFiles(`{"files": {"empty.txt": "   ", "real.txt": "data"}}`)
+		files := universal.ParseFiles(`{"files": {"empty.txt": "   ", "real.txt": "data"}}`)
 		if len(files) != 1 || files["real.txt"] != "data" {
 			t.Fatalf("unexpected files: %#v", files)
 		}
 	})
 
 	t.Run("invalid json returns nil", func(t *testing.T) {
-		if files := parseUniversalFiles("not json at all"); files != nil {
+		if files := universal.ParseFiles("not json at all"); files != nil {
 			t.Fatalf("expected nil, got: %#v", files)
 		}
 	})

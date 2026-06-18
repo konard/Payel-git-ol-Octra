@@ -36,9 +36,6 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	provider, model := pickProviderModel(req.Meta)
 	emit(progress, 12, fmt.Sprintf("AI client initialized (%s/%s)", provider, model), nil)
 
-	req.Grade = s.gradeTaskViaAI(ctx, provider, model, req.Tokens, req.Title, req.Description)
-	emit(progress, 15, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
-
 	if req.Meta == nil {
 		req.Meta = make(map[string]string)
 	}
@@ -49,138 +46,228 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 	projectPath := ""
 	directUniversalUsed := false
 
-	// Тривиальные задачи (issue #91) решает одна «универсальная нода» ДО
-	// boss-планирования. Это не Boss → Universal: для hello world, простой
-	// математики и похожих задач Boss вообще не строит архитектуру.
-	if shouldUseUniversalNode(req, issueTarget) {
-		decision = universalDecisionFromRequest(req)
-		emit(progress, 20, fmt.Sprintf("Trivial task (%d/10) — using a single universal node without Boss", req.Grade), map[string]string{
-			"task_type": decision.TaskType,
-			"taskType":  decision.TaskType,
-			"techStack": util_stack(decision.TechStack),
-		})
-		task.Status = "processing"
-		database.Db.Save(task)
-
-		projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, nil)
-		if err != nil {
-			task.Status = "error"
+	// Если пользователь разместил ноды на канве — выполняем его флоу без вопросов.
+	// Никакого AI grading, никакого auto-detection универсальной ноды, никакого
+	// Boss AI planning. Пользователь сам отвечает за архитектуру.
+	if len(req.PredefinedManagers) > 0 {
+		if hasExplicitUniversalManager(req) {
+			emit(progress, 20, "Universal node on canvas — executing directly", map[string]string{
+				"task_type": "code",
+				"taskType":  "code",
+			})
+			task.Status = "processing"
 			database.Db.Save(task)
-			emit(progress, 0, err.Error(), errorData())
-			return err
-		}
-		s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
-		managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
-		directUniversalUsed = len(managerResults) > 0
-		if !directUniversalUsed {
-			if projectPath != "" {
-				if err := os.RemoveAll(projectPath); err != nil {
-					log.Printf("Failed to remove incomplete universal project before Boss fallback: %v", err)
-				}
-				projectPath = ""
-			}
-			emit(progress, 35, "Universal node could not solve directly; falling back to Boss pipeline", nil)
-		}
-	}
 
-	if !directUniversalUsed {
-		emit(progress, 20, "Boss thinking about architecture...", nil)
-		decision, err = s.thinkAboutTask(ctx, provider, model, req)
-		if err != nil {
-			task.Status = "error"
-			database.Db.Save(task)
-			emit(progress, 0, "AI planning failed: "+err.Error(), errorData())
-			return err
-		}
-		// Повышаем тип до "github" для issue-привязанных задач (план фикса, пункт 1).
-		// Конвейер и публикация остаются кодовыми (isCodeLikeTask), но Boss/Manager
-		// видят, что работают с реальным репозиторием по паспорту issue.
-		if issueTarget != nil && isCodeLikeTask(decision.TaskType) {
-			decision.TaskType = TaskTypeGitHub
-		}
-		// Safeguard: AI sometimes returns 0 managers or empty roles
-		if decision.ManagersCount <= 0 {
-			decision.ManagersCount = 1
-			log.Printf("Boss decision corrected: managers_count was 0, set to 1")
-		}
+			decision = universalDecisionFromRequest(req)
 
-		// === Hard fallback for bad AI responses ===
-		// If AI returns 0 managers or empty roles, create a default one
-		if len(decision.ManagerRoles) == 0 || decision.ManagersCount == 0 {
-			decision.ManagersCount = 1
-			decision.ManagerRoles = []models.ManagerRole{fallbackManagerRole(decision.TaskType)}
-			log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
-		}
-
-		// Тривиальный GitHub issue (опечатка/однофайловый фикс) не нужно гонять через
-		// весь конвейер (план фикса, пункт 7): сводим к одному менеджеру/воркеру.
-		if req.Meta["github_trivial"] == "true" {
-			clampToSingleManager(decision)
-			log.Printf("Trivial GitHub issue: pipeline capped to a single manager")
-		}
-
-		architectureData := map[string]string{
-			"managers":  strconv.Itoa(int(decision.ManagersCount)),
-			"task_type": decision.TaskType,
-			"taskType":  decision.TaskType,
-			"techStack": util_stack(decision.TechStack),
-		}
-		if issueTarget != nil {
-			architectureData["githubMode"] = "pull_request"
-			architectureData["githubIssueUrl"] = issueTarget.IssueURL
-		}
-		emit(progress, 30, "Architecture planned by AI", architectureData)
-		s.saveBossDecision(task.ID, decision)
-
-		projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, issueTarget)
-		if err != nil {
-			task.Status = "error"
-			database.Db.Save(task)
-			emit(progress, 0, err.Error(), errorData())
-			return err
-		}
-
-		// Сохраняем fork-инфу в Meta задачи (для последующих запусков)
-		if issueTarget != nil && issueTarget.Forked {
-			req.Meta["github_forked"] = "true"
-			req.Meta["github_fork_owner"] = issueTarget.ForkOwner
-			req.Meta["github_fork_clone_url"] = issueTarget.ForkCloneURL
-			metaJSON, _ := json.Marshal(req.Meta)
-			database.Db.Model(&models.Task{}).Where("id = ?", taskID).Update("meta", string(metaJSON))
-		}
-
-		s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
-
-		// Если это доработка существующего проекта — клонируем репозиторий с GitHub
-		if req.ExistingRepoUrl != "" {
-			log.Printf("Refinement mode: cloning existing repo %s", req.ExistingRepoUrl)
-			os.RemoveAll(projectPath)
-			if err := os.MkdirAll(projectPath, 0755); err != nil {
+			projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, nil)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, err.Error(), errorData())
 				return err
 			}
-			cmd := exec.Command("git", "clone", req.ExistingRepoUrl, projectPath)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				log.Printf("Failed to clone existing repo: %v", err)
+			managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
+			if len(managerResults) == 0 {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, "Universal node AI call failed", errorData())
+				return fmt.Errorf("universal node AI call failed")
+			}
+			directUniversalUsed = true
+		} else {
+			emit(progress, 20, "Canvas workflow — executing user-defined pipeline", nil)
+			decision = decisionFromPredefinedWorkflow(req)
+
+			if issueTarget != nil && isCodeLikeTask(decision.TaskType) {
+				decision.TaskType = TaskTypeGitHub
+			}
+
+			architectureData := map[string]string{
+				"managers":  strconv.Itoa(int(decision.ManagersCount)),
+				"task_type": decision.TaskType,
+				"taskType":  decision.TaskType,
+				"techStack": util_stack(decision.TechStack),
+			}
+			if issueTarget != nil {
+				architectureData["githubMode"] = "pull_request"
+				architectureData["githubIssueUrl"] = issueTarget.IssueURL
+			}
+			emit(progress, 30, "Canvas workflow planned", architectureData)
+			s.saveBossDecision(task.ID, decision)
+
+			projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, issueTarget)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, err.Error(), errorData())
+				return err
+			}
+
+			if issueTarget != nil && issueTarget.Forked {
+				req.Meta["github_forked"] = "true"
+				req.Meta["github_fork_owner"] = issueTarget.ForkOwner
+				req.Meta["github_fork_clone_url"] = issueTarget.ForkCloneURL
+				metaJSON, _ := json.Marshal(req.Meta)
+				database.Db.Model(&models.Task{}).Where("id = ?", taskID).Update("meta", string(metaJSON))
+			}
+
+			s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
+
+			if req.ExistingRepoUrl != "" {
+				log.Printf("Refinement mode: cloning existing repo %s", req.ExistingRepoUrl)
+				os.RemoveAll(projectPath)
+				if err := os.MkdirAll(projectPath, 0755); err != nil {
+					return err
+				}
+				cmd := exec.Command("git", "clone", req.ExistingRepoUrl, projectPath)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if err := cmd.Run(); err != nil {
+					log.Printf("Failed to clone existing repo: %v", err)
+				}
+			}
+			if issueTarget != nil && issueTarget.Cloned {
+				appendRepositoryContext(decision, projectPath)
+			}
+
+			if req.IsRefinement {
+				log.Printf("Refinement mode enabled — skipping project restore")
+			}
+
+			emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
+			managerResults, err = s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, "Managers failed: "+err.Error(), errorData())
+				return err
 			}
 		}
-		if issueTarget != nil && issueTarget.Cloned {
-			appendRepositoryContext(decision, projectPath)
-		}
+	} else {
+		// Нет кастомного флоу — стандартный pipeline с AI grading и Boss planning
+		req.Grade = s.gradeTaskViaAI(ctx, provider, model, req.Tokens, req.Title, req.Description)
+		emit(progress, 15, fmt.Sprintf("Task graded: %d/10", req.Grade), nil)
 
-		// При доработке не восстанавливаем проект из старых данных
-		if req.IsRefinement {
-			log.Printf("Refinement mode enabled — skipping project restore")
-		}
-
-		emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
-		managerResults, err = s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
-		if err != nil {
-			task.Status = "error"
+		// Тривиальные задачи (issue #91) решает одна «универсальная нода» ДО
+		// boss-планирования. Это не Boss → Universal: для hello world, простой
+		// математики и похожих задач Boss вообще не строит архитектуру.
+		if shouldUseUniversalNode(req, issueTarget) {
+			decision = universalDecisionFromRequest(req)
+			emit(progress, 20, fmt.Sprintf("Trivial task (%d/10) — using a single universal node without Boss", req.Grade), map[string]string{
+				"task_type": decision.TaskType,
+				"taskType":  decision.TaskType,
+				"techStack": util_stack(decision.TechStack),
+			})
+			task.Status = "processing"
 			database.Db.Save(task)
-			emit(progress, 0, "Managers failed: "+err.Error(), errorData())
-			return err
+
+			projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, nil)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, err.Error(), errorData())
+				return err
+			}
+			managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
+			directUniversalUsed = len(managerResults) > 0
+			if !directUniversalUsed {
+				if projectPath != "" {
+					if err := os.RemoveAll(projectPath); err != nil {
+						log.Printf("Failed to remove incomplete universal project before Boss fallback: %v", err)
+					}
+					projectPath = ""
+				}
+				emit(progress, 35, "Universal node could not solve directly; falling back to Boss pipeline", nil)
+			}
+		}
+
+		if !directUniversalUsed {
+			emit(progress, 20, "Boss thinking about architecture...", nil)
+			decision, err = s.thinkAboutTask(ctx, provider, model, req)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, "AI planning failed: "+err.Error(), errorData())
+				return err
+			}
+			if issueTarget != nil && isCodeLikeTask(decision.TaskType) {
+				decision.TaskType = TaskTypeGitHub
+			}
+			if decision.ManagersCount <= 0 {
+				decision.ManagersCount = 1
+				log.Printf("Boss decision corrected: managers_count was 0, set to 1")
+			}
+			if len(decision.ManagerRoles) == 0 || decision.ManagersCount == 0 {
+				decision.ManagersCount = 1
+				decision.ManagerRoles = []models.ManagerRole{fallbackManagerRole(decision.TaskType)}
+				log.Printf("Boss: Applied fallback - created default %q manager", decision.ManagerRoles[0].Role)
+			}
+			if req.Meta["github_trivial"] == "true" {
+				clampToSingleManager(decision)
+				log.Printf("Trivial GitHub issue: pipeline capped to a single manager")
+			}
+
+			architectureData := map[string]string{
+				"managers":  strconv.Itoa(int(decision.ManagersCount)),
+				"task_type": decision.TaskType,
+				"taskType":  decision.TaskType,
+				"techStack": util_stack(decision.TechStack),
+			}
+			if issueTarget != nil {
+				architectureData["githubMode"] = "pull_request"
+				architectureData["githubIssueUrl"] = issueTarget.IssueURL
+			}
+			emit(progress, 30, "Architecture planned by AI", architectureData)
+			s.saveBossDecision(task.ID, decision)
+
+			projectPath, err = s.setupProject(ctx, taskID.String(), req.Title, issueTarget)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, err.Error(), errorData())
+				return err
+			}
+
+			if issueTarget != nil && issueTarget.Forked {
+				req.Meta["github_forked"] = "true"
+				req.Meta["github_fork_owner"] = issueTarget.ForkOwner
+				req.Meta["github_fork_clone_url"] = issueTarget.ForkCloneURL
+				metaJSON, _ := json.Marshal(req.Meta)
+				database.Db.Model(&models.Task{}).Where("id = ?", taskID).Update("meta", string(metaJSON))
+			}
+
+			s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
+
+			if req.ExistingRepoUrl != "" {
+				log.Printf("Refinement mode: cloning existing repo %s", req.ExistingRepoUrl)
+				os.RemoveAll(projectPath)
+				if err := os.MkdirAll(projectPath, 0755); err != nil {
+					return err
+				}
+				cmd := exec.Command("git", "clone", req.ExistingRepoUrl, projectPath)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if err := cmd.Run(); err != nil {
+					log.Printf("Failed to clone existing repo: %v", err)
+				}
+			}
+			if issueTarget != nil && issueTarget.Cloned {
+				appendRepositoryContext(decision, projectPath)
+			}
+
+			if req.IsRefinement {
+				log.Printf("Refinement mode enabled — skipping project restore")
+			}
+
+			emit(progress, 40, fmt.Sprintf("Creating %d managers in parallel", decision.ManagersCount), nil)
+			managerResults, err = s.assignManagersParallel(ctx, taskID.String(), decision, req, progress, projectPath)
+			if err != nil {
+				task.Status = "error"
+				database.Db.Save(task)
+				emit(progress, 0, "Managers failed: "+err.Error(), errorData())
+				return err
+			}
 		}
 	}
 	if len(managerResults) == 0 {
@@ -202,10 +289,10 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 		s.mergeManagerBranches(projectPath, decision.ManagerRoles, integrationBranch)
 	}
 
-	// Используем detached context для критических операций (nix build, валидация, push, cleanup),
-	// чтобы потеря WebSocket (stream context cancellation) не убивала пайплайн.
 	bgCtx := context.Background()
-	s.nixBuild(projectPath, progress)
+	if !directUniversalUsed {
+		s.nixBuild(projectPath, progress)
+	}
 
 	tokens := req.Tokens
 	if tokens == nil {

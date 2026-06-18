@@ -26,7 +26,7 @@ function UniversalNodeComponent({ id, data }: NodeProps<{ data: UniversalNodeDat
       typeLabel="UNIVERSAL"
       role={role}
       status={status}
-      isConnected={isConnected}
+      isConnected={true}
       scale={scale}
       minWidth={200}
     >

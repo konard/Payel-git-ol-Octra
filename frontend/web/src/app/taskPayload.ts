@@ -35,9 +35,28 @@ export function buildWorkflowConfigFromGraph(nodes: AgentNode[], edges: Edge[]):
   const customNodes = nodes.filter(isCustomWorkflowNode);
   const customNodeIds = new Set(customNodes.map((node) => node.id));
   const customEdges = edges.filter((edge) => customNodeIds.has(edge.from) && customNodeIds.has(edge.to));
+  const universalNodes = customNodes.filter((node) => node.type === 'universal');
   const bossNodes = customNodes.filter((node) => node.type === 'boss');
   const managerNodes = customNodes.filter((node) => node.type === 'manager');
   const workerNodes = customNodes.filter((node) => node.type === 'worker');
+
+  // Universal node — один AI-вызов, без менеджеров и воркеров
+  if (universalNodes.length > 0 && managerNodes.length === 0 && workerNodes.length === 0) {
+    return {
+      useAiPlanning: false,
+      managers: [{
+        role: 'universal',
+        description: 'Universal node — single AI call, no pipeline',
+        priority: 1,
+        workers: [{
+          role: 'universal',
+          description: 'Universal worker',
+        }],
+      }],
+      architecture: 'Universal node — direct AI execution',
+      techStack: bossNodes[0]?.techStack || [],
+    };
+  }
 
   if (managerNodes.length === 0) {
     if (workerNodes.length === 0) {
