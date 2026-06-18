@@ -43,8 +43,14 @@ THE GOLDEN RULE — DO NOT OVER-ENGINEER:
 
 %s
 
+REQUIRED — dependencies flag:
+When the code relies on ANY external library, framework, or package NOT in the language's
+standard library, set "dependencies": true. When the task uses only the standard library
+(or no library at all), set "dependencies": false. This controls whether the build system
+pins third-party package versions.
+
 Reply with STRICT JSON ONLY (no markdown fences, no commentary):
-{"files": {"relative/path.ext": "full file content"}}`,
+{"files": {"relative/path.ext": "full file content"}, "dependencies": false}`,
 		title, description, taskType, techStack, deliverable)
 }
 

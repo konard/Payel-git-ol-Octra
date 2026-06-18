@@ -28,7 +28,8 @@ type streamedFile struct {
 }
 
 type universalResponse struct {
-	Files map[string]string `json:"files"`
+	Files        map[string]string `json:"files"`
+	Dependencies bool              `json:"dependencies"`
 }
 
 type ProgressFunc func(progress int32, message string, data map[string]string)
@@ -46,7 +47,8 @@ type SolveRequest struct {
 }
 
 type SolveResult struct {
-	Files map[string]string
+	Files        map[string]string
+	NeedsDeps    bool
 }
 
 func NewSolver() *Solver {
@@ -70,13 +72,13 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 		tokens = map[string]string{}
 	}
 
-	files := s.generateFiles(ctx, agentsClient, req.Provider, req.Model, prompt, tokens)
-	if len(files) == 0 {
+	gen := s.generateFiles(ctx, agentsClient, req.Provider, req.Model, prompt, tokens)
+	if gen == nil || len(gen.Files) == 0 {
 		log.Printf("Universal node produced no files")
 		return nil
 	}
 
-	written := s.writeFiles(req.ProjectPath, files, emit)
+	written := s.writeFiles(req.ProjectPath, gen.Files, emit)
 	if len(written) == 0 {
 		log.Printf("Universal node files failed validation")
 		return nil
@@ -105,18 +107,18 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 		"current_role": "universal",
 	})
 
-	return &SolveResult{Files: written}
+	return &SolveResult{Files: written, NeedsDeps: gen.Dependencies}
 }
 
-func (s *Solver) generateFiles(ctx context.Context, agentsClient *agents.Client, provider, model, prompt string, tokens map[string]string) map[string]string {
+func (s *Solver) generateFiles(ctx context.Context, agentsClient *agents.Client, provider, model, prompt string, tokens map[string]string) *universalResponse {
 	for _, p := range config.FallbackChain(provider, model) {
 		resp, err := agentsClient.GenerateFromTask(ctx, p.Provider, p.Model, prompt, tokens)
 		if err != nil {
 			log.Printf("Universal node provider %s/%s failed: %v", p.Provider, p.Model, err)
 			continue
 		}
-		if files := ParseFiles(resp); len(files) > 0 {
-			return files
+		if parsed := ParseResponse(resp); len(parsed.Files) > 0 {
+			return parsed
 		}
 		log.Printf("Universal node: no files parsed from %s/%s response", p.Provider, p.Model)
 	}
@@ -151,8 +153,9 @@ func (s *Solver) writeFiles(projectPath string, files map[string]string, emit Pr
 	return written
 }
 
-// ParseFiles extracts the file map from the universal node's JSON response.
-func ParseFiles(resp string) map[string]string {
+// ParseResponse extracts the file map and dependencies flag from the
+// universal node's JSON response.
+func ParseResponse(resp string) *universalResponse {
 	jsonStr := util.ExtractJSONFromMarkdown(resp)
 	var parsed universalResponse
 	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {
@@ -173,7 +176,8 @@ func ParseFiles(resp string) map[string]string {
 		}
 		files[path] = content
 	}
-	return files
+	parsed.Files = files
+	return &parsed
 }
 
 func buildPayload(files map[string]string, workerRole, managerRole string) string {

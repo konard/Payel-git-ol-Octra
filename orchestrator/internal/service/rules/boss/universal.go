@@ -128,7 +128,7 @@ func (s *Service) solveUniversal(
 	req *CreateTaskRequest,
 	progress rules.ProgressFunc,
 	projectPath string,
-) []*rules.ManagerResult {
+) ([]*rules.ManagerResult, bool) {
 	provider, model := pickProviderModel(req.Meta)
 	techStack := ""
 	if len(decision.TechStack) > 0 {
@@ -151,13 +151,13 @@ func (s *Service) solveUniversal(
 		},
 	}
 
-	result := s.universalSolver.Solve(ctx, s.agentsClient, solverReq)
-	if result == nil || len(result.Files) == 0 {
+	solverResult := s.universalSolver.Solve(ctx, s.agentsClient, solverReq)
+	if solverResult == nil || len(solverResult.Files) == 0 {
 		log.Printf("Universal node produced no solution")
-		return nil
+		return nil, false
 	}
 
-	written := result.Files
+	written := solverResult.Files
 	worker := &rules.WorkerResult{
 		WorkerId:   uuid.New().String(),
 		Role:       universalRole,
@@ -191,5 +191,5 @@ func (s *Service) solveUniversal(
 		"task_type":    decision.TaskType,
 		"current_role": universalRole,
 	})
-	return results
+	return results, solverResult.NeedsDeps
 }

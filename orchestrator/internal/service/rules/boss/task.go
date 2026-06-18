@@ -67,12 +67,16 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 				emit(progress, 0, err.Error(), errorData())
 				return err
 			}
-			managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
+			var needsDeps bool
+			managerResults, needsDeps = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
 			if len(managerResults) == 0 {
 				task.Status = "error"
 				database.Db.Save(task)
 				emit(progress, 0, "Universal node AI call failed", errorData())
 				return fmt.Errorf("universal node AI call failed")
+			}
+			if needsDeps {
+				s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
 			}
 			directUniversalUsed = true
 		} else {
@@ -169,7 +173,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 				emit(progress, 0, err.Error(), errorData())
 				return err
 			}
-			managerResults = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
+			var needsDeps bool
+			managerResults, needsDeps = s.solveUniversal(ctx, taskID.String(), decision, req, progress, projectPath)
 			directUniversalUsed = len(managerResults) > 0
 			if !directUniversalUsed {
 				if projectPath != "" {
@@ -179,6 +184,8 @@ func (s *Service) ExecuteTask(ctx context.Context, req *CreateTaskRequest, progr
 					projectPath = ""
 				}
 				emit(progress, 35, "Universal node could not solve directly; falling back to Boss pipeline", nil)
+			} else if needsDeps {
+				s.generateFlake(projectPath, taskID.String(), req.Title, decision.TechStack, progress)
 			}
 		}
 
