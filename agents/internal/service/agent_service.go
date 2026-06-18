@@ -145,6 +145,15 @@ func (s *AgentService) Generate(ctx context.Context, req *models.AgentRequest) (
 
 	log.Printf("🤖 [%s] Generating content with model: %s", provider.Name(), req.Model)
 
+	// Pass model through tokens for providers (e.g. custom) that
+	// read the model name from tokens["model"] rather than req.Model.
+	if req.Tokens == nil {
+		req.Tokens = make(map[string]interface{})
+	}
+	if _, ok := req.Tokens["model"]; !ok {
+		req.Tokens["model"] = req.Model
+	}
+
 	content, err := provider.Generate(ctx, req.Prompt, req.Tokens)
 	if err != nil {
 		log.Printf("❌ Error generating content: %v", err)

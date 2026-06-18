@@ -16,7 +16,7 @@
 
 export interface OcaweNode {
   id: string;
-  type: string; // 'boss' | 'manager' | 'worker' | 'github' | ...
+  type: string; // 'boss' | 'manager' | 'worker' | 'universal' | 'github' | ...
   role?: string;
   techStack?: string[];
   [key: string]: unknown;
@@ -79,7 +79,7 @@ function quote(value: string): string {
  * node that points at it) and fall back to a stable type-based ordering.
  */
 function orderNodes(nodes: OcaweNode[], edges: OcaweEdge[]): OcaweNode[] {
-  const typeRank: Record<string, number> = { boss: 0, manager: 1, worker: 2, github: 3 };
+  const typeRank: Record<string, number> = { boss: 0, manager: 1, worker: 2, universal: 2, github: 3 };
   const rankOf = (n: OcaweNode) => (n.type in typeRank ? typeRank[n.type] : 9);
 
   // Incoming-edge count for a light topological bias.
@@ -110,6 +110,8 @@ function describeNode(node: OcaweNode): string {
       return `Manager agent (${role}) — reviews and orchestrates workers.`;
     case 'worker':
       return `Worker agent (${role}) — implements the assigned task.`;
+    case 'universal':
+      return `Universal agent (${role}) — solves easy tasks directly without a full team.`;
     case 'github':
       return `GitHub agent (${role}) — handles repository operations.`;
     default:

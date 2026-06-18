@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const read = (rel) => readFileSync(resolve(root, rel), 'utf8');
 
-const viewer = read('src/app/components/SolutionViewer.tsx');
+const viewer = read('src/app/components/solution/SolutionViewer.tsx');
 
 // A dedicated indent component with one guide line per depth level.
 assert.match(viewer, /function TreeIndent\(/, 'SolutionViewer must define a TreeIndent component');

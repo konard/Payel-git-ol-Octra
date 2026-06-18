@@ -19,9 +19,18 @@ func (s *Service) gradeTaskViaAI(ctx context.Context, provider, model string, to
 		taskText = taskText[:500]
 	}
 
-	prompt := fmt.Sprintf(`Rate the complexity of this task from 1 to 10.
-1 = absolutely trivial (hello world, one function, minimal script)
-10 = extremely complex (distributed system, ML pipeline, 10+ microservices)
+	prompt := fmt.Sprintf(`Rate the REAL complexity of this task from 1 to 10.
+
+Judge by the actual work the task requires — NOT by keywords or how the request is
+phrased. A request can sound technical yet be trivial, or sound casual yet be hard.
+Estimate how much a competent engineer would actually have to build.
+
+1  = absolutely trivial: a single obvious answer or one tiny file (hello world,
+     one short function, a math/logic question, a one-line script).
+2  = very simple: one small self-contained file, no real architecture.
+3-4 = a small program or focused script with a couple of pieces.
+5-7 = a real application or service with multiple components.
+8-10 = extremely complex (distributed system, ML pipeline, many microservices).
 
 Task: %s
 

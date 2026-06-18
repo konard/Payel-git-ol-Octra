@@ -13,7 +13,7 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(resolve(here, '..', rel), 'utf8');
 
-const workspace = read('src/app/components/Workspace.tsx');
+const workspace = read('src/app/components/shell/Workspace.tsx');
 
 // Resizable three-pane layout.
 assert.match(workspace, /from 'react-resizable-panels'/, 'workspace must use react-resizable-panels');
@@ -57,7 +57,7 @@ assert.match(app, /useIsDesktop/, 'App must detect desktop width');
 assert.match(app, /<Workspace/, 'App must mount the desktop workspace');
 assert.match(app, /isDesktop \?/, 'App must branch the layout on isDesktop');
 
-const topbar = read('src/app/components/TopBar.tsx');
+const topbar = read('src/app/components/shell/TopBar.tsx');
 
 // The header exposes the Sessions dock toggle only on desktop. The Solution
 // dock is always visible in the three-pane workspace, so it has no toggle.

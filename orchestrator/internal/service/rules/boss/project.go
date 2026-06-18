@@ -291,11 +291,11 @@ func (s *Service) mergeManagerBranches(repoPath string, roles []models.ManagerRo
 
 // generateFlake — записывает flake.nix в корень проекта для Nix-совместимости.
 // Использует FlakeBuilder для генерации богатого flake.nix с зависимостями
-// на основе techStack, определённого AI на этапе планирования.
+// на основе techStack, определённого прямым universal route или boss-планированием.
 // После записи flake.nix:
-//   1. Генерирует flake.lock для закрепления версий зависимостей.
-//   2. Коммитит flake.nix + flake.lock в git, чтобы они не потерялись
-//      при последующих git-операциях (ветвление/мерж воркеров).
+//  1. Генерирует flake.lock для закрепления версий зависимостей.
+//  2. Коммитит flake.nix + flake.lock в git, чтобы они не потерялись
+//     при последующих git-операциях (ветвление/мерж воркеров).
 func (s *Service) generateFlake(projectPath, taskID, title string, techStack []string, progress rules.ProgressFunc) {
 	packages := NewFlakeBuilder().ResolveFromTechStacks(techStack)
 	s.WriteFlake(projectPath, taskID, title, packages)
@@ -623,4 +623,3 @@ func envOrDefault(key, def string) string {
 	}
 	return def
 }
-
