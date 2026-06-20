@@ -62,9 +62,6 @@ func universalDecisionFromRequest(req *CreateTaskRequest) *DecisionResult {
 	techStack := detectTechStack(req.Title, req.Description)
 	if taskType == "" {
 		taskType = classifyTaskType(req.Title, req.Description)
-		if taskType == TaskTypeCode && looksLikeDirectAnswer(req.Title, req.Description, len(techStack) > 0) {
-			taskType = TaskTypeDocument
-		}
 	}
 	if taskType == "" {
 		taskType = TaskTypeCode
@@ -78,35 +75,7 @@ func universalDecisionFromRequest(req *CreateTaskRequest) *DecisionResult {
 	}
 }
 
-func looksLikeDirectAnswer(title, description string, hasTechStack bool) bool {
-	text := strings.ToLower(strings.TrimSpace(title + "\n" + description))
-	if text == "" {
-		return false
-	}
-	strongCodeSignals := []string{
-		"hello world", "script", "program", "function", "server", "app",
-		"application", "component", "class", "method", "implement", "bug",
-		"fix ", "write in ", "write a ", "write an ", "create a ", "build a ",
-		"код", "скрипт", "программ", "функци", "сервер", "приложени",
-		"реализ", "создай", "сделай", "напиши",
-	}
-	if containsAny(text, strongCodeSignals) {
-		return false
-	}
-	stackCodeSignals := []string{"code", "api", "апи"}
-	if hasTechStack && containsAny(text, stackCodeSignals) {
-		return false
-	}
-	answerSignals := []string{
-		"?", "what is", "why", "how many", "calculate", "solve", "logic",
-		"math", "proof", "explain", "сколько", "что такое", "почему", "объясни",
-		"реши", "посчитай", "математ", "логичес", "доказ",
-	}
-	if containsAny(text, answerSignals) {
-		return true
-	}
-	return strings.ContainsAny(text, "+=*/<>")
-}
+
 
 func directUniversalChatSummary(fullDoc string) string {
 	fullDoc = strings.TrimSpace(fullDoc)

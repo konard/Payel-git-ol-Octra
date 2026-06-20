@@ -5,39 +5,18 @@ import (
 	"testing"
 )
 
-// TestUniversalNode_CodeTask — для кодовой задачи промпт требует минимальный
-// результат и строгий JSON-контракт файлов (issue #91: hello world должен быть
-// одним файлом, а не деревом непонятных файлов).
 func TestUniversalNode_CodeTask(t *testing.T) {
 	p := UniversalNode("hello world", "напиши hello world на python", "code", "python", "")
 	mustContain(t, p, "UNIVERSAL NODE")
 	mustContain(t, p, "DO NOT OVER-ENGINEER")
-	mustContain(t, p, "python")
 	mustContain(t, p, `{"files":`)
-	mustContain(t, p, "DELIVERABLE (code)")
-	if strings.Contains(p, "solution/answer.md") {
-		t.Errorf("code task prompt should not force a markdown answer file")
+	mustContain(t, p, "source-file extension")
+	mustContain(t, p, "python")
+	if !strings.Contains(p, "solution/answer.md") {
+		t.Errorf("code task prompt should mention solution/answer.md as the format for questions")
 	}
 }
 
-// TestUniversalNode_TextTask — research/document/presentation отдают единый
-// Markdown в solution/answer.md, который подхватывает существующий конвейер.
-func TestUniversalNode_TextTask(t *testing.T) {
-	for _, tt := range []string{"research", "document", "presentation"} {
-		p := UniversalNode("q", "what is 2+2", tt, "markdown", "")
-		mustContain(t, p, "solution/answer.md")
-		mustContain(t, p, "DELIVERABLE ("+tt+")")
-	}
-}
-
-// TestUniversalNode_DefaultsToCode — пустой task_type трактуется как код.
-func TestUniversalNode_DefaultsToCode(t *testing.T) {
-	p := UniversalNode("t", "d", "", "", "")
-	mustContain(t, p, "DELIVERABLE (code)")
-}
-
-// TestUniversalNode_SearchBlock — когда нода поиска передала результаты (issue #97),
-// промпт обязан вставить их и потребовать опираться на реальные источники.
 func TestUniversalNode_SearchBlock(t *testing.T) {
 	block := "[1] Example title — https://example.com\nSnippet about the topic."
 	p := UniversalNode("q", "what is the latest news", "research", "markdown", block)
@@ -46,7 +25,6 @@ func TestUniversalNode_SearchBlock(t *testing.T) {
 	mustContain(t, p, "do not invent facts")
 }
 
-// TestUniversalNode_NoSearchBlock — без результатов поиска секция отсутствует.
 func TestUniversalNode_NoSearchBlock(t *testing.T) {
 	p := UniversalNode("q", "what is 2+2", "research", "markdown", "")
 	if strings.Contains(p, "WEB SEARCH RESULTS") {

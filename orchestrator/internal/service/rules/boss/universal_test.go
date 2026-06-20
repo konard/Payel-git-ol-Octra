@@ -116,14 +116,11 @@ func TestUniversalDecisionFromRequest(t *testing.T) {
 		}
 	})
 
-	t.Run("math or logic task becomes direct answer", func(t *testing.T) {
+	t.Run("math or logic task — AI decides output format from prompt", func(t *testing.T) {
 		decision := universalDecisionFromRequest(&CreateTaskRequest{
 			Title:       "math",
 			Description: "Сколько будет 2 + 2?",
 		})
-		if decision.TaskType != TaskTypeDocument {
-			t.Fatalf("task type = %q, want %q", decision.TaskType, TaskTypeDocument)
-		}
 		if decision.ManagersCount != 0 {
 			t.Fatalf("managers count = %d, want 0", decision.ManagersCount)
 		}
@@ -139,13 +136,13 @@ func TestUniversalDecisionFromRequest(t *testing.T) {
 		}
 	})
 
-	t.Run("concept question stays direct document answer", func(t *testing.T) {
+	t.Run("concept question — AI decides output format from prompt", func(t *testing.T) {
 		decision := universalDecisionFromRequest(&CreateTaskRequest{
 			Title:       "API question",
 			Description: "What is an API?",
 		})
-		if decision.TaskType != TaskTypeDocument {
-			t.Fatalf("task type = %q, want %q", decision.TaskType, TaskTypeDocument)
+		if decision.ManagersCount != 0 {
+			t.Fatalf("managers count = %d, want 0", decision.ManagersCount)
 		}
 	})
 }

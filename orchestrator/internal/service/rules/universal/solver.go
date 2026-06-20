@@ -88,9 +88,8 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 	}
 
 	// Когда нода поиска нашла источники, прикладываем их к решению, чтобы у ответа
-	// были проверяемые ссылки (issue #97). Делаем это только для не-кодовых задач —
-	// для кода лишний markdown-файл нарушил бы правило «не переусложнять».
-	if sources := strings.TrimSpace(req.SearchSources); sources != "" && req.TaskType != "code" && req.TaskType != "github" {
+	// были проверяемые ссылки (issue #97).
+	if sources := strings.TrimSpace(req.SearchSources); sources != "" {
 		if gen.Files == nil {
 			gen.Files = map[string]string{}
 		}

@@ -96,15 +96,19 @@ func (s *Service) runSearchNode(
 	emitSearchNode(progress, node, "searching", "", 0)
 
 	queries := buildSearchNodeQueries(req.Title, req.Description)
+	for _, q := range queries {
+		emitSearchNode(progress, node, "query", q, 0)
+	}
+
 	results, err := s.searchClient.Research(ctx, text, queries, 5, 8)
 	if err != nil {
 		log.Printf("[Search] node research failed: %v", err)
-		emitSearchNode(progress, node, "done", "", 0)
+		emitSearchNode(progress, node, "error", "", 0)
 		return "", "", node
 	}
 	if len(results) == 0 {
 		log.Printf("[Search] node found no results for %d queries", len(queries))
-		emitSearchNode(progress, node, "done", "", 0)
+		emitSearchNode(progress, node, "no_results", "", 0)
 		return "", "", node
 	}
 
@@ -134,7 +138,14 @@ func emitSearchNode(progress rules.ProgressFunc, node search.Node, phase, querie
 		data["search_queries"] = queries
 	}
 	msg := "Search node looking up information"
-	if phase == "done" {
+	switch phase {
+	case "query":
+		msg = fmt.Sprintf("Searching: %s", queries)
+	case "error":
+		msg = "Search failed — no results from any provider"
+	case "no_results":
+		msg = "Search found no results"
+	case "done":
 		if resultCount > 0 {
 			msg = fmt.Sprintf("Search node found %d sources", resultCount)
 		} else {

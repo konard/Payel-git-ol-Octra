@@ -18,17 +18,6 @@ import (
 // у обычного воркера, поэтому остальной конвейер (запись на диск, публикация,
 // вкладка Solution) работает без изменений.
 func UniversalNode(title, description, taskType, techStack, searchBlock string) string {
-	if taskType == "" {
-		taskType = "code"
-	}
-	deliverable := codeDeliverableRules(techStack)
-	if taskType != "code" && taskType != "github" {
-		deliverable = textDeliverableRules(taskType)
-	}
-
-	// Блок результатов веб-поиска (issue #97). Когда нода поиска нашла источники,
-	// мы передаём их сюда, чтобы универсальная нода отвечала по реальным фактам, а
-	// не выдумывала ответ. Если поиск не выполнялся, блок пустой и промпт не меняется.
 	searchSection := ""
 	if s := strings.TrimSpace(searchBlock); s != "" {
 		searchSection = `
@@ -39,25 +28,34 @@ Base your answer on the search results above. If they don't cover something, say
 `
 	}
 
+	sourceFilesHint := ""
+	if searchBlock == "" {
+		sourceFilesHint = `- For code tasks: use the correct source-file extension for the language.
+- For questions or research: return a SINGLE Markdown file at "solution/answer.md".`
+	} else {
+		sourceFilesHint = `- Return a SINGLE Markdown file at "solution/answer.md" containing the complete, finished answer with citations.`
+	}
+
 	return fmt.Sprintf(`You are the UNIVERSAL NODE — a single solver for a task that has already been judged TRIVIAL.
 
 Title: %s
 Task: %s
-Deliverable type: %s
-Tech stack / output format: %s
+Tech stack / language hint: %s
 %s
 Your job is to deliver the complete, correct answer in ONE step. Do it like a fast,
 no-nonsense expert who respects the user's time.
 
+DECIDE THE OUTPUT FORMAT YOURSELF based on what the task asks:
+- If the user asks for code, a script, a function, or implementation — write source files (.py, .js, .go, etc.).
+- If the user asks a question, research, or factual information — write solution/answer.md.
+- If web search results are provided above — answer factually based on those sources.
+
 THE GOLDEN RULE — DO NOT OVER-ENGINEER:
 - Produce EXACTLY what was asked, and nothing more. The smallest correct result wins.
-- A "hello world" is ONE file with ONE statement — not a project. A math or logic
-  question is a direct answer — not a framework.
+- A "hello world" is ONE file — not a project. A question is a direct answer — not a framework.
 - Do NOT invent extra files, configuration, dependencies, abstractions, error
   handling, tests, READMEs, or features the user never requested.
-- Do NOT turn a small request into a bigger project. "a script" stays a script.
-
-%s
+- %s
 
 REQUIRED — dependencies flag:
 When the code relies on ANY external library, framework, or package NOT in the language's
@@ -67,24 +65,5 @@ pins third-party package versions.
 
 Reply with STRICT JSON ONLY (no markdown fences, no commentary):
 {"files": {"relative/path.ext": "full file content"}, "dependencies": false}`,
-		title, description, taskType, techStack, searchSection, deliverable)
-}
-
-func codeDeliverableRules(techStack string) string {
-	lang := techStack
-	if lang == "" {
-		lang = "the most fitting popular language for the request"
-	}
-	return `DELIVERABLE (code):
-- Return the minimal set of source files that fully satisfy the request, written in ` + lang + `.
-- Prefer a SINGLE file using the standard library and zero dependencies unless the task clearly needs more.
-- File content must be complete, runnable code — no placeholders, no TODOs.
-- Use the correct source-file extension for the language (never put one language's code in another's extension).`
-}
-
-func textDeliverableRules(taskType string) string {
-	return `DELIVERABLE (` + taskType + `):
-- Return a SINGLE Markdown file at "solution/answer.md" containing the complete, finished answer.
-- For math/logic questions, give the direct result first, then a short justification if useful.
-- Keep it focused and free of filler — answer the actual question, nothing more.`
+		title, description, techStack, searchSection, sourceFilesHint)
 }
