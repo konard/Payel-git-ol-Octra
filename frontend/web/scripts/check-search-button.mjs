@@ -36,6 +36,11 @@ assert.match(bottomInput, /handleApodexSearchSelect/, 'the picker must include a
 assert.match(bottomInput, /handleLefineSearchSelect/, 'the picker must keep the Lefine branch');
 assert.match(bottomInput, /octra:open-settings/, 'choosing Apodex must request the Settings -> Search tab');
 assert.match(bottomInput, /text-orange-500|text-orange-600|bg-orange-500/, 'configured Apodex/custom search must make the globe visibly orange');
+assert.match(bottomInput, /data-search-picker-layout="split-visual"/, 'the provider picker must use the requested split visual layout');
+assert.match(bottomInput, /apodex\.png/, 'the provider picker must reserve the apodex.png image slot');
+assert.match(bottomInput, /lefine\.pro\.jpg/, 'the provider picker must use the Lefine image asset');
+assert.match(bottomInput, /data-search-provider-visual="apodex"/, 'the picker must expose the Apodex visual panel');
+assert.match(bottomInput, /data-search-provider-visual="lefine"/, 'the picker must expose the Lefine visual panel');
 
 // Every shipped translation file must define the new label so the tooltip is
 // never the raw i18n key.

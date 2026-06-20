@@ -13,6 +13,15 @@ const LEFINE_SEARCH_URL =
   import.meta.env.VITE_LEFINE_URL ||
   (import.meta.env.DEV ? 'http://localhost:5173/' : 'https://lefine.pro/');
 
+const SEARCH_PROVIDER_IMAGES = import.meta.glob('../../../images/{apodex.png,lefine.pro.jpg}', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+}) as Record<string, string>;
+
+const APODEX_LOGO_URL = SEARCH_PROVIDER_IMAGES['../../../images/apodex.png'];
+const LEFINE_LOGO_URL = SEARCH_PROVIDER_IMAGES['../../../images/lefine.pro.jpg'];
+
 function openLefineSearch() {
   if (typeof window === 'undefined') return;
   window.open(LEFINE_SEARCH_URL, '_blank', 'noopener,noreferrer');
@@ -523,34 +532,73 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                 </button>
 
                 {showSearchPicker && (
-                  <div className="absolute bottom-full right-0 z-30 mb-2 w-72 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
-                    <div className="border-b border-[var(--border)] px-4 py-3">
-                      <div className="text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchPickerTitle')}</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 p-3">
+                  <div
+                    data-search-picker-layout="split-visual"
+                    className="fixed bottom-16 left-1/2 z-30 w-[min(calc(100vw-1.5rem),42rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:mb-2 sm:translate-x-0"
+                  >
+                    <div className="relative grid min-h-[18rem] grid-cols-1 overflow-hidden sm:grid-cols-2">
                       <button
                         type="button"
                         onClick={handleApodexSearchSelect}
-                        className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-4 text-center text-[var(--text)] transition-colors hover:border-orange-500 hover:bg-orange-500/15"
+                        data-search-provider-visual="apodex"
+                        className="group relative flex min-h-56 overflow-hidden bg-[linear-gradient(135deg,#6f87d8_0%,#2c3038_54%,var(--surface)_100%)] p-5 text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:min-h-72"
                       >
-                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white">
-                          <Sparkles size={20} />
+                        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,186,255,0.35),transparent_32%)] opacity-80" />
+                        <span className="relative z-10 flex w-full flex-col items-center justify-center gap-4">
+                          <span className="flex h-32 w-full max-w-64 items-center justify-center overflow-hidden bg-black/35 p-5 shadow-xl ring-1 ring-white/10 transition-transform group-hover:scale-[1.02]">
+                            {APODEX_LOGO_URL ? (
+                              <img
+                                src={APODEX_LOGO_URL}
+                                alt={t('bottomInput.searchWithApodex')}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            ) : (
+                              <span className="flex flex-col items-center gap-2 text-[#76d7ff]">
+                                <Sparkles size={30} />
+                                <span className="text-lg font-semibold tracking-normal">APODEX</span>
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10">
+                            <Sparkles size={15} />
+                            {t('bottomInput.searchWithApodex')}
+                          </span>
+                          <span className="text-center text-[11px] leading-4 text-white/80">{t('bottomInput.configureSearch')}</span>
                         </span>
-                        <span className="text-sm font-semibold">{t('bottomInput.searchWithApodex')}</span>
-                        <span className="text-[11px] leading-4 text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={handleLefineSearchSelect}
-                        className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-4 text-center text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)]"
+                        data-search-provider-visual="lefine"
+                        className="group relative flex min-h-56 overflow-hidden bg-[linear-gradient(225deg,#f4c06c_0%,#69624f_38%,var(--surface)_80%)] p-5 text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:min-h-72"
                       >
-                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] text-white">
-                          <ExternalLink size={20} />
+                        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_12%,rgba(255,223,166,0.38),transparent_34%)] opacity-90" />
+                        <span className="relative z-10 flex w-full flex-col items-center justify-center gap-4">
+                          <span className="flex h-32 w-full max-w-64 items-center justify-center overflow-hidden bg-white p-3 shadow-xl ring-8 ring-black transition-transform group-hover:scale-[1.02]">
+                            {LEFINE_LOGO_URL ? (
+                              <img
+                                src={LEFINE_LOGO_URL}
+                                alt={t('bottomInput.searchWithLefine')}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            ) : (
+                              <span className="flex flex-col items-center gap-2 text-[#6b3a05]">
+                                <ExternalLink size={30} />
+                                <span className="text-lg font-semibold tracking-normal">Lefine.pro</span>
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10">
+                            <ExternalLink size={15} />
+                            {t('bottomInput.searchWithLefine')}
+                          </span>
+                          <span className="text-center text-[11px] leading-4 text-white/80">{t('bottomInput.openLefine')}</span>
                         </span>
-                        <span className="text-sm font-semibold">{t('bottomInput.searchWithLefine')}</span>
-                        <span className="text-[11px] leading-4 text-[var(--text-muted)]">{t('bottomInput.openLefine')}</span>
                       </button>
+
+                      <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[var(--border)] sm:inset-x-auto sm:inset-y-[-12%] sm:left-1/2 sm:top-auto sm:h-auto sm:w-10 sm:-translate-x-1/2 sm:rotate-[8deg] sm:bg-[var(--surface)]" />
+                      <div className="pointer-events-none absolute inset-y-[-12%] left-1/2 hidden w-px -translate-x-1/2 rotate-[8deg] bg-white/55 sm:block" />
                     </div>
                   </div>
                 )}
