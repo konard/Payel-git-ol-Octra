@@ -66,8 +66,8 @@ func (s *Service) searchEmitterFor(progress rules.ProgressFunc, basePct int32, r
 //
 // Поиск устойчив к сбоям: при ошибке сети или выключенном поиске воркер просто
 // получает пустой block и продолжает работу на собственных знаниях LLM.
-func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, topic, angle string) (block, sources string, n int) {
-	if s.searchClient == nil || !search.Enabled() {
+func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, topic, angle string, searchConfig *search.ModelConfig) (block, sources string, n int) {
+	if searchConfig == nil && (s.searchClient == nil || !search.Enabled()) {
 		return "", "", 0
 	}
 
@@ -80,9 +80,9 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 		emit.emit("Searching the web for «"+q+"»", "searching", 0)
 	}
 
-	results, err := s.searchClient.Research(ctx, topic, queries, 5, 8)
+	results, err := s.research(ctx, topic, queries, searchConfig)
 	if err != nil {
-		log.Printf("[Worker] web search failed (%s): %v", role, err)
+		log.Printf("[Worker] search failed (%s): %v", role, err)
 		emit.emit("", "done", len(queries))
 		return "", "", 0
 	}
@@ -94,6 +94,60 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 	emit.emit("", "done", len(queries))
 	log.Printf("[Worker] web search (%s): %d queries → %d sources", role, len(queries), len(results))
 	return search.FormatForPrompt(results), search.FormatSourcesMarkdown(results), len(results)
+}
+
+func (s *Service) research(ctx context.Context, topic string, queries []string, searchConfig *search.ModelConfig) ([]search.Result, error) {
+	var merged []search.Result
+	seen := make(map[string]struct{})
+	var firstErr error
+
+	addResults := func(results []search.Result) {
+		for _, result := range results {
+			key := strings.ToLower(strings.TrimRight(strings.TrimSpace(result.URL), "/"))
+			if key == "" {
+				continue
+			}
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			merged = append(merged, result)
+		}
+	}
+
+	if searchConfig != nil {
+		modelResults, err := search.NewClientWithProvider(search.NewModelProvider(*searchConfig)).Research(ctx, topic, queries, 2, 4)
+		if err != nil {
+			firstErr = err
+			log.Printf("[Worker] AI search provider failed: %v", err)
+		} else {
+			addResults(modelResults)
+		}
+	}
+
+	if s.searchClient != nil && search.Enabled() {
+		webResults, err := s.searchClient.Research(ctx, topic, queries, 5, 8)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+		} else {
+			addResults(webResults)
+		}
+	}
+
+	if len(merged) == 0 {
+		if firstErr != nil {
+			return nil, firstErr
+		}
+		return nil, nil
+	}
+
+	ranked := search.RankBM25(topic, merged)
+	if len(ranked) > 8 {
+		ranked = ranked[:8]
+	}
+	return ranked, nil
 }
 
 // attachImages ищет в интернете и встраивает реальные картинки в слайды колоды.
@@ -273,4 +327,3 @@ func dedupeQueries(in []string) []string {
 	}
 	return out
 }
-

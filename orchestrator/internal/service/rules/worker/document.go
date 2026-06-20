@@ -10,6 +10,7 @@ import (
 	"orchestrator/internal/config"
 	"orchestrator/internal/prompts"
 	"orchestrator/internal/service/document"
+	"orchestrator/internal/service/search"
 	"orchestrator/internal/service/util"
 	"orchestrator/internal/skills"
 )
@@ -18,7 +19,7 @@ import (
 // skill — уже разрешённый контент скиллов (из Warehouse.Select() или Guidance()), может быть пустым.
 func (s *Service) generateDocument(
 	ctx context.Context, provider, model string, tokens map[string]string,
-	taskType, role, description, topic, extCtx, workerID string, emit searchEmitter, skill string,
+	taskType, role, description, topic, extCtx, workerID string, emit searchEmitter, searchConfig *search.ModelConfig, skill string,
 ) (map[string]string, []string, error) {
 	contextSection := ""
 	if extCtx != "" {
@@ -43,7 +44,7 @@ func (s *Service) generateDocument(
 
 	switch taskType {
 	case "presentation":
-		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, "visual references images charts diagrams screenshots examples")
+		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, "visual references images charts diagrams screenshots examples", searchConfig)
 		if sourcesMd != "" {
 			files["solution/visual-sources-"+slug+".md"] = sourcesMd
 		}
@@ -79,7 +80,7 @@ func (s *Service) generateDocument(
 		if angle == "" {
 			angle = "general web research"
 		}
-		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, angle)
+		searchBlock, sourcesMd, n := s.gatherSearch(ctx, emit, role, topic, angle, searchConfig)
 		if sourcesMd != "" {
 			files["solution/sources-"+slug+".md"] = sourcesMd
 		}
@@ -167,4 +168,3 @@ func firstLine(s string) string {
 	}
 	return s
 }
-

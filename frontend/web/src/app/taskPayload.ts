@@ -18,6 +18,27 @@ interface TaskProviderAuth {
   tokens: Record<string, string>;
 }
 
+export interface SearchProviderPayloadSettings {
+  searchProviderId: string;
+  searchProviders: Array<{
+    id: string;
+    provider: string;
+    name: string;
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+    streaming: boolean;
+  }>;
+}
+
+export interface SearchConfigPayload {
+  provider: string;
+  model: string;
+  'base-url': string;
+  'api-key': string;
+  striming: boolean;
+}
+
 const isCustomWorkflowNode = (node: AgentNode): boolean => !isGeneratedAgentNodeId(node.id);
 
 function firstConfiguredToken(...tokens: Array<string | null | undefined>): string {
@@ -126,5 +147,28 @@ export function buildTaskProviderAuth({
     tokens: {
       [provider]: firstConfiguredToken(apiKey, defaultToken),
     },
+  };
+}
+
+export function buildSearchConfigPayload(settings: SearchProviderPayloadSettings): SearchConfigPayload | null {
+  const selected = settings.searchProviders.find((provider) => provider.id === settings.searchProviderId);
+  if (!selected) {
+    return null;
+  }
+
+  const baseUrl = selected.baseUrl.trim();
+  const apiKey = selected.apiKey.trim();
+  const model = selected.model.trim();
+
+  if (!baseUrl || !apiKey || !model) {
+    return null;
+  }
+
+  return {
+    provider: selected.provider,
+    model,
+    'base-url': baseUrl,
+    'api-key': apiKey,
+    striming: selected.streaming,
   };
 }

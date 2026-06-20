@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft, BarChart3 } from 'lucide-react';
+import { Sun, Moon, Download, Settings, User, Key, Palette, Eye, Languages, LogOut, Crown, Puzzle, Plus, X, Edit, Trash2, MessageSquare, PanelLeft, BarChart3, Search as SearchIcon } from 'lucide-react';
 import { useTaskStore } from '../../../stores/taskStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { useI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '../../../hooks/useI18n';
@@ -7,7 +7,7 @@ import { LANGUAGES_INFO } from '../../../config/languages';
 import { useAuthStore } from '../../../stores/authStore';
 import { useThemeStore } from '../../../stores/themeStore';
 import { useIntegrationStore, type IntegrationType } from '../../../stores/integrationStore';
-import { useCustomProvidersStore } from '../../../stores/customProvidersStore';
+import { useCustomProvidersStore, type CustomProvider } from '../../../stores/customProvidersStore';
 import { customProviderService } from '../../../services/customProviderService';
 import { IntegrationCard } from '../../../components/integrations/IntegrationCard';
 import { CustomProviderCard } from '../../../components/integrations/CustomProviderCard';
@@ -18,7 +18,7 @@ import telegramIcon from '../../../images/Telegram.webp';
 import n8nIcon from '../../../images/n8n-color.png';
 import octraMascot from '../../../images/octra-mascot.png';
 
-type SettingsTab = 'api' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations' | 'statistics';
+type SettingsTab = 'api' | 'search' | 'custom-providers' | 'custom-models' | 'language' | 'appearance' | 'visibility' | 'integrations' | 'statistics';
 
 // Add Model Form Component
 function AddModelForm({ onSave, onCancel, providers }: {
@@ -108,6 +108,7 @@ interface SettingsSection {
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'api', labelKey: 'settings.apiTokens', icon: Key },
+  { id: 'search', labelKey: 'settings.search', icon: SearchIcon },
   { id: 'custom-providers', labelKey: 'settings.customProviders', icon: Puzzle },
   { id: 'custom-models', labelKey: 'settings.customModels', icon: Puzzle },
   { id: 'language', labelKey: 'settings.language', icon: Languages },
@@ -146,10 +147,16 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const hideServerStatus = useSettingsStore((state) => state.hideServerStatus);
   const hideConsole = useSettingsStore((state) => state.hideConsole);
+  const searchProviderId = useSettingsStore((state) => state.searchProviderId);
+  const searchProviders = useSettingsStore((state) => state.searchProviders);
   const setDefaultToken = useSettingsStore((state) => state.setDefaultToken);
   const setHideApiKeyInput = useSettingsStore((state) => state.setHideApiKeyInput);
   const setHideServerStatus = useSettingsStore((state) => state.setHideServerStatus);
   const setHideConsole = useSettingsStore((state) => state.setHideConsole);
+  const setSearchProviderId = useSettingsStore((state) => state.setSearchProviderId);
+  const updateSearchProvider = useSettingsStore((state) => state.updateSearchProvider);
+  const addSearchProvider = useSettingsStore((state) => state.addSearchProvider);
+  const deleteSearchProvider = useSettingsStore((state) => state.deleteSearchProvider);
   const { language, changeLanguage, t, loading: translationsLoading } = useI18n();
    const { isAuthenticated: isUserAuthenticated, logout } = useAuthStore();
    const { isDark, toggleTheme } = useThemeStore();
@@ -175,6 +182,19 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
       setActiveTab('api');
     }
   }, [showSettings]);
+
+  useEffect(() => {
+    const handleOpenSettings = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: SettingsTab }>).detail?.tab;
+      if (tab && SETTINGS_SECTIONS.some((section) => section.id === tab)) {
+        setActiveTab(tab);
+      }
+      setShowSettings(true);
+    };
+
+    window.addEventListener('octra:open-settings', handleOpenSettings);
+    return () => window.removeEventListener('octra:open-settings', handleOpenSettings);
+  }, []);
 
   // Load custom providers and models on mount
   useEffect(() => {
@@ -221,6 +241,16 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
   const handleOpenSettings = () => {
     setActiveTab('api');
     setShowSettings(true);
+  };
+
+  const activeSearchProvider = searchProviders.find((provider) => provider.id === searchProviderId) || searchProviders[0];
+
+  const handleAddSearchProvider = () => {
+    addSearchProvider({
+      name: t('settings.customSearchProviderDefaultName'),
+      provider: 'custom',
+      streaming: false,
+    });
   };
 
   const handleDownload = () => {
@@ -416,7 +446,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
           onClick={() => setShowSettings(false)}
         >
           <div
-            className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl w-[700px] max-w-[95vw] h-[420px] flex overflow-hidden"
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl w-[760px] max-w-[95vw] h-[560px] max-h-[90vh] flex overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Sidebar */}
@@ -479,6 +509,152 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
                       </p>
                     </div>
                   </div>
+                 )}
+
+                 {activeTab === 'search' && (
+                   <div className="space-y-4 max-w-xl">
+                     <div>
+                       <div className="text-sm font-medium text-[var(--text)] mb-1">{t('settings.searchProvidersTitle')}</div>
+                       <div className="text-xs text-[var(--text-muted)] mb-3">
+                         {t('settings.searchProvidersDescription')}
+                       </div>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                         {searchProviders.map((provider) => {
+                           const isActive = provider.id === searchProviderId;
+                           const isConfigured = Boolean(provider.baseUrl.trim() && provider.apiKey.trim() && provider.model.trim());
+                           return (
+                             <button
+                               key={provider.id}
+                               type="button"
+                               onClick={() => setSearchProviderId(provider.id)}
+                               className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                                 isActive
+                                   ? 'border-orange-500 bg-orange-500/10'
+                                   : 'border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]'
+                               }`}
+                             >
+                               <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
+                                 provider.provider === 'apodex' ? 'bg-orange-500 text-white' : 'bg-[var(--accent)] text-white'
+                               }`}>
+                                 <SearchIcon size={17} />
+                               </span>
+                               <span className="min-w-0 flex-1">
+                                 <span className="block truncate text-sm font-semibold text-[var(--text)]">{provider.name}</span>
+                                 <span className={`text-[11px] ${isConfigured ? 'text-green-500' : 'text-[var(--text-muted)]'}`}>
+                                   {isConfigured ? t('settings.searchConfigured') : t('settings.searchNotConfigured')}
+                                 </span>
+                               </span>
+                             </button>
+                           );
+                         })}
+                       </div>
+                     </div>
+
+                     {activeSearchProvider && (
+                       <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 space-y-3">
+                         <div className="flex items-center justify-between gap-3">
+                           <div>
+                             <div className="text-sm font-semibold text-[var(--text)]">{activeSearchProvider.name}</div>
+                             <div className="text-xs text-[var(--text-muted)]">{t('settings.searchProviderDetails')}</div>
+                           </div>
+                           {activeSearchProvider.provider === 'custom' && (
+                             <button
+                               type="button"
+                               onClick={() => deleteSearchProvider(activeSearchProvider.id)}
+                               className="p-1.5 rounded-md text-red-500 transition-colors hover:bg-red-500/10"
+                               title={t('providers.delete')}
+                             >
+                               <Trash2 size={15} />
+                             </button>
+                           )}
+                         </div>
+
+                         {activeSearchProvider.provider === 'custom' && (
+                           <div>
+                             <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                               {t('settings.searchProviderName')}
+                             </label>
+                             <input
+                               type="text"
+                               value={activeSearchProvider.name}
+                               onChange={(e) => updateSearchProvider(activeSearchProvider.id, { name: e.target.value })}
+                               className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                               placeholder={t('settings.searchProviderNamePlaceholder')}
+                             />
+                           </div>
+                         )}
+
+                         <div>
+                           <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                             {t('settings.searchBaseUrl')}
+                           </label>
+                           <input
+                             type="url"
+                             value={activeSearchProvider.baseUrl}
+                             onChange={(e) => updateSearchProvider(activeSearchProvider.id, { baseUrl: e.target.value })}
+                             className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                             placeholder="https://api.example.com/v1/responses"
+                           />
+                         </div>
+
+                         <div>
+                           <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                             {t('settings.searchApiKey')}
+                           </label>
+                           <input
+                             type="password"
+                             value={activeSearchProvider.apiKey}
+                             onChange={(e) => updateSearchProvider(activeSearchProvider.id, { apiKey: e.target.value })}
+                             className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                             placeholder="sk-..."
+                           />
+                         </div>
+
+                         <div>
+                           <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                             {t('settings.searchModel')}
+                           </label>
+                           <input
+                             type="text"
+                             value={activeSearchProvider.model}
+                             onChange={(e) => updateSearchProvider(activeSearchProvider.id, { model: e.target.value })}
+                             className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                             placeholder={activeSearchProvider.provider === 'apodex' ? 'apodex-1-0-deepresearch-mini' : 'search-model'}
+                           />
+                         </div>
+
+                         <div className="flex items-center justify-between gap-3 pt-1">
+                           <div>
+                             <div className="text-sm font-medium text-[var(--text)]">{t('settings.searchStreaming')}</div>
+                             <div className="text-xs text-[var(--text-muted)]">{t('settings.searchStreamingHint')}</div>
+                           </div>
+                           <button
+                             type="button"
+                             onClick={() => updateSearchProvider(activeSearchProvider.id, { streaming: !activeSearchProvider.streaming })}
+                             className={`relative h-7 w-12 rounded-full transition-colors duration-200 ${
+                               activeSearchProvider.streaming ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+                             }`}
+                             aria-pressed={activeSearchProvider.streaming}
+                           >
+                             <span
+                               className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ${
+                                 activeSearchProvider.streaming ? 'translate-x-5' : 'translate-x-0'
+                               }`}
+                             />
+                           </button>
+                         </div>
+                       </div>
+                     )}
+
+                     <button
+                       type="button"
+                       onClick={handleAddSearchProvider}
+                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--background)] border border-dashed border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                     >
+                       <Plus size={16} />
+                       {t('settings.addSearchProvider')}
+                     </button>
+                   </div>
                  )}
 
                  {activeTab === 'custom-providers' && (

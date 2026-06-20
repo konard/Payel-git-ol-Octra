@@ -47,7 +47,13 @@
     "reconnecting": "サーバーに再接続中...",
     "taskCreated": "タスクが作成されました",
     "sendError": "タスク送信エラー",
-    "searchOnLefine": "Search on Lefine"
+    "searchOnLefine": "Search on Lefine",
+    "searchProviders": "Search providers",
+    "searchPickerTitle": "Search",
+    "searchWithApodex": "Apodex",
+    "configureSearch": "Configure AI search",
+    "searchWithLefine": "Lefine.pro",
+    "openLefine": "Open search page"
   },
   "nodes": {
     "ceo": "CEO",
@@ -98,7 +104,22 @@
     "hideTokenField": "トークン入力フィールドを非表示",
     "hideTokenFieldHint": "メイン画面でAPIキーフィールドを非表示",
     "save": "保存",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "search": "Search",
+    "searchProvidersTitle": "Search providers",
+    "searchProvidersDescription": "Choose Apodex or a custom AI search provider used by research workers.",
+    "customSearchProviderDefaultName": "Custom Search",
+    "searchConfigured": "Configured",
+    "searchNotConfigured": "Needs setup",
+    "searchProviderDetails": "Credentials sent with new tasks when this provider is configured.",
+    "searchProviderName": "Provider name",
+    "searchProviderNamePlaceholder": "Internal Search",
+    "searchBaseUrl": "Base URL",
+    "searchApiKey": "API key",
+    "searchModel": "Model",
+    "searchStreaming": "Streaming",
+    "searchStreamingHint": "Allow streaming responses from this search model.",
+    "addSearchProvider": "Add custom search provider"
   },
   "languages": {
     "en": "English",

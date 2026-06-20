@@ -32,6 +32,11 @@ func processTaskStreamWS(conn *websocket.Conn, taskReq requests.CreateTaskReques
 			}
 		}
 	}
+	if taskReq.Search != nil {
+		if jsonBytes, err := json.Marshal(taskReq.Search); err == nil {
+			meta["search"] = string(jsonBytes)
+		}
+	}
 
 	grpcReq := &bosspb.CreateTaskRequest{
 		UserId:      taskReq.UserID,

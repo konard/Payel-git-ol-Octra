@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X } from 'lucide-react';
+import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X, Sparkles, ExternalLink } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS } from '../../../config/providers';
 import { useSettingsStore } from '../../../stores/settingsStore';
@@ -12,6 +12,15 @@ import { t } from '../../../hooks/useI18n';
 const LEFINE_SEARCH_URL =
   import.meta.env.VITE_LEFINE_URL ||
   (import.meta.env.DEV ? 'http://localhost:5173/' : 'https://lefine.pro/');
+
+const SEARCH_PROVIDER_IMAGES = import.meta.glob('../../../images/{apodex.png,lefine.pro.jpg}', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+}) as Record<string, string>;
+
+const APODEX_LOGO_URL = SEARCH_PROVIDER_IMAGES['../../../images/apodex.png'];
+const LEFINE_LOGO_URL = SEARCH_PROVIDER_IMAGES['../../../images/lefine.pro.jpg'];
 
 function openLefineSearch() {
   if (typeof window === 'undefined') return;
@@ -82,17 +91,23 @@ function formatFileSize(size: number): string {
 export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showSearchPicker, setShowSearchPicker] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFileItem[]>([]);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
+  const searchPickerRef = useRef<HTMLDivElement>(null);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachedFilesRef = useRef<AttachedFileItem[]>([]);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
+  const searchProviderId = useSettingsStore((state) => state.searchProviderId);
+  const searchProviders = useSettingsStore((state) => state.searchProviders);
   const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
   const setDefaultModel = useSettingsStore((state) => state.setDefaultModel);
+  const setSearchProviderId = useSettingsStore((state) => state.setSearchProviderId);
 
   // Bubble animation state
   const [isAnimating, setIsAnimating] = useState(false);
@@ -143,6 +158,21 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       attachedFilesRef.current.forEach(revokeAttachmentPreview);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showSearchPicker) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (searchPickerRef.current?.contains(target) || searchButtonRef.current?.contains(target)) {
+        return;
+      }
+      setShowSearchPicker(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showSearchPicker]);
 
   // Custom providers
   const { providers: customProviders, models: customModels } = useCustomProvidersStore();
@@ -260,6 +290,28 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   }, []);
 
   const selectedProvider = allProviders.find(p => p.id === formData.provider);
+  const activeSearchProvider = useMemo(
+    () => searchProviders.find((provider) => provider.id === searchProviderId),
+    [searchProviderId, searchProviders],
+  );
+  const isSearchConfigured = Boolean(
+    activeSearchProvider?.baseUrl.trim() &&
+    activeSearchProvider?.apiKey.trim() &&
+    activeSearchProvider?.model.trim(),
+  );
+
+  const handleApodexSearchSelect = useCallback(() => {
+    setSearchProviderId('apodex');
+    setShowSearchPicker(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('octra:open-settings', { detail: { tab: 'search' } }));
+    }
+  }, [setSearchProviderId]);
+
+  const handleLefineSearchSelect = useCallback(() => {
+    setShowSearchPicker(false);
+    openLefineSearch();
+  }, []);
 
   // Submit on Enter (Shift+Enter inserts a newline), matching the reference chat
   // input behaviour.
@@ -458,15 +510,120 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                   </span>
                 )}
               </button>
-              <button
-                type="button"
-                onClick={openLefineSearch}
-                className="rounded-lg p-1.5 transition-colors hover:bg-[var(--surface)] hover:text-[var(--text)]"
-                title={t('bottomInput.searchOnLefine')}
-                aria-label={t('bottomInput.searchOnLefine')}
-              >
-                <Globe size={16} />
-              </button>
+              <div className="relative" ref={searchPickerRef}>
+                <button
+                  ref={searchButtonRef}
+                  type="button"
+                  onClick={() => {
+                    setShowSearchPicker((open) => !open);
+                    setShowProviderDropdown(false);
+                    setShowModelSelector(false);
+                  }}
+                  className={`rounded-lg p-1.5 transition-colors ${
+                    isSearchConfigured
+                      ? 'bg-orange-500/15 text-orange-500 hover:bg-orange-500/20 hover:text-orange-600'
+                      : 'hover:bg-[var(--surface)] hover:text-[var(--text)]'
+                  }`}
+                  title={t('bottomInput.searchProviders')}
+                  aria-label={t('bottomInput.searchProviders')}
+                  aria-expanded={showSearchPicker}
+                >
+                  <Globe size={16} />
+                </button>
+
+                {showSearchPicker && (
+                  <div
+                    data-search-picker-layout="octra-popover"
+                    className="fixed bottom-16 left-1/2 z-30 w-[min(calc(100vw-1rem),32rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl backdrop-blur-sm sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:mb-4 sm:translate-x-0"
+                  >
+                    <div className="flex items-center gap-3 border-b border-[var(--border)] px-3 py-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--accent)]">
+                        <Globe size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchProviders')}</div>
+                        <div className="truncate text-[11px] text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</div>
+                      </div>
+                    </div>
+
+                    <div className="relative grid grid-cols-1 gap-2 p-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={handleApodexSearchSelect}
+                        data-search-provider-visual="apodex"
+                        className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] p-2.5 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                      >
+                        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(99,132,255,0.24)_0%,rgba(99,132,255,0.08)_36%,transparent_72%)]" />
+                        <span className="relative flex flex-col gap-3">
+                          <span
+                            data-search-provider-preview="apodex"
+                            className="flex h-24 items-center justify-center overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm transition-colors group-hover:border-[var(--accent)]/50"
+                          >
+                            {APODEX_LOGO_URL ? (
+                              <img
+                                src={APODEX_LOGO_URL}
+                                alt={t('bottomInput.searchWithApodex')}
+                                className="max-h-16 max-w-full object-contain"
+                              />
+                            ) : (
+                              <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 text-sky-500 dark:text-sky-300">
+                                <Sparkles size={24} />
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 dark:text-sky-300">
+                              <Sparkles size={14} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchWithApodex')}</span>
+                              <span className="mt-0.5 block text-xs leading-4 text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</span>
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleLefineSearchSelect}
+                        data-search-provider-visual="lefine"
+                        className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] p-2.5 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                      >
+                        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(225deg,rgba(246,194,111,0.28)_0%,rgba(246,194,111,0.08)_38%,transparent_74%)]" />
+                        <span className="relative flex flex-col gap-3">
+                          <span
+                            data-search-provider-preview="lefine"
+                            className="flex h-24 items-center justify-center overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm transition-colors group-hover:border-[var(--accent)]/50"
+                          >
+                            {LEFINE_LOGO_URL ? (
+                              <img
+                                src={LEFINE_LOGO_URL}
+                                alt={t('bottomInput.searchWithLefine')}
+                                className="max-h-16 max-w-full rounded-md object-contain"
+                              />
+                            ) : (
+                              <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                                <ExternalLink size={24} />
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                              <ExternalLink size={14} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchWithLefine')}</span>
+                              <span className="mt-0.5 block text-xs leading-4 text-[var(--text-muted)]">{t('bottomInput.openLefine')}</span>
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+
+                      <div className="pointer-events-none absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-[var(--border)] sm:inset-x-auto sm:inset-y-3 sm:left-1/2 sm:top-auto sm:h-auto sm:w-px sm:-translate-x-1/2 sm:rotate-[8deg]" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
