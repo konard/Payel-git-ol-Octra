@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -59,6 +60,8 @@ func (c *Client) Research(ctx context.Context, topic string, queries []string, p
 		perQuery = 5
 	}
 
+	log.Printf("[Search] research topic=%q queries=%d perQuery=%d limit=%d", collapseSpaces(topic), len(queries), perQuery, limit)
+
 	seen := make(map[string]struct{})
 	var merged []Result
 	var firstErr error
@@ -70,11 +73,13 @@ func (c *Client) Research(ctx context.Context, topic string, queries []string, p
 		}
 		res, err := c.provider.Search(ctx, q, perQuery)
 		if err != nil {
+			log.Printf("[Search] query %q failed: %v", q, err)
 			if firstErr == nil {
 				firstErr = err
 			}
 			continue
 		}
+		log.Printf("[Search] query %q → %d raw results", q, len(res))
 		for _, r := range res {
 			key := normalizeURL(r.URL)
 			if key == "" {
@@ -99,6 +104,7 @@ func (c *Client) Research(ctx context.Context, topic string, queries []string, p
 	if limit > 0 && len(ranked) > limit {
 		ranked = ranked[:limit]
 	}
+	log.Printf("[Search] research done: %d unique → %d ranked sources", len(merged), len(ranked))
 	return ranked, nil
 }
 

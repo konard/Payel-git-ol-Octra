@@ -77,6 +77,52 @@ This saves ~37 seconds on trivial single-file tasks like hello world.
 | `OCTRA_UNIVERSAL_MAX_GRADE` | Threshold (0-10) for auto-detected trivial tasks. Default `2`. |
 | `OCTRA_DISABLE_UNIVERSAL_NODE` | Set `true` to force all tasks through Boss → Manager → Worker. |
 
+## Web search node
+
+A normal question that needs an *external* fact — *"what is the latest version of
+Go?"*, *"who is the CEO of Acme?"* — cannot be answered from the model's training
+data alone. Previously the universal node answered such questions from memory and
+hallucinated. The **search node** fixes this by fetching real sources and feeding
+them into the answer.
+
+The search node mirrors the universal node's two paths:
+
+### Auto-created (no canvas node)
+
+For every task heading to the universal node, Octra runs a deterministic heuristic
+(`search.NeedsWebSearch`) over the title + description:
+
+- **Search is performed** for explicit requests (*"find…"*, *"search for…"*,
+  *"найди…"*, *"поищи…"*), recency signals (*latest, today, news, последние*),
+  factual lookups (*price, weather, who is, столица, курс*), or an explicit `20xx`
+  year.
+- **Search is skipped** for self-contained work: code/implementation requests and
+  pure math/logic expressions — the universal node solves those itself.
+
+When search is needed and no node was placed, Octra **auto-creates** a search node,
+attaches it to the consuming node (universal / boss / manager / worker), runs the
+query, and injects the ranked sources into the prompt. Non-code answers also get a
+`solution/sources.md` with the citations.
+
+### Explicit canvas node
+
+Place a node with role `search` (synonyms: `web_search`, `websearch`,
+`web-search`) on the canvas. The model used for the node is read from its
+description (`model: gpt-4o`) or from the request meta (`search_model` /
+`search_provider`); when omitted it falls back to the task's model.
+
+A canvas search node is **only used when the task actually needs external
+information** — if it is placed but the task is self-contained, Octra logs the
+decision and skips it (no wasted calls). The search node never enters the
+Manager → Worker file-generation pipeline; it is handled solely as a lookup node.
+
+### Logs
+
+Search is fully traced under the `[Search]` prefix: the planning decision
+(activated / skipped / auto-created, with the reason and model), each query and its
+raw result count, per-query failures, and the final `unique → ranked` source tally.
+Set `WEB_SEARCH_DISABLED=true` to turn web search off entirely.
+
 ## Philosophy
 
 Octra's core principle: **AI is a genius but untrustworthy brain — the system is a rigid shell that controls it.**

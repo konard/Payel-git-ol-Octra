@@ -12,6 +12,7 @@ import (
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/rules/manager"
 	"orchestrator/internal/service/rules/universal"
+	"orchestrator/internal/service/search"
 	"orchestrator/pkg/database"
 	"orchestrator/pkg/models"
 
@@ -29,6 +30,7 @@ type Service struct {
 	db              *gorm.DB
 	contextClient   *ctxsvc.Service
 	universalSolver *universal.Solver
+	searchClient    *search.Client
 }
 
 // NewService — создаёт босса, привязанного к локальному менеджеру
@@ -45,6 +47,7 @@ func NewService(agentsClient *agents.Client, mgr *manager.Service, redisClient *
 		db:              database.Db,
 		contextClient:   contextClient,
 		universalSolver: universal.NewSolver(),
+		searchClient:    search.NewClient(),
 	}
 }
 

@@ -130,6 +130,11 @@ func predefinedWorkersFor(decision *DecisionResult, idx int, role string) []*rul
 		if worker.Role == "" {
 			continue
 		}
+		// Воркер-нода поиска (issue #97) не генерирует файлы — её обрабатывает
+		// runSearchNode, поэтому в обычный пул воркеров она не попадает.
+		if isSearchNodeRole(worker.Role) {
+			continue
+		}
 		workers = append(workers, &rules.WorkerRole{
 			Role:         worker.Role,
 			Description:  worker.Description,

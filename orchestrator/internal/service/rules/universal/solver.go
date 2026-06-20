@@ -18,13 +18,13 @@ import (
 )
 
 type streamedFile struct {
-	Path       string `json:"path"`
-	Content    string `json:"content"`
-	Language   string `json:"language"`
-	WorkerRole string `json:"worker_role"`
+	Path        string `json:"path"`
+	Content     string `json:"content"`
+	Language    string `json:"language"`
+	WorkerRole  string `json:"worker_role"`
 	ManagerRole string `json:"manager_role"`
-	Status     string `json:"status"`
-	UpdatedAt  int64  `json:"updated_at"`
+	Status      string `json:"status"`
+	UpdatedAt   int64  `json:"updated_at"`
 }
 
 type universalResponse struct {
@@ -44,11 +44,17 @@ type SolveRequest struct {
 	Tokens      map[string]string
 	ProjectPath string
 	Progress    ProgressFunc
+
+	// SearchBlock — отформатированные результаты веб-поиска от ноды поиска (issue #97).
+	// Когда не пуст, передаётся в промпт, чтобы нода отвечала по реальным источникам.
+	SearchBlock string
+	// SearchSources — Markdown-список источников, который пишется в solution/sources.md.
+	SearchSources string
 }
 
 type SolveResult struct {
-	Files        map[string]string
-	NeedsDeps    bool
+	Files     map[string]string
+	NeedsDeps bool
 }
 
 func NewSolver() *Solver {
@@ -65,7 +71,10 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 		"current_role": "universal",
 	})
 
-	prompt := prompts.UniversalNode(req.Title, req.Description, req.TaskType, req.TechStack)
+	prompt := prompts.UniversalNode(req.Title, req.Description, req.TaskType, req.TechStack, req.SearchBlock)
+	if req.SearchBlock != "" {
+		log.Printf("[Universal] solving with web search context (%d chars)", len(req.SearchBlock))
+	}
 
 	tokens := req.Tokens
 	if tokens == nil {
@@ -76,6 +85,18 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 	if gen == nil || len(gen.Files) == 0 {
 		log.Printf("Universal node produced no files")
 		return nil
+	}
+
+	// Когда нода поиска нашла источники, прикладываем их к решению, чтобы у ответа
+	// были проверяемые ссылки (issue #97). Делаем это только для не-кодовых задач —
+	// для кода лишний markdown-файл нарушил бы правило «не переусложнять».
+	if sources := strings.TrimSpace(req.SearchSources); sources != "" && req.TaskType != "code" && req.TaskType != "github" {
+		if gen.Files == nil {
+			gen.Files = map[string]string{}
+		}
+		if _, exists := gen.Files["solution/sources.md"]; !exists {
+			gen.Files["solution/sources.md"] = sources
+		}
 	}
 
 	written := s.writeFiles(req.ProjectPath, gen.Files, emit)
