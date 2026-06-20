@@ -12,8 +12,6 @@ class Config:
     ai_endpoint: str = "https://api.gonkagate.com/v1/chat/completions"
     ai_api_key: str = ""
     ai_model: str = "moonshotai/kimi-k2.6"
-    poll_interval: int = 5400
-
     pg_host: str = "localhost"
     pg_port: int = 5432
     pg_user: str = "crewai"
@@ -45,7 +43,6 @@ class Config:
             ai_endpoint=getenv("BASE_ULR", "https://api.gonkagate.com/v1/chat/completions"),
             ai_api_key=getenv("API_KEY", ""),
             ai_model=getenv("AI_MODEL", "moonshotai/kimi-k2.6"),
-            poll_interval=int(getenv("POLL_INTERVAL", "5400")),
             pg_host=getenv("POSTGRES_HOST", "localhost"),
             pg_port=int(getenv("POSTGRES_PORT", "5432")),
             pg_user=getenv("POSTGRES_USER", "crewai"),

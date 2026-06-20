@@ -187,7 +187,6 @@ services:
       - BASE_ULR=${BASE_ULR:-https://api.gonkagate.com/v1/chat/completions}
       - API_KEY=${API_KEY}
       - AI_MODEL=${AI_MODEL:-moonshotai/kimi-k2.6}
-      - POLL_INTERVAL=5400
       - REPO_ROOT=/repo
     volumes:
       - .:/repo:ro

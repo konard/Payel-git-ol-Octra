@@ -97,9 +97,7 @@ class PosterBot:
             except Exception as e:
                 logger.error("check failed: %s", e, exc_info=True)
 
-            await asyncio.sleep(
-                5 if posted else self.cfg.poll_interval
-            )
+            await asyncio.sleep(5)
 
     async def shutdown(self):
         await self.publisher.close()
