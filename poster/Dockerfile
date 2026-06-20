@@ -7,4 +7,5 @@ COPY pyproject.toml .
 RUN pip install uv && uv sync --no-dev
 
 COPY src/ src/
+ENV PYTHONPATH=/app
 CMD ["uv", "run", "python", "-m", "src.main"]
