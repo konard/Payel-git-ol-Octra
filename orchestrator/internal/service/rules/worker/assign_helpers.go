@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"orchestrator/internal/service/rules"
 	"orchestrator/internal/service/search"
@@ -75,6 +76,10 @@ func parseSearchConfig(raw string) *search.ModelConfig {
 	streaming := meta.Striming
 	if meta.Streaming != nil {
 		streaming = *meta.Streaming
+	}
+	// Default to streaming=true for Responses API (Apodex deep research requires SSE)
+	if !streaming {
+		streaming = strings.Contains(strings.ToLower(meta.BaseURL), "/responses")
 	}
 	cfg := search.ModelConfig{
 		Provider:  meta.Provider,

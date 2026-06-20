@@ -37,7 +37,7 @@ type ModelProvider struct {
 func NewModelProvider(cfg ModelConfig) *ModelProvider {
 	return &ModelProvider{
 		cfg:    cfg,
-		client: &http.Client{Timeout: 45 * time.Second},
+		client: &http.Client{Timeout: 120 * time.Second},
 	}
 }
 

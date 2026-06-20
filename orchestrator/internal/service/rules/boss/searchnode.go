@@ -260,6 +260,7 @@ type searchNodeConfig struct {
 	Model    string `json:"model"`
 	BaseURL  string `json:"base-url"`
 	APIKey   string `json:"api-key"`
+	Striming bool   `json:"striming"`
 }
 
 func parseSearchNodeConfig(raw string) *search.ModelConfig {
@@ -273,11 +274,17 @@ func parseSearchNodeConfig(raw string) *search.ModelConfig {
 	if meta.Provider == "" || meta.Model == "" || meta.BaseURL == "" || meta.APIKey == "" {
 		return nil
 	}
+	streaming := meta.Striming
+	// Default to streaming=true for Responses API (Apodex deep research requires SSE)
+	if !streaming {
+		streaming = strings.Contains(strings.ToLower(meta.BaseURL), "/responses")
+	}
 	return &search.ModelConfig{
-		Provider: meta.Provider,
-		Model:    meta.Model,
-		BaseURL:  meta.BaseURL,
-		APIKey:   meta.APIKey,
+		Provider:  meta.Provider,
+		Model:     meta.Model,
+		BaseURL:   meta.BaseURL,
+		APIKey:    meta.APIKey,
+		Streaming: streaming,
 	}
 }
 
