@@ -169,6 +169,34 @@ services:
       - octra-network
     restart: unless-stopped
 
+  poster:
+    build:
+      context: ./poster
+      dockerfile: Dockerfile
+    container_name: crewai-poster
+    environment:
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
+      - CHANNEL_ID=@octra_ai
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=crewai
+      - POSTGRES_PASSWORD=crewai_password
+      - POSTGRES_DB=crewai
+      - BASE_ULR=${BASE_ULR:-https://api.gonkagate.com/v1/chat/completions}
+      - API_KEY=${API_KEY}
+      - AI_MODEL=${AI_MODEL:-moonshotai/kimi-k2.6}
+      - POLL_INTERVAL=5400
+      - REPO_ROOT=/repo
+    volumes:
+      - .:/repo:ro
+    working_dir: /repo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - octra-network
+    restart: unless-stopped
+
   # tgbot:
     # build:
       # context: ./tgbot
