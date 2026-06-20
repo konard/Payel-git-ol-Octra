@@ -1,6 +1,9 @@
 package prompts
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // UniversalNode — промпт «универсальной ноды» (issue #91).
 //
@@ -14,7 +17,7 @@ import "fmt"
 // Формат ответа — строгий JSON {"files": {...}}, тот же контракт о файлах, что и
 // у обычного воркера, поэтому остальной конвейер (запись на диск, публикация,
 // вкладка Solution) работает без изменений.
-func UniversalNode(title, description, taskType, techStack string) string {
+func UniversalNode(title, description, taskType, techStack, searchBlock string) string {
 	if taskType == "" {
 		taskType = "code"
 	}
@@ -23,13 +26,26 @@ func UniversalNode(title, description, taskType, techStack string) string {
 		deliverable = textDeliverableRules(taskType)
 	}
 
+	// Блок результатов веб-поиска (issue #97). Когда нода поиска нашла источники,
+	// мы передаём их сюда, чтобы универсальная нода отвечала по реальным фактам, а
+	// не выдумывала ответ. Если поиск не выполнялся, блок пустой и промпт не меняется.
+	searchSection := ""
+	if s := strings.TrimSpace(searchBlock); s != "" {
+		searchSection = `
+
+WEB SEARCH RESULTS (use these REAL sources to answer — do not invent facts; cite them when relevant):
+` + s + `
+Base your answer on the search results above. If they don't cover something, say so instead of guessing.
+`
+	}
+
 	return fmt.Sprintf(`You are the UNIVERSAL NODE — a single solver for a task that has already been judged TRIVIAL.
 
 Title: %s
 Task: %s
 Deliverable type: %s
 Tech stack / output format: %s
-
+%s
 Your job is to deliver the complete, correct answer in ONE step. Do it like a fast,
 no-nonsense expert who respects the user's time.
 
@@ -51,7 +67,7 @@ pins third-party package versions.
 
 Reply with STRICT JSON ONLY (no markdown fences, no commentary):
 {"files": {"relative/path.ext": "full file content"}, "dependencies": false}`,
-		title, description, taskType, techStack, deliverable)
+		title, description, taskType, techStack, searchSection, deliverable)
 }
 
 func codeDeliverableRules(techStack string) string {

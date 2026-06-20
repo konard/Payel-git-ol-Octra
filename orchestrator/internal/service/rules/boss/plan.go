@@ -122,6 +122,13 @@ func (s *Service) thinkOnce(ctx context.Context, provider, model string, req *Cr
 func decisionFromPredefinedWorkflow(req *CreateTaskRequest) *DecisionResult {
 	managerRoles := make([]models.ManagerRole, 0, len(req.PredefinedManagers))
 	for i, manager := range req.PredefinedManagers {
+		// Нода поиска (issue #97) — не обычный менеджер: она не генерирует файлы,
+		// а выполняет веб-поиск для других нод (через runSearchNode). Исключаем её
+		// из конвейера менеджеров, чтобы она не пыталась «реализовать» поиск как задачу.
+		if isSearchNodeRole(manager.Role) {
+			log.Printf("[Search] canvas search node detected (%q) — handled as a search node, not a manager", manager.Role)
+			continue
+		}
 		role := strings.TrimSpace(manager.Role)
 		if role == "" {
 			role = fmt.Sprintf("manager-%d", i+1)

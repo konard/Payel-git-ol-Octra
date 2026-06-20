@@ -135,15 +135,22 @@ func (s *Service) solveUniversal(
 		techStack = decision.TechStack[0]
 	}
 
+	// Нода поиска (issue #97): если задача требует внешней информации, выполняем
+	// веб-поиск и передаём источники в универсальную ноду, чтобы она отвечала по
+	// реальным данным, а не выдумывала. Поиск прикрепляется к universal-узлу.
+	searchBlock, searchSources, _ := s.runSearchNode(ctx, req, universalRole, progress)
+
 	solverReq := &universal.SolveRequest{
-		Title:       req.Title,
-		Description: req.Description,
-		TaskType:    decision.TaskType,
-		TechStack:   techStack,
-		Provider:    provider,
-		Model:       model,
-		Tokens:      req.Tokens,
-		ProjectPath: projectPath,
+		Title:         req.Title,
+		Description:   req.Description,
+		TaskType:      decision.TaskType,
+		TechStack:     techStack,
+		Provider:      provider,
+		Model:         model,
+		Tokens:        req.Tokens,
+		ProjectPath:   projectPath,
+		SearchBlock:   searchBlock,
+		SearchSources: searchSources,
 		Progress: func(p int32, msg string, data map[string]string) {
 			if progress != nil {
 				progress(p, msg, data)
