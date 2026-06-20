@@ -8,7 +8,7 @@ import (
 func TestUniversalNode_CodeTask(t *testing.T) {
 	p := UniversalNode("hello world", "напиши hello world на python", "code", "python", "")
 	mustContain(t, p, "UNIVERSAL NODE")
-	mustContain(t, p, "DO NOT OVER-ENGINEER")
+	mustContain(t, p, "keep it minimal")
 	mustContain(t, p, `{"files":`)
 	mustContain(t, p, "source-file extension")
 	mustContain(t, p, "python")

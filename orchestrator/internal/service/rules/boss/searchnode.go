@@ -121,7 +121,13 @@ func (s *Service) runSearchNode(
 	}
 
 	if searchConfig != nil {
-		modelResults, err := search.NewClientWithProvider(search.NewModelProvider(*searchConfig)).Research(ctx, text, queries, 2, 4)
+		mp := search.NewModelProvider(*searchConfig)
+		mp.SetProgressReporter(func(pct int32, msg string, data map[string]string) {
+			if progress != nil {
+				progress(pct, msg, data)
+			}
+		})
+		modelResults, err := search.NewClientWithProvider(mp).Research(ctx, text, queries, 2, 4)
 		if err != nil {
 			firstErr = err
 			log.Printf("[Search] AI search provider failed: %v", err)

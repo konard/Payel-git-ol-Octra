@@ -92,6 +92,8 @@ var lookupSignals = []string{
 	"погод", "прогноз", "цена", "стоимость", "курс ", "котировк", "акци",
 	"кто так", "кто выиграл", "дата выход", "вышел", "вышла", "населен",
 	"сколько стоит", "расписан", "счёт ", "счет ", "столица", "версия ",
+	"какой", "какая", "какое", "какие", "какого", "который", "которого",
+	"tiobe", "рейтинг", "топ", "место в",
 }
 
 // explicitSearchSignals — пользователь прямо просит найти/поискать информацию.
@@ -162,7 +164,8 @@ func isCodeRequest(t string) bool {
 	codeSignals := []string{
 		"hello world", "write a script", "write a program", "write a function",
 		"implement", "fix the bug", "fix bug", "write code", "code for",
-		"function that", "class that", "напиши", "скрипт", "программ",
+		"function that", "class that", "напиши", "скрипт",
+		"напиши программ", "напиши код", "создай программ",
 		"функци", "реализ", "создай код", "сделай скрипт",
 	}
 	return firstMatch(t, codeSignals) != ""

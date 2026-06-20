@@ -10,52 +10,59 @@ import (
 // Когда модель оценивает задачу как тривиальную, нет смысла запускать
 // boss-планирование и весь конвейер Boss → Manager → Worker. Универсальная нода
 // — это один AI-воркер с менее ограниченными возможностями: она читает задачу и
-// сразу выдаёт минимальный корректный результат. Главное правило — НЕ переусложнять:
-// «напиши hello world на python» должно вернуть один файл с одной строкой, а не
-// дерево файлов с непонятной логикой.
+// сразу выдаёт корректный результат.
+//
+// Для кодовых задач действует принцип минимальности («напиши hello world на
+// python» → один файл, одна строка). Для фактуальных запросов с результатами
+// веб-поиска нода пишет развёрнутый ответ с цитированием источников.
 //
 // Формат ответа — строгий JSON {"files": {...}}, тот же контракт о файлах, что и
 // у обычного воркера, поэтому остальной конвейер (запись на диск, публикация,
 // вкладка Solution) работает без изменений.
 func UniversalNode(title, description, taskType, techStack, searchBlock string) string {
 	searchSection := ""
+	isSearchTask := false
 	if s := strings.TrimSpace(searchBlock); s != "" {
+		isSearchTask = true
 		searchSection = `
 
 WEB SEARCH RESULTS (use these REAL sources to answer — do not invent facts; cite them when relevant):
 ` + s + `
-Base your answer on the search results above. If they don't cover something, say so instead of guessing.
+Base your answer on the search results above, citing sources by number [1], [2], etc.
+If the search results don't cover something, say so instead of guessing.
 `
 	}
 
-	sourceFilesHint := ""
-	if searchBlock == "" {
-		sourceFilesHint = `- For code tasks: use the correct source-file extension for the language.
-- For questions or research: return a SINGLE Markdown file at "solution/answer.md".`
+	var answerFormat string
+	if isSearchTask {
+		answerFormat = `- Write "solution/answer.md" as a complete, well-structured Markdown document.
+- Include a clear answer to the question, supporting details, and citations [1], [2], etc.
+- Use sections (headings, lists, paragraphs) to organize the information.
+- The more relevant detail you include from the search results, the better.
+- Do NOT add extra files or code — just the answer document.`
 	} else {
-		sourceFilesHint = `- Return a SINGLE Markdown file at "solution/answer.md" containing the complete, finished answer with citations.`
+		answerFormat = `- For code tasks: use the correct source-file extension for the language.
+- For questions or research: return a SINGLE Markdown file at "solution/answer.md".`
 	}
 
-	return fmt.Sprintf(`You are the UNIVERSAL NODE — a single solver for a task that has already been judged TRIVIAL.
+	return fmt.Sprintf(`You are the UNIVERSAL NODE — a single solver.
 
 Title: %s
 Task: %s
 Tech stack / language hint: %s
 %s
-Your job is to deliver the complete, correct answer in ONE step. Do it like a fast,
-no-nonsense expert who respects the user's time.
+Your job is to deliver the complete, correct answer in ONE step.
 
-DECIDE THE OUTPUT FORMAT YOURSELF based on what the task asks:
+DECIDE THE OUTPUT FORMAT YOURSELF:
 - If the user asks for code, a script, a function, or implementation — write source files (.py, .js, .go, etc.).
 - If the user asks a question, research, or factual information — write solution/answer.md.
-- If web search results are provided above — answer factually based on those sources.
+- If web search results are provided above — answer factually and comprehensively based on those sources.
 
-THE GOLDEN RULE — DO NOT OVER-ENGINEER:
-- Produce EXACTLY what was asked, and nothing more. The smallest correct result wins.
-- A "hello world" is ONE file — not a project. A question is a direct answer — not a framework.
-- Do NOT invent extra files, configuration, dependencies, abstractions, error
-  handling, tests, READMEs, or features the user never requested.
-- %s
+GUIDELINES:
+%s
+For code tasks: keep it minimal. A "hello world" is ONE file — not a project.
+Do NOT invent extra files, configuration, dependencies, abstractions, error
+handling, tests, READMEs, or features the user never requested.
 
 REQUIRED — dependencies flag:
 When the code relies on ANY external library, framework, or package NOT in the language's
@@ -65,5 +72,5 @@ pins third-party package versions.
 
 Reply with STRICT JSON ONLY (no markdown fences, no commentary):
 {"files": {"relative/path.ext": "full file content"}, "dependencies": false}`,
-		title, description, techStack, searchSection, sourceFilesHint)
+		title, description, techStack, searchSection, answerFormat)
 }

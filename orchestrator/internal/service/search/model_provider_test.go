@@ -54,16 +54,43 @@ func TestExtractModelResponseText(t *testing.T) {
 }
 
 func TestReadModelStream(t *testing.T) {
+	p := NewModelProvider(ModelConfig{Streaming: true})
 	stream := strings.NewReader("event: response.output_text.delta\n" +
 		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"hello\"}\n\n" +
 		"data: {\"type\":\"response.output_text.delta\",\"delta\":\" world\"}\n\n" +
 		"data: [DONE]\n\n")
 
-	got, err := readModelStream(stream)
+	got, err := p.readModelStream(stream)
 	if err != nil {
 		t.Fatalf("readModelStream returned error: %v", err)
 	}
 	if got != "hello world" {
 		t.Fatalf("readModelStream = %q, want %q", got, "hello world")
+	}
+}
+
+func TestReadModelStreamWithReasoning(t *testing.T) {
+	var events []string
+	p := NewModelProvider(ModelConfig{Streaming: true})
+	p.SetProgressReporter(func(_ int32, msg string, data map[string]string) {
+		if step := data["search_step"]; step != "" {
+			events = append(events, step+": "+msg)
+		}
+	})
+	stream := strings.NewReader(
+		"data: {\"type\":\"reasoning_step\",\"reasoning_step\":{\"type\":\"thinking\",\"thought\":\"I need to search for this\"}}\n\n" +
+			"data: {\"type\":\"reasoning_step\",\"reasoning_step\":{\"type\":\"web_search\",\"search_keywords\":\"test query\",\"search_results\":[{\"title\":\"Result 1\",\"url\":\"https://example.com\"}]}}\n\n" +
+			"data: {\"type\":\"response.output_text.delta\",\"delta\":\"answer text\"}\n\n" +
+			"data: [DONE]\n\n")
+
+	got, err := p.readModelStream(stream)
+	if err != nil {
+		t.Fatalf("readModelStream returned error: %v", err)
+	}
+	if got != "answer text" {
+		t.Fatalf("readModelStream = %q, want %q", got, "answer text")
+	}
+	if len(events) != 2 {
+		t.Fatalf("expected 2 progress events, got %d: %v", len(events), events)
 	}
 }

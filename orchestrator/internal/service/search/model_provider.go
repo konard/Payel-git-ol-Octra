@@ -20,13 +20,18 @@ type ModelConfig struct {
 	Streaming bool
 }
 
+// ProgressFunc — callback для поисковых событий. progress — процент выполнения
+// (0–100), message — человекочитаемое описание, data — дополнительные ключи.
+type ProgressFunc func(progress int32, message string, data map[string]string)
+
 // ModelProvider turns an AI search model response into the same Result shape as
 // classic web search providers. Apodex uses the Responses API; custom providers
 // can point either to /v1/responses or to an OpenAI-compatible chat completions
 // endpoint.
 type ModelProvider struct {
-	cfg    ModelConfig
-	client *http.Client
+	cfg      ModelConfig
+	client   *http.Client
+	progress ProgressFunc
 }
 
 func NewModelProvider(cfg ModelConfig) *ModelProvider {
@@ -34,6 +39,12 @@ func NewModelProvider(cfg ModelConfig) *ModelProvider {
 		cfg:    cfg,
 		client: &http.Client{Timeout: 45 * time.Second},
 	}
+}
+
+// SetProgressReporter устанавливает callback для получения промежуточных событий
+// поиска (reasoning steps: thinking, web_search, fetch_url_content).
+func (p *ModelProvider) SetProgressReporter(fn ProgressFunc) {
+	p.progress = fn
 }
 
 func (p *ModelProvider) Search(ctx context.Context, query string, limit int) ([]Result, error) {
@@ -72,7 +83,7 @@ func (p *ModelProvider) Search(ctx context.Context, query string, limit int) ([]
 
 	var text string
 	if p.cfg.Streaming {
-		text, err = readModelStream(resp.Body)
+		text, err = p.readModelStream(resp.Body)
 	} else {
 		data, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 		if readErr != nil {
@@ -141,7 +152,7 @@ func modelRequestPayload(cfg ModelConfig, style, query string) map[string]interf
 	return payload
 }
 
-func readModelStream(r io.Reader) (string, error) {
+func (p *ModelProvider) readModelStream(r io.Reader) (string, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
@@ -155,12 +166,105 @@ func readModelStream(r io.Reader) (string, error) {
 		if data == "" || data == "[DONE]" {
 			continue
 		}
+		if p.progress != nil {
+			p.emitReasoningStep([]byte(data))
+		}
 		sb.WriteString(extractModelStreamDelta([]byte(data)))
 	}
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
 	return sb.String(), nil
+}
+
+func (p *ModelProvider) emitReasoningStep(data []byte) {
+	if p.progress == nil {
+		return
+	}
+	var event struct {
+		Type          string                 `json:"type"`
+		ReasoningStep map[string]interface{} `json:"reasoning_step"`
+	}
+	if err := json.Unmarshal(data, &event); err != nil {
+		return
+	}
+	if event.Type != "reasoning_step" || event.ReasoningStep == nil {
+		return
+	}
+
+	stepType, _ := event.ReasoningStep["type"].(string)
+	switch stepType {
+	case "thinking":
+		thought, _ := event.ReasoningStep["thought"].(string)
+		if thought == "" {
+			return
+		}
+		p.progress(20, "Thinking: "+shorten(thought, 120), map[string]string{
+			"search_step":    "thinking",
+			"search_thought": thought,
+		})
+
+	case "web_search":
+		keywords, _ := event.ReasoningStep["search_keywords"].(string)
+		if keywords == "" {
+			return
+		}
+		rawResults, _ := event.ReasoningStep["search_results"].([]interface{})
+		msg := "Searching: " + keywords
+		data := map[string]string{
+			"search_step":     "web_search",
+			"search_keywords": keywords,
+		}
+		if len(rawResults) > 0 {
+			var urls []string
+			for _, r := range rawResults {
+				if m, ok := r.(map[string]interface{}); ok {
+					if u, ok := m["url"].(string); ok {
+						urls = append(urls, u)
+					}
+				}
+			}
+			if len(urls) > 0 {
+				data["search_urls"] = strings.Join(urls, "\n")
+			}
+			data["search_result_count"] = fmt.Sprintf("%d", len(rawResults))
+			msg = fmt.Sprintf("Search found %d result(s) for: %s", len(rawResults), keywords)
+		}
+		p.progress(20, msg, data)
+
+	case "fetch_url_content":
+		url, _ := event.ReasoningStep["url"].(string)
+		if url == "" {
+			return
+		}
+		data := map[string]string{
+			"search_step": "fetch_url",
+			"search_url":  url,
+		}
+		if resp, ok := event.ReasoningStep["response"].(map[string]interface{}); ok {
+			if code, ok := resp["status_code"].(float64); ok {
+				data["search_status"] = fmt.Sprintf("%.0f", code)
+			}
+		}
+		p.progress(20, "Fetching page: "+url, data)
+
+	case "agent_summary":
+		summary, _ := event.ReasoningStep["summary"].(string)
+		if summary != "" {
+			p.progress(20, "Search agent summary: "+shorten(summary, 200), map[string]string{
+				"search_step":    "agent_summary",
+				"search_summary": summary,
+			})
+		}
+	}
+}
+
+func shorten(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen]) + "..."
 }
 
 func extractModelStreamDelta(data []byte) string {

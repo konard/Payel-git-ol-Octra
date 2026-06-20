@@ -104,10 +104,12 @@ func (s *Solver) Solve(ctx context.Context, agentsClient *agents.Client, req *So
 		return nil
 	}
 
-	if err := git.Add(req.ProjectPath); err != nil {
-		log.Printf("Universal node git add failed: %v", err)
-	} else if err := git.Commit(req.ProjectPath, "Universal node: "+req.Title); err != nil {
-		log.Printf("Universal node git commit failed: %v", err)
+	if isCodeLikeTask(req.TaskType) {
+		if err := git.Add(req.ProjectPath); err != nil {
+			log.Printf("Universal node git add failed: %v", err)
+		} else if err := git.Commit(req.ProjectPath, "Universal node: "+req.Title); err != nil {
+			log.Printf("Universal node git commit failed: %v", err)
+		}
 	}
 
 	if len(written) > 0 {
@@ -234,4 +236,9 @@ func buildPayload(files map[string]string, workerRole, managerRole string) strin
 		return ""
 	}
 	return string(data)
+}
+
+// isCodeLikeTask — копия boss.isCodeLikeTask для избежания циклического импорта.
+func isCodeLikeTask(taskType string) bool {
+	return taskType == "" || taskType == "code" || taskType == "github"
 }
