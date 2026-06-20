@@ -2,6 +2,7 @@ package boss
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -100,21 +101,66 @@ func (s *Service) runSearchNode(
 		emitSearchNode(progress, node, "query", q, 0)
 	}
 
-	results, err := s.searchClient.Research(ctx, text, queries, 5, 8)
-	if err != nil {
-		log.Printf("[Search] node research failed: %v", err)
-		emitSearchNode(progress, node, "error", "", 0)
-		return "", "", node
+	searchConfig := parseSearchNodeConfig(req.Meta["search"])
+	seen := make(map[string]struct{})
+	var merged []search.Result
+	var firstErr error
+
+	addResults := func(results []search.Result) {
+		for _, r := range results {
+			key := strings.ToLower(strings.TrimRight(strings.TrimSpace(r.URL), "/"))
+			if key == "" {
+				continue
+			}
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			merged = append(merged, r)
+		}
 	}
-	if len(results) == 0 {
+
+	if searchConfig != nil {
+		modelResults, err := search.NewClientWithProvider(search.NewModelProvider(*searchConfig)).Research(ctx, text, queries, 2, 4)
+		if err != nil {
+			firstErr = err
+			log.Printf("[Search] AI search provider failed: %v", err)
+		} else {
+			addResults(modelResults)
+		}
+	}
+
+	if s.searchClient != nil && search.Enabled() {
+		webResults, err := s.searchClient.Research(ctx, text, queries, 5, 8)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			log.Printf("[Search] DuckDuckGo search failed: %v", err)
+		} else {
+			addResults(webResults)
+		}
+	}
+
+	if len(merged) == 0 {
+		if firstErr != nil {
+			log.Printf("[Search] node research failed: %v", firstErr)
+			emitSearchNode(progress, node, "error", "", 0)
+			return "", "", node
+		}
 		log.Printf("[Search] node found no results for %d queries", len(queries))
 		emitSearchNode(progress, node, "no_results", "", 0)
 		return "", "", node
 	}
 
-	log.Printf("[Search] node attached to %q: %d queries → %d sources (model=%s)", node.AttachTo, len(queries), len(results), node.Model)
-	emitSearchNode(progress, node, "done", strings.Join(queries, " | "), len(results))
-	return search.FormatForPrompt(results), search.FormatSourcesMarkdown(results), node
+	ranked := search.RankBM25(text, merged)
+	if len(ranked) > 8 {
+		ranked = ranked[:8]
+	}
+
+	log.Printf("[Search] node attached to %q: %d queries → %d sources (model=%s)", node.AttachTo, len(queries), len(ranked), node.Model)
+	emitSearchNode(progress, node, "done", strings.Join(queries, " | "), len(ranked))
+	return search.FormatForPrompt(ranked), search.FormatSourcesMarkdown(ranked), node
 }
 
 // emitSearchNode отправляет прогресс-апдейт о ноде поиска во фронтенд. Ключи в
@@ -201,6 +247,32 @@ func firstNonEmptyLine(s string) string {
 		}
 	}
 	return ""
+}
+
+type searchNodeConfig struct {
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+	BaseURL  string `json:"base-url"`
+	APIKey   string `json:"api-key"`
+}
+
+func parseSearchNodeConfig(raw string) *search.ModelConfig {
+	if raw == "" {
+		return nil
+	}
+	var meta searchNodeConfig
+	if err := json.Unmarshal([]byte(raw), &meta); err != nil {
+		return nil
+	}
+	if meta.Provider == "" || meta.Model == "" || meta.BaseURL == "" || meta.APIKey == "" {
+		return nil
+	}
+	return &search.ModelConfig{
+		Provider: meta.Provider,
+		Model:    meta.Model,
+		BaseURL:  meta.BaseURL,
+		APIKey:   meta.APIKey,
+	}
 }
 
 func dedupeSearchQueries(in []string) []string {
