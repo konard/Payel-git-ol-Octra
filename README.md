@@ -420,7 +420,7 @@ This means projects take zero space when idle but can be restored at any time.
 
 | Service | Stack | Role |
 |---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding, command auto-fix |
+| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding, command auto-fix, AI search providers (Apodex, custom) |
 | `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, Ollama/custom, …) — supports OpenAI-compatible streaming and non-streaming |
 | `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
 | `user` | Go, Gin | Auth, subscriptions, custom providers |
