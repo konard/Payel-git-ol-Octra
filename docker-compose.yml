@@ -175,7 +175,7 @@ services:
       dockerfile: Dockerfile
     container_name: crewai-poster
     environment:
-      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
+      - TG_BOT_TOKEN_POSTER=${TG_BOT_TOKEN_POSTER}
       - CHANNEL_ID=@octra_ai
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432

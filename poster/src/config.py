@@ -32,12 +32,12 @@ class Config:
 
     @classmethod
     def from_env(cls) -> "Config":
-        env_path = Path(__file__).resolve().parent.parent / ".env"
+        env_path = Path(__file__).resolve().parent.parent.parent / ".env"
         load_dotenv(env_path)
 
-        token = getenv("TG_BOT_TOKEN")
+        token = getenv("TG_BOT_TOKEN_POSTER")
         if not token:
-            raise ValueError("TG_BOT_TOKEN not set in .env")
+            raise ValueError("TG_BOT_TOKEN_POSTER not set in .env")
 
         return cls(
             tg_bot_token=token,
