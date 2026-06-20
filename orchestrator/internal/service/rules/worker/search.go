@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -28,21 +29,31 @@ func (e searchEmitter) emit(step, phase string, count int) {
 // шкала прогресса не «прыгала»), а сами данные шага едут в data-карте:
 //   - search_step  — текст пункта («Searching the web for …»),
 //   - search_phase — "searching" пока идёт поиск, "done" по завершении,
-//   - search_steps_count — итоговое число шагов (для строки «Completed N steps»).
+//   - search_steps_count — итоговое число шагов (для строки «Completed N steps»),
+//   - search_provider — имя провайдера (apodex / custom / duckduckgo),
+//   - search_model   — модель, если используется AI-провайдер.
 //
 // Фронтенд читает эти ключи и рисует сворачиваемый блок «Searching the web».
 // Если progress == nil (например, в тестах), возвращается nil-эмиттер, безопасный
 // к вызовам через метод emit.
-func (s *Service) searchEmitterFor(progress rules.ProgressFunc, basePct int32, req *rules.AssignWorkersRequest, role string) searchEmitter {
+func (s *Service) searchEmitterFor(progress rules.ProgressFunc, basePct int32, req *rules.AssignWorkersRequest, role string, searchConfig *search.ModelConfig) searchEmitter {
 	if progress == nil {
 		return nil
 	}
+	providerName := ""
+	modelName := ""
+	if searchConfig != nil {
+		providerName = searchConfig.Provider
+		modelName = searchConfig.Model
+	}
 	return func(step, phase string, count int) {
 		data := map[string]string{
-			"manager_id":   req.ManagerId,
-			"manager_role": req.ManagerRole,
-			"worker_role":  role,
-			"search_phase": phase,
+			"manager_id":      req.ManagerId,
+			"manager_role":    req.ManagerRole,
+			"worker_role":     role,
+			"search_phase":    phase,
+			"search_provider": providerName,
+			"search_model":    modelName,
 		}
 		if step != "" {
 			data["search_step"] = step
@@ -76,6 +87,18 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 		return "", "", 0
 	}
 
+	providerLabel := "DuckDuckGo"
+	if searchConfig != nil {
+		providerLabel = searchConfig.Provider
+		if providerLabel == "" {
+			providerLabel = "AI search"
+		}
+		if searchConfig.Model != "" {
+			providerLabel += " (" + searchConfig.Model + ")"
+		}
+	}
+	emit.emit("Web search via "+providerLabel, "searching", 0)
+
 	for _, q := range queries {
 		emit.emit("Searching the web for «"+q+"»", "searching", 0)
 	}
@@ -83,15 +106,15 @@ func (s *Service) gatherSearch(ctx context.Context, emit searchEmitter, role, to
 	results, err := s.research(ctx, topic, queries, searchConfig)
 	if err != nil {
 		log.Printf("[Worker] search failed (%s): %v", role, err)
-		emit.emit("", "done", len(queries))
+		emit.emit("Search failed: "+err.Error(), "done", len(queries))
 		return "", "", 0
 	}
 	if len(results) == 0 {
-		emit.emit("", "done", len(queries))
+		emit.emit("No sources found", "done", len(queries))
 		return "", "", 0
 	}
 
-	emit.emit("", "done", len(queries))
+	emit.emit(fmt.Sprintf("Found %d sources from %s", len(results), providerLabel), "done", len(queries))
 	log.Printf("[Worker] web search (%s): %d queries → %d sources", role, len(queries), len(results))
 	return search.FormatForPrompt(results), search.FormatSourcesMarkdown(results), len(results)
 }

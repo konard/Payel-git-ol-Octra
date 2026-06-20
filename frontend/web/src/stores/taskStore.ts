@@ -91,6 +91,9 @@ export type SearchPhase = 'idle' | 'searching' | 'done';
 export interface SearchStep {
   id: string;
   text: string;
+  provider?: string;
+  model?: string;
+  resultCount?: number;
 }
 
 interface TaskState {
@@ -130,7 +133,7 @@ interface TaskState {
   completeCodeStreaming: () => void;
   clearCodeFiles: () => void;
   setConnectionStatus: (connected: boolean) => void;
-  recordSearchStep: (step: string, phase: SearchPhase, count: number) => void;
+  recordSearchStep: (step: string, phase: SearchPhase, count: number, provider?: string, model?: string, resultCount?: number) => void;
   clearSearchSteps: () => void;
   setPullRequest: (pr: PullRequestInfo | null) => void;
   setNixStorePath: (path: string | null, taskId: string | null) => void;
@@ -292,10 +295,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   // завершения (phase='done', count = число выполненных шагов). Несколько воркеров
   // могут искать последовательно: новый шаг после 'done' снова переводит блок в
   // активное состояние, поэтому в конце пользователь видит «Completed N steps».
-  recordSearchStep: (step, phase, count) => set((state) => {
+  recordSearchStep: (step, phase, count, provider?, model?, resultCount?) => set((state) => {
     let steps = state.searchSteps;
     if (step && !steps.some((s) => s.text === step)) {
-      steps = [...steps, { id: `search-${steps.length}-${Date.now()}`, text: step }];
+      steps = [...steps, {
+        id: `search-${steps.length}-${Date.now()}`,
+        text: step,
+        provider,
+        model,
+        resultCount,
+      }];
     }
     const searchPhase: SearchPhase = phase === 'done' ? 'done' : 'searching';
     const searchStepsCount = count > 0 ? Math.max(state.searchStepsCount, count) : state.searchStepsCount;

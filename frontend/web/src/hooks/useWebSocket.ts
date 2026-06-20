@@ -586,7 +586,17 @@ export function useWebSocket(url: string, onChatMessage?: (message: string, send
     if (searchPhase === 'searching' || searchPhase === 'done') {
       const step = typeof msg.data?.search_step === 'string' ? msg.data.search_step : '';
       const count = Number.parseInt(String(msg.data?.search_steps_count ?? ''), 10);
-      storeActions.recordSearchStep(step, searchPhase, Number.isNaN(count) ? 0 : count);
+      const provider = typeof msg.data?.search_provider === 'string' ? msg.data.search_provider : undefined;
+      const model = typeof msg.data?.search_model === 'string' ? msg.data.search_model : undefined;
+      const resultCount = Number.parseInt(String(msg.data?.search_node_result ?? ''), 10);
+      storeActions.recordSearchStep(
+        step,
+        searchPhase,
+        Number.isNaN(count) ? 0 : count,
+        provider,
+        model,
+        Number.isNaN(resultCount) ? undefined : resultCount,
+      );
     }
 
     // Update progress in chat if this is a boss progress message

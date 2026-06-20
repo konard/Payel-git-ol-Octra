@@ -75,7 +75,7 @@ func (s *Service) runOneWorker(
 		if strings.TrimSpace(topic) == "" {
 			topic = req.TaskMd
 		}
-		emit := s.searchEmitterFor(progress, basePct, req, role)
+		emit := s.searchEmitterFor(progress, basePct, req, role, meta.searchConfig)
 		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit, meta.searchConfig, skillContent)
 	} else {
 		// Путь генерации выбирается детерминированно по tech stack

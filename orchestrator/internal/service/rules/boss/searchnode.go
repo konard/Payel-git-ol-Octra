@@ -2,7 +2,9 @@ package boss
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"orchestrator/internal/service/rules"
@@ -91,48 +93,53 @@ func (s *Service) runSearchNode(
 
 	// Сообщаем фронтенду о ноде поиска, чтобы её можно было отрисовать на канве
 	// и прикрепить к узлу, который ею пользуется.
-	emitSearchNode(progress, node, "searching", "")
+	emitSearchNode(progress, node, "searching", "", 0)
 
 	queries := buildSearchNodeQueries(req.Title, req.Description)
 	results, err := s.searchClient.Research(ctx, text, queries, 5, 8)
 	if err != nil {
 		log.Printf("[Search] node research failed: %v", err)
-		emitSearchNode(progress, node, "done", "")
+		emitSearchNode(progress, node, "done", "", 0)
 		return "", "", node
 	}
 	if len(results) == 0 {
 		log.Printf("[Search] node found no results for %d queries", len(queries))
-		emitSearchNode(progress, node, "done", "")
+		emitSearchNode(progress, node, "done", "", 0)
 		return "", "", node
 	}
 
 	log.Printf("[Search] node attached to %q: %d queries → %d sources (model=%s)", node.AttachTo, len(queries), len(results), node.Model)
-	emitSearchNode(progress, node, "done", strings.Join(queries, " | "))
+	emitSearchNode(progress, node, "done", strings.Join(queries, " | "), len(results))
 	return search.FormatForPrompt(results), search.FormatSourcesMarkdown(results), node
 }
 
 // emitSearchNode отправляет прогресс-апдейт о ноде поиска во фронтенд. Ключи в
 // data позволяют UI нарисовать ноду «Search» и прикрепить её к нужному узлу.
-func emitSearchNode(progress rules.ProgressFunc, node search.Node, phase, queries string) {
+func emitSearchNode(progress rules.ProgressFunc, node search.Node, phase, queries string, resultCount int) {
 	if progress == nil {
 		return
 	}
 	data := map[string]string{
-		"node_type":        searchNodeRole,
-		"search_node":      "true",
-		"search_phase":     phase,
-		"search_model":     node.Model,
-		"search_attach_to": node.AttachTo,
-		"search_explicit":  boolStr(node.Explicit),
-		"search_created":   boolStr(node.Created),
-		"search_reason":    node.Reason,
+		"node_type":          searchNodeRole,
+		"search_node":        "true",
+		"search_phase":       phase,
+		"search_model":       node.Model,
+		"search_attach_to":   node.AttachTo,
+		"search_explicit":    boolStr(node.Explicit),
+		"search_created":     boolStr(node.Created),
+		"search_reason":      node.Reason,
+		"search_node_result": strconv.Itoa(resultCount),
 	}
 	if queries != "" {
 		data["search_queries"] = queries
 	}
 	msg := "Search node looking up information"
 	if phase == "done" {
-		msg = "Search node finished"
+		if resultCount > 0 {
+			msg = fmt.Sprintf("Search node found %d sources", resultCount)
+		} else {
+			msg = "Search node finished"
+		}
 	}
 	progress(20, msg, data)
 }

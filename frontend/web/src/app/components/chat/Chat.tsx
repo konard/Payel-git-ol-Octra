@@ -158,7 +158,19 @@ export function Chat({ messages, onMarkAsRead }: ChatProps) {
                       ) : (
                         <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[var(--success)]" />
                       )}
-                      <span>{step.text}</span>
+                      <span className="flex-1">
+                        {step.text}
+                        {step.resultCount && step.resultCount > 0 && (
+                          <span className="ml-2 rounded bg-[var(--accent)]/10 px-1.5 py-0.5 text-xs text-[var(--accent)]">
+                            {step.resultCount} sources
+                          </span>
+                        )}
+                      </span>
+                      {step.provider && (
+                        <span className="shrink-0 text-xs text-[var(--text-muted)]">
+                          {step.provider}{step.model ? ` · ${step.model}` : ''}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
