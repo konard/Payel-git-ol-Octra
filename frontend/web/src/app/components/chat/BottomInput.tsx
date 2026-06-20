@@ -533,37 +533,53 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
 
                 {showSearchPicker && (
                   <div
-                    data-search-picker-layout="split-visual"
-                    className="fixed bottom-16 left-1/2 z-30 w-[min(calc(100vw-1.5rem),42rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:mb-2 sm:translate-x-0"
+                    data-search-picker-layout="octra-popover"
+                    className="fixed bottom-16 left-1/2 z-30 w-[min(calc(100vw-1rem),32rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl backdrop-blur-sm sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:mb-4 sm:translate-x-0"
                   >
-                    <div className="relative grid min-h-[18rem] grid-cols-1 overflow-hidden sm:grid-cols-2">
+                    <div className="flex items-center gap-3 border-b border-[var(--border)] px-3 py-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--accent)]">
+                        <Globe size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchProviders')}</div>
+                        <div className="truncate text-[11px] text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</div>
+                      </div>
+                    </div>
+
+                    <div className="relative grid grid-cols-1 gap-2 p-2 sm:grid-cols-2">
                       <button
                         type="button"
                         onClick={handleApodexSearchSelect}
                         data-search-provider-visual="apodex"
-                        className="group relative flex min-h-56 overflow-hidden bg-[linear-gradient(135deg,#6f87d8_0%,#2c3038_54%,var(--surface)_100%)] p-5 text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:min-h-72"
+                        className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] p-2.5 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                       >
-                        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,186,255,0.35),transparent_32%)] opacity-80" />
-                        <span className="relative z-10 flex w-full flex-col items-center justify-center gap-4">
-                          <span className="flex h-32 w-full max-w-64 items-center justify-center overflow-hidden bg-black/35 p-5 shadow-xl ring-1 ring-white/10 transition-transform group-hover:scale-[1.02]">
+                        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(99,132,255,0.24)_0%,rgba(99,132,255,0.08)_36%,transparent_72%)]" />
+                        <span className="relative flex flex-col gap-3">
+                          <span
+                            data-search-provider-preview="apodex"
+                            className="flex h-24 items-center justify-center overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm transition-colors group-hover:border-[var(--accent)]/50"
+                          >
                             {APODEX_LOGO_URL ? (
                               <img
                                 src={APODEX_LOGO_URL}
                                 alt={t('bottomInput.searchWithApodex')}
-                                className="max-h-full max-w-full object-contain"
+                                className="max-h-16 max-w-full object-contain"
                               />
                             ) : (
-                              <span className="flex flex-col items-center gap-2 text-[#76d7ff]">
-                                <Sparkles size={30} />
-                                <span className="text-lg font-semibold tracking-normal">APODEX</span>
+                              <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 text-sky-500 dark:text-sky-300">
+                                <Sparkles size={24} />
                               </span>
                             )}
                           </span>
-                          <span className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10">
-                            <Sparkles size={15} />
-                            {t('bottomInput.searchWithApodex')}
+                          <span className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 dark:text-sky-300">
+                              <Sparkles size={14} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchWithApodex')}</span>
+                              <span className="mt-0.5 block text-xs leading-4 text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</span>
+                            </span>
                           </span>
-                          <span className="text-center text-[11px] leading-4 text-white/80">{t('bottomInput.configureSearch')}</span>
                         </span>
                       </button>
 
@@ -571,34 +587,39 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                         type="button"
                         onClick={handleLefineSearchSelect}
                         data-search-provider-visual="lefine"
-                        className="group relative flex min-h-56 overflow-hidden bg-[linear-gradient(225deg,#f4c06c_0%,#69624f_38%,var(--surface)_80%)] p-5 text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:min-h-72"
+                        className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] p-2.5 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                       >
-                        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_12%,rgba(255,223,166,0.38),transparent_34%)] opacity-90" />
-                        <span className="relative z-10 flex w-full flex-col items-center justify-center gap-4">
-                          <span className="flex h-32 w-full max-w-64 items-center justify-center overflow-hidden bg-white p-3 shadow-xl ring-8 ring-black transition-transform group-hover:scale-[1.02]">
+                        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(225deg,rgba(246,194,111,0.28)_0%,rgba(246,194,111,0.08)_38%,transparent_74%)]" />
+                        <span className="relative flex flex-col gap-3">
+                          <span
+                            data-search-provider-preview="lefine"
+                            className="flex h-24 items-center justify-center overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm transition-colors group-hover:border-[var(--accent)]/50"
+                          >
                             {LEFINE_LOGO_URL ? (
                               <img
                                 src={LEFINE_LOGO_URL}
                                 alt={t('bottomInput.searchWithLefine')}
-                                className="max-h-full max-w-full object-contain"
+                                className="max-h-16 max-w-full rounded-md object-contain"
                               />
                             ) : (
-                              <span className="flex flex-col items-center gap-2 text-[#6b3a05]">
-                                <ExternalLink size={30} />
-                                <span className="text-lg font-semibold tracking-normal">Lefine.pro</span>
+                              <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                                <ExternalLink size={24} />
                               </span>
                             )}
                           </span>
-                          <span className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10">
-                            <ExternalLink size={15} />
-                            {t('bottomInput.searchWithLefine')}
+                          <span className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                              <ExternalLink size={14} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchWithLefine')}</span>
+                              <span className="mt-0.5 block text-xs leading-4 text-[var(--text-muted)]">{t('bottomInput.openLefine')}</span>
+                            </span>
                           </span>
-                          <span className="text-center text-[11px] leading-4 text-white/80">{t('bottomInput.openLefine')}</span>
                         </span>
                       </button>
 
-                      <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[var(--border)] sm:inset-x-auto sm:inset-y-[-12%] sm:left-1/2 sm:top-auto sm:h-auto sm:w-10 sm:-translate-x-1/2 sm:rotate-[8deg] sm:bg-[var(--surface)]" />
-                      <div className="pointer-events-none absolute inset-y-[-12%] left-1/2 hidden w-px -translate-x-1/2 rotate-[8deg] bg-white/55 sm:block" />
+                      <div className="pointer-events-none absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-[var(--border)] sm:inset-x-auto sm:inset-y-3 sm:left-1/2 sm:top-auto sm:h-auto sm:w-px sm:-translate-x-1/2 sm:rotate-[8deg]" />
                     </div>
                   </div>
                 )}

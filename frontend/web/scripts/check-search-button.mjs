@@ -36,7 +36,13 @@ assert.match(bottomInput, /handleApodexSearchSelect/, 'the picker must include a
 assert.match(bottomInput, /handleLefineSearchSelect/, 'the picker must keep the Lefine branch');
 assert.match(bottomInput, /octra:open-settings/, 'choosing Apodex must request the Settings -> Search tab');
 assert.match(bottomInput, /text-orange-500|text-orange-600|bg-orange-500/, 'configured Apodex/custom search must make the globe visibly orange');
-assert.match(bottomInput, /data-search-picker-layout="split-visual"/, 'the provider picker must use the requested split visual layout');
+assert.match(bottomInput, /data-search-picker-layout="octra-popover"/, 'the provider picker must use the Octra-native popover layout');
+assert.match(bottomInput, /data-search-provider-preview="apodex"/, 'the Apodex branch must include a restrained provider preview area');
+assert.match(bottomInput, /data-search-provider-preview="lefine"/, 'the Lefine branch must include a restrained provider preview area');
+assert.match(bottomInput, /bg-\[var\(--background\)\]/, 'the provider picker must reuse Octra surface tokens');
+assert.ok(!/data-search-picker-layout="split-visual"/.test(bottomInput), 'the old oversized split visual layout must not be used');
+assert.ok(!/ring-8 ring-black/.test(bottomInput), 'the Lefine image must not use the old heavy black frame');
+assert.ok(!/bg-black\/35/.test(bottomInput), 'the provider previews must not use the old heavy black image block');
 assert.match(bottomInput, /apodex\.png/, 'the provider picker must reserve the apodex.png image slot');
 assert.match(bottomInput, /lefine\.pro\.jpg/, 'the provider picker must use the Lefine image asset');
 assert.match(bottomInput, /data-search-provider-visual="apodex"/, 'the picker must expose the Apodex visual panel');
