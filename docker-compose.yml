@@ -174,6 +174,8 @@ services:
       context: ./poster
       dockerfile: Dockerfile
     container_name: crewai-poster
+    env_file:
+      - .env
     environment:
       - TG_BOT_TOKEN_POSTER=${TG_BOT_TOKEN_POSTER}
       - CHANNEL_ID=@octra_ai
