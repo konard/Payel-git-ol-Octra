@@ -34,13 +34,18 @@ func TestBuildManagerMetadataPropagatesGrade(t *testing.T) {
 		Description: "напиши hello world на express js",
 		Grade:       8,
 		Tokens:      map[string]string{},
-		Meta:        map[string]string{},
+		Meta: map[string]string{
+			"search": `{"provider":"apodex","model":"apodex-1-0-deepresearch-mini","base-url":"https://api.apodex.ai/v1/responses","api-key":"sk-test","striming":true}`,
+		},
 	}
 	decision := &DecisionResult{TaskType: "code", TechStack: []string{"nodejs"}}
 
 	meta := buildManagerMetadata(req, decision)
 	if got := meta["grade_weight"]; got != "80" {
 		t.Errorf("grade_weight = %q, want %q (grade 8 → 80/100)", got, "80")
+	}
+	if got := meta["search"]; got != req.Meta["search"] {
+		t.Errorf("search metadata = %q, want %q", got, req.Meta["search"])
 	}
 
 	// Неоценённая задача сохраняет безопасный минимум.

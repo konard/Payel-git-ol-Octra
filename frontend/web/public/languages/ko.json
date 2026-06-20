@@ -47,7 +47,13 @@
     "reconnecting": "서버에 재연결 중...",
     "taskCreated": "작업이 생성되었습니다",
     "sendError": "작업 전송 오류",
-    "searchOnLefine": "Search on Lefine"
+    "searchOnLefine": "Search on Lefine",
+    "searchProviders": "Search providers",
+    "searchPickerTitle": "Search",
+    "searchWithApodex": "Apodex",
+    "configureSearch": "Configure AI search",
+    "searchWithLefine": "Lefine.pro",
+    "openLefine": "Open search page"
   },
   "nodes": {
     "ceo": "CEO",
@@ -98,7 +104,22 @@
     "hideTokenField": "토큰 입력 필드 숨기기",
     "hideTokenFieldHint": "기본 화면에서 API 키 필드 숨기기",
     "save": "저장",
-    "cancel": "취소"
+    "cancel": "취소",
+    "search": "Search",
+    "searchProvidersTitle": "Search providers",
+    "searchProvidersDescription": "Choose Apodex or a custom AI search provider used by research workers.",
+    "customSearchProviderDefaultName": "Custom Search",
+    "searchConfigured": "Configured",
+    "searchNotConfigured": "Needs setup",
+    "searchProviderDetails": "Credentials sent with new tasks when this provider is configured.",
+    "searchProviderName": "Provider name",
+    "searchProviderNamePlaceholder": "Internal Search",
+    "searchBaseUrl": "Base URL",
+    "searchApiKey": "API key",
+    "searchModel": "Model",
+    "searchStreaming": "Streaming",
+    "searchStreamingHint": "Allow streaming responses from this search model.",
+    "addSearchProvider": "Add custom search provider"
   },
   "languages": {
     "en": "English",

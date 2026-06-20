@@ -24,6 +24,14 @@ type WorkflowConfig struct {
 	TechStack     []string          `json:"techStack"`
 }
 
+type SearchConfig struct {
+	Provider string `json:"provider,omitempty"`
+	Model    string `json:"model,omitempty"`
+	BaseURL  string `json:"base-url"`
+	APIKey   string `json:"api-key"`
+	Striming bool   `json:"striming"`
+}
+
 type CreateTaskRequest struct {
 	UserID      string                 `json:"userId"`
 	Username    string                 `json:"username"`
@@ -32,6 +40,7 @@ type CreateTaskRequest struct {
 	Tokens      map[string]string      `json:"tokens"`
 	Meta        map[string]interface{} `json:"meta"`
 	Workflow    *WorkflowConfig        `json:"workflow,omitempty"`
+	Search      *SearchConfig          `json:"search,omitempty"`
 }
 
 type TaskStatusRequest struct {

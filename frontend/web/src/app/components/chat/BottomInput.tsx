@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X } from 'lucide-react';
+import { ArrowRight, Settings2, Square, Search, ChevronDown, Puzzle, Paperclip, Globe, FileText, X, Sparkles, ExternalLink } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { PROVIDERS } from '../../../config/providers';
 import { useSettingsStore } from '../../../stores/settingsStore';
@@ -82,17 +82,23 @@ function formatFileSize(size: number): string {
 export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onToggleExpand }: BottomInputProps) {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showSearchPicker, setShowSearchPicker] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFileItem[]>([]);
   const modelInputRef = useRef<HTMLDivElement>(null);
   const providerBtnRef = useRef<HTMLButtonElement>(null);
+  const searchPickerRef = useRef<HTMLDivElement>(null);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachedFilesRef = useRef<AttachedFileItem[]>([]);
   const hideApiKeyInput = useSettingsStore((state) => state.hideApiKeyInput);
   const defaultProvider = useSettingsStore((state) => state.defaultProvider);
   const defaultModel = useSettingsStore((state) => state.defaultModel);
+  const searchProviderId = useSettingsStore((state) => state.searchProviderId);
+  const searchProviders = useSettingsStore((state) => state.searchProviders);
   const setDefaultProvider = useSettingsStore((state) => state.setDefaultProvider);
   const setDefaultModel = useSettingsStore((state) => state.setDefaultModel);
+  const setSearchProviderId = useSettingsStore((state) => state.setSearchProviderId);
 
   // Bubble animation state
   const [isAnimating, setIsAnimating] = useState(false);
@@ -143,6 +149,21 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
       attachedFilesRef.current.forEach(revokeAttachmentPreview);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showSearchPicker) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (searchPickerRef.current?.contains(target) || searchButtonRef.current?.contains(target)) {
+        return;
+      }
+      setShowSearchPicker(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showSearchPicker]);
 
   // Custom providers
   const { providers: customProviders, models: customModels } = useCustomProvidersStore();
@@ -260,6 +281,28 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
   }, []);
 
   const selectedProvider = allProviders.find(p => p.id === formData.provider);
+  const activeSearchProvider = useMemo(
+    () => searchProviders.find((provider) => provider.id === searchProviderId),
+    [searchProviderId, searchProviders],
+  );
+  const isSearchConfigured = Boolean(
+    activeSearchProvider?.baseUrl.trim() &&
+    activeSearchProvider?.apiKey.trim() &&
+    activeSearchProvider?.model.trim(),
+  );
+
+  const handleApodexSearchSelect = useCallback(() => {
+    setSearchProviderId('apodex');
+    setShowSearchPicker(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('octra:open-settings', { detail: { tab: 'search' } }));
+    }
+  }, [setSearchProviderId]);
+
+  const handleLefineSearchSelect = useCallback(() => {
+    setShowSearchPicker(false);
+    openLefineSearch();
+  }, []);
 
   // Submit on Enter (Shift+Enter inserts a newline), matching the reference chat
   // input behaviour.
@@ -458,15 +501,60 @@ export function BottomInput({ onSubmit, onStop, isSubmitting, isExpanded, onTogg
                   </span>
                 )}
               </button>
-              <button
-                type="button"
-                onClick={openLefineSearch}
-                className="rounded-lg p-1.5 transition-colors hover:bg-[var(--surface)] hover:text-[var(--text)]"
-                title={t('bottomInput.searchOnLefine')}
-                aria-label={t('bottomInput.searchOnLefine')}
-              >
-                <Globe size={16} />
-              </button>
+              <div className="relative" ref={searchPickerRef}>
+                <button
+                  ref={searchButtonRef}
+                  type="button"
+                  onClick={() => {
+                    setShowSearchPicker((open) => !open);
+                    setShowProviderDropdown(false);
+                    setShowModelSelector(false);
+                  }}
+                  className={`rounded-lg p-1.5 transition-colors ${
+                    isSearchConfigured
+                      ? 'bg-orange-500/15 text-orange-500 hover:bg-orange-500/20 hover:text-orange-600'
+                      : 'hover:bg-[var(--surface)] hover:text-[var(--text)]'
+                  }`}
+                  title={t('bottomInput.searchProviders')}
+                  aria-label={t('bottomInput.searchProviders')}
+                  aria-expanded={showSearchPicker}
+                >
+                  <Globe size={16} />
+                </button>
+
+                {showSearchPicker && (
+                  <div className="absolute bottom-full right-0 z-30 mb-2 w-72 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
+                    <div className="border-b border-[var(--border)] px-4 py-3">
+                      <div className="text-sm font-semibold text-[var(--text)]">{t('bottomInput.searchPickerTitle')}</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 p-3">
+                      <button
+                        type="button"
+                        onClick={handleApodexSearchSelect}
+                        className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-4 text-center text-[var(--text)] transition-colors hover:border-orange-500 hover:bg-orange-500/15"
+                      >
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white">
+                          <Sparkles size={20} />
+                        </span>
+                        <span className="text-sm font-semibold">{t('bottomInput.searchWithApodex')}</span>
+                        <span className="text-[11px] leading-4 text-[var(--text-muted)]">{t('bottomInput.configureSearch')}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleLefineSearchSelect}
+                        className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-4 text-center text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface)]"
+                      >
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] text-white">
+                          <ExternalLink size={20} />
+                        </span>
+                        <span className="text-sm font-semibold">{t('bottomInput.searchWithLefine')}</span>
+                        <span className="text-[11px] leading-4 text-[var(--text-muted)]">{t('bottomInput.openLefine')}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

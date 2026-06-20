@@ -186,6 +186,8 @@ func buildManagerMetadata(req *CreateTaskRequest, decision *DecisionResult) map[
 	for k, v := range req.Tokens {
 		metadata[k] = v
 	}
+	if searchConfig := req.Meta["search"]; searchConfig != "" {
+		metadata["search"] = searchConfig
+	}
 	return metadata
 }
-

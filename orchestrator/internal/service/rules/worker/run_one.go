@@ -76,7 +76,7 @@ func (s *Service) runOneWorker(
 			topic = req.TaskMd
 		}
 		emit := s.searchEmitterFor(progress, basePct, req, role)
-		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit, skillContent)
+		files, commands, err = s.generateDocument(ctx, meta.provider, meta.model, meta.tokens, meta.taskType, role, description, topic, accumulatedContext, workerID.String(), emit, meta.searchConfig, skillContent)
 	} else {
 		// Путь генерации выбирается детерминированно по tech stack
 		// (config.ResolveGenerationMode), без переменной окружения WORKER_MODE —

@@ -46,7 +46,13 @@
     "reconnecting": "Serverga qayta ulanmoqda...",
     "taskCreated": "Vazifa yaratildi",
     "sendError": "Vazifani yuborish xatosi",
-    "searchOnLefine": "Search on Lefine"
+    "searchOnLefine": "Search on Lefine",
+    "searchProviders": "Search providers",
+    "searchPickerTitle": "Search",
+    "searchWithApodex": "Apodex",
+    "configureSearch": "Configure AI search",
+    "searchWithLefine": "Lefine.pro",
+    "openLefine": "Open search page"
   },
   "nodes": {
     "ceo": "CEO",
@@ -97,7 +103,22 @@
     "hideTokenField": "Token kiritish maydonini yashirish",
     "hideTokenFieldHint": "Asosiy ekranda API kalit maydonini yashirish",
     "save": "Saqlash",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "search": "Search",
+    "searchProvidersTitle": "Search providers",
+    "searchProvidersDescription": "Choose Apodex or a custom AI search provider used by research workers.",
+    "customSearchProviderDefaultName": "Custom Search",
+    "searchConfigured": "Configured",
+    "searchNotConfigured": "Needs setup",
+    "searchProviderDetails": "Credentials sent with new tasks when this provider is configured.",
+    "searchProviderName": "Provider name",
+    "searchProviderNamePlaceholder": "Internal Search",
+    "searchBaseUrl": "Base URL",
+    "searchApiKey": "API key",
+    "searchModel": "Model",
+    "searchStreaming": "Streaming",
+    "searchStreamingHint": "Allow streaming responses from this search model.",
+    "addSearchProvider": "Add custom search provider"
   },
   "languages": {
     "en": "English",

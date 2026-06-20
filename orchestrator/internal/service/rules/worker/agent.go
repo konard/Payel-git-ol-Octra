@@ -90,7 +90,7 @@ func (a *WorkerAgent) Process(ctx context.Context, conv *groupchat.Conversation)
 			topic = a.req.TaskMd
 		}
 		files, commands, err = a.service.generateDocument(ctx, a.meta.provider, a.meta.model, a.meta.tokens,
-			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, skillContent)
+			a.meta.taskType, a.role, a.description, topic, fullContext, a.id, nil, a.meta.searchConfig, skillContent)
 	} else {
 		mode := config.ResolveGenerationMode(a.meta.techStack, isToolMode)
 		if mode == config.ModeTool {

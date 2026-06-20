@@ -27,7 +27,7 @@ import { useCustomProvidersStore } from '../stores/customProvidersStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useIntegrationStore } from '../stores/integrationStore';
 import LandingPage from './components/landing/LandingPage';
-import { buildTaskProviderAuth, buildWorkflowConfigFromGraph } from './taskPayload';
+import { buildSearchConfigPayload, buildTaskProviderAuth, buildWorkflowConfigFromGraph } from './taskPayload';
 
 const SHOW_STATUS_BAR = false;
 
@@ -83,6 +83,13 @@ function parseChatWorkflow(raw?: string): { nodes: any[]; edges: any[] } {
   } catch (error) {
     console.error('Failed to parse chat workflow:', error);
     return { nodes: [], edges: [] };
+  }
+}
+
+function attachSearchConfig(taskPayload: any) {
+  const search = buildSearchConfigPayload(useSettingsStore.getState());
+  if (search) {
+    taskPayload.search = search;
   }
 }
 
@@ -172,6 +179,7 @@ export default function App() {
 
     taskPayload.tokens = providerAuth.tokens;
     taskPayload.meta.provider = providerAuth.provider;
+    attachSearchConfig(taskPayload);
 
     const workflow = buildWorkflowConfigFromGraph(
       useTaskStore.getState().nodes,
@@ -374,6 +382,7 @@ export default function App() {
 
     taskPayload.tokens = providerAuth.tokens;
     taskPayload.meta.provider = providerAuth.provider;
+    attachSearchConfig(taskPayload);
 
     // GitHub integration flags
     const ghIntegration = useIntegrationStore.getState().getIntegration('github');

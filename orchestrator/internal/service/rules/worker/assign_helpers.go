@@ -7,17 +7,19 @@ import (
 	"path/filepath"
 
 	"orchestrator/internal/service/rules"
+	"orchestrator/internal/service/search"
 )
 
 // parseWorkerMetadata — извлекает provider/model/tokens/tech_stack из metadata
 type workerMeta struct {
-	provider    string
-	model       string
-	tokens      map[string]string
-	techStack   string
-	taskType    string
-	title       string
-	description string
+	provider     string
+	model        string
+	tokens       map[string]string
+	techStack    string
+	taskType     string
+	title        string
+	description  string
+	searchConfig *search.ModelConfig
 }
 
 func parseWorkerMetadata(metadata map[string]string) workerMeta {
@@ -48,7 +50,43 @@ func parseWorkerMetadata(metadata map[string]string) workerMeta {
 	if apiKey, ok := metadata[m.provider]; ok {
 		m.tokens[m.provider] = apiKey
 	}
+	m.searchConfig = parseSearchConfig(metadata["search"])
 	return m
+}
+
+type searchMetadata struct {
+	Provider  string `json:"provider"`
+	Model     string `json:"model"`
+	BaseURL   string `json:"base-url"`
+	APIKey    string `json:"api-key"`
+	Striming  bool   `json:"striming"`
+	Streaming *bool  `json:"streaming,omitempty"`
+}
+
+func parseSearchConfig(raw string) *search.ModelConfig {
+	if raw == "" {
+		return nil
+	}
+
+	var meta searchMetadata
+	if err := json.Unmarshal([]byte(raw), &meta); err != nil {
+		return nil
+	}
+	streaming := meta.Striming
+	if meta.Streaming != nil {
+		streaming = *meta.Streaming
+	}
+	cfg := search.ModelConfig{
+		Provider:  meta.Provider,
+		Model:     meta.Model,
+		BaseURL:   meta.BaseURL,
+		APIKey:    meta.APIKey,
+		Streaming: streaming,
+	}
+	if cfg.Provider == "" || cfg.Model == "" || cfg.BaseURL == "" || cfg.APIKey == "" {
+		return nil
+	}
+	return &cfg
 }
 
 // resolveBasePath — определяет директорию проекта для группы воркеров
@@ -102,4 +140,3 @@ func writeContextFile(basePath, taskID, managerID, managerRole string, workerRol
 	os.MkdirAll(octraDir, 0755)
 	os.WriteFile(filepath.Join(octraDir, "context.json"), contextJSON, 0644)
 }
-

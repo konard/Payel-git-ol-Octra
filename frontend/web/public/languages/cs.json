@@ -47,7 +47,13 @@
     "reconnecting": "Připojování k serveru...",
     "taskCreated": "Úkol vytvořen",
     "sendError": "Chyba při odesílání úkolu",
-    "searchOnLefine": "Hledat na Lefine"
+    "searchOnLefine": "Hledat na Lefine",
+    "searchProviders": "Search providers",
+    "searchPickerTitle": "Search",
+    "searchWithApodex": "Apodex",
+    "configureSearch": "Configure AI search",
+    "searchWithLefine": "Lefine.pro",
+    "openLefine": "Open search page"
   },
   "nodes": {
     "ceo": "CEO",
@@ -98,7 +104,22 @@
     "hideTokenField": "Skrýt pole pro zadání tokenu",
     "hideTokenFieldHint": "Skrýt pole API klíče na hlavní obrazovce",
     "save": "Uložit",
-    "cancel": "Zrušit"
+    "cancel": "Zrušit",
+    "search": "Search",
+    "searchProvidersTitle": "Search providers",
+    "searchProvidersDescription": "Choose Apodex or a custom AI search provider used by research workers.",
+    "customSearchProviderDefaultName": "Custom Search",
+    "searchConfigured": "Configured",
+    "searchNotConfigured": "Needs setup",
+    "searchProviderDetails": "Credentials sent with new tasks when this provider is configured.",
+    "searchProviderName": "Provider name",
+    "searchProviderNamePlaceholder": "Internal Search",
+    "searchBaseUrl": "Base URL",
+    "searchApiKey": "API key",
+    "searchModel": "Model",
+    "searchStreaming": "Streaming",
+    "searchStreamingHint": "Allow streaming responses from this search model.",
+    "addSearchProvider": "Add custom search provider"
   },
   "languages": {
     "en": "English",

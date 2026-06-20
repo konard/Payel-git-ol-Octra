@@ -80,7 +80,13 @@
     "reconnecting": "Переподключение к серверу...",
     "taskCreated": "Задача создана",
     "sendError": "Ошибка отправки задачи",
-    "searchOnLefine": "Поиск в Lefine"
+    "searchOnLefine": "Поиск в Lefine",
+    "searchProviders": "Провайдеры поиска",
+    "searchPickerTitle": "Поиск",
+    "searchWithApodex": "Apodex",
+    "configureSearch": "Настроить AI-поиск",
+    "searchWithLefine": "Lefine.pro",
+    "openLefine": "Открыть страницу поиска"
   },
   "nodes": {
     "ceo": "CEO",
@@ -131,7 +137,22 @@
     "hideTokenField": "Не показывать поле ввода токена",
     "hideTokenFieldHint": "Скрыть поле API ключа на главном экране",
     "save": "Сохранить",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "search": "Поиск",
+    "searchProvidersTitle": "Провайдеры поиска",
+    "searchProvidersDescription": "Выберите Apodex или кастомного AI-провайдера поиска для research-воркеров.",
+    "customSearchProviderDefaultName": "Кастомный поиск",
+    "searchConfigured": "Настроено",
+    "searchNotConfigured": "Нужно настроить",
+    "searchProviderDetails": "Эти данные отправляются с новыми задачами, когда провайдер настроен.",
+    "searchProviderName": "Название провайдера",
+    "searchProviderNamePlaceholder": "Внутренний поиск",
+    "searchBaseUrl": "Base URL",
+    "searchApiKey": "API key",
+    "searchModel": "Модель",
+    "searchStreaming": "Стриминг",
+    "searchStreamingHint": "Разрешить streaming-ответы от этой поисковой модели.",
+    "addSearchProvider": "Добавить кастомный провайдер поиска"
   },
   "languages": {
     "en": "English",
