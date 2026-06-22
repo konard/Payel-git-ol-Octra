@@ -154,13 +154,20 @@ func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error)
 		return &user, nil
 	}
 
-	username := name
-	if username == "" {
+	baseUsername := name
+	if baseUsername == "" {
 		if len(email) > 10 {
-			username = email[:len(email)-10]
+			baseUsername = email[:len(email)-10]
 		} else {
-			username = "user_" + uuid.New().String()[:8]
+			baseUsername = "user_" + uuid.New().String()[:8]
 		}
+	}
+
+	username := baseUsername
+	var count int64
+	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		username = baseUsername + "_" + uuid.New().String()[:6]
 	}
 
 	user = models.UserRegister{
@@ -170,7 +177,14 @@ func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error)
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			user.Username = baseUsername + "_" + uuid.New().String()[:6]
+			if err := database.Db.Create(&user).Error; err != nil {
+				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+			}
+		} else {
+			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+		}
 	}
 
 	return &user, nil
@@ -185,13 +199,20 @@ func GetOrCreateUserFromGithub(email, name string) (*models.UserRegister, error)
 		return &user, nil
 	}
 
-	username := name
-	if username == "" {
+	baseUsername := name
+	if baseUsername == "" {
 		if len(email) > 10 {
-			username = email[:len(email)-10]
+			baseUsername = email[:len(email)-10]
 		} else {
-			username = "user_" + uuid.New().String()[:8]
+			baseUsername = "user_" + uuid.New().String()[:8]
 		}
+	}
+
+	username := baseUsername
+	var count int64
+	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		username = baseUsername + "_" + uuid.New().String()[:6]
 	}
 
 	user = models.UserRegister{
@@ -201,7 +222,14 @@ func GetOrCreateUserFromGithub(email, name string) (*models.UserRegister, error)
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			user.Username = baseUsername + "_" + uuid.New().String()[:6]
+			if err := database.Db.Create(&user).Error; err != nil {
+				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+			}
+		} else {
+			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+		}
 	}
 
 	return &user, nil
@@ -216,13 +244,20 @@ func GetOrCreateUserFromLeFine(email, name, lefineUserID string) (*models.UserRe
 		return &user, nil
 	}
 
-	username := name
-	if username == "" {
+	baseUsername := name
+	if baseUsername == "" {
 		if len(email) > 10 {
-			username = email[:len(email)-10]
+			baseUsername = email[:len(email)-10]
 		} else {
-			username = "user_" + uuid.New().String()[:8]
+			baseUsername = "user_" + uuid.New().String()[:8]
 		}
+	}
+
+	username := baseUsername
+	var count int64
+	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		username = baseUsername + "_" + uuid.New().String()[:6]
 	}
 
 	user = models.UserRegister{
@@ -232,7 +267,14 @@ func GetOrCreateUserFromLeFine(email, name, lefineUserID string) (*models.UserRe
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			user.Username = baseUsername + "_" + uuid.New().String()[:6]
+			if err := database.Db.Create(&user).Error; err != nil {
+				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+			}
+		} else {
+			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+		}
 	}
 
 	return &user, nil

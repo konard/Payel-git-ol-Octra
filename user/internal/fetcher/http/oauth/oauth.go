@@ -163,9 +163,9 @@ func RegisterGithubRoutes(r *gin.Engine) {
 		if email == "" {
 			email = fmt.Sprintf("%s@github.local", githubUser.Login)
 		}
-		name := githubUser.Name
+		name := githubUser.Login
 		if name == "" {
-			name = githubUser.Login
+			name = githubUser.Name
 		}
 
 		user, err := services.GetOrCreateUserFromGithub(email, name)
