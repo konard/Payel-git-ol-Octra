@@ -14,8 +14,8 @@ func registerRegister(r *gin.Engine) {
 			c.JSON(400, gin.H{"status": "error", "error": "Invalid request body: " + err.Error()})
 			return
 		}
-		if req.Username == "" || req.Email == "" || req.Password == "" || req.CaptchaToken == "" {
-			c.JSON(400, gin.H{"status": "error", "error": "Username, email, password and captcha_token are required"})
+		if req.Username == "" || req.Email == "" || req.Password == "" {
+			c.JSON(400, gin.H{"status": "error", "error": "Username, email and password are required"})
 			return
 		}
 
