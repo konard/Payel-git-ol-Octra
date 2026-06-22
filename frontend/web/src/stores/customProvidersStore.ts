@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import {
   normalizeCustomModel,
   normalizeCustomModelList,
@@ -11,6 +11,7 @@ import {
   upsertCustomModel,
   upsertCustomProvider,
 } from '../utils/customProviders';
+import { scopedStorage } from './storageScope';
 
 export interface CustomProvider {
   id: string;
@@ -41,11 +42,13 @@ interface CustomProvidersState {
   updateProvider: (id: string, updates: CustomProviderInput) => void;
   deleteProvider: (id: string) => void;
   getProvider: (id: string) => CustomProvider | undefined;
+  setProviders: (providers: CustomProviderInput[]) => void;
 
   addModel: (model: CustomModelInput) => void;
   updateModel: (id: string, updates: CustomModelInput) => void;
   deleteModel: (id: string) => void;
   getModel: (id: string) => CustomModel | undefined;
+  setModels: (models: CustomModelInput[]) => void;
 }
 
 function createLocalId(): string {
@@ -119,9 +122,18 @@ export const useCustomProvidersStore = create<CustomProvidersState>()(
       getModel: (id) => {
         return normalizeCustomModelList(get().models).find((m) => m.id === id);
       },
+
+      setProviders: (providers) => {
+        set({ providers: normalizeCustomProviderList(providers) });
+      },
+
+      setModels: (models) => {
+        set({ models: normalizeCustomModelList(models) });
+      },
     }),
     {
       name: 'crewai-custom-providers',
+      storage: createJSONStorage(() => scopedStorage),
       version: 1,
       migrate: (persistedState) =>
         normalizeCustomProvidersState(persistedState) as CustomProvidersState,

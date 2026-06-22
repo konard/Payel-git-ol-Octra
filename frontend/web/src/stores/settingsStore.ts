@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import {
   DEFAULT_HIDE_API_KEY_INPUT,
   DEFAULT_MODEL,
@@ -8,6 +8,7 @@ import {
   DEFAULT_SEARCH_PROVIDER_ID,
   DEFAULT_TOKEN,
 } from '../config/defaultSettings';
+import { scopedStorage } from './storageScope';
 
 export type SearchProviderKind = 'apodex' | 'custom';
 
@@ -41,6 +42,7 @@ interface SettingsState {
   updateSearchProvider: (providerId: string, updates: Partial<SearchProviderConfig>) => void;
   addSearchProvider: (provider?: Partial<SearchProviderConfig>) => string;
   deleteSearchProvider: (providerId: string) => void;
+  resetSettings: () => void;
 }
 
 function createSearchProviderId(): string {
@@ -161,9 +163,21 @@ export const useSettingsStore = create<SettingsState>()(
           searchProviderId: state.searchProviderId === providerId ? DEFAULT_SEARCH_PROVIDER_ID : state.searchProviderId,
         };
       }),
+
+      resetSettings: () => set({
+        defaultToken: DEFAULT_TOKEN,
+        hideApiKeyInput: DEFAULT_HIDE_API_KEY_INPUT,
+        hideServerStatus: false,
+        hideConsole: false,
+        defaultProvider: DEFAULT_PROVIDER,
+        defaultModel: DEFAULT_MODEL,
+        searchProviderId: DEFAULT_SEARCH_PROVIDER_ID,
+        searchProviders: [defaultSearchProvider()],
+      }),
     }),
     {
       name: 'crewai-settings',
+      storage: createJSONStorage(() => scopedStorage),
       version: 2,
       migrate: (persistedState, version) => {
         const state = persistedState as Partial<SettingsState> | undefined;

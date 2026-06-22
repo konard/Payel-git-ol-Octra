@@ -12,6 +12,7 @@ import {
   refreshToken as refreshAccessToken,
   type User,
 } from '../services/authService';
+import { clearUserScopedData } from './storageScope';
 
 // 14-day trial period
 const TRIAL_DAYS = 14;
@@ -176,6 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      clearUserScopedData();
       removeTokens();
       set({
         user: null,

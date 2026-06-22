@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { scopedStorage } from './storageScope';
 
 // Token-usage statistics. The chart in Settings → Statistics is driven entirely
 // by this store, which persists to localStorage so the numbers are global across
@@ -123,6 +124,7 @@ export const useStatisticsStore = create<StatisticsState>()(
     }),
     {
       name: 'octra-token-statistics',
+      storage: createJSONStorage(() => scopedStorage),
     }
   )
 );

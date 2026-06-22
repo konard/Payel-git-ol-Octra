@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { scopedStorage } from './storageScope';
 
 export type IntegrationType = 'lefine' | 'telegram' | 'n8n' | 'github';
 
@@ -31,6 +32,7 @@ interface IntegrationState {
   setIntegrationConfig: (type: IntegrationType, config: IntegrationConfig) => void;
   getIntegration: (type: IntegrationType) => Integration;
   disconnectIntegration: (type: IntegrationType) => void;
+  resetIntegrations: () => void;
 }
 
 const DEFAULT_INTEGRATION: Integration = {
@@ -181,9 +183,19 @@ export const useIntegrationStore = create<IntegrationState>()(
           };
         });
       },
+
+      resetIntegrations: () => set({
+        integrations: {
+          lefine: DEFAULT_INTEGRATION,
+          telegram: DEFAULT_TELEGRAM_INTEGRATION,
+          n8n: DEFAULT_N8N_INTEGRATION,
+          github: DEFAULT_GITHUB_INTEGRATION,
+        },
+      }),
     }),
     {
       name: 'crewai-integrations',
+      storage: createJSONStorage(() => scopedStorage),
     }
   )
 );

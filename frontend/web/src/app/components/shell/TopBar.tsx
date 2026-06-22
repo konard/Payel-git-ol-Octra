@@ -164,7 +164,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
    const [showUserProfile, setShowUserProfile] = useState(false);
 
     // Custom providers state
-    const { providers: customProviders, models: customModels, addProvider, updateProvider, deleteProvider, addModel, updateModel, deleteModel } = useCustomProvidersStore();
+    const { providers: customProviders, models: customModels, addProvider, updateProvider, deleteProvider, addModel, updateModel, deleteModel, setProviders, setModels } = useCustomProvidersStore();
     const [showAddModel, setShowAddModel] = useState(false);
    const [showAddProvider, setShowAddProvider] = useState(false);
    const [editingProvider, setEditingProvider] = useState<string | null>(null);
@@ -213,23 +213,9 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
         console.log('API returned providers:', providers.length, 'models:', models.length);
 
-        // Sync providers to store
-        providers.forEach(provider => {
-          if (!customProviders.find(p => p.id === provider.id)) {
-            addProvider(provider);
-          }
-        });
-
-        // Sync models to store (skip empty names)
-        models.forEach(model => {
-          if (!model.name || !model.name.trim()) {
-            console.warn('Skipping model with empty name:', model);
-            return;
-          }
-          if (!customModels.find(m => m.id === model.id)) {
-            addModel(model);
-          }
-        });
+        // Replace store with API data (don't merge — user-scoped)
+        setProviders(providers);
+        setModels(models.filter(m => m.name?.trim()));
       } catch (error) {
         console.warn('API not available, using local store only:', error.message);
       }
