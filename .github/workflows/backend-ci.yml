@@ -1,27 +1,29 @@
-name: API Gateway CI
+name: Backend CI
 
 on:
   push:
     branches: [master, main]
     paths:
-      - 'apigateway/**'
-      - '.github/workflows/apigateway-ci.yml'
+      - 'backend/**'
+      - 'go.work'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
-      - 'apigateway/**'
-      - '.github/workflows/apigateway-ci.yml'
+      - 'backend/**'
+      - 'go.work'
+      - '.github/workflows/backend-ci.yml'
 
 concurrency:
-  group: apigateway-ci-${{ github.ref }}
+  group: backend-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
-    name: Build & test (apigateway)
+    name: Build & test (backend)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apigateway
+        working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +32,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.25.4'
-          cache-dependency-path: apigateway/go.sum
+          cache-dependency-path: backend/go.sum
 
       - name: Build
         run: go build ./...
@@ -39,4 +41,4 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test ./... -v -count=1
+        run: go test ./... -count=1

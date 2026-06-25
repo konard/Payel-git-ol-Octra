@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: crewai-postgres
+    container_name: octra-postgres
     environment:
-      POSTGRES_USER: crewai
-      POSTGRES_PASSWORD: crewai_password
-      POSTGRES_DB: crewai
+      POSTGRES_USER: octra
+      POSTGRES_PASSWORD: octra_password
+      POSTGRES_DB: octra
     ports:
       - "5433:5432"
     volumes:
@@ -13,14 +13,14 @@ services:
     networks:
       - octra-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crewai"]
+      test: ["CMD-SHELL", "pg_isready -U octra"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: crewai-redis
+    container_name: octra-redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
@@ -35,112 +35,30 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # orchestrator — единый процесс с boss + manager + worker внутри.
-  # Раньше это были три отдельных gRPC-сервиса; теперь все вызовы
-  # между ролями идут напрямую через Go, без gRPC.
-  orchestrator:
+  # backend — the Octra monolith. Replaces the former user / agents /
+  # orchestrator / apigateway microservices with a single Go service that
+  # aggregates AI CLIs and exposes a personal MCP endpoint per user.
+  backend:
     build:
-      context: .
-      dockerfile: ./orchestrator/Dockerfile
-    container_name: crewai-orchestrator
-    environment:
-      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
-      - AZURE_API_KEY=${AZURE_API_KEY:-}
-      - AGENTS_SERVICE_HOST=agents:50053
-      - REDIS_URL=redis://redis:6379/0
-      - REDIS_ENABLED=true
-      - PROJECTS_DIR=/workspace/projects
-      - GIT_USER_EMAIL=zaharenkopasa06@gmail.com
-      - GIT_USER_NAME=CrewAI Orchestrator
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
-      - ORCHESTRATOR_GRPC_PORT=50052
-    ports:
-      - "50052:50052"
-    volumes:
-      - ./projects:/workspace/projects
-    depends_on:
-      postgres:
-        condition: service_healthy
-      agents:
-        condition: service_started
-      redis:
-        condition: service_healthy
-    networks:
-      - octra-network
-    restart: unless-stopped
-
-  agents:
-    build:
-      context: .
-      dockerfile: ./agents/Dockerfile
-    container_name: crewai-agents
-    environment:
-      - AGENTS_PORT=50053
-      - QWEN_API_KEY=${QWEN_API_KEY:-}
-      - ZAI_API_URL=https://api.z.ai/api/v1
-    ports:
-      - "50053:50053"
-    networks:
-      - octra-network
-    restart: unless-stopped
-
-  apigateway:
-    build:
-      context: ./apigateway
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: crewai-apigateway
+    container_name: octra-backend
     env_file:
       - .env
     environment:
-      - BOSS_SERVICE_HOST=orchestrator:50052
-      - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - HTTP_ADDR=:8080
+      - DB_DNS=host=postgres user=octra password=octra_password dbname=octra port=5432 sslmode=disable
       - REDIS_URL=redis://redis:6379/0
-      - REDIS_ENABLED=true
-      - AUTH_SERVICE_HOST=user:3112
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      # Rate Limiting
-      - RATE_LIMIT_ENABLED=true
-      - RATE_LIMIT_TASK_CREATE=${RATE_LIMIT_TASK_CREATE:-10/60}
-      - RATE_LIMIT_TASK_STATUS=${RATE_LIMIT_TASK_STATUS:-60/60}
-      - RATE_LIMIT_TASK_RECONNECT=${RATE_LIMIT_TASK_RECONNECT:-30/60}
-      - RATE_LIMIT_HEALTH=${RATE_LIMIT_HEALTH:-120/60}
+      - ENVIRONMENTS_DIR=/var/lib/octra/environments
+      - CLI_TTL=30m
     ports:
-      - "3111:3111"
-    depends_on:
-      orchestrator:
-        condition: service_started
-      agents:
-        condition: service_started
-      redis:
-        condition: service_healthy
-    networks:
-      - octra-network
-    restart: unless-stopped
-
-  user:
-    build:
-      context: .
-      dockerfile: ./user/Dockerfile
-    container_name: crewai-user
-    env_file:
-      - .env
-    environment:
-      - DB_DNS=host=postgres user=crewai password=crewai_password dbname=crewai port=5432
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-refresh-in-production}
-      - AUTH_PORT=3112
-      - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID:-1339826}
-      - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY:-test_StL4_VJfVFbOJ7_BbolU2VhoR1zjIQ7Qf2gcwN3Gngw}
-
-      # LeFine / Kefine integration (Login with LeFine)
-      # For local dev: points to your local Kefine at http://localhost:5173
-      - LEFINE_BASE_URL=${LEFINE_BASE_URL:-http://localhost:5173}
-      - LEFINE_REDIRECT_URL=${LEFINE_REDIRECT_URL:-http://localhost/auth/lefine/callback}
-      - LEFINE_INTEGRATION_SECRET=dev-only-lefine-octra-shared-secret-change-me
-    ports:
-      - "3112:3112"
+      - "8080:8080"
+    volumes:
+      - octra_environments:/var/lib/octra/environments
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - octra-network
@@ -152,7 +70,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_FRONTEND_MODE
-    container_name: crewai-frontend
+    container_name: octra-frontend
     env_file:
       - .env
       - .env.prod
@@ -161,9 +79,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      user:
-        condition: service_started
-      apigateway:
+      backend:
         condition: service_started
     networks:
       - octra-network
@@ -173,7 +89,7 @@ services:
     build:
       context: ./poster
       dockerfile: Dockerfile
-    container_name: crewai-poster
+    container_name: octra-poster
     env_file:
       - .env
     environment:
@@ -181,9 +97,9 @@ services:
       - CHANNEL_ID=@octra_ai
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=crewai
-      - POSTGRES_PASSWORD=crewai_password
-      - POSTGRES_DB=crewai
+      - POSTGRES_USER=octra
+      - POSTGRES_PASSWORD=octra_password
+      - POSTGRES_DB=octra
       - BASE_ULR=${BASE_ULR:-https://api.gonkagate.com/v1/chat/completions}
       - API_KEY=${API_KEY}
       - AI_MODEL=${AI_MODEL:-moonshotai/kimi-k2.6}
@@ -198,25 +114,6 @@ services:
       - octra-network
     restart: unless-stopped
 
-  # tgbot:
-    # build:
-      # context: ./tgbot
-      # dockerfile: Dockerfile
-    # container_name: crewai-tgbot
-    # env_file:
-      # - ./tgbot/.env
-    # environment:
-      # - AUTH_API_URL=http://user:3112
-      # - API_GATEWAY_URL=ws://apigateway:3111
-    # depends_on:
-      # user:
-        # condition: service_started
-      # apigateway:
-        # condition: service_started
-    # networks:
-      # - crewai-network
-    # restart: unless-stopped
-
 networks:
   octra-network:
     driver: bridge
@@ -224,3 +121,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  octra_environments:
