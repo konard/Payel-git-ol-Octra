@@ -1376,7 +1376,7 @@ button {
 
 .tv-header {
   position: sticky;
-  top: 38px;
+  top: 0;
   z-index: 100;
   display: grid;
   grid-template-columns: auto minmax(220px, 360px) minmax(0, 1fr) auto;
