@@ -1,42 +1,75 @@
 # OCTRA Crystal Client
 
-## Reconnection + Resume
+A minimal client for the Octra HTTP/JSON API using the standard library
+(`http/client` and `json`).
+
+The full flow is: **register** to get an `api_key`, **create an environment**
+(an AI CLI plus skills), then **chat**.
+
+---
+
+## 1. Reusable Client
 
 ```crystal
-require "http/web_socket"
+require "http/client"
 require "json"
 
-task_id = nil
-backoff = 1
-uri = "wss://octra.env.pm/ws"
+class OctraClient
+  def initialize(@base_url : String = "http://localhost:8080", @api_key : String? = nil)
+  end
 
-loop do
-  begin
-    ws = HTTP::WebSocket.new(uri)
+  def register(email : String, password : String) : JSON::Any
+    data = post("/register", {email: email, password: password})
+    @api_key = data["api_key"].as_s # remember it for later calls
+    data
+  end
 
-    if task_id
-      ws.send({type: "resume", taskId: task_id}.to_json)
-    else
-      ws.send({
-        username: "CrystalClient",
-        user_id: "00000000-0000-0000-0000-000000000007",
-        title: "Crystal Task",
-        description: "Test from Crystal",
-        meta: { model: "your-model", provider: "provider", publish_repositories: "true", create_pull_requests: "true" },
-        tokens: { provider: "your-api-key" }
-      }.to_json)
+  def create_environment(llm, cli : String = "", skills : Array(String) = [] of String) : JSON::Any
+    post("/environment", {llm: llm, agent: {cli: cli}, skills: skills})
+  end
+
+  def chat(prompt : String, skills : Array(String) = [] of String) : String
+    post("/api/chat", {prompt: prompt, skills: skills})["response"].as_s
+  end
+
+  private def post(path : String, body) : JSON::Any
+    headers = HTTP::Headers{"Content-Type" => "application/json"}
+    if key = @api_key
+      headers["octra-api-token"] = key
     end
 
-    ws.on_message do |message|
-      data = JSON.parse(message)
-      puts "Update: #{data}"
-      task_id = data["taskId"]? if data["taskId"]?
+    response = HTTP::Client.post("#{@base_url}#{path}", headers: headers, body: body.to_json)
+    unless response.success?
+      raise "Octra #{path} failed: #{response.status_code} #{response.body}"
     end
-
-    ws.run
-  rescue
-    sleep backoff.seconds
-    backoff = Math.min(backoff * 2, 30)
+    JSON.parse(response.body)
   end
 end
+```
+
+---
+
+## 2. Full Flow Example
+
+```crystal
+client = OctraClient.new("http://localhost:8080")
+
+# 1. Register and capture the API key.
+account = client.register("me@example.com", "secret")
+puts "user_id: #{account["user_id"]}"
+
+# 2. Create an environment: an AI CLI plus some skills.
+client.create_environment(
+  llm: {
+    api_key:  "sk-...",
+    base_url: "https://api.anthropic.com",
+    model:    "claude-sonnet-4-6",
+  },
+  cli: "claude-code",
+  skills: ["filesystem", "github", "brave-search"]
+)
+
+# 3. Send a prompt.
+answer = client.chat("write a csv parser", skills: ["filesystem"])
+puts answer
 ```

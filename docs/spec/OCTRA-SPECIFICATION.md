@@ -1,134 +1,195 @@
-# OCTRA Custom Client Specification (v2)
+# OCTRA Custom Client Specification (v3)
 
 ## 1. Introduction
 
-This document describes how to build a custom client that can replace or supplement the official React frontend.
+This document describes how to build a custom client for Octra, the
+**MCP aggregator**. Octra exposes a small HTTP/JSON API: you register to get an
+`api_key`, create an environment (a Nix profile with an AI CLI and skills), and
+then send prompts to your personal endpoint.
 
-The official frontend connects to the API Gateway using WebSocket and supports automatic reconnection with task state restoration.
-
----
-
-## 2. Connection Endpoints
-
-The frontend uses the following relative paths (proxied through `/api`):
-
-- **Create new task**: `/task/create`
-- **Resume existing task**: `/task/reconnect`
-
-**Full production URL examples**:
-```
-wss://octra.env.pm/api/task/create
-wss://octra.env.pm/api/task/reconnect
-```
-
-**Local development** (via Vite proxy):
-```
-wss://octra.env.pm/api/task/create
-```
+> The previous WebSocket task-streaming protocol (boss/manager/worker pipeline)
+> has been removed along with the old microservices. Octra is now a single
+> backend with a plain REST API.
 
 ---
 
-## 3. Reconnection & Resume Protocol
+## 2. Base URL & authentication
 
-### Important discovery from real frontend
+```
+http://localhost:8080          # local
+https://octra.env.pm           # production example
+```
 
-When reconnecting, the client does **not** send `{"type": "resume"}`.
+All authenticated requests carry the user's API key in a header:
 
-Instead, it sends:
+```
+octra-api-token: octra_…
+```
 
+Send and receive `application/json`.
+
+---
+
+## 3. Endpoints
+
+| Method | Path           | Auth | Purpose |
+|--------|----------------|------|---------|
+| `GET`  | `/health`      | no   | Liveness probe |
+| `POST` | `/register`    | no   | Create a user, return `api_key` |
+| `POST` | `/environment` | yes  | Create/update the user's environment (CLI + skills) |
+| `POST` | `/api/chat`    | yes  | Send a prompt, get a response |
+| `GET`  | `/billing/balance` | yes | Read credits and margin settings |
+| `PATCH` | `/billing/settings` | yes | Update margin and auto-pay preferences |
+| `GET`  | `/billing/transactions` | yes | List credit ledger entries |
+| `POST` | `/billing/topup` | yes | Add credits from a payment flow |
+| `POST` | `/billing/lefine-reward` | yes | Add credits from LeFine rewards |
+| `POST` | `/billing/usage` | yes | Record usage and debit hosting credits |
+
+### 3.1 `POST /register`
+
+Request:
+```json
+{ "email": "me@example.com", "password": "secret" }
+```
+Response `201`:
+```json
+{ "user_id": "…", "api_key": "octra_…", "balance": 100 }
+```
+
+### 3.2 `POST /environment`
+
+Request:
 ```json
 {
-  "task_id": "550e8400-e29b-41d4-a716-446655440000"
+  "llm":   { "api_key": "sk-…", "base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-6" },
+  "agent": { "cli": "claude-code", "priority": 10 },
+  "skills": ["filesystem", "github", "brave-search"]
+}
+```
+Response `200`:
+```json
+{ "user_id": "…", "agent_id": "…", "api_key": "octra_…" }
+```
+
+- `agent.cli` is optional. Supported values include `claude-code`, `opencode`,
+  `codex`. If omitted, Octra runs as a plain LLM proxy.
+- `agent.priority` is optional and is used by safe margin mode.
+- Octra creates the user's Nix environment, installs the CLI (if any), then
+  installs each skill and records its install status.
+
+### 3.3 `POST /api/chat`
+
+Request:
+```json
+{ "prompt": "write a csv parser", "skills": ["filesystem"] }
+```
+Response `200`:
+```json
+{ "response": "…" }
+```
+
+`skills[]` selects which installed skills are active for this request — omit a
+skill to disable it without uninstalling it.
+
+---
+
+### 3.4 Billing
+
+`GET /billing/balance` response:
+```json
+{
+  "user_id": "…",
+  "balance": 100,
+  "margin_mode": "unlimited",
+  "safe_margin_limit": 0,
+  "auto_pay_interval": "month",
+  "auto_pay_day": 1
 }
 ```
 
-This tells the server to restore the task state from Redis and continue streaming updates.
-
-### Reconnection flow
-
-1. Client stores `activeTaskId` locally
-2. On disconnect → wait with exponential backoff
-3. On reconnect → connect to `/task/reconnect`
-4. Immediately send `{ "task_id": "..." }`
-5. Server resumes sending `TaskUpdate` messages
-
----
-
-## 4. Message Format
-
-### Outgoing messages
-
-**Create task**:
+`PATCH /billing/settings` request:
 ```json
 {
-  "username": "",
-  "user_id": "",
-  "title": "Need a mini proxy in Go without frontend and tests",
-  "description": "Need a mini proxy in Go without frontend and tests",
-  "meta": {
-    "model": "your-model",
-    "provider": "provider",
-    "publish_repositories": "true",
-    "create_pull_requests": "true"
-  },
-  "tokens": {
-    "provider": "your-api-key",
-    "base_url": "https://api.example.com/v1"
-  }
+  "margin_mode": "safe",
+  "safe_margin_limit": 5,
+  "auto_pay_interval": "week",
+  "auto_pay_day": 2
 }
 ```
 
-**GitHub integration flags** (optional, in `meta`):
+`POST /billing/topup` and `POST /billing/lefine-reward` request:
+```json
+{ "amount": 50, "agent_id": "optional-agent-uuid" }
+```
 
-| Flag | Type | Default | Effect |
-|------|------|---------|--------|
-| `publish_repositories` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a GitHub repository and pushes the generated code. When `"false"`, skips repo creation. |
-| `create_pull_requests` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a pull request for issue-linked tasks. When `"false"`, pushes code to a branch but does not create a PR. |
-
-If both flags are set to `"false"`, no GitHub node appears on the frontend canvas. If the integration is not connected (flags absent), the backend falls back to its default behaviour (publishes if `GITHUB_TOKEN` is set).
-
-**Resume task**:
+`POST /billing/usage` request:
 ```json
 {
-  "task_id": "550e8400-e29b-41d4-a716-446655440000"
+  "cpu_seconds": 120,
+  "memory_mb_hours": 256,
+  "disk_mb": 512,
+  "load_percent": 150,
+  "standard_payment": 40,
+  "agent_id": "optional-agent-uuid"
 }
 ```
 
-### Incoming messages
+Usage charges are calculated as `standard_payment * load_percent / 100`. A
+successful top-up, reward, or usage debit returns a transaction with `type`,
+`amount`, `reason`, `balance_after`, and `created_at`.
 
-The server streams `TaskUpdate` objects with progress, logs, and final results.
-
----
-
-## 5. Heartbeat
-
-The real frontend starts a heartbeat after connection to keep the connection alive and detect dead connections early.
-
----
-
-## 6. Recommended Client Features
-
-- Store `taskId` immediately after first update
-- Implement exponential backoff reconnection
-- Support both new task and resume flows
-- Handle authentication token refresh
-- Show clear connection status to the user
+New users receive 100 credits. Unlimited margin allows negative balances; a
+negative balance blocks creation of a new environment with HTTP `402`. Safe
+margin preserves `safe_margin_limit` and suspends the current agent if a hosting
+charge cannot be paid.
 
 ---
 
-## 7. Language-Specific Implementations
+## 4. Request flow (server side)
 
-See detailed examples with correct reconnection logic:
+```
+request → validate octra-api-token → load user + agent
+  → if CLI configured:
+      → check Redis: is the process alive?
+        → alive → send prompt to its stdin
+        → dead  → launch subprocess in the user's Nix env
+  → else:
+      → direct LLM call (proxy mode)
+  → return { "response": … }
+```
 
-- [Python + FastAPI](OCTRA-CLIENT-PYTHON.md)
-- [TypeScript](OCTRA-CLIENT-TYPESCRIPT.md)
+The CLI subprocess is long-lived (reused across requests) with its state in
+Redis and a TTL; idle processes are reaped.
+
+---
+
+## 5. Errors
+
+Errors are returned as JSON with the relevant HTTP status:
+
+```json
+{ "error": "invalid token" }
+```
+
+| Status | Meaning |
+|--------|---------|
+| `400`  | Malformed request body |
+| `401`  | Missing/invalid `octra-api-token` |
+| `409`  | Email already registered |
+| `402`  | Balance or safe margin prevents starting/charging an agent |
+| `5xx`  | Provisioning / upstream LLM failure |
+
+---
+
+## 6. Language-specific clients
+
+Minimal HTTP examples in several languages:
+
+- [Python](OCTRA-CLIENT-PYTHON.md)
+- [TypeScript / Node.js](OCTRA-CLIENT-TYPESCRIPT.md)
 - [Go](OCTRA-CLIENT-GO.md)
-- [Java + Spring](OCTRA-CLIENT-JAVA.md)
-- [C# + ASP.NET](OCTRA-CLIENT-CS.md)
+- [Java](OCTRA-CLIENT-JAVA.md)
+- [C#](OCTRA-CLIENT-CS.md)
 - [Ruby](OCTRA-CLIENT-RUBY.md)
 - [Crystal](OCTRA-CLIENT-CRYSTAL.md)
 - [Rust](OCTRA-CLIENT-RUST.md)
-
----
-
-This specification is aligned with how the official frontend actually works.

@@ -1,46 +1,136 @@
 # OCTRA Rust Client
 
-## Reconnection with Resume
+A minimal client for the Octra HTTP/JSON API using
+[`reqwest`](https://crates.io/crates/reqwest) with the `tokio` async runtime.
+
+```toml
+# Cargo.toml
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+```
+
+The full flow is: **register** to get an `api_key`, **create an environment**
+(an AI CLI plus skills), then **chat**.
+
+---
+
+## 1. Reusable Client
 
 ```rust
-use futures_util::{SinkExt, StreamExt};
-use tokio_tungstenite::tungstenite::protocol::Message;
-use tokio::time::{sleep, Duration};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-#[tokio::main]
-async fn main() {
-    let mut task_id: Option<String> = None;
-    let mut backoff = 1;
-    let uri = "wss://octra.env.pm/ws";
+#[derive(Serialize)]
+pub struct LlmConfig {
+    pub api_key: String,
+    pub base_url: String,
+    pub model: String,
+}
 
-    loop {
-        match tokio_tungstenite::connect_async(uri).await {
-            Ok((mut ws, _)) => {
-                if let Some(id) = &task_id {
-                    let msg = json!({"type": "resume", "taskId": id});
-                    ws.send(Message::Text(msg.to_string())).await.unwrap();
-                } else {
-                    let msg = json!({
-                        "username": "RustClient",
-                        "user_id": "00000000-0000-0000-0000-000000000008",
-                        "title": "Rust Client",
-                        "description": "Test from Rust",
-                        "meta": {"model": "your-model", "provider": "provider", "publish_repositories": "true", "create_pull_requests": "true"},
-                        "tokens": {"provider": "your-api-key"}
-                    });
-                    ws.send(Message::Text(msg.to_string())).await.unwrap();
-                }
+#[derive(Deserialize)]
+pub struct Account {
+    pub user_id: String,
+    pub api_key: String,
+}
 
-                while let Some(Ok(msg)) = ws.next().await {
-                    println!("Update: {}", msg);
-                }
-            }
-            Err(_) => {
-                sleep(Duration::from_secs(backoff)).await;
-                backoff = std::cmp::min(backoff * 2, 30);
-            }
+pub struct OctraClient {
+    base_url: String,
+    api_key: Option<String>,
+    http: reqwest::Client,
+}
+
+impl OctraClient {
+    pub fn new(base_url: &str) -> Self {
+        Self {
+            base_url: base_url.trim_end_matches('/').to_string(),
+            api_key: None,
+            http: reqwest::Client::new(),
         }
     }
+
+    async fn post(&self, path: &str, body: serde_json::Value) -> reqwest::Result<reqwest::Response> {
+        let mut req = self
+            .http
+            .post(format!("{}{}", self.base_url, path))
+            .json(&body);
+        if let Some(key) = &self.api_key {
+            req = req.header("octra-api-token", key);
+        }
+        req.send().await?.error_for_status()
+    }
+
+    pub async fn register(&mut self, email: &str, password: &str) -> reqwest::Result<Account> {
+        let account: Account = self
+            .post("/register", json!({ "email": email, "password": password }))
+            .await?
+            .json()
+            .await?;
+        self.api_key = Some(account.api_key.clone()); // remember it for later calls
+        Ok(account)
+    }
+
+    pub async fn create_environment(
+        &self,
+        llm: LlmConfig,
+        cli: &str,
+        skills: &[&str],
+    ) -> reqwest::Result<()> {
+        self.post(
+            "/environment",
+            json!({ "llm": llm, "agent": { "cli": cli }, "skills": skills }),
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn chat(&self, prompt: &str, skills: &[&str]) -> reqwest::Result<String> {
+        #[derive(Deserialize)]
+        struct ChatResponse {
+            response: String,
+        }
+        let body: ChatResponse = self
+            .post("/api/chat", json!({ "prompt": prompt, "skills": skills }))
+            .await?
+            .json()
+            .await?;
+        Ok(body.response)
+    }
+}
+```
+
+---
+
+## 2. Full Flow Example
+
+```rust
+#[tokio::main]
+async fn main() -> reqwest::Result<()> {
+    let mut client = OctraClient::new("http://localhost:8080");
+
+    // 1. Register and capture the API key.
+    let account = client.register("me@example.com", "secret").await?;
+    println!("user_id: {}", account.user_id);
+
+    // 2. Create an environment: an AI CLI plus some skills.
+    client
+        .create_environment(
+            LlmConfig {
+                api_key: "sk-...".into(),
+                base_url: "https://api.anthropic.com".into(),
+                model: "claude-sonnet-4-6".into(),
+            },
+            "claude-code",
+            &["filesystem", "github", "brave-search"],
+        )
+        .await?;
+
+    // 3. Send a prompt.
+    let answer = client.chat("write a csv parser", &["filesystem"]).await?;
+    println!("{}", answer);
+
+    Ok(())
 }
 ```
