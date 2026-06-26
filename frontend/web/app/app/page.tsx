@@ -76,7 +76,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="workspace-frame" aria-label="Octra backend workflow terminal">
+      <section className={`workspace-frame${panelOpen ? '' : ' panel-collapsed'}`} aria-label="Octra backend workflow terminal">
         <aside className="workspace-tools" aria-label="Workspace tools">
           {toolItems.map((item) => {
             const Icon = item.icon;

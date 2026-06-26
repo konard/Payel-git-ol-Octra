@@ -1502,6 +1502,10 @@ button {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.workspace-frame.panel-collapsed {
+  grid-template-columns: 54px minmax(0, 1fr) 0 54px;
+}
+
 .workspace-tools,
 .home-rail {
   display: grid;
