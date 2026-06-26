@@ -4,8 +4,7 @@ import {
   Code2,
   Cpu,
   Database,
-  GitBranch,
-  Globe,
+  Layers,
   LockKeyhole,
   PanelRight,
   ShieldCheck,
@@ -87,13 +86,12 @@ export default function LandingPage() {
         <div className="hero-copy">
           <p className="eyebrow">MCP aggregator monolith</p>
           <h1>
-            CLI environments
+            Deploy your agent
             <br />
-            on demand
+            on a VPS. Without a VPS!
           </h1>
           <p className="hero-lede">
-            Octra provisions isolated Nix profiles, keeps CLI processes warm,
-            and routes prompts through a single API endpoint — all backed by Redis state.
+            Deploy your agents on Octra for 24/7 access and earn money from it.
           </p>
           <div className="hero-actions">
             <a className="primary-button" href="/auth">
@@ -108,101 +106,28 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="terminal-preview">
-          <div className="terminal-topline">
-            <div className="breadcrumb">
-              <span>environments</span>
-              <span>/</span>
-              <span>usr_742</span>
-              <span>/</span>
-              <span>cli</span>
-            </div>
-            <label className="search-field">
-              <Globe size={16} />
-              <input placeholder="Search environments, skills, endpoints..." readOnly />
-            </label>
-            <div className="small-command">
-              <GitBranch size={14} />
-              <span>stable</span>
-            </div>
+        <div className="deployment-map">
+          <div className="deployment-node root-node">
+            <Layers size={17} />
+            API Gateway
+            <span>124k reqs</span>
           </div>
-
-          <div className="terminal-grid">
-            <div className="metric-strip">
-              <div className="metric-card">
-                <span>Active environments</span>
-                <strong>18</strong>
-                <div className="spark-bars rise-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
-              <div className="metric-card">
-                <span>Chat requests</span>
-                <strong>124k</strong>
-                <div className="spark-bars rise-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
-              <div className="metric-card">
-                <span>CLI processes</span>
-                <strong>7</strong>
-                <div className="spark-bars notice-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
+          <div className="deployment-branches" aria-hidden="true" />
+          <div className="deployment-leaves">
+            <div className="deployment-node healthy">
+              <Bot size={17} />
+              GPT-4o
+              <span>68% traffic</span>
             </div>
-
-            <div className="traffic-panel">
-              <div className="panel-heading">
-                <span>Request flow</span>
-                <span className="ghost-command">live</span>
-              </div>
-              <div className="flow-map">
-                <div className="flow-node gateway">POST /api/chat</div>
-                <div className="flow-node">Middleware → token check</div>
-                <div className="flow-split">
-                  <div className="model-node neutral">
-                    <span>environment</span>
-                    Nix profile
-                  </div>
-                  <div className="model-node ok">
-                    <span>CLI</span>
-                    claude code
-                  </div>
-                  <div className="model-node caution">
-                    <span>Redis</span>
-                    cli_state
-                  </div>
-                </div>
-              </div>
+            <div className="deployment-node healthy">
+              <Sparkles size={17} />
+              Claude 3.5
+              <span>22% traffic</span>
             </div>
-
-            <div className="architecture-panel">
-              <div className="panel-heading">
-                <span>Architecture</span>
-              </div>
-              <div className="architecture-list">
-                <div className="rule-row">
-                  <Globe size={16} />
-                  <span>Runtime</span>
-                  <strong>Node.js + Next.js</strong>
-                </div>
-                <div className="rule-row">
-                  <Database size={16} />
-                  <span>Cache</span>
-                  <strong>Redis</strong>
-                </div>
-                <div className="rule-row">
-                  <Code2 size={16} />
-                  <span>Provisioning</span>
-                  <strong>Nix</strong>
-                </div>
-                <div className="rule-row">
-                  <LockKeyhole size={16} />
-                  <span>Auth</span>
-                  <strong>JWT + OAuth</strong>
-                </div>
-              </div>
+            <div className="deployment-node warning">
+              <Zap size={17} />
+              Gemini Flash
+              <span>10% traffic</span>
             </div>
           </div>
         </div>
