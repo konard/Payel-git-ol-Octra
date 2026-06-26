@@ -113,7 +113,7 @@ export default function DashboardPage() {
                 Edit
               </button>
             </div>
-            <section className="node-canvas dashboard-canvas" id="node-canvas">
+            <section className="dashboard-canvas" id="node-canvas">
               <WorkflowCanvas />
             </section>
           </article>

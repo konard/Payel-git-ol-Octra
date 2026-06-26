@@ -1652,23 +1652,15 @@ button {
 }
 
 .dashboard-canvas {
-  width: 100%;
-  height: auto;
-  flex: 1;
-  min-height: 0;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
+  height: 560px;
   position: relative;
-  z-index: 3;
   overflow: hidden;
+  border: 0;
 }
 
-.dashboard-grid .traffic-panel.large-panel {
-  display: flex;
-  flex-direction: column;
+.dashboard-canvas .react-flow {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .octra-flow {
