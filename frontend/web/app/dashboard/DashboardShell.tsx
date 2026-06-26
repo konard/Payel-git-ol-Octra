@@ -9,9 +9,10 @@ type DashboardShellProps = {
   hideSidebarItems?: string[];
   showNotifications?: boolean;
   hideNewFlow?: boolean;
+  hideTabs?: boolean;
 };
 
-export function DashboardShell({ activeSection, children, hideSidebarItems, showNotifications = true, hideNewFlow = false }: DashboardShellProps) {
+export function DashboardShell({ activeSection, children, hideSidebarItems, showNotifications = true, hideNewFlow = false, hideTabs = false }: DashboardShellProps) {
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
@@ -67,13 +68,15 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
           </div>
         </header>
 
-        <div className="dashboard-tabs" aria-label="Dashboard views">
-          {dashboardTabs.map((tab) => (
-            <a className={tab.slug === activeSection ? 'active' : ''} href={tab.href} key={tab.slug}>
-              {tab.label}
+        {!hideTabs && (
+          <div className="dashboard-tabs" aria-label="Dashboard views">
+            {dashboardTabs.map((tab) => (
+              <a className={tab.slug === activeSection ? 'active' : ''} href={tab.href} key={tab.slug}>
+                {tab.label}
             </a>
           ))}
         </div>
+        )}
 
         {children}
       </section>
