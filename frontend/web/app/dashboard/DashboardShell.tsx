@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Bell, Plus, Search } from 'lucide-react';
+import { Bell, Plus } from 'lucide-react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
 
@@ -43,11 +43,6 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
           <div className="crumbs">
             <span id="dashboard-title">Pipeline Command</span>
           </div>
-          <label className="search-field dashboard-search">
-            <Search size={15} />
-            <span className="sr-only">Search dashboard</span>
-            <input placeholder="Search..." />
-          </label>
           <div className="topbar-actions">
             <UserBalance />
             {showNotifications && (
