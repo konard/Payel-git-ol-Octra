@@ -1557,6 +1557,12 @@ button {
   color: var(--text);
 }
 
+.home-rail button.active {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
 .home-rail {
   border-right: 0;
   border-left: 1px solid var(--line);

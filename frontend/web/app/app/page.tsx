@@ -113,16 +113,16 @@ export default function HomePage() {
       </section>
 
       <aside className="home-rail" aria-label="Secondary tools">
-        <button type="button" aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
+        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
           <LineChart size={20} />
         </button>
-        <button type="button" aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
+        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
           <Activity size={20} />
         </button>
-        <button type="button" aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
+        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
           <Layers3 size={20} />
         </button>
-        <button type="button" aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
+        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
           <Zap size={20} />
         </button>
       </aside>
