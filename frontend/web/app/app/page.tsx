@@ -82,7 +82,7 @@ export default function HomePage() {
             const Icon = item.icon;
             return (
               <a className="tool-button" href={item.href} aria-label={item.label} key={item.label}>
-                <Icon size={19} />
+                <Icon size={20} />
               </a>
             );
           })}
