@@ -4,7 +4,7 @@ import { DashboardShell } from '../dashboard/DashboardShell';
 
 export default function SettingsPage() {
   return (
-    <DashboardShell activeSection="settings" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows']}>
+    <DashboardShell activeSection="settings" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows']} showNotifications={false}>
       <section className="dashboard-grid dashboard-grid-single">
         <article className="large-panel" aria-label="Settings">
           <EmptyDataPanel
