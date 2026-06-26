@@ -17,8 +17,8 @@ import (
 
 func testCfg() config.Config {
 	return config.Config{
-		JWTSecret:              "test-jwt-secret",
-		JWTRefreshSecret:       "test-jwt-refresh-secret",
+		JWTSecret:               "test-jwt-secret",
+		JWTRefreshSecret:        "test-jwt-refresh-secret",
 		LeFineIntegrationSecret: "test-lefine-secret",
 	}
 }
@@ -70,6 +70,28 @@ func TestRegisterAndAuthenticate(t *testing.T) {
 	}
 	if got.ID != user.ID {
 		t.Fatal("authenticated wrong user")
+	}
+
+	login, err := svc.LoginUser(ctx, "test@example.com", "secret")
+	if err != nil {
+		t.Fatalf("LoginUser: %v", err)
+	}
+	if login.User.Balance != model.DefaultRegistrationCredits {
+		t.Fatalf("login balance = %d", login.User.Balance)
+	}
+	if login.User.CreatedAt.IsZero() {
+		t.Fatal("expected login user created_at")
+	}
+
+	info, err := svc.GetMe(ctx, login.AccessToken)
+	if err != nil {
+		t.Fatalf("GetMe: %v", err)
+	}
+	if info.Balance != model.DefaultRegistrationCredits {
+		t.Fatalf("/me balance = %d", info.Balance)
+	}
+	if info.CreatedAt.IsZero() {
+		t.Fatal("expected /me created_at")
 	}
 
 	list, err := transactions.ListByUserID(ctx, user.ID, 10, 0)

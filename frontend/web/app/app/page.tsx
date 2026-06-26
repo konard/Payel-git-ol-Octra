@@ -1,6 +1,5 @@
 import {
   Activity,
-  ArrowRight,
   Bot,
   ChevronDown,
   CircleDollarSign,
@@ -10,7 +9,6 @@ import {
   Layers3,
   LineChart,
   LockKeyhole,
-  PanelRight,
   Plus,
   Search,
   Settings,
@@ -19,30 +17,23 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
+import { EmptyDataPanel } from '../components/EmptyDataPanel';
+import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 
 const backendEndpoints = [
-  { label: 'Environment', value: 'POST /environment', detail: 'Nix profile + skills' },
+  { label: 'Environment', value: 'POST /environment', detail: 'environment_id' },
   { label: 'Chat API', value: 'POST /api/chat', detail: 'octra-api-token prompt' },
   { label: 'CLI state', value: 'Redis cli_state', detail: 'PID, port, TTL' },
 ];
 
-const backendMetrics = [
-  { label: 'ACTIVE ENVS', value: '18', detail: 'Nix profiles', tone: 'success' },
-  { label: 'CHAT REQS', value: '124k', detail: '/api/chat', tone: 'success' },
-  { label: 'CLI PROCS', value: '7', detail: 'stdin/stdout live', tone: 'warning' },
-  { label: 'SKILLS', value: '42', detail: 'installed packages', tone: 'success' },
-  { label: 'REDIS TTL', value: '38m', detail: 'cli_state cache', tone: 'warning' },
-  { label: 'PROXY MODE', value: '3', detail: 'LLM fallback', tone: 'danger' },
-];
-
 const toolItems = [
-  { label: 'Workflows', icon: Workflow },
-  { label: 'Streams', icon: Activity },
-  { label: 'Environments', icon: Bot },
-  { label: 'Security', icon: ShieldCheck },
-  { label: 'Code', icon: Code2 },
-  { label: 'Settings', icon: Settings },
+  { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
+  { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
+  { label: 'Environments', icon: Bot, href: '/dashboard' },
+  { label: 'Security', icon: ShieldCheck, href: '/dashboard/security' },
+  { label: 'Code', icon: Code2, href: '/dashboard/files' },
+  { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];
 
 export default function HomePage() {
@@ -69,6 +60,7 @@ export default function HomePage() {
         </nav>
 
         <div className="tv-actions">
+          <UserBalance />
           <a className="upgrade-button" href="/auth">
             <Sparkles size={16} />
             <span>Sign in</span>
@@ -81,28 +73,17 @@ export default function HomePage() {
 
       <section className="workspace-frame" aria-label="Octra backend workflow terminal">
         <aside className="workspace-tools" aria-label="Workspace tools">
-          {toolItems.map((item) => (
-            <a className="tool-button" href="/dashboard" aria-label={item.label} key={item.label}>
-              <item.icon size={19} />
-            </a>
-          ))}
+          {toolItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a className="tool-button" href={item.href} aria-label={item.label} key={item.label}>
+                <Icon size={19} />
+              </a>
+            );
+          })}
         </aside>
 
         <section className="home-canvas" aria-labelledby="workspace-title">
-          {/* If the user asks to restore the breadcrumb or notification bell on /app, uncomment the block below
-          <div className="canvas-header">
-            <div className="canvas-crumbs">
-              <span>Environments</span>
-              <span>MCP endpoint</span>
-              <span>React Flow graph</span>
-            </div>
-            <div className="canvas-actions">
-              <button className="icon-button dark-icon" type="button" aria-label="Notifications">
-                <Bell size={17} />
-              </button>
-            </div>
-          </div>
-          */}
           <h1 id="workspace-title" className="workspace-word">
             Octra
           </h1>
@@ -117,10 +98,10 @@ export default function HomePage() {
                 <Activity size={16} />
                 <span>Active environments</span>
               </div>
-              <button className="terminal-button" type="button">
+              <a className="terminal-button" href="/dashboard/flows">
                 <Plus size={15} />
                 New flow
-              </button>
+              </a>
             </div>
             <p className="empty-flows-message">You don't have any flows yet.</p>
           </section>
@@ -131,40 +112,16 @@ export default function HomePage() {
             <span>Runtime metrics</span>
             <ChevronDown size={16} />
           </div>
-          <div className="market-columns">
-            <span>Signal</span>
-            <span>Value</span>
-            <span>Source</span>
-          </div>
           <div className="quote-stack">
-            {backendMetrics.map((metric) => (
-              <div className={`market-row metric-tone-${metric.tone}`} key={metric.label}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-                <em>{metric.detail}</em>
-              </div>
-            ))}
+            <EmptyDataPanel
+              compact
+              icon={Activity}
+              title="No live metrics yet"
+              detail="Runtime counters will appear here when backend telemetry is available."
+              actionHref="/dashboard/metrics"
+              actionLabel="Open metrics"
+            />
           </div>
-
-          {/* If the user asks to restore the metrics or selected node widget on /app, uncomment the block below
-          <section className="selected-node" aria-label="Selected node details">
-            <div className="selected-topline">
-              <div>
-                <span>Selected node</span>
-                <strong>Claude Code CLI</strong>
-              </div>
-              <PanelRight size={18} />
-            </div>
-            <div className="price-line">
-              <strong>38</strong>
-              <span>minutes TTL in Redis cli_state</span>
-              <em>running</em>
-            </div>
-            <div className="market-bars" aria-hidden="true">
-              <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
-            </div>
-          </section>
-          */}
 
           <section className="guard-stack" aria-label="Backend endpoints">
             {backendEndpoints.map((endpoint) => (
@@ -194,18 +151,18 @@ export default function HomePage() {
         </aside>
 
         <aside className="home-rail" aria-label="Secondary tools">
-          <button type="button" aria-label="Chart">
+          <a href="/dashboard/metrics" aria-label="Chart">
             <LineChart size={20} />
-          </button>
-          <button type="button" aria-label="Activity">
+          </a>
+          <a href="/dashboard/evaluations" aria-label="Activity">
             <Activity size={20} />
-          </button>
-          <button type="button" aria-label="Layers">
+          </a>
+          <a href="/dashboard/deployments" aria-label="Layers">
             <Layers3 size={20} />
-          </button>
-          <button type="button" aria-label="Automation">
+          </a>
+          <a href="/dashboard/flows" aria-label="Automation">
             <Zap size={20} />
-          </button>
+          </a>
         </aside>
       </section>
     </main>

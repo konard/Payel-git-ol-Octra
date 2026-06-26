@@ -1,4 +1,5 @@
 import {
+  Activity,
   ArrowRight,
   Bot,
   Code2,
@@ -13,6 +14,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
+import { EmptyDataPanel } from './components/EmptyDataPanel';
 
 const capabilities = [
   {
@@ -127,28 +129,15 @@ export default function LandingPage() {
           </div>
 
           <div className="terminal-grid">
-            <div className="metric-strip">
-              <div className="metric-card">
-                <span>Active environments</span>
-                <strong>18</strong>
-                <div className="spark-bars rise-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
-              <div className="metric-card">
-                <span>Chat requests</span>
-                <strong>124k</strong>
-                <div className="spark-bars rise-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
-              <div className="metric-card">
-                <span>CLI processes</span>
-                <strong>7</strong>
-                <div className="spark-bars notice-bars" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </div>
-              </div>
+            <div className="metric-strip metric-strip-empty">
+              <EmptyDataPanel
+                compact
+                icon={Activity}
+                title="No live preview metrics yet"
+                detail="Environment and chat counters will appear here when telemetry is connected."
+                actionHref="/dashboard/metrics"
+                actionLabel="Open metrics"
+              />
             </div>
 
             <div className="traffic-panel">
@@ -208,15 +197,18 @@ export default function LandingPage() {
       </section>
 
       <section className="capability-band" id="capabilities">
-        {capabilities.map((item) => (
-          <article className="capability-card" key={item.title}>
-            <item.icon size={22} />
-            <div>
-              <h2>{item.title}</h2>
-              <p>{item.detail}</p>
-            </div>
-          </article>
-        ))}
+        {capabilities.map((item) => {
+          const Icon = item.icon;
+          return (
+            <article className="capability-card" key={item.title}>
+              <Icon size={22} />
+              <div>
+                <h2>{item.title}</h2>
+                <p>{item.detail}</p>
+              </div>
+            </article>
+          );
+        })}
         <a className="capability-link" href="/auth">
           <span>Explore all</span>
           <ArrowRight size={18} />
