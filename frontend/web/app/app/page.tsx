@@ -24,9 +24,9 @@ const toolItems = [
 
 export default function HomePage() {
   const [panelOpen, setPanelOpen] = useState(false);
-  const [metricsOpen, setMetricsOpen] = useState(true);
-  const [endpointsOpen, setEndpointsOpen] = useState(true);
-  const [deploymentsOpen, setDeploymentsOpen] = useState(true);
+  const [metricsOpen, setMetricsOpen] = useState(false);
+  const [endpointsOpen, setEndpointsOpen] = useState(false);
+  const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
