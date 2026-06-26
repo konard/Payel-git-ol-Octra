@@ -1497,13 +1497,14 @@ button {
 
 .workspace-frame {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) 54px;
+  grid-template-columns: 54px minmax(0, 1fr) minmax(330px, 380px) 54px;
   min-height: calc(100svh - 110px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  position: relative;
+  transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .workspace-frame.panel-collapsed {
+  grid-template-columns: 54px minmax(0, 1fr) 0 54px;
 }
 
 .workspace-tools,
@@ -1961,11 +1962,6 @@ button {
 }
 
 .home-market-panel {
-  position: absolute;
-  right: 54px;
-  top: 0;
-  bottom: 0;
-  width: 380px;
   min-width: 0;
   padding: 18px 18px 20px;
   border-left: 1px solid var(--line);
