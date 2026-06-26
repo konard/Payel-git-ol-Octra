@@ -29,12 +29,12 @@ const backendEndpoints = [
 ];
 
 const backendMetrics = [
-  { label: 'ACTIVE TASKS', value: '18', detail: 'redis streams' },
-  { label: 'PROGRESS', value: '72%', detail: 'latest TaskUpdate' },
-  { label: 'MANAGERS', value: '6', detail: 'role + priority' },
-  { label: 'WORKERS', value: '24', detail: 'predefined workers' },
-  { label: 'HISTORY', value: '256', detail: 'stored updates' },
-  { label: 'STOP QUEUE', value: '0', detail: '/task/:taskId/stop' },
+  { label: 'ACTIVE TASKS', value: '18', detail: 'redis streams', tone: 'success' },
+  { label: 'PROGRESS', value: '72%', detail: 'latest TaskUpdate', tone: 'success' },
+  { label: 'MANAGERS', value: '6', detail: 'role + priority', tone: 'warning' },
+  { label: 'WORKERS', value: '24', detail: 'predefined workers', tone: 'success' },
+  { label: 'HISTORY', value: '256', detail: 'stored updates', tone: 'warning' },
+  { label: 'STOP QUEUE', value: '0', detail: '/task/:taskId/stop', tone: 'danger' },
 ];
 
 const activeAgents = [
@@ -209,7 +209,7 @@ export default function HomePage() {
           </div>
           <div className="quote-stack">
             {backendMetrics.map((metric) => (
-              <div className="market-row" key={metric.label}>
+              <div className={`market-row metric-tone-${metric.tone}`} key={metric.label}>
                 <span>{metric.label}</span>
                 <strong>{metric.value}</strong>
                 <em>{metric.detail}</em>

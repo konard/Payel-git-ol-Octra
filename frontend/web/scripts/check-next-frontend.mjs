@@ -61,8 +61,19 @@ if (exists('app/page.tsx')) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
 
+  for (const phrase of ['tone:', 'metric-tone-', 'runtime metrics']) {
+    assert(homepageSource.includes(phrase), `Homepage runtime metrics must expose selective color tone data: missing ${phrase}`);
+  }
+
   for (const rejectedPhrase of ['ai delivery cockpit', 'hero-section', 'capability-band', 'live execution tape']) {
     assert(!homepageSource.includes(rejectedPhrase), `Homepage must not fall back to the rejected landing-page shape: ${rejectedPhrase}`);
+  }
+}
+
+if (exists('app/globals.css')) {
+  const globalStyles = read('app/globals.css').toLowerCase();
+  for (const phrase of ['--metric-success', '--metric-warning', '--metric-danger', '.metric-tone-success', '.metric-tone-warning', '.metric-tone-danger']) {
+    assert(globalStyles.includes(phrase), `Metric styling must include requested color accents: missing ${phrase}`);
   }
 }
 
