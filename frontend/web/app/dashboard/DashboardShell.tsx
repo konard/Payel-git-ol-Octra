@@ -6,9 +6,10 @@ import { dashboardSections, dashboardTabs } from './sections';
 type DashboardShellProps = {
   activeSection: string;
   children: ReactNode;
+  hideSidebarItems?: string[];
 };
 
-export function DashboardShell({ activeSection, children }: DashboardShellProps) {
+export function DashboardShell({ activeSection, children, hideSidebarItems }: DashboardShellProps) {
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
@@ -18,8 +19,8 @@ export function DashboardShell({ activeSection, children }: DashboardShellProps)
         <nav>
           {dashboardSections.map((item) => {
             const Icon = item.icon;
-            // Models, Files, Security buttons are commented out by user request. To restore, remove the line below
-            if (['models', 'files', 'security'].includes(item.slug)) return null;
+            const hidden = hideSidebarItems ?? ['models', 'files', 'security'];
+            if (hidden.includes(item.slug)) return null;
             return (
               <a
                 className={item.slug === activeSection ? 'side-icon active' : 'side-icon'}
