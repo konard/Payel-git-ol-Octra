@@ -1497,13 +1497,13 @@ button {
 
 .workspace-frame {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) minmax(330px, 380px) 54px;
+  grid-template-columns: 54px minmax(0, 1fr) 54px;
   min-height: calc(100svh - 110px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
 }
 
 .workspace-frame.panel-collapsed {
-  grid-template-columns: 54px minmax(0, 1fr) 0 54px;
 }
 
 .workspace-tools,
@@ -1525,6 +1525,7 @@ button {
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
+  transition: color 0.25s, background 0.25s, border-color 0.25s;
 }
 
 .tool-button:hover,
@@ -1960,12 +1961,17 @@ button {
 }
 
 .home-market-panel {
+  position: absolute;
+  right: 54px;
+  top: 0;
+  bottom: 0;
+  width: 380px;
   min-width: 0;
   padding: 18px 18px 20px;
   border-left: 1px solid var(--line);
   background: #090b0c;
   overflow: hidden;
-  transition: width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-market-panel.panel-hidden {
