@@ -21,7 +21,7 @@ export default async function DashboardSectionPage({ params }: { params: Promise
   const Icon = section.icon;
 
   return (
-    <DashboardShell activeSection={section.slug} hideTabs={section.slug === 'flows'}>
+    <DashboardShell activeSection={section.slug} hideTabs={section.slug === 'flows'} showNotifications={section.slug !== 'flows'}>
       <section className="dashboard-grid dashboard-grid-single">
         <article className="large-panel" aria-label={section.title}>
           <EmptyDataPanel
