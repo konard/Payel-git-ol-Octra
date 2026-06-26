@@ -7,14 +7,14 @@ export const dynamicParams = false;
 
 export function generateStaticParams() {
   return routeSections
-    .filter((section) => section.slug !== 'overview')
+    .filter((section) => section.slug !== 'overview' && section.slug !== 'settings')
     .map((section) => ({ section: section.slug }));
 }
 
 export default async function DashboardSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section: slug } = await params;
   const section = findDashboardSection(slug);
-  if (!section || section.slug === 'overview') {
+  if (!section || section.slug === 'overview' || section.slug === 'settings') {
     notFound();
   }
 

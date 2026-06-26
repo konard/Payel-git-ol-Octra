@@ -67,7 +67,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Settings',
     title: 'Settings',
     detail: 'Account, billing, and workspace settings will be managed from this screen.',
-    href: '/dashboard/settings',
+    href: '/settings',
     icon: Settings,
   },
 ];

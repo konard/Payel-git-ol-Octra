@@ -33,7 +33,7 @@ export default function DashboardPage() {
         <article className="architecture-panel large-panel" aria-label="Workspace policy data">
           <div className="panel-heading">
             <span>Workspace policy</span>
-            <a className="ghost-command" href="/dashboard/settings">
+            <a className="ghost-command" href="/settings">
               <Settings size={15} />
               Settings
             </a>
@@ -42,7 +42,7 @@ export default function DashboardPage() {
             icon={Settings}
             title="No policy graph yet"
             detail="Workspace routing and billing policy data will appear here after configuration is saved."
-            actionHref="/dashboard/settings"
+            actionHref="/settings"
             actionLabel="Open settings"
           />
         </article>
