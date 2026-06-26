@@ -56,14 +56,6 @@ export default function HomePage() {
           <input placeholder="Search environments, skills, endpoints..." />
         </label>
 
-        <nav className="tv-nav" aria-label="Primary navigation">
-          <a href="/dashboard">Products</a>
-          <a href="#node-canvas">Environments</a>
-          <a href="#runtime-metrics">Metrics</a>
-          <a href="/auth">Auth</a>
-          <a href="/dashboard">More</a>
-        </nav>
-
         <div className="tv-actions">
           <UserBalance />
           {isAuthed ? (
