@@ -1524,10 +1524,6 @@ button {
   bottom: 0;
   width: 54px;
   z-index: 50;
-  display: grid;
-  align-content: start;
-  justify-items: center;
-  gap: 10px;
   padding: 14px 8px;
   background: #090b0c;
 }
@@ -1535,11 +1531,23 @@ button {
 .workspace-tools {
   left: 0;
   border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.rail-spacer {
+  flex: 1;
 }
 
 .home-rail {
   right: 0;
   border-left: 1px solid var(--line);
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 10px;
 }
 
 .tool-button,

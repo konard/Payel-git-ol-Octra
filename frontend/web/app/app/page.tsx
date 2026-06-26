@@ -20,7 +20,6 @@ import { WorkflowCanvas } from '../components/WorkflowCanvas';
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
-  { label: 'Settings', icon: Settings, href: '/settings' },
 ];
 
 export default function HomePage() {
@@ -71,6 +70,10 @@ export default function HomePage() {
             </a>
           );
         })}
+        <div className="rail-spacer" />
+        <a className="tool-button" href="/settings" aria-label="Settings">
+          <Settings size={20} />
+        </a>
       </aside>
 
       <section className={`workspace-frame${panelOpen ? '' : ' panel-collapsed'}`} aria-label="Octra backend workflow terminal">
