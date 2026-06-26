@@ -1384,8 +1384,8 @@ button {
   grid-template-columns: auto minmax(220px, 360px) minmax(0, 1fr) auto;
   align-items: center;
   gap: 22px;
-  height: 96px;
-  padding: 12px 48px;
+  height: 72px;
+  padding: 0 48px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: #0b0d0f;
 }
@@ -1511,7 +1511,7 @@ button {
 .workspace-tools,
 .home-rail {
   position: fixed;
-  top: 96px;
+  top: 72px;
   bottom: 0;
   width: 54px;
   z-index: 50;
