@@ -1368,7 +1368,9 @@ button {
 }
 
 .workspace-home {
-  min-height: calc(100svh - 38px);
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   background:
     linear-gradient(180deg, rgba(9, 10, 11, 0.98), rgba(4, 6, 8, 0.99)),
     #050609;
@@ -1499,7 +1501,8 @@ button {
 
 .workspace-frame {
   display: flex;
-  min-height: calc(100svh - 110px);
+  flex: 1;
+  min-height: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
