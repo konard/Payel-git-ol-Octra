@@ -1,4 +1,4 @@
-# Octra — the MCP aggregator
+# Octra — the vps aggregator
 
 Octra lets anyone run ready-made AI CLIs (claude-code, opencode, codex, …) with
 configured skills **on our infrastructure** — no VPS, no SSH, no JSON config, no
