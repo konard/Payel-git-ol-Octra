@@ -1496,19 +1496,17 @@ button {
 }
 
 .workspace-frame {
-  display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) minmax(330px, 380px) 54px;
+  display: flex;
   min-height: calc(100svh - 110px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .workspace-frame.panel-collapsed {
-  grid-template-columns: 54px minmax(0, 1fr) 0 54px;
 }
 
 .workspace-tools,
 .home-rail {
+  flex: 0 0 54px;
   display: grid;
   align-content: start;
   justify-items: center;
@@ -1526,7 +1524,7 @@ button {
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  transition: color 0.25s, background 0.25s, border-color 0.25s;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 
 .tool-button:hover,
@@ -1549,7 +1547,10 @@ button {
 
 .home-canvas {
   position: relative;
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 0 24px 20px;
   background:
@@ -1700,19 +1701,14 @@ button {
   border: 0;
   flex: 1;
   min-height: 0;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-canvas > .active-environments {
   width: 100%;
   margin-inline: 0;
   border-radius: 8px;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.home-canvas {
-  display: flex;
-  flex-direction: column;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-canvas {
@@ -1964,16 +1960,19 @@ button {
 }
 
 .home-market-panel {
+  flex: 0 0 380px;
+  width: 380px;
   min-width: 0;
   padding: 18px 18px 20px;
   border-left: 1px solid var(--line);
   background: #090b0c;
   overflow: hidden;
   z-index: 10;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: flex 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-market-panel.panel-hidden {
+  flex: 0 0 0;
   width: 0;
   min-width: 0;
   padding: 18px 0;
