@@ -143,16 +143,6 @@ export default function HomePage() {
             Octra
           </h1>
 
-          <section className="command-bar" aria-label="Create workflow request">
-            <div>
-              <span>Create personal MCP environment</span>
-              <strong>Install CLI skills, keep the process warm, and send prompts through /api/chat</strong>
-            </div>
-            <button type="button" aria-label="Run workflow request">
-              <ArrowRight size={22} />
-            </button>
-          </section>
-
           <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
             <WorkflowCanvas />
           </section>

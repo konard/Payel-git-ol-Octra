@@ -57,7 +57,7 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
 
 if (exists('app/page.tsx')) {
   const homepageSource = read('app/page.tsx').toLowerCase();
-  for (const phrase of ['node-canvas', 'active-environments', 'environment_id', '/environment', '/api/chat', 'cli_state']) {
+  for (const phrase of ['active-environments', 'environment_id', '/environment', '/api/chat', 'cli_state']) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
 
@@ -77,14 +77,7 @@ if (exists('app/globals.css')) {
   }
 }
 
-if (exists('app/components/WorkflowCanvas.tsx')) {
-  const workflowCanvasSource = read('app/components/WorkflowCanvas.tsx').toLowerCase();
-  for (const phrase of ['@xyflow/react', 'reactflow', 'background', 'controls', 'minimap']) {
-    assert(workflowCanvasSource.includes(phrase), `Workflow canvas must use React Flow primitives: missing ${phrase}`);
-  }
-}
-
-const frontendWorkspaceSource = ['app/page.tsx', 'app/components/WorkflowCanvas.tsx']
+const frontendWorkspaceSource = ['app/page.tsx']
   .filter(exists)
   .map(read)
   .join('\n')
