@@ -12,6 +12,7 @@ import {
   Sparkles,
   UserPlus,
 } from 'lucide-react';
+import { login, register } from '../server/auth';
 
 const providers = [
   {
@@ -40,14 +41,7 @@ export default function AuthPage() {
     setLoginError('');
     const form = new FormData(e.currentTarget);
     try {
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.get('email'),
-          password: form.get('password'),
-        }),
-      });
+      const res = await login(form.get('email') as string, form.get('password') as string);
       if (!res.ok) {
         const text = await res.text();
         setLoginError(text || 'Sign in failed');
@@ -64,14 +58,7 @@ export default function AuthPage() {
     setRegisterError('');
     const form = new FormData(e.currentTarget);
     try {
-      const res = await fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: form.get('username'),
-          email: form.get('email'),
-        }),
-      });
+      const res = await register(form.get('username') as string, form.get('email') as string);
       if (!res.ok) {
         const text = await res.text();
         setRegisterError(text || 'Registration failed');

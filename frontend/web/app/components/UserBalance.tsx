@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
 import styles from './UserBalance.module.css';
+import { fetchMe } from '../server/user';
+import type { MeResponse } from '../server/user';
 
 const accessTokenKeys = ['octra_access_token', 'access_token'];
 const refreshTokenKeys = ['octra_refresh_token', 'refresh_token'];
@@ -12,13 +14,6 @@ type BalanceState =
   | { status: 'signed-out' }
   | { status: 'ready'; balance: number }
   | { status: 'error' };
-
-type MeResponse = {
-  data?: {
-    balance?: number;
-    balance_credits?: number;
-  };
-};
 
 function readStoredToken(): string | null {
   for (const key of accessTokenKeys) {
@@ -69,11 +64,7 @@ export function UserBalance() {
     }
 
     let cancelled = false;
-    fetch('/me', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetchMe(token)
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(`balance request failed with ${response.status}`);
