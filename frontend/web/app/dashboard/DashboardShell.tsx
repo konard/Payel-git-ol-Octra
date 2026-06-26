@@ -8,9 +8,10 @@ type DashboardShellProps = {
   children: ReactNode;
   hideSidebarItems?: string[];
   showNotifications?: boolean;
+  hideNewFlow?: boolean;
 };
 
-export function DashboardShell({ activeSection, children, hideSidebarItems, showNotifications = true }: DashboardShellProps) {
+export function DashboardShell({ activeSection, children, hideSidebarItems, showNotifications = true, hideNewFlow = false }: DashboardShellProps) {
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
@@ -57,10 +58,12 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
                 <Bell size={18} />
               </a>
             )}
-            <a className="small-command accent-command" href="/dashboard/flows">
-              <Plus size={15} />
-              New flow
-            </a>
+            {!hideNewFlow && (
+              <a className="small-command accent-command" href="/dashboard/flows">
+                <Plus size={15} />
+                New flow
+              </a>
+            )}
           </div>
         </header>
 
