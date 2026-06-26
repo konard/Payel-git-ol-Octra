@@ -1,5 +1,3 @@
-// Command server is the entrypoint for the Octra monolith: a single backend
-// that aggregates AI CLIs and exposes a personal MCP endpoint per user.
 package main
 
 import (
@@ -37,28 +35,25 @@ func main() {
 	}
 	defer rdb.Close()
 
-	// Repositories.
 	users := repository.NewUserRepository(db)
 	agents := repository.NewAgentRepository(db)
 	skills := repository.NewSkillRepository(db)
 	userSkills := repository.NewUserSkillRepository(db)
+	transactions := repository.NewTransactionRepository(db)
+	usageMetrics := repository.NewUsageMetricsRepository(db)
 
-	// Infrastructure.
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
 	defer cliMgr.Shutdown()
 	llmClient := llm.New(nil)
 
-	// Services.
-	authSvc := service.NewAuthService(users, cfg)
-	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr)
+	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
+	authSvc := service.NewAuthService(users, cfg, transactions)
+	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
-
-	// OAuth.
 	oauthH := oauth.New(authSvc, cfg)
 
-	// HTTP.
-	handler := api.New(authSvc, envSvc, chatSvc, oauthH).Router().Handler
+	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH).Router().Handler
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

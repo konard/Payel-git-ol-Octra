@@ -1,5 +1,3 @@
-// Package service holds the business logic of the monolith: account
-// registration, environment provisioning and request routing.
 package service
 
 import (
@@ -34,20 +32,20 @@ var (
 	ErrUserNotFound   = errors.New("user not found")
 )
 
-// AuthService handles registration, JWT, API-token authentication and OAuth.
 type AuthService struct {
-	users repository.UserRepository
-	cfg   config.Config
+	users        repository.UserRepository
+	transactions repository.TransactionRepository
+	cfg          config.Config
 }
 
-// NewAuthService builds an AuthService.
-func NewAuthService(users repository.UserRepository, cfg config.Config) *AuthService {
-	return &AuthService{users: users, cfg: cfg}
+func NewAuthService(users repository.UserRepository, cfg config.Config, transactions ...repository.TransactionRepository) *AuthService {
+	var txs repository.TransactionRepository
+	if len(transactions) > 0 {
+		txs = transactions[0]
+	}
+	return &AuthService{users: users, transactions: txs, cfg: cfg}
 }
 
-// --- API key auth (for MCP clients) -----------------------------------------
-
-// Authenticate resolves an API token to its owning user.
 func (s *AuthService) Authenticate(ctx context.Context, apiKey string) (*model.User, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {
@@ -63,9 +61,6 @@ func (s *AuthService) Authenticate(ctx context.Context, apiKey string) (*model.U
 	return user, nil
 }
 
-// --- Registration & password login ------------------------------------------
-
-// Register creates a new account and returns it with a freshly minted API key.
 func (s *AuthService) Register(ctx context.Context, username, email, password string) (*model.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
@@ -96,19 +91,34 @@ func (s *AuthService) Register(ctx context.Context, username, email, password st
 	}
 
 	user := &model.User{
-		Username:     username,
-		Email:        email,
-		PasswordHash: string(hash),
-		APIKey:       apiKey,
-		Subscription: "free",
+		Username:        username,
+		Email:           email,
+		PasswordHash:    string(hash),
+		APIKey:          apiKey,
+		Subscription:    "free",
+		Balance:         model.DefaultRegistrationCredits,
+		MarginMode:      model.MarginUnlimited,
+		AutoPayInterval: model.AutoPayMonthly,
+		AutoPayDay:      1,
 	}
+	user.ApplyBillingDefaults()
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
+	}
+	if s.transactions != nil {
+		if err := s.transactions.Create(ctx, &model.Transaction{
+			UserID:       user.ID,
+			Type:         model.TransactionCredit,
+			Amount:       user.Balance,
+			Reason:       model.TransactionReasonRegistration,
+			BalanceAfter: user.Balance,
+		}); err != nil {
+			return nil, err
+		}
 	}
 	return user, nil
 }
 
-// LoginUser authenticates by email+password and returns JWT tokens.
 func (s *AuthService) LoginUser(ctx context.Context, email, password string) (*LoginResult, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
@@ -127,12 +137,10 @@ func (s *AuthService) LoginUser(ctx context.Context, email, password string) (*L
 	return s.generateTokens(user)
 }
 
-// --- JWT helpers ------------------------------------------------------------
-
 type LoginResult struct {
-	AccessToken  string              `json:"access_token"`
-	RefreshToken string              `json:"refresh_token"`
-	User         *LoginUserInfo      `json:"user"`
+	AccessToken  string         `json:"access_token"`
+	RefreshToken string         `json:"refresh_token"`
+	User         *LoginUserInfo `json:"user"`
 }
 
 type LoginUserInfo struct {
@@ -183,7 +191,6 @@ func (s *AuthService) generateTokens(user *model.User) (*LoginResult, error) {
 	}, nil
 }
 
-// ValidateAccessToken parses and validates an access JWT.
 func (s *AuthService) ValidateAccessToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -201,7 +208,6 @@ func (s *AuthService) ValidateAccessToken(tokenString string) (jwt.MapClaims, er
 	return claims, nil
 }
 
-// ValidateRefreshToken parses and validates a refresh JWT.
 func (s *AuthService) ValidateRefreshToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -219,7 +225,6 @@ func (s *AuthService) ValidateRefreshToken(tokenString string) (jwt.MapClaims, e
 	return claims, nil
 }
 
-// GetMe returns current user info from an access token.
 func (s *AuthService) GetMe(ctx context.Context, tokenString string) (*UserInfo, error) {
 	claims, err := s.ValidateAccessToken(tokenString)
 	if err != nil {
@@ -243,7 +248,6 @@ func (s *AuthService) GetMe(ctx context.Context, tokenString string) (*UserInfo,
 	return userToInfo(user), nil
 }
 
-// RefreshTokens generates new token pair from a valid refresh token.
 func (s *AuthService) RefreshTokens(ctx context.Context, refreshTokenString string) (*LoginResult, error) {
 	claims, err := s.ValidateRefreshToken(refreshTokenString)
 	if err != nil {
@@ -267,7 +271,6 @@ func (s *AuthService) RefreshTokens(ctx context.Context, refreshTokenString stri
 	return s.generateTokens(user)
 }
 
-// UserInfo is the public profile returned by /me.
 type UserInfo struct {
 	UserID          string  `json:"user_id"`
 	Username        string  `json:"username"`
@@ -287,8 +290,6 @@ func userToInfo(user *model.User) *UserInfo {
 		SubscriptionEnd: user.SubscriptionEnd,
 	}
 }
-
-// --- OAuth user creation ----------------------------------------------------
 
 func (s *AuthService) GetOrCreateUserFromGoogle(ctx context.Context, email, name string) (*model.User, error) {
 	return s.getOrCreateUser(ctx, email, name)
@@ -328,11 +329,14 @@ func (s *AuthService) getOrCreateUser(ctx context.Context, email, name string) (
 	}
 
 	user = &model.User{
-		Username:     username,
-		Email:        email,
-		PasswordHash: "",
-		APIKey:       apiKey,
-		Subscription: "free",
+		Username:        username,
+		Email:           email,
+		PasswordHash:    "",
+		APIKey:          apiKey,
+		Balance:         model.DefaultRegistrationCredits,
+		MarginMode:      model.MarginUnlimited,
+		AutoPayInterval: model.AutoPayMonthly,
+		AutoPayDay:      1,
 	}
 
 	if err := s.users.Create(ctx, user); err != nil {
@@ -345,16 +349,12 @@ func (s *AuthService) getOrCreateUser(ctx context.Context, email, name string) (
 			return nil, errors.New("failed to create account")
 		}
 	}
-
 	return user, nil
 }
 
-// LoginResultFromUser builds a LoginResult without needing a password check.
 func (s *AuthService) LoginResultFromUser(ctx context.Context, user *model.User) (*LoginResult, error) {
 	return s.generateTokens(user)
 }
-
-// --- Helpers ----------------------------------------------------------------
 
 func GenerateAPIKey() (string, error) {
 	b := make([]byte, 24)
