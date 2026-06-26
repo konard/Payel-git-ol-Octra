@@ -26,6 +26,8 @@ const toolItems = [
 export default function HomePage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [metricsOpen, setMetricsOpen] = useState(true);
+  const [endpointsOpen, setEndpointsOpen] = useState(true);
+  const [deploymentsOpen, setDeploymentsOpen] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
@@ -113,13 +115,39 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="market-heading" role="button" tabIndex={0}>
+          <div className="market-heading" role="button" tabIndex={0} onClick={() => setEndpointsOpen((v) => !v)} onKeyDown={(e) => e.key === 'Enter' && setEndpointsOpen((v) => !v)}>
             <span>Endpoints</span>
+            <ChevronDown size={16} className={`chevron${endpointsOpen ? '' : ' collapsed'}`} />
           </div>
+          {endpointsOpen && (
+            <div className="quote-stack">
+              <EmptyDataPanel
+                compact
+                icon={Activity}
+                title="No endpoints configured"
+                detail="Configured API endpoints will appear here."
+                actionHref="/dashboard/flows"
+                actionLabel="Configure"
+              />
+            </div>
+          )}
 
-          <div className="market-heading" role="button" tabIndex={0}>
+          <div className="market-heading" role="button" tabIndex={0} onClick={() => setDeploymentsOpen((v) => !v)} onKeyDown={(e) => e.key === 'Enter' && setDeploymentsOpen((v) => !v)}>
             <span>Deployments</span>
+            <ChevronDown size={16} className={`chevron${deploymentsOpen ? '' : ' collapsed'}`} />
           </div>
+          {deploymentsOpen && (
+            <div className="quote-stack">
+              <EmptyDataPanel
+                compact
+                icon={Activity}
+                title="No active deployments"
+                detail="Environment deployments will appear here."
+                actionHref="/dashboard"
+                actionLabel="View"
+              />
+            </div>
+          )}
         </aside>
       </section>
 
