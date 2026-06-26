@@ -36,7 +36,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="site-shell workspace-home">
+    <main className={`site-shell workspace-home${panelOpen ? '' : ' panel-closed'}`}>
       <header className="tv-header">
         <a className="tv-brand" href="/" aria-label="Octra home">
           <img src="/assets/octra-node-logo.svg" alt="" />

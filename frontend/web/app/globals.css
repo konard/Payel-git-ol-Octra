@@ -1377,9 +1377,15 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
+  max-height: 100svh;
+  overflow-y: auto;
   background:
     linear-gradient(180deg, rgba(9, 10, 11, 0.98), rgba(4, 6, 8, 0.99)),
     #050609;
+}
+
+.workspace-home.panel-closed {
+  overflow: hidden;
 }
 
 .tv-header {
