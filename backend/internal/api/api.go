@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"backend/internal/model"
+	"backend/internal/oauth"
 	"backend/internal/service"
 
 	"github.com/fasthttp/router"
@@ -16,26 +18,45 @@ import (
 // authHeader is the header carrying the per-user API token.
 const authHeader = "octra-api-token"
 
+const authHeaderBearer = "Authorization"
+
 // ctxUserKey is the fasthttp UserValue key for the authenticated user.
 const ctxUserKey = "octra_user"
 
 // API bundles the services exposed over HTTP.
 type API struct {
-	auth *service.AuthService
-	env  *service.EnvironmentService
-	chat *service.ChatService
+	auth   *service.AuthService
+	env    *service.EnvironmentService
+	chat   *service.ChatService
+	oauthH *oauth.Handler
 }
 
 // New builds an API.
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService) *API {
-	return &API{auth: auth, env: env, chat: chat}
+func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, oauthH *oauth.Handler) *API {
+	return &API{auth: auth, env: env, chat: chat, oauthH: oauthH}
 }
 
 // Router wires routes to handlers.
 func (a *API) Router() *router.Router {
 	r := router.New()
 	r.GET("/health", a.handleHealth)
+
+	// Auth
 	r.POST("/register", a.handleRegister)
+	r.POST("/login", a.handleLogin)
+	r.POST("/logout", a.handleLogout)
+	r.GET("/me", a.handleMe)
+	r.POST("/refresh", a.handleRefresh)
+
+	// OAuth
+	r.GET("/auth/google", a.oauthH.HandleGoogleLogin)
+	r.GET("/auth/google/callback", a.oauthH.HandleGoogleCallback)
+	r.GET("/auth/github", a.oauthH.HandleGitHubLogin)
+	r.GET("/auth/github/callback", a.oauthH.HandleGitHubCallback)
+	r.GET("/auth/lefine", a.oauthH.HandleLeFineLogin)
+	r.GET("/auth/lefine/callback", a.oauthH.HandleLeFineCallback)
+
+	// API key auth (MCP clients)
 	r.POST("/environment", a.withAuth(a.handleEnvironment))
 	r.POST("/api/chat", a.withAuth(a.handleChat))
 	return r
@@ -63,13 +84,28 @@ func userFrom(ctx *fasthttp.RequestCtx) *model.User {
 	return u
 }
 
+// extractBearerToken extracts a JWT from the Authorization header.
+func extractBearerToken(ctx *fasthttp.RequestCtx) string {
+	token := string(ctx.Request.Header.Peek(authHeaderBearer))
+	if token == "" {
+		return ""
+	}
+	if len(token) > 7 && strings.ToUpper(token[:7]) == "BEARER " {
+		return token[7:]
+	}
+	return token
+}
+
 // --- handlers ---------------------------------------------------------------
 
 func (a *API) handleHealth(ctx *fasthttp.RequestCtx) {
 	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "ok"})
 }
 
+// --- Register ---------------------------------------------------------------
+
 type registerRequest struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -86,8 +122,8 @@ func (a *API) handleRegister(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	user, err := a.auth.Register(ctx, req.Email, req.Password)
-	if errors.Is(err, service.ErrEmailTaken) {
+	user, err := a.auth.Register(ctx, req.Username, req.Email, req.Password)
+	if errors.Is(err, service.ErrEmailTaken) || errors.Is(err, service.ErrUsernameTaken) {
 		writeError(ctx, fasthttp.StatusConflict, err.Error())
 		return
 	}
@@ -101,6 +137,89 @@ func (a *API) handleRegister(ctx *fasthttp.RequestCtx) {
 		APIKey: user.APIKey,
 	})
 }
+
+// --- Login ------------------------------------------------------------------
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (a *API) handleLogin(ctx *fasthttp.RequestCtx) {
+	var req loginRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	result, err := a.auth.LoginUser(ctx, req.Email, req.Password)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid email or password")
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, map[string]interface{}{
+		"status": "ok",
+		"data":   result,
+	})
+}
+
+// --- Logout -----------------------------------------------------------------
+
+func (a *API) handleLogout(ctx *fasthttp.RequestCtx) {
+	writeJSON(ctx, fasthttp.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"message": "logged out successfully",
+	})
+}
+
+// --- Me ---------------------------------------------------------------------
+
+func (a *API) handleMe(ctx *fasthttp.RequestCtx) {
+	token := extractBearerToken(ctx)
+	if token == "" {
+		writeError(ctx, fasthttp.StatusUnauthorized, "authorization token is required")
+		return
+	}
+
+	user, err := a.auth.GetMe(ctx, token)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid or expired token")
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, map[string]interface{}{
+		"status": "ok",
+		"data":   user,
+	})
+}
+
+// --- Refresh Tokens ---------------------------------------------------------
+
+type refreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (a *API) handleRefresh(ctx *fasthttp.RequestCtx) {
+	var req refreshRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	result, err := a.auth.RefreshTokens(ctx, req.RefreshToken)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid refresh token")
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, map[string]interface{}{
+		"status": "ok",
+		"data":   result,
+	})
+}
+
+// --- Environment (unchanged) ------------------------------------------------
 
 type environmentRequest struct {
 	LLM struct {
@@ -146,6 +265,8 @@ func (a *API) handleEnvironment(ctx *fasthttp.RequestCtx) {
 		APIKey:  user.APIKey,
 	})
 }
+
+// --- Chat (unchanged) -------------------------------------------------------
 
 type chatRequest struct {
 	Prompt string   `json:"prompt"`

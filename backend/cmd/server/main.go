@@ -14,6 +14,7 @@ import (
 	"backend/internal/config"
 	"backend/internal/llm"
 	"backend/internal/nix"
+	"backend/internal/oauth"
 	"backend/internal/repository"
 	"backend/internal/service"
 	"backend/internal/storage"
@@ -49,12 +50,15 @@ func main() {
 	llmClient := llm.New(nil)
 
 	// Services.
-	authSvc := service.NewAuthService(users)
+	authSvc := service.NewAuthService(users, cfg)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr)
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
 
+	// OAuth.
+	oauthH := oauth.New(authSvc, cfg)
+
 	// HTTP.
-	handler := api.New(authSvc, envSvc, chatSvc).Router().Handler
+	handler := api.New(authSvc, envSvc, chatSvc, oauthH).Router().Handler
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

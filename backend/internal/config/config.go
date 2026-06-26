@@ -27,6 +27,27 @@ type Config struct {
 	// CLITTL is how long a started CLI subprocess is kept alive before it is
 	// considered stale and force-killed on the next request.
 	CLITTL time.Duration
+
+	// JWT secrets for access and refresh tokens.
+	JWTSecret        string
+	JWTRefreshSecret string
+
+	// FrontendURL is used by OAuth callbacks to redirect the browser.
+	FrontendURL string
+
+	// OAuth client credentials.
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
+
+	GitHubClientID     string
+	GitHubClientSecret string
+	GitHubRedirectURL  string
+
+	// LeFine integration.
+	LeFineBaseURL          string
+	LeFineRedirectURL      string
+	LeFineIntegrationSecret string
 }
 
 // Load reads configuration from the environment, applying sensible defaults so
@@ -38,6 +59,19 @@ func Load() Config {
 		RedisURL:        getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		EnvironmentsDir: getEnv("ENVIRONMENTS_DIR", "/var/lib/octra/environments"),
 		CLITTL:          getEnvDuration("CLI_TTL", 30*time.Minute),
+
+		JWTSecret:              getEnv("JWT_SECRET", "dev-jwt-secret-change-in-production"),
+		JWTRefreshSecret:       getEnv("JWT_REFRESH_SECRET", "dev-jwt-refresh-secret-change-in-production"),
+		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:5173"),
+		GoogleClientID:         getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
+		GoogleClientSecret:     getEnv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+		GoogleRedirectURL:      getEnv("GOOGLE_REDIRECT_URL", ""),
+		GitHubClientID:         getEnv("GITHUB_OAUTH_CLIENT_ID", ""),
+		GitHubClientSecret:     getEnv("GITHUB_OAUTH_CLIENT_SECRET", ""),
+		GitHubRedirectURL:      getEnv("GITHUB_REDIRECT_URL", ""),
+		LeFineBaseURL:          getEnv("LEFINE_BASE_URL", "https://lefine.pro"),
+		LeFineRedirectURL:      getEnv("LEFINE_REDIRECT_URL", ""),
+		LeFineIntegrationSecret: getEnv("LEFINE_INTEGRATION_SECRET", "dev-only-lefine-octra-shared-secret-change-me"),
 	}
 }
 

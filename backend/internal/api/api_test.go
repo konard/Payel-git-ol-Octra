@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"backend/internal/cli"
+	"backend/internal/config"
 	"backend/internal/llm"
 	"backend/internal/model"
+	"backend/internal/oauth"
 	"backend/internal/repository"
 	"backend/internal/service"
 
@@ -58,11 +60,25 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	skills := repository.NewSkillRepository(db)
 	userSkills := repository.NewUserSkillRepository(db)
 
-	authSvc := service.NewAuthService(users)
+	cfg := config.Config{
+		JWTSecret:              "test-jwt-secret",
+		JWTRefreshSecret:       "test-jwt-refresh-secret",
+		FrontendURL:            "http://localhost:5173",
+		GoogleClientID:         "",
+		GoogleClientSecret:     "",
+		GoogleRedirectURL:      "",
+		GitHubClientID:         "",
+		GitHubClientSecret:     "",
+		GitHubRedirectURL:      "",
+		LeFineIntegrationSecret: "test-lefine-secret",
+	}
+
+	authSvc := service.NewAuthService(users, cfg)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, fakeProvisioner{})
 	chatSvc := service.NewChatService(agents, fakeCLIRouter{}, fakeLLM{}, fakeEnvPaths{})
+	oauthH := oauth.New(authSvc, cfg)
 
-	handler := New(authSvc, envSvc, chatSvc).Router().Handler
+	handler := New(authSvc, envSvc, chatSvc, oauthH).Router().Handler
 
 	ln := fasthttputil.NewInmemoryListener()
 	server := &fasthttp.Server{Handler: handler}
@@ -109,7 +125,7 @@ func TestEndToEndProxyFlow(t *testing.T) {
 	}
 
 	// register
-	code, body := do(t, client, "POST", "/register", "", `{"email":"a@b.com","password":"pw"}`)
+	code, body := do(t, client, "POST", "/register", "", `{"username":"testuser","email":"a@b.com","password":"pw"}`)
 	if code != 201 {
 		t.Fatalf("register code %d: %s", code, body)
 	}
@@ -162,7 +178,7 @@ func TestCLIModeChat(t *testing.T) {
 	client, cleanup := newTestServer(t)
 	defer cleanup()
 
-	_, body := do(t, client, "POST", "/register", "", `{"email":"c@d.com","password":"pw"}`)
+	_, body := do(t, client, "POST", "/register", "", `{"username":"testuser2","email":"c@d.com","password":"pw"}`)
 	var reg registerResponse
 	_ = json.Unmarshal(body, &reg)
 

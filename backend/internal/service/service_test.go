@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"backend/internal/cli"
+	"backend/internal/config"
 	"backend/internal/llm"
 	"backend/internal/model"
 	"backend/internal/repository"
@@ -13,6 +14,14 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func testCfg() config.Config {
+	return config.Config{
+		JWTSecret:              "test-jwt-secret",
+		JWTRefreshSecret:       "test-jwt-refresh-secret",
+		LeFineIntegrationSecret: "test-lefine-secret",
+	}
+}
 
 // newTestDB returns a migrated in-memory SQLite database.
 func newTestDB(t *testing.T) *gorm.DB {
@@ -34,10 +43,10 @@ func newTestDB(t *testing.T) *gorm.DB {
 func TestRegisterAndAuthenticate(t *testing.T) {
 	db := newTestDB(t)
 	users := repository.NewUserRepository(db)
-	svc := NewAuthService(users)
+	svc := NewAuthService(users, testCfg())
 	ctx := context.Background()
 
-	user, err := svc.Register(ctx, "Test@Example.com", "secret")
+	user, err := svc.Register(ctx, "testuser", "Test@Example.com", "secret")
 	if err != nil {
 		t.Fatalf("Register: %v", err)
 	}
@@ -59,20 +68,20 @@ func TestRegisterAndAuthenticate(t *testing.T) {
 
 func TestRegisterDuplicateEmail(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewAuthService(repository.NewUserRepository(db))
+	svc := NewAuthService(repository.NewUserRepository(db), testCfg())
 	ctx := context.Background()
 
-	if _, err := svc.Register(ctx, "a@b.com", "x"); err != nil {
+	if _, err := svc.Register(ctx, "user1", "a@b.com", "x"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Register(ctx, "a@b.com", "y"); err != ErrEmailTaken {
+	if _, err := svc.Register(ctx, "user2", "a@b.com", "y"); err != ErrEmailTaken {
 		t.Fatalf("expected ErrEmailTaken, got %v", err)
 	}
 }
 
 func TestAuthenticateInvalidToken(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewAuthService(repository.NewUserRepository(db))
+	svc := NewAuthService(repository.NewUserRepository(db), testCfg())
 	if _, err := svc.Authenticate(context.Background(), "nope"); err != ErrInvalidToken {
 		t.Fatalf("expected ErrInvalidToken, got %v", err)
 	}
@@ -101,7 +110,7 @@ func (f *fakeProvisioner) InstallSkill(_ context.Context, _ string, s model.Skil
 
 func seedUser(t *testing.T, db *gorm.DB) *model.User {
 	t.Helper()
-	u, err := NewAuthService(repository.NewUserRepository(db)).Register(context.Background(), "u@e.com", "pw")
+	u, err := NewAuthService(repository.NewUserRepository(db), testCfg()).Register(context.Background(), "seeduser", "u@e.com", "pw")
 	if err != nil {
 		t.Fatal(err)
 	}

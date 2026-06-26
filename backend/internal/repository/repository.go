@@ -19,8 +19,10 @@ var ErrNotFound = errors.New("not found")
 // UserRepository persists users.
 type UserRepository interface {
 	Create(ctx context.Context, u *model.User) error
+	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetByAPIKey(ctx context.Context, apiKey string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
+	GetByUsername(ctx context.Context, username string) (*model.User, error)
 }
 
 // AgentRepository persists agents (user environments).
@@ -52,6 +54,12 @@ func (r *userRepo) Create(ctx context.Context, u *model.User) error {
 	return r.db.WithContext(ctx).Create(u).Error
 }
 
+func (r *userRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	var u model.User
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	return firstResult(&u, err)
+}
+
 func (r *userRepo) GetByAPIKey(ctx context.Context, apiKey string) (*model.User, error) {
 	var u model.User
 	err := r.db.WithContext(ctx).Where("api_key = ?", apiKey).First(&u).Error
@@ -61,6 +69,12 @@ func (r *userRepo) GetByAPIKey(ctx context.Context, apiKey string) (*model.User,
 func (r *userRepo) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	var u model.User
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
+	return firstResult(&u, err)
+}
+
+func (r *userRepo) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	var u model.User
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&u).Error
 	return firstResult(&u, err)
 }
 

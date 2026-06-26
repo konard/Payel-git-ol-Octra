@@ -25,19 +25,21 @@ const (
 	SkillCustom  SkillType = "custom"
 )
 
-// User is a platform account. Authentication against the public API is done
-// with the per-user APIKey (sent as the `octra-api-token` header).
+// User is a platform account.
 type User struct {
-	ID           uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	Email        string    `gorm:"uniqueIndex" json:"email"`
-	PasswordHash string    `gorm:"column:password_hash" json:"-"`
-	// APIKey authenticates calls to /api/chat and /environment. It is unique
-	// and indexed so token lookups stay cheap.
+	ID           uuid.UUID  `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `gorm:"index" json:"-"`
+	Username     string     `gorm:"uniqueIndex" json:"username"`
+	Email        string     `gorm:"uniqueIndex" json:"email"`
+	PasswordHash string     `gorm:"column:password_hash" json:"-"`
+	// APIKey authenticates calls to /api/chat and /environment.
 	APIKey string `gorm:"uniqueIndex" json:"api_key"`
-	// Subscription is a free-form status string ("free", "pro", ...).
+	// Subscription status ("free", "pro", ...).
 	Subscription string `gorm:"default:free" json:"subscription"`
+	// SubscriptionEnd is an optional Unix timestamp (seconds).
+	SubscriptionEnd *int64 `json:"subscription_end"`
 }
 
 // Agent is a user's personal MCP environment. Each user has at most one.
