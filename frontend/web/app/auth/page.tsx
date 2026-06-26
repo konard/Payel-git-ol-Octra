@@ -58,7 +58,7 @@ export default function AuthPage() {
     setRegisterError('');
     const form = new FormData(e.currentTarget);
     try {
-      const res = await register(form.get('username') as string, form.get('email') as string);
+      const res = await register(form.get('username') as string, form.get('email') as string, form.get('password') as string);
       if (!res.ok) {
         const text = await res.text();
         setRegisterError(text || 'Registration failed');
@@ -170,6 +170,13 @@ export default function AuthPage() {
                 <span className="input-shell">
                   <Mail size={16} />
                   <input type="email" name="email" autoComplete="email" placeholder="you@company.com" />
+                </span>
+              </label>
+              <label>
+                <span>Password</span>
+                <span className="input-shell">
+                  <LockKeyhole size={16} />
+                  <input type="password" name="password" autoComplete="new-password" placeholder="Password" />
                 </span>
               </label>
               <button className="secondary-button full-button" type="submit">
