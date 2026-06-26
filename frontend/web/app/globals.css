@@ -1971,6 +1971,7 @@ button {
   border-left: 1px solid var(--line);
   background: #090b0c;
   overflow: hidden;
+  z-index: 10;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
