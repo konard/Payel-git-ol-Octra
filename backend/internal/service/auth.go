@@ -144,9 +144,11 @@ type LoginResult struct {
 }
 
 type LoginUserInfo struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Balance   int       `json:"balance"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (s *AuthService) generateTokens(user *model.User) (*LoginResult, error) {
@@ -184,9 +186,11 @@ func (s *AuthService) generateTokens(user *model.User) (*LoginResult, error) {
 		AccessToken:  accessTokenString,
 		RefreshToken: refreshTokenString,
 		User: &LoginUserInfo{
-			ID:       user.ID,
-			Username: user.Username,
-			Email:    user.Email,
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			Balance:   user.Balance,
+			CreatedAt: user.CreatedAt,
 		},
 	}, nil
 }
@@ -272,11 +276,13 @@ func (s *AuthService) RefreshTokens(ctx context.Context, refreshTokenString stri
 }
 
 type UserInfo struct {
-	UserID          string  `json:"user_id"`
-	Username        string  `json:"username"`
-	Email           string  `json:"email"`
-	HasSubscription bool    `json:"has_subscription"`
-	SubscriptionEnd *int64  `json:"subscription_end"`
+	UserID          string    `json:"user_id"`
+	Username        string    `json:"username"`
+	Email           string    `json:"email"`
+	Balance         int       `json:"balance"`
+	CreatedAt       time.Time `json:"created_at"`
+	HasSubscription bool      `json:"has_subscription"`
+	SubscriptionEnd *int64    `json:"subscription_end"`
 }
 
 func userToInfo(user *model.User) *UserInfo {
@@ -286,6 +292,8 @@ func userToInfo(user *model.User) *UserInfo {
 		UserID:          user.ID.String(),
 		Username:        user.Username,
 		Email:           user.Email,
+		Balance:         user.Balance,
+		CreatedAt:       user.CreatedAt,
 		HasSubscription: hasSubscription,
 		SubscriptionEnd: user.SubscriptionEnd,
 	}

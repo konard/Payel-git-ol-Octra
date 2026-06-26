@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -124,6 +125,90 @@ func (h *Handler) githubConfig() *oauth2.Config {
 	}
 }
 
+type githubUserProfile struct {
+	ID    int64  `json:"id"`
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type githubEmail struct {
+	Email    string `json:"email"`
+	Primary  bool   `json:"primary"`
+	Verified bool   `json:"verified"`
+}
+
+func fetchGitHubUserProfile(client *http.Client) (*githubUserProfile, error) {
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub user API returned %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var profile githubUserProfile
+	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
+		return nil, fmt.Errorf("failed to parse user info: %w", err)
+	}
+	return &profile, nil
+}
+
+func fetchGitHubEmails(client *http.Client) ([]githubEmail, error) {
+	resp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user emails: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub email API returned %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var emails []githubEmail
+	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+		return nil, fmt.Errorf("failed to parse user emails: %w", err)
+	}
+	return emails, nil
+}
+
+func selectGitHubEmail(profile githubUserProfile, emails []githubEmail) (string, error) {
+	for _, email := range emails {
+		if email.Primary && email.Verified && strings.TrimSpace(email.Email) != "" {
+			return email.Email, nil
+		}
+	}
+
+	if strings.TrimSpace(profile.Email) != "" {
+		return profile.Email, nil
+	}
+
+	for _, email := range emails {
+		if email.Verified && strings.TrimSpace(email.Email) != "" {
+			return email.Email, nil
+		}
+	}
+
+	return "", fmt.Errorf("GitHub account does not expose a verified email")
+}
+
+func githubDisplayName(profile githubUserProfile) string {
+	if strings.TrimSpace(profile.Login) != "" {
+		return profile.Login
+	}
+	if strings.TrimSpace(profile.Name) != "" {
+		return profile.Name
+	}
+	if profile.ID != 0 {
+		return fmt.Sprintf("github_%d", profile.ID)
+	}
+	return "github_user"
+}
+
 func (h *Handler) HandleGitHubLogin(ctx *fasthttp.RequestCtx) {
 	config := h.githubConfig()
 	url := config.AuthCodeURL("random-state")
@@ -145,32 +230,24 @@ func (h *Handler) HandleGitHubCallback(ctx *fasthttp.RequestCtx) {
 	}
 
 	client := config.Client(context.Background(), token)
-	resp, err := client.Get("https://api.github.com/user")
+	githubUser, err := fetchGitHubUserProfile(client)
 	if err != nil {
-		writeError(ctx, fasthttp.StatusInternalServerError, "failed to get user info")
-		return
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	var githubUser struct {
-		ID    int    `json:"id"`
-		Login string `json:"login"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
-	}
-	if err := json.Unmarshal(body, &githubUser); err != nil {
-		writeError(ctx, fasthttp.StatusInternalServerError, "failed to parse user info")
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 		return
 	}
 
-	email := githubUser.Email
-	if email == "" {
-		email = fmt.Sprintf("%s@github.local", githubUser.Login)
+	emails, emailErr := fetchGitHubEmails(client)
+	if emailErr != nil && githubUser.Email == "" {
+		writeError(ctx, fasthttp.StatusInternalServerError, emailErr.Error())
+		return
 	}
-	name := githubUser.Login
+	email, err := selectGitHubEmail(*githubUser, emails)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
 
-	user, err := h.auth.GetOrCreateUserFromGitHub(context.Background(), email, name)
+	user, err := h.auth.GetOrCreateUserFromGitHub(context.Background(), email, githubDisplayName(*githubUser))
 	if err != nil {
 		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 		return
