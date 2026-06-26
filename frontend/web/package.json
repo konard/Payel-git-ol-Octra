@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/prepare-static-export.mjs",
-    "start": "npx serve dist",
+    "start": "pnpm exec serve dist",
     "test:frontend": "node scripts/check-next-frontend.mjs",
-    "test": "npm run test:frontend"
+    "test": "pnpm run test:frontend"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.1",
