@@ -184,8 +184,6 @@ button {
   box-shadow: 0 0 0 1px var(--line);
 }
 
-.nav-links,
-.nav-actions,
 .topbar-actions,
 .crumbs,
 .hero-actions,
@@ -195,6 +193,10 @@ button {
 .form-heading {
   display: flex;
   align-items: center;
+}
+
+.topbar-actions {
+  gap: 12px;
 }
 
 .nav-links {
@@ -1381,7 +1383,7 @@ button {
   top: 0;
   z-index: 100;
   display: grid;
-  grid-template-columns: auto minmax(220px, 360px) minmax(0, 1fr) auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 22px;
   height: 72px;
@@ -1427,7 +1429,10 @@ button {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  max-width: 360px;
   min-height: 42px;
+  justify-self: center;
+  width: 100%;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
