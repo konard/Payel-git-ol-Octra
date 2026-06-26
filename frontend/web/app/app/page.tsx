@@ -89,20 +89,20 @@ export default function HomePage() {
         </aside>
 
         <section className="home-canvas" aria-labelledby="workspace-title">
+          {/* If the user asks to restore the breadcrumb or notification bell on /app, uncomment the block below
           <div className="canvas-header">
             <div className="canvas-crumbs">
               <span>Environments</span>
               <span>MCP endpoint</span>
               <span>React Flow graph</span>
             </div>
-            {/* If the user asks to restore the notification bell or similar widget on /app, uncomment the block below
             <div className="canvas-actions">
               <button className="icon-button dark-icon" type="button" aria-label="Notifications">
                 <Bell size={17} />
               </button>
             </div>
-            */}
           </div>
+          */}
           <h1 id="workspace-title" className="workspace-word">
             Octra
           </h1>
