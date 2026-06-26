@@ -1384,7 +1384,7 @@ button {
   grid-template-columns: auto minmax(220px, 360px) minmax(0, 1fr) auto;
   align-items: center;
   gap: 22px;
-  min-height: 72px;
+  height: 96px;
   padding: 12px 48px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: #0b0d0f;
@@ -1503,22 +1503,34 @@ button {
   display: flex;
   flex: 1;
   min-height: 0;
+  padding-left: 54px;
+  padding-right: 54px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.workspace-frame.panel-collapsed {
 }
 
 .workspace-tools,
 .home-rail {
-  flex: 0 0 54px;
+  position: fixed;
+  top: 96px;
+  bottom: 0;
+  width: 54px;
+  z-index: 50;
   display: grid;
   align-content: start;
   justify-items: center;
   gap: 10px;
   padding: 14px 8px;
-  border-right: 1px solid var(--line);
   background: #090b0c;
+}
+
+.workspace-tools {
+  left: 0;
+  border-right: 1px solid var(--line);
+}
+
+.home-rail {
+  right: 0;
+  border-left: 1px solid var(--line);
 }
 
 .tool-button,
