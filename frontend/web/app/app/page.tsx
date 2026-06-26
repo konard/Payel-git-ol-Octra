@@ -121,6 +121,7 @@ export default function HomePage() {
                 New flow
               </button>
             </div>
+            <p className="empty-flows-message">You don't have any flows yet.</p>
           </section>
         </section>
 

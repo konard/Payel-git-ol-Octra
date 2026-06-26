@@ -1545,9 +1545,11 @@ button {
 .canvas-header {
   position: relative;
   z-index: 5;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 64px;
+  gap: 12px;
+  min-height: 44px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1840,6 +1842,16 @@ button {
 .active-environment-list {
   display: grid;
   gap: 8px;
+}
+
+.empty-flows-message {
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 32px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  margin-top: 8px;
 }
 
 .execution-rows {
