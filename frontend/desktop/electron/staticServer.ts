@@ -2,12 +2,10 @@
 
 // Minimal static file server for the built web app.
 //
-// The web app is built by Vite with `base: '/'`, so its index.html references
-// assets with absolute paths like /assets/index.js. Loading that over file://
-// breaks those paths, so in production we serve frontend/web/dist over a local
-// loopback http server and point the BrowserWindow at http://127.0.0.1:<port>.
-// This also gives the renderer a normal http origin (needed for the WebSocket
-// backend and SPA history routing) — exactly matching how the web app runs.
+// The web app is exported by Next into frontend/web/dist. Loading that over
+// file:// breaks absolute asset paths, so in production we serve dist over a
+// local loopback http server and point the BrowserWindow at
+// http://127.0.0.1:<port>. This also gives the renderer a normal http origin.
 //
 // Uses only Node's built-in http/fs so the desktop app needs no extra runtime
 // dependency. Kept dependency-free and pure enough to unit-test the routing.

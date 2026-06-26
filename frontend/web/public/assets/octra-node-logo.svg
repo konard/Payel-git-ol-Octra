@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 455" role="img" aria-label="Octra">
+  <rect width="540" height="455" rx="28" fill="#050505"/>
+  <g fill="none" stroke="#f7f7f7" stroke-linecap="square" stroke-width="6">
+    <path d="M270 184V328"/>
+    <path d="M270 184 170 94"/>
+    <path d="M270 184 370 94"/>
+    <path d="M270 184 170 275"/>
+    <path d="M270 184 370 275"/>
+  </g>
+  <g fill="#f7f7f7">
+    <rect x="242" y="158" width="56" height="52" rx="2"/>
+    <rect x="151" y="73" width="64" height="30" rx="1"/>
+    <rect x="325" y="73" width="64" height="30" rx="1"/>
+    <rect x="151" y="260" width="64" height="30" rx="1"/>
+    <rect x="325" y="260" width="64" height="30" rx="1"/>
+    <rect x="242" y="327" width="56" height="31" rx="1"/>
+  </g>
+</svg>
