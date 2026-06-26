@@ -104,8 +104,80 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        <section className="node-canvas dashboard-canvas" id="node-canvas">
-          <WorkflowCanvas />
+        <section className="dashboard-grid">
+          <article className="traffic-panel large-panel" aria-label="Environment nodes canvas">
+            <div className="panel-heading">
+              <span>Environment nodes canvas</span>
+              <button className="ghost-command" type="button">
+                <Code2 size={15} />
+                Edit
+              </button>
+            </div>
+            <section className="node-canvas dashboard-canvas" id="node-canvas">
+              <WorkflowCanvas />
+            </section>
+          </article>
+          <article className="architecture-panel large-panel" aria-label="Active pipeline architecture">
+            <div className="panel-heading">
+              <span>Active pipeline architecture</span>
+              <button className="ghost-command" type="button">
+                <Code2 size={15} />
+                Edit
+              </button>
+            </div>
+            <div className="architecture-list">
+              <section>
+                <h2>1. Ingress</h2>
+                <div className="rule-row">
+                  <Cpu size={16} />
+                  <span>Endpoint</span>
+                  <strong>/v1/chat/completions</strong>
+                </div>
+                <div className="rule-row">
+                  <LockKeyhole size={16} />
+                  <span>Auth protocol</span>
+                  <strong>Bearer strict</strong>
+                </div>
+              </section>
+              <section>
+                <h2>2. Pre-processing</h2>
+                <div className="policy-grid">
+                  <div>
+                    <span>PII redact</span>
+                    <strong>Mask</strong>
+                  </div>
+                  <div>
+                    <span>Injection</span>
+                    <strong>Strict</strong>
+                  </div>
+                  <div>
+                    <span>Toxicity</span>
+                    <strong>Drop</strong>
+                  </div>
+                </div>
+              </section>
+              <section>
+                <h2>3. Dynamic router</h2>
+                <div className="router-rule">
+                  <div className="rule-condition">
+                    <span>IF</span>
+                    <strong>intent = billing</strong>
+                    <span>THEN</span>
+                  </div>
+                  <div className="rule-row">
+                    <Activity size={16} />
+                    <span>Route to</span>
+                    <strong>GPT-4o</strong>
+                  </div>
+                  <div className="rule-row">
+                    <CircleDollarSign size={16} />
+                    <span>Max cost</span>
+                    <strong>$0.20</strong>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </article>
         </section>
       </section>
     </main>
