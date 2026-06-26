@@ -125,7 +125,6 @@ export default function HomePage() {
         </aside>
 
         <section className="home-canvas" aria-labelledby="workspace-title">
-          <div className="canvas-grid" aria-hidden="true" />
           <div className="canvas-header">
             <div className="canvas-crumbs">
               <span>Environments</span>

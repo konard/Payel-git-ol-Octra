@@ -1526,14 +1526,20 @@ button {
 }
 
 .canvas-grid {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.78), transparent 92%);
   pointer-events: none;
+}
+
+.layout-canvas {
+  position: relative;
+  z-index: 1;
 }
 
 .canvas-header {

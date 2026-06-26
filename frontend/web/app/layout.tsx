@@ -17,7 +17,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <DesktopTitleBar />
-        {children}
+        <div className="canvas-grid" aria-hidden="true" />
+        <div className="layout-canvas">
+          {children}
+        </div>
       </body>
     </html>
   );
