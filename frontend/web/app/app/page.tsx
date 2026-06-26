@@ -37,41 +37,6 @@ const backendMetrics = [
   { label: 'PROXY MODE', value: '3', detail: 'LLM fallback', tone: 'danger' },
 ];
 
-const activeEnvironments = [
-  {
-    name: 'Claude Code CLI',
-    environment_id: 'env:claude-code:01',
-    user_id: 'usr_742',
-    status: 'running',
-    ttl: '38m',
-    endpoint: '/api/chat',
-  },
-  {
-    name: 'OpenCode CLI',
-    environment_id: 'env:opencode:04',
-    user_id: 'usr_318',
-    status: 'warm',
-    ttl: '21m',
-    endpoint: 'stdin pipe',
-  },
-  {
-    name: 'Codex CLI',
-    environment_id: 'env:codex:17',
-    user_id: 'usr_904',
-    status: 'installing',
-    ttl: '9m',
-    endpoint: 'Nix profile',
-  },
-  {
-    name: 'Direct LLM proxy',
-    environment_id: 'env:proxy:09',
-    user_id: 'usr_556',
-    status: 'ready',
-    ttl: 'no CLI',
-    endpoint: 'LLM base_url',
-  },
-];
-
 const toolItems = [
   { label: 'Workflows', icon: Workflow },
   { label: 'Streams', icon: Activity },
@@ -137,7 +102,6 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-
           <h1 id="workspace-title" className="workspace-word">
             Octra
           </h1>
@@ -156,32 +120,6 @@ export default function HomePage() {
                 <Plus size={15} />
                 New flow
               </button>
-            </div>
-            <div className="active-environment-list">
-              {activeEnvironments.map((environment) => (
-                <article className="active-environment-row" key={environment.environment_id}>
-                  <div>
-                    <span>{environment.name}</span>
-                    <strong>{environment.environment_id}</strong>
-                  </div>
-                  <div>
-                    <span>Status</span>
-                    <strong>{environment.status}</strong>
-                  </div>
-                  <div>
-                    <span>TTL</span>
-                    <strong>{environment.ttl}</strong>
-                  </div>
-                  <div>
-                    <span>Endpoint</span>
-                    <strong>{environment.endpoint}</strong>
-                  </div>
-                  <div>
-                    <span>user_id</span>
-                    <strong>{environment.user_id}</strong>
-                  </div>
-                </article>
-              ))}
             </div>
           </section>
         </section>
