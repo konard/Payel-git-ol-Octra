@@ -1,16 +1,13 @@
 import {
   Activity,
   ArrowRight,
-  BarChart3,
   Bell,
   Bot,
   ChevronDown,
   CircleDollarSign,
   Code2,
-  Cpu,
+  Database,
   FileText,
-  Github,
-  Globe2,
   Layers3,
   LineChart,
   LockKeyhole,
@@ -23,88 +20,65 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
+import { WorkflowCanvas } from './components/WorkflowCanvas';
 
-const quotes = [
-  { pair: 'OCTRA', price: '78.0725', move: '+2.20%', tone: 'up' },
-  { pair: 'AGENTS', price: '124k', move: '+15%', tone: 'up' },
-  { pair: 'RISK', price: '0.85', move: '-4%', tone: 'down' },
-  { pair: 'LATENCY', price: '850ms', move: '+45ms', tone: 'warn' },
-  { pair: 'MERGE', price: '21', move: '+6', tone: 'up' },
-  { pair: 'GUARD', price: '2.4k', move: '-4%', tone: 'down' },
-  { pair: 'SPEND', price: '$452', move: '-$120', tone: 'up' },
+const backendEndpoints = [
+  { label: 'Task stream', value: 'GET /task/create', detail: 'WebSocket CreateTaskRequest' },
+  { label: 'Task status', value: 'GET /task/status', detail: 'task_id progress lookup' },
+  { label: 'Saved workflow', value: 'POST /workflows', detail: 'nodes and edges JSON' },
 ];
 
-const workflowNodes = [
+const backendMetrics = [
+  { label: 'ACTIVE TASKS', value: '18', detail: 'redis streams' },
+  { label: 'PROGRESS', value: '72%', detail: 'latest TaskUpdate' },
+  { label: 'MANAGERS', value: '6', detail: 'role + priority' },
+  { label: 'WORKERS', value: '24', detail: 'predefined workers' },
+  { label: 'HISTORY', value: '256', detail: 'stored updates' },
+  { label: 'STOP QUEUE', value: '0', detail: '/task/:taskId/stop' },
+];
+
+const activeAgents = [
   {
-    title: 'Prompt ingress',
-    meta: 'Slack, GitHub, API',
-    metric: '124k events',
-    state: 'Market open',
-    icon: Bot,
-    tone: 'blue',
-    position: 'node-ingress',
+    role: 'Boss planner',
+    agent_id: 'boss:planner:01',
+    task_id: 'usr_742:6e9b',
+    status: 'boss_planning',
+    progress: '32%',
+    endpoint: 'CreateTaskStream',
   },
   {
-    title: 'Policy guard',
-    meta: 'PII, injection, schema',
-    metric: '2.4k blocked',
-    state: 'Strict',
-    icon: ShieldCheck,
-    tone: 'teal',
-    position: 'node-guard',
+    role: 'Frontend manager',
+    agent_id: 'mgr:frontend:04',
+    task_id: 'usr_742:6e9b',
+    status: 'managers_assigned',
+    progress: '58%',
+    endpoint: 'ManagerConfig.workers',
   },
   {
-    title: 'Dynamic router',
-    meta: 'Intent and budget matrix',
-    metric: '68% GPT-4o',
-    state: 'Live',
-    icon: Workflow,
-    tone: 'amber',
-    position: 'node-router',
+    role: 'Worker code',
+    agent_id: 'worker:code:17',
+    task_id: 'usr_742:6e9b',
+    status: 'processing',
+    progress: '74%',
+    endpoint: 'TaskUpdate.data',
   },
   {
-    title: 'Model desk',
-    meta: 'GPT-4o, Claude, Gemini',
-    metric: '850ms avg',
-    state: 'Balanced',
-    icon: Cpu,
-    tone: 'violet',
-    position: 'node-models',
-  },
-  {
-    title: 'Review gate',
-    meta: 'Diffs, screenshots, PR notes',
-    metric: '21 merges',
-    state: 'Queued',
-    icon: Github,
-    tone: 'green',
-    position: 'node-review',
-  },
-  {
-    title: 'Release output',
-    meta: 'Docs, pull request, deploy',
-    metric: '$452 cost',
-    state: 'Ready',
-    icon: FileText,
-    tone: 'red',
-    position: 'node-output',
+    role: 'Reviewer',
+    agent_id: 'worker:review:09',
+    task_id: 'usr_742:6e9b',
+    status: 'queued',
+    progress: '12%',
+    endpoint: 'ResumeTaskStream',
   },
 ];
 
 const toolItems = [
   { label: 'Workflows', icon: Workflow },
-  { label: 'Signals', icon: BarChart3 },
-  { label: 'Models', icon: Bot },
+  { label: 'Streams', icon: Activity },
+  { label: 'Agents', icon: Bot },
   { label: 'Security', icon: ShieldCheck },
   { label: 'Code', icon: Code2 },
   { label: 'Settings', icon: Settings },
-];
-
-const timelineRows = [
-  ['10:42', 'Prompt injection attempt', 'Blocked', 'down'],
-  ['10:31', 'Billing refund flow', 'GPT-4o', 'up'],
-  ['10:15', 'Schema repair', 'Retried', 'warn'],
-  ['09:57', 'Release notes generated', 'Ready', 'up'],
 ];
 
 export default function HomePage() {
@@ -112,21 +86,21 @@ export default function HomePage() {
     <main className="site-shell workspace-home">
       <header className="tv-header">
         <a className="tv-brand" href="/" aria-label="Octra home">
-          <img src="/assets/icon.png" alt="" />
+          <img src="/assets/octra-node-logo.svg" alt="" />
           <span>Octra</span>
         </a>
 
         <label className="tv-search">
           <Search size={18} />
           <span className="sr-only">Search Octra</span>
-          <input placeholder="Search flows, agents, pull requests..." />
+          <input placeholder="Search tasks, agents, workflows..." />
         </label>
 
         <nav className="tv-nav" aria-label="Primary navigation">
           <a href="/dashboard">Products</a>
-          <a href="#node-canvas">Community</a>
-          <a href="#quote-board">Markets</a>
-          <a href="/auth">Brokers</a>
+          <a href="#node-canvas">Agents</a>
+          <a href="#runtime-metrics">Metrics</a>
+          <a href="/auth">Auth</a>
           <a href="/dashboard">More</a>
         </nav>
 
@@ -141,7 +115,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="workspace-frame" aria-label="Octra workflow terminal">
+      <section className="workspace-frame" aria-label="Octra backend workflow terminal">
         <aside className="workspace-tools" aria-label="Workspace tools">
           {toolItems.map((item) => (
             <a className="tool-button" href="/dashboard" aria-label={item.label} key={item.label}>
@@ -154,15 +128,11 @@ export default function HomePage() {
           <div className="canvas-grid" aria-hidden="true" />
           <div className="canvas-header">
             <div className="canvas-crumbs">
-              <span>Pipelines</span>
-              <span>Autonomous support desk</span>
-              <span>Live graph</span>
+              <span>Tasks</span>
+              <span>Backend orchestration</span>
+              <span>React Flow graph</span>
             </div>
             <div className="canvas-actions">
-              <button className="terminal-button" type="button">
-                <Plus size={15} />
-                New flow
-              </button>
               <button className="icon-button dark-icon" type="button" aria-label="Notifications">
                 <Bell size={17} />
               </button>
@@ -175,72 +145,74 @@ export default function HomePage() {
 
           <section className="command-bar" aria-label="Create workflow request">
             <div>
-              <span>Ask Octra</span>
-              <strong>Build a visible agent workflow from prompt to pull request</strong>
+              <span>Prompt to backend task</span>
+              <strong>Start a CreateTaskRequest and watch managers, workers, and status updates</strong>
             </div>
             <button type="button" aria-label="Run workflow request">
               <ArrowRight size={22} />
             </button>
           </section>
 
-          <section className="node-canvas" id="node-canvas" aria-label="Visible pipeline nodes">
-            <svg className="node-links" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M132 138 C260 138 262 214 390 214" />
-              <path d="M132 138 C290 138 332 88 502 88" />
-              <path d="M392 214 C498 214 506 342 604 342" />
-              <path d="M502 88 C614 92 670 180 732 244" />
-              <path d="M604 342 C712 342 720 266 842 266" />
-              <path d="M732 244 C784 244 790 266 842 266" />
-            </svg>
-
-            {workflowNodes.map((node) => (
-              <article className={`workflow-node ${node.position} node-${node.tone}`} key={node.title}>
-                <div className="node-title">
-                  <node.icon size={18} />
-                  <span>{node.title}</span>
-                </div>
-                <p>{node.meta}</p>
-                <div className="node-foot">
-                  <strong>{node.metric}</strong>
-                  <span>{node.state}</span>
-                </div>
-              </article>
-            ))}
+          <section className="node-canvas" id="node-canvas" aria-label="React Flow backend nodes">
+            <WorkflowCanvas />
           </section>
 
-          <section className="execution-strip" aria-label="Live execution log">
-            <div className="strip-heading">
-              <Activity size={16} />
-              <span>Live execution tape</span>
+          <section className="active-agents" aria-label="Active agents list">
+            <div className="active-agents-header">
+              <div className="active-agents-title">
+                <Activity size={16} />
+                <span>Active agents</span>
+              </div>
+              <button className="terminal-button" type="button">
+                <Plus size={15} />
+                New flow
+              </button>
             </div>
-            <div className="execution-rows">
-              {timelineRows.map(([time, event, status, tone]) => (
-                <div className="execution-row" key={`${time}-${event}`}>
-                  <span>{time}</span>
-                  <strong>{event}</strong>
-                  <em className={tone}>{status}</em>
-                </div>
+            <div className="active-agent-list">
+              {activeAgents.map((agent) => (
+                <article className="active-agent-row" key={agent.agent_id}>
+                  <div>
+                    <span>{agent.role}</span>
+                    <strong>{agent.agent_id}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{agent.status}</strong>
+                  </div>
+                  <div>
+                    <span>Progress</span>
+                    <strong>{agent.progress}</strong>
+                  </div>
+                  <div>
+                    <span>Endpoint</span>
+                    <strong>{agent.endpoint}</strong>
+                  </div>
+                  <div>
+                    <span>task_id</span>
+                    <strong>{agent.task_id}</strong>
+                  </div>
+                </article>
               ))}
             </div>
           </section>
         </section>
 
-        <aside className="home-market-panel" id="quote-board" aria-label="Octra quote board">
+        <aside className="home-market-panel" id="runtime-metrics" aria-label="Backend runtime metrics">
           <div className="market-heading">
-            <span>Quote board</span>
+            <span>Runtime metrics</span>
             <ChevronDown size={16} />
           </div>
           <div className="market-columns">
-            <span>Instrument</span>
-            <span>Last</span>
-            <span>Move</span>
+            <span>Signal</span>
+            <span>Value</span>
+            <span>Source</span>
           </div>
           <div className="quote-stack">
-            {quotes.map((quote) => (
-              <div className="market-row" key={quote.pair}>
-                <span>{quote.pair}</span>
-                <strong>{quote.price}</strong>
-                <em className={quote.tone}>{quote.move}</em>
+            {backendMetrics.map((metric) => (
+              <div className="market-row" key={metric.label}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <em>{metric.detail}</em>
               </div>
             ))}
           </div>
@@ -249,35 +221,43 @@ export default function HomePage() {
             <div className="selected-topline">
               <div>
                 <span>Selected node</span>
-                <strong>Dynamic router</strong>
+                <strong>Worker code</strong>
               </div>
               <PanelRight size={18} />
             </div>
             <div className="price-line">
-              <strong>68.0</strong>
-              <span>% GPT-4o route</span>
-              <em className="up">+15%</em>
+              <strong>74</strong>
+              <span>% progress from TaskUpdate</span>
+              <em>processing</em>
             </div>
             <div className="market-bars" aria-hidden="true">
               <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
             </div>
           </section>
 
-          <section className="guard-stack" aria-label="Guardrail controls">
+          <section className="guard-stack" aria-label="Backend endpoints">
+            {backendEndpoints.map((endpoint) => (
+              <div className="guard-row" key={endpoint.label}>
+                {endpoint.label === 'Task stream' ? (
+                  <Zap size={16} />
+                ) : endpoint.label === 'Task status' ? (
+                  <Database size={16} />
+                ) : (
+                  <FileText size={16} />
+                )}
+                <span>{endpoint.label}</span>
+                <strong>{endpoint.value}</strong>
+              </div>
+            ))}
             <div className="guard-row">
               <LockKeyhole size={16} />
-              <span>Auth protocol</span>
-              <strong>Bearer strict</strong>
+              <span>Auth</span>
+              <strong>Bearer cookie</strong>
             </div>
             <div className="guard-row">
               <CircleDollarSign size={16} />
-              <span>Budget guard</span>
-              <strong>$12 / run</strong>
-            </div>
-            <div className="guard-row">
-              <Globe2 size={16} />
-              <span>Region</span>
-              <strong>Global</strong>
+              <span>Rate limit</span>
+              <strong>task_create</strong>
             </div>
           </section>
         </aside>

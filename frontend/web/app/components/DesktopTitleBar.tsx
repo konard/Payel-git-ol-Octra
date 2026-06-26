@@ -38,7 +38,7 @@ export function DesktopTitleBar() {
   return (
     <div className="desktop-titlebar">
       <div className="desktop-titlebar-title">
-        <img src="/assets/icon.png" alt="" />
+        <img src="/assets/octra-node-logo.svg" alt="" />
         <span>Octra</span>
       </div>
       <div className="desktop-window-controls" aria-label="Window controls">

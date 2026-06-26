@@ -49,7 +49,7 @@ export default function DashboardPage() {
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
         <a className="square-brand" href="/" aria-label="Octra home">
-          <img src="/assets/icon.png" alt="" />
+          <img src="/assets/octra-node-logo.svg" alt="" />
         </a>
         <nav>
           {navItems.map((item, index) => (
@@ -103,7 +103,7 @@ export default function DashboardPage() {
                 <strong>{metric.value}</strong>
               </div>
               <span className={`metric-delta ${metric.tone}`}>{metric.delta}</span>
-              <div className={`spark-bars ${metric.tone === 'down' ? 'red-bars' : metric.tone === 'warn' ? 'violet-bars' : 'green-bars'}`} aria-hidden="true">
+              <div className={`spark-bars ${metric.tone === 'down' ? 'low-bars' : metric.tone === 'warn' ? 'soft-bars' : 'rise-bars'}`} aria-hidden="true">
                 <i /><i /><i /><i /><i />
               </div>
             </article>

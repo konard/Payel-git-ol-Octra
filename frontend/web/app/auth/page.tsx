@@ -33,7 +33,7 @@ export default function AuthPage() {
     <main className="auth-shell">
       <header className="top-nav auth-nav">
         <a className="brand-link" href="/" aria-label="Octra home">
-          <img src="/assets/icon.png" alt="" className="brand-mark" />
+          <img src="/assets/octra-node-logo.svg" alt="" className="brand-mark" />
           <span>Octra</span>
         </a>
         <div className="nav-actions">

@@ -33,6 +33,7 @@ for (const file of requiredFiles) {
 if (exists('package.json')) {
   const packageJson = JSON.parse(read('package.json'));
   assert(packageJson.dependencies?.next, 'package.json must depend on next');
+  assert(packageJson.dependencies?.['@xyflow/react'], 'package.json must depend on @xyflow/react for the requested React Flow canvas');
   assert(packageJson.scripts?.dev === 'next dev', 'dev script must run next dev');
   assert(packageJson.scripts?.build?.includes('next build'), 'build script must run next build');
   assert(!JSON.stringify(packageJson.scripts || {}).includes('vite'), 'package scripts must not invoke vite');
@@ -56,12 +57,19 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
 
 if (exists('app/page.tsx')) {
   const homepageSource = read('app/page.tsx').toLowerCase();
-  for (const phrase of ['node-canvas', 'workflow-node', 'quote board', 'live graph']) {
+  for (const phrase of ['node-canvas', 'active-agents', 'agent_id', 'task/create', 'task/status', '/workflows']) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
 
-  for (const rejectedPhrase of ['ai delivery cockpit', 'hero-section', 'capability-band']) {
+  for (const rejectedPhrase of ['ai delivery cockpit', 'hero-section', 'capability-band', 'live execution tape']) {
     assert(!homepageSource.includes(rejectedPhrase), `Homepage must not fall back to the rejected landing-page shape: ${rejectedPhrase}`);
+  }
+}
+
+if (exists('app/components/WorkflowCanvas.tsx')) {
+  const workflowCanvasSource = read('app/components/WorkflowCanvas.tsx').toLowerCase();
+  for (const phrase of ['@xyflow/react', 'reactflow', 'background', 'controls', 'minimap']) {
+    assert(workflowCanvasSource.includes(phrase), `Workflow canvas must use React Flow primitives: missing ${phrase}`);
   }
 }
 
