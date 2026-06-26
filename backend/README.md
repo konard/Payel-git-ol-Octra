@@ -57,14 +57,14 @@ All settings come from environment variables (with sensible defaults):
 ```
 →
 ```json
-{ "user_id": "…", "api_key": "octra_…" }
+{ "user_id": "…", "api_key": "octra_…", "balance": 100 }
 ```
 
 ### `POST /environment` (auth: `octra-api-token`)
 ```json
 {
   "llm":   { "api_key": "sk-…", "base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-6" },
-  "agent": { "cli": "claude-code" },
+  "agent": { "cli": "claude-code", "priority": 10 },
   "skills": ["filesystem", "github", "brave-search"]
 }
 ```
@@ -83,6 +83,22 @@ If `cli` is empty Octra runs as a plain LLM proxy.
 ```json
 { "response": "…" }
 ```
+
+### Billing endpoints (auth: `octra-api-token`)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/billing/balance` | Current credits and margin settings |
+| `PATCH` | `/billing/settings` | Update `margin_mode`, `safe_margin_limit`, `auto_pay_interval`, `auto_pay_day` |
+| `GET` | `/billing/transactions` | Newest-first balance ledger |
+| `POST` | `/billing/topup` | Add credits from a payment flow |
+| `POST` | `/billing/lefine-reward` | Add credits from LeFine winnings |
+| `POST` | `/billing/usage` | Record resource usage and debit hosting credits |
+
+New users receive 100 credits. `margin_mode` defaults to `unlimited`, which lets
+hosting charges create debt. Negative balances block starting a new agent. Safe
+mode preserves `safe_margin_limit` and suspends the current agent if a charge
+cannot be paid.
 
 ## Request flow
 

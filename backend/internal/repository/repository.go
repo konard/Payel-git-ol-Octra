@@ -19,6 +19,8 @@ var ErrNotFound = errors.New("not found")
 // UserRepository persists users.
 type UserRepository interface {
 	Create(ctx context.Context, u *model.User) error
+	Update(ctx context.Context, u *model.User) error
+	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetByAPIKey(ctx context.Context, apiKey string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 }
@@ -26,6 +28,7 @@ type UserRepository interface {
 // AgentRepository persists agents (user environments).
 type AgentRepository interface {
 	Upsert(ctx context.Context, a *model.Agent) error
+	Update(ctx context.Context, a *model.Agent) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*model.Agent, error)
 }
 
@@ -41,6 +44,18 @@ type UserSkillRepository interface {
 	ListByAgent(ctx context.Context, agentID uuid.UUID) ([]model.UserSkill, error)
 }
 
+// TransactionRepository persists balance ledger entries.
+type TransactionRepository interface {
+	Create(ctx context.Context, tx *model.Transaction) error
+	ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.Transaction, error)
+}
+
+// UsageMetricsRepository persists resource usage snapshots.
+type UsageMetricsRepository interface {
+	Create(ctx context.Context, metric *model.UsageMetric) error
+	ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.UsageMetric, error)
+}
+
 // --- GORM implementations ---------------------------------------------------
 
 type userRepo struct{ db *gorm.DB }
@@ -50,6 +65,16 @@ func NewUserRepository(db *gorm.DB) UserRepository { return &userRepo{db: db} }
 
 func (r *userRepo) Create(ctx context.Context, u *model.User) error {
 	return r.db.WithContext(ctx).Create(u).Error
+}
+
+func (r *userRepo) Update(ctx context.Context, u *model.User) error {
+	return r.db.WithContext(ctx).Save(u).Error
+}
+
+func (r *userRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	var u model.User
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	return firstResult(&u, err)
 }
 
 func (r *userRepo) GetByAPIKey(ctx context.Context, apiKey string) (*model.User, error) {
@@ -79,6 +104,10 @@ func (r *agentRepo) Upsert(ctx context.Context, a *model.Agent) error {
 		return r.db.WithContext(ctx).Save(a).Error
 	}
 	return r.db.WithContext(ctx).Create(a).Error
+}
+
+func (r *agentRepo) Update(ctx context.Context, a *model.Agent) error {
+	return r.db.WithContext(ctx).Save(a).Error
 }
 
 func (r *agentRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (*model.Agent, error) {
@@ -116,6 +145,56 @@ func (r *userSkillRepo) Add(ctx context.Context, us *model.UserSkill) error {
 func (r *userSkillRepo) ListByAgent(ctx context.Context, agentID uuid.UUID) ([]model.UserSkill, error) {
 	var list []model.UserSkill
 	err := r.db.WithContext(ctx).Where("agent_id = ?", agentID).Find(&list).Error
+	return list, err
+}
+
+type transactionRepo struct{ db *gorm.DB }
+
+// NewTransactionRepository returns a GORM-backed TransactionRepository.
+func NewTransactionRepository(db *gorm.DB) TransactionRepository {
+	return &transactionRepo{db: db}
+}
+
+func (r *transactionRepo) Create(ctx context.Context, tx *model.Transaction) error {
+	return r.db.WithContext(ctx).Create(tx).Error
+}
+
+func (r *transactionRepo) ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.Transaction, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	var list []model.Transaction
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&list).Error
+	return list, err
+}
+
+type usageMetricsRepo struct{ db *gorm.DB }
+
+// NewUsageMetricsRepository returns a GORM-backed UsageMetricsRepository.
+func NewUsageMetricsRepository(db *gorm.DB) UsageMetricsRepository {
+	return &usageMetricsRepo{db: db}
+}
+
+func (r *usageMetricsRepo) Create(ctx context.Context, metric *model.UsageMetric) error {
+	return r.db.WithContext(ctx).Create(metric).Error
+}
+
+func (r *usageMetricsRepo) ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.UsageMetric, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	var list []model.UsageMetric
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("date desc, created_at desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&list).Error
 	return list, err
 }
 

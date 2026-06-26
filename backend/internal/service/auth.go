@@ -24,12 +24,17 @@ var ErrInvalidToken = errors.New("invalid api token")
 
 // AuthService handles registration and API-token authentication.
 type AuthService struct {
-	users repository.UserRepository
+	users        repository.UserRepository
+	transactions repository.TransactionRepository
 }
 
 // NewAuthService builds an AuthService.
-func NewAuthService(users repository.UserRepository) *AuthService {
-	return &AuthService{users: users}
+func NewAuthService(users repository.UserRepository, transactions ...repository.TransactionRepository) *AuthService {
+	var txs repository.TransactionRepository
+	if len(transactions) > 0 {
+		txs = transactions[0]
+	}
+	return &AuthService{users: users, transactions: txs}
 }
 
 // Register creates a new account and returns it with a freshly minted API key.
@@ -56,13 +61,29 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*mo
 	}
 
 	user := &model.User{
-		Email:        email,
-		PasswordHash: string(hash),
-		APIKey:       apiKey,
-		Subscription: "free",
+		Email:           email,
+		PasswordHash:    string(hash),
+		APIKey:          apiKey,
+		Subscription:    "free",
+		Balance:         model.DefaultRegistrationCredits,
+		MarginMode:      model.MarginUnlimited,
+		AutoPayInterval: model.AutoPayMonthly,
+		AutoPayDay:      1,
 	}
+	user.ApplyBillingDefaults()
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
+	}
+	if s.transactions != nil {
+		if err := s.transactions.Create(ctx, &model.Transaction{
+			UserID:       user.ID,
+			Type:         model.TransactionCredit,
+			Amount:       user.Balance,
+			Reason:       model.TransactionReasonRegistration,
+			BalanceAfter: user.Balance,
+		}); err != nil {
+			return nil, err
+		}
 	}
 	return user, nil
 }

@@ -5,11 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
 
 	"backend/internal/model"
 	"backend/internal/service"
 
 	"github.com/fasthttp/router"
+	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 )
 
@@ -21,14 +24,15 @@ const ctxUserKey = "octra_user"
 
 // API bundles the services exposed over HTTP.
 type API struct {
-	auth *service.AuthService
-	env  *service.EnvironmentService
-	chat *service.ChatService
+	auth    *service.AuthService
+	env     *service.EnvironmentService
+	chat    *service.ChatService
+	billing *service.BillingService
 }
 
 // New builds an API.
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService) *API {
-	return &API{auth: auth, env: env, chat: chat}
+func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService) *API {
+	return &API{auth: auth, env: env, chat: chat, billing: billing}
 }
 
 // Router wires routes to handlers.
@@ -38,6 +42,12 @@ func (a *API) Router() *router.Router {
 	r.POST("/register", a.handleRegister)
 	r.POST("/environment", a.withAuth(a.handleEnvironment))
 	r.POST("/api/chat", a.withAuth(a.handleChat))
+	r.GET("/billing/balance", a.withAuth(a.handleBillingBalance))
+	r.PATCH("/billing/settings", a.withAuth(a.handleBillingSettings))
+	r.GET("/billing/transactions", a.withAuth(a.handleBillingTransactions))
+	r.POST("/billing/topup", a.withAuth(a.handleBillingTopUp))
+	r.POST("/billing/lefine-reward", a.withAuth(a.handleBillingLefineReward))
+	r.POST("/billing/usage", a.withAuth(a.handleBillingUsage))
 	return r
 }
 
@@ -75,8 +85,9 @@ type registerRequest struct {
 }
 
 type registerResponse struct {
-	UserID string `json:"user_id"`
-	APIKey string `json:"api_key"`
+	UserID  string `json:"user_id"`
+	APIKey  string `json:"api_key"`
+	Balance int    `json:"balance"`
 }
 
 func (a *API) handleRegister(ctx *fasthttp.RequestCtx) {
@@ -97,8 +108,9 @@ func (a *API) handleRegister(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeJSON(ctx, fasthttp.StatusCreated, registerResponse{
-		UserID: user.ID.String(),
-		APIKey: user.APIKey,
+		UserID:  user.ID.String(),
+		APIKey:  user.APIKey,
+		Balance: user.Balance,
 	})
 }
 
@@ -109,7 +121,8 @@ type environmentRequest struct {
 		Model   string `json:"model"`
 	} `json:"llm"`
 	Agent struct {
-		CLI string `json:"cli"`
+		CLI      string `json:"cli"`
+		Priority int    `json:"priority"`
 	} `json:"agent"`
 	Skills []string `json:"skills"`
 }
@@ -133,8 +146,13 @@ func (a *API) handleEnvironment(ctx *fasthttp.RequestCtx) {
 		LLMBaseURL: req.LLM.BaseURL,
 		LLMModel:   req.LLM.Model,
 		CLI:        model.CLIType(req.Agent.CLI),
+		Priority:   req.Agent.Priority,
 		Skills:     req.Skills,
 	})
+	if errors.Is(err, service.ErrBalanceNegative) {
+		writeError(ctx, fasthttp.StatusPaymentRequired, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 		return
@@ -181,6 +199,192 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 	writeJSON(ctx, fasthttp.StatusOK, chatResponse{Response: resp})
 }
 
+type billingBalanceResponse struct {
+	UserID          string                `json:"user_id"`
+	Balance         int                   `json:"balance"`
+	MarginMode      model.MarginMode      `json:"margin_mode"`
+	SafeMarginLimit int                   `json:"safe_margin_limit"`
+	AutoPayInterval model.AutoPayInterval `json:"auto_pay_interval"`
+	AutoPayDay      int                   `json:"auto_pay_day"`
+}
+
+func (a *API) handleBillingBalance(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	fresh, err := a.billing.GetBalance(ctx, user.ID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, balanceResponseFromUser(fresh))
+}
+
+type billingSettingsRequest struct {
+	MarginMode      *model.MarginMode      `json:"margin_mode"`
+	SafeMarginLimit *int                   `json:"safe_margin_limit"`
+	AutoPayInterval *model.AutoPayInterval `json:"auto_pay_interval"`
+	AutoPayDay      *int                   `json:"auto_pay_day"`
+}
+
+func (a *API) handleBillingSettings(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	var req billingSettingsRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	fresh, err := a.billing.UpdateSettings(ctx, user.ID, service.BillingSettingsInput{
+		MarginMode:      req.MarginMode,
+		SafeMarginLimit: req.SafeMarginLimit,
+		AutoPayInterval: req.AutoPayInterval,
+		AutoPayDay:      req.AutoPayDay,
+	})
+	if errors.Is(err, service.ErrInvalidBillingSetting) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, balanceResponseFromUser(fresh))
+}
+
+type billingAmountRequest struct {
+	Amount  int    `json:"amount"`
+	AgentID string `json:"agent_id"`
+}
+
+func (a *API) handleBillingTopUp(ctx *fasthttp.RequestCtx) {
+	a.handleCredit(ctx, model.TransactionReasonTopUp)
+}
+
+func (a *API) handleBillingLefineReward(ctx *fasthttp.RequestCtx) {
+	a.handleCredit(ctx, model.TransactionReasonLefineReward)
+}
+
+func (a *API) handleCredit(ctx *fasthttp.RequestCtx, reason model.TransactionReason) {
+	user := userFrom(ctx)
+	var req billingAmountRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	agentID, err := parseOptionalUUID(req.AgentID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid agent_id")
+		return
+	}
+	tx, err := a.billing.Credit(ctx, user.ID, req.Amount, reason, agentID)
+	if errors.Is(err, service.ErrInvalidBillingAmount) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, transactionResponseFromModel(*tx))
+}
+
+func (a *API) handleBillingTransactions(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	limit := queryInt(ctx, "limit", 100)
+	offset := queryInt(ctx, "offset", 0)
+	txs, err := a.billing.ListTransactions(ctx, user.ID, limit, offset)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	out := make([]transactionResponse, 0, len(txs))
+	for _, tx := range txs {
+		out = append(out, transactionResponseFromModel(tx))
+	}
+	writeJSON(ctx, fasthttp.StatusOK, out)
+}
+
+type billingUsageRequest struct {
+	Date            *time.Time `json:"date"`
+	CPUSeconds      int64      `json:"cpu_seconds"`
+	MemoryMBHours   int64      `json:"memory_mb_hours"`
+	DiskMB          int64      `json:"disk_mb"`
+	LoadPercent     int        `json:"load_percent"`
+	StandardPayment int        `json:"standard_payment"`
+	AgentID         string     `json:"agent_id"`
+}
+
+type usageResponse struct {
+	Usage       usageMetricResponse  `json:"usage"`
+	Transaction *transactionResponse `json:"transaction,omitempty"`
+}
+
+type usageMetricResponse struct {
+	ID            string    `json:"id"`
+	UserID        string    `json:"user_id"`
+	Date          time.Time `json:"date"`
+	CPUSeconds    int64     `json:"cpu_seconds"`
+	MemoryMBHours int64     `json:"memory_mb_hours"`
+	DiskMB        int64     `json:"disk_mb"`
+	LoadPercent   int       `json:"load_percent"`
+}
+
+func (a *API) handleBillingUsage(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	var req billingUsageRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	agentID, err := parseOptionalUUID(req.AgentID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid agent_id")
+		return
+	}
+	var date time.Time
+	if req.Date != nil {
+		date = *req.Date
+	}
+	metric, tx, err := a.billing.RecordUsage(ctx, user.ID, service.UsageInput{
+		Date:           date,
+		CPUSeconds:     req.CPUSeconds,
+		MemoryMBHours:  req.MemoryMBHours,
+		DiskMB:         req.DiskMB,
+		LoadPercent:    req.LoadPercent,
+		StandardCharge: req.StandardPayment,
+		AgentID:        agentID,
+	})
+	if errors.Is(err, service.ErrInvalidBillingAmount) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrSafeMarginLimit) {
+		writeError(ctx, fasthttp.StatusPaymentRequired, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	resp := usageResponse{Usage: usageMetricResponseFromModel(*metric)}
+	if tx != nil {
+		txResp := transactionResponseFromModel(*tx)
+		resp.Transaction = &txResp
+	}
+	writeJSON(ctx, fasthttp.StatusOK, resp)
+}
+
+type transactionResponse struct {
+	ID           string                  `json:"id"`
+	UserID       string                  `json:"user_id"`
+	Type         model.TransactionType   `json:"type"`
+	Amount       int                     `json:"amount"`
+	Reason       model.TransactionReason `json:"reason"`
+	AgentID      string                  `json:"agent_id,omitempty"`
+	BalanceAfter int                     `json:"balance_after"`
+	CreatedAt    time.Time               `json:"created_at"`
+}
+
 // --- helpers ----------------------------------------------------------------
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {
@@ -193,6 +397,68 @@ func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {
 
 func writeError(ctx *fasthttp.RequestCtx, status int, msg string) {
 	writeJSON(ctx, status, map[string]string{"error": msg})
+}
+
+func balanceResponseFromUser(user *model.User) billingBalanceResponse {
+	return billingBalanceResponse{
+		UserID:          user.ID.String(),
+		Balance:         user.Balance,
+		MarginMode:      user.MarginMode,
+		SafeMarginLimit: user.SafeMarginLimit,
+		AutoPayInterval: user.AutoPayInterval,
+		AutoPayDay:      user.AutoPayDay,
+	}
+}
+
+func transactionResponseFromModel(tx model.Transaction) transactionResponse {
+	resp := transactionResponse{
+		ID:           tx.ID.String(),
+		UserID:       tx.UserID.String(),
+		Type:         tx.Type,
+		Amount:       tx.Amount,
+		Reason:       tx.Reason,
+		BalanceAfter: tx.BalanceAfter,
+		CreatedAt:    tx.CreatedAt,
+	}
+	if tx.AgentID != nil {
+		resp.AgentID = tx.AgentID.String()
+	}
+	return resp
+}
+
+func usageMetricResponseFromModel(metric model.UsageMetric) usageMetricResponse {
+	return usageMetricResponse{
+		ID:            metric.ID.String(),
+		UserID:        metric.UserID.String(),
+		Date:          metric.Date,
+		CPUSeconds:    metric.CPUSeconds,
+		MemoryMBHours: metric.MemoryMBHours,
+		DiskMB:        metric.DiskMB,
+		LoadPercent:   metric.LoadPercent,
+	}
+}
+
+func parseOptionalUUID(raw string) (*uuid.UUID, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
+}
+
+func queryInt(ctx *fasthttp.RequestCtx, key string, fallback int) int {
+	raw := string(ctx.QueryArgs().Peek(key))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	return value
 }
 
 // ensure fasthttp ctx satisfies context.Context for service calls.
