@@ -2,16 +2,13 @@
 
 // Resolves how the desktop shell reaches the Octra web renderer and backend.
 //
-// The desktop app does NOT reimplement the UI — it loads the real web React app
+// The desktop app does NOT reimplement the UI — it loads the real web app
 // (frontend/web) as its renderer, so the IDE looks and behaves exactly like the
 // web product (issue #50 points 1, 2, 6, 7, 8). Two modes:
 //
-//   • dev  — load the running Vite dev server (npm run dev in frontend/web).
-//            The Vite proxy forwards /api + /auth to the local backend, so the
-//            backend interaction is identical to the web app with zero config.
+//   • dev  — load the running Next dev server (npm run dev in frontend/web).
 //   • prod — serve the built frontend/web/dist over a local http server and
-//            point the renderer at the configured backend via VITE_* envs baked
-//            into the build.
+//            point the renderer at the configured backend.
 //
 // Everything is overridable through environment variables so CI / packagers can
 // point at any backend without code changes.
@@ -31,7 +28,7 @@ export interface DesktopConfig {
 }
 
 export function resolveConfig(env: NodeJS.ProcessEnv = process.env): DesktopConfig {
-  const devServerUrl = env.OCTRA_DEV_SERVER_URL || (env.OCTRA_DEV === '1' ? 'http://localhost:5173' : null);
+  const devServerUrl = env.OCTRA_DEV_SERVER_URL || (env.OCTRA_DEV === '1' ? 'http://localhost:3000' : null);
 
   // In a checkout the built web app lives at ../web/dist relative to this file's
   // compiled location (dist-electron/). Allow an explicit override for packaging.

@@ -1,55 +1,142 @@
 # OCTRA Go Client
 
-## Reconnection with Resume
+A minimal client for the Octra HTTP/JSON API using only the standard library
+(`net/http` and `encoding/json`).
+
+The full flow is: **register** to get an `api_key`, **create an environment**
+(an AI CLI plus skills), then **chat**.
+
+---
+
+## 1. Reusable Client
+
+```go
+package octra
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+type Client struct {
+	BaseURL string
+	APIKey  string
+	http    *http.Client
+}
+
+func NewClient(baseURL string) *Client {
+	return &Client{BaseURL: baseURL, http: &http.Client{}}
+}
+
+type LLMConfig struct {
+	APIKey  string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+	Model   string `json:"model"`
+}
+
+func (c *Client) post(path string, body, out any) error {
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+path, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.APIKey != "" {
+		req.Header.Set("octra-api-token", c.APIKey)
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("octra %s failed: %s", path, resp.Status)
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+func (c *Client) Register(email, password string) (string, error) {
+	var out struct {
+		UserID string `json:"user_id"`
+		APIKey string `json:"api_key"`
+	}
+	err := c.post("/register", map[string]string{
+		"email":    email,
+		"password": password,
+	}, &out)
+	if err == nil {
+		c.APIKey = out.APIKey // remember it for later calls
+	}
+	return out.UserID, err
+}
+
+func (c *Client) CreateEnvironment(llm LLMConfig, cli string, skills []string) error {
+	body := map[string]any{
+		"llm":    llm,
+		"agent":  map[string]string{"cli": cli},
+		"skills": skills,
+	}
+	var out map[string]any
+	return c.post("/environment", body, &out)
+}
+
+func (c *Client) Chat(prompt string, skills []string) (string, error) {
+	body := map[string]any{"prompt": prompt, "skills": skills}
+	var out struct {
+		Response string `json:"response"`
+	}
+	err := c.post("/api/chat", body, &out)
+	return out.Response, err
+}
+```
+
+---
+
+## 2. Full Flow Example
 
 ```go
 package main
 
 import (
 	"fmt"
-	"time"
+	"log"
 
-	"github.com/gorilla/websocket"
+	"example.com/octra"
 )
 
 func main() {
-	var taskID string
-	backoff := time.Second
-	uri := "wss://octra.env.pm/ws"
+	client := octra.NewClient("http://localhost:8080")
 
-	for {
-		conn, _, err := websocket.DefaultDialer.Dial(uri, nil)
-		if err != nil {
-			time.Sleep(backoff)
-			backoff = time.Duration(float64(backoff) * 1.5)
-			continue
-		}
-
-		if taskID != "" {
-			conn.WriteJSON(map[string]string{"type": "resume", "taskId": taskID})
-		} else {
-			conn.WriteJSON(map[string]interface{}{
-				"username":    "GoClient",
-				"user_id":     "00000000-0000-0000-0000-000000000003",
-				"title":       "Go client task",
-				"description": "Test from Go",
-				"meta":        map[string]string{"model": "your-model", "provider": "provider", "publish_repositories": "true", "create_pull_requests": "true"},
-				"tokens":      map[string]string{"provider": "your-api-key"},
-			})
-		}
-
-		for {
-			var msg map[string]interface{}
-			if err := conn.ReadJSON(&msg); err != nil {
-				break
-			}
-			fmt.Println("Update:", msg)
-			if id, ok := msg["taskId"].(string); ok {
-				taskID = id
-			}
-		}
-		conn.Close()
-		time.Sleep(backoff)
+	// 1. Register and capture the API key.
+	userID, err := client.Register("me@example.com", "secret")
+	if err != nil {
+		log.Fatal(err)
 	}
+	fmt.Println("user_id:", userID)
+
+	// 2. Create an environment: an AI CLI plus some skills.
+	err = client.CreateEnvironment(octra.LLMConfig{
+		APIKey:  "sk-...",
+		BaseURL: "https://api.anthropic.com",
+		Model:   "claude-sonnet-4-6",
+	}, "claude-code", []string{"filesystem", "github", "brave-search"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 3. Send a prompt.
+	answer, err := client.Chat("write a csv parser", []string{"filesystem"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(answer)
 }
 ```

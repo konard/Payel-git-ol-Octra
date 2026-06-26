@@ -1,45 +1,86 @@
 # OCTRA Ruby Client
 
-## Reconnection Example
+A minimal client for the Octra HTTP/JSON API using only the standard library
+(`net/http` and `json`).
+
+The full flow is: **register** to get an `api_key`, **create an environment**
+(an AI CLI plus skills), then **chat**.
+
+---
+
+## 1. Reusable Client
 
 ```ruby
-require 'websocket-client-simple'
+require 'net/http'
 require 'json'
+require 'uri'
 
-task_id = nil
-backoff = 1
-uri = "wss://octra.env.pm/ws"
+class OctraClient
+  def initialize(base_url = 'http://localhost:8080', api_key: nil)
+    @base_url = base_url.chomp('/')
+    @api_key = api_key
+  end
 
-loop do
-  begin
-    ws = WebSocket::Client::Simple.connect uri
+  def register(email, password)
+    data = post('/register', email: email, password: password)
+    @api_key = data['api_key'] # remember it for later calls
+    data
+  end
 
-    if task_id
-      ws.send({ type: 'resume', task_id: task_id }.to_json)
-    else
-      ws.send({
-        username: "RubyClient",
-        user_id: "00000000-0000-0000-0000-000000000006",
-        title: "Ruby Task",
-        description: "Test from Ruby",
-        meta: { model: "your-model", provider: "provider", publish_repositories: "true", create_pull_requests: "true" },
-        tokens: { provider: "your-api-key" }
-      }.to_json)
+  def create_environment(llm:, cli: '', skills: [])
+    post('/environment', llm: llm, agent: { cli: cli }, skills: skills)
+  end
+
+  def chat(prompt, skills: [])
+    post('/api/chat', prompt: prompt, skills: skills)['response']
+  end
+
+  private
+
+  def post(path, body)
+    uri = URI("#{@base_url}#{path}")
+    req = Net::HTTP::Post.new(uri)
+    req['Content-Type'] = 'application/json'
+    req['octra-api-token'] = @api_key if @api_key
+    req.body = body.to_json
+
+    res = Net::HTTP.start(uri.hostname, uri.port,
+                          use_ssl: uri.scheme == 'https') do |http|
+      http.request(req)
     end
 
-    ws.on :message do |msg|
-      data = JSON.parse(msg.data)
-      puts "Update: #{data}"
-      task_id = data['taskId'] if data['taskId']
+    unless res.is_a?(Net::HTTPSuccess)
+      raise "Octra #{path} failed: #{res.code} #{res.body}"
     end
 
-    ws.on :close do
-      sleep backoff
-      backoff = [backoff * 2, 30].min
-    end
-  rescue => e
-    puts e
-    sleep backoff
+    JSON.parse(res.body)
   end
 end
+```
+
+---
+
+## 2. Full Flow Example
+
+```ruby
+client = OctraClient.new('http://localhost:8080')
+
+# 1. Register and capture the API key.
+account = client.register('me@example.com', 'secret')
+puts "user_id: #{account['user_id']}"
+
+# 2. Create an environment: an AI CLI plus some skills.
+client.create_environment(
+  llm: {
+    api_key: 'sk-...',
+    base_url: 'https://api.anthropic.com',
+    model: 'claude-sonnet-4-6'
+  },
+  cli: 'claude-code',
+  skills: %w[filesystem github brave-search]
+)
+
+# 3. Send a prompt.
+answer = client.chat('write a csv parser', skills: %w[filesystem])
+puts answer
 ```

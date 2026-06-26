@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
  * Tests electron/staticServer.ts — the loopback http server that serves the
- * built web app so Vite's absolute `/assets/...` URLs resolve (and the renderer
+ * built web app so absolute `/assets/...` URLs resolve (and the renderer
  * gets a real http origin for the backend WebSocket). Covers MIME mapping, the
  * SPA fallback, the traversal guard, and a real end-to-end fetch.
  */
