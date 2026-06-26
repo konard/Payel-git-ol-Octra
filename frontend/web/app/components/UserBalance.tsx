@@ -5,6 +5,7 @@ import { Wallet } from 'lucide-react';
 import styles from './UserBalance.module.css';
 import { fetchMe } from '../server/user';
 import type { MeResponse } from '../server/user';
+import { ROUTES } from '../config/routes';
 
 const accessTokenKeys = ['octra_access_token', 'access_token'];
 const refreshTokenKeys = ['octra_refresh_token', 'refresh_token'];
@@ -95,7 +96,7 @@ export function UserBalance() {
           : 'Loading';
 
   return (
-    <a className={styles.balance} href={state.status === 'signed-out' ? '/login' : '/dashboard'} title="Account balance">
+    <a className={styles.balance} href={state.status === 'signed-out' ? ROUTES.LOGIN : ROUTES.DASHBOARD} title="Account balance">
       <span className={styles.icon} aria-hidden="true">
         <Wallet size={16} />
       </span>

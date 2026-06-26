@@ -13,21 +13,22 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { login, register } from '../server/auth';
+import { ROUTES } from '../config/routes';
 
 const providers = [
   {
     name: 'Google',
-    href: '/login/google',
+    href: ROUTES.LOGIN_GOOGLE,
     icon: Chrome,
   },
   {
     name: 'GitHub',
-    href: '/login/github',
+    href: ROUTES.LOGIN_GITHUB,
     icon: Github,
   },
   {
     name: 'Lefine',
-    href: '/login/lefine',
+    href: ROUTES.LOGIN_LEFINE,
     icon: Sparkles,
   },
 ];
@@ -47,7 +48,7 @@ export default function AuthPage() {
         setLoginError(text || 'Sign in failed');
         return;
       }
-      window.location.href = '/app';
+      window.location.href = ROUTES.WORKSPACE;
     } catch {
       setLoginError('Network error');
     }
@@ -64,7 +65,7 @@ export default function AuthPage() {
         setRegisterError(text || 'Registration failed');
         return;
       }
-      window.location.href = '/app';
+      window.location.href = ROUTES.WORKSPACE;
     } catch {
       setRegisterError('Network error');
     }
@@ -72,12 +73,12 @@ export default function AuthPage() {
   return (
     <main className="auth-shell">
       <header className="top-nav auth-nav">
-        <a className="brand-link" href="/" aria-label="Octra home">
+        <a className="brand-link" href={ROUTES.HOME} aria-label="Octra home">
           <img src="/assets/octra-node-logo.svg" alt="" className="brand-mark" />
           <span>Octra</span>
         </a>
         <div className="nav-actions">
-          <a className="text-button" href="/dashboard">
+          <a className="text-button" href={ROUTES.DASHBOARD}>
             <ArrowRight size={17} />
             <span>Dashboard</span>
           </a>

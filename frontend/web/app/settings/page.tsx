@@ -1,6 +1,7 @@
 import { Settings } from 'lucide-react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { DashboardShell } from '../dashboard/DashboardShell';
+import { ROUTES } from '../config/routes';
 
 export default function SettingsPage() {
   return (
@@ -11,7 +12,7 @@ export default function SettingsPage() {
             icon={Settings}
             title="Settings"
             detail="Account, billing, and workspace settings will be managed from this screen."
-            actionHref="/app"
+            actionHref={ROUTES.WORKSPACE}
             actionLabel="Open workspace"
           />
         </article>

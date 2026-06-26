@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
+import { ROUTES } from '../config/routes';
 
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
@@ -51,9 +52,9 @@ export default function HomePage() {
         <div className="tv-actions">
           <UserBalance />
           {isAuthed ? (
-            <a className="avatar-button" href="/dashboard" aria-label="Open dashboard">O</a>
+            <a className="avatar-button" href={ROUTES.DASHBOARD} aria-label="Open dashboard">O</a>
           ) : (
-            <a className="upgrade-button" href="/login">
+            <a className="upgrade-button" href={ROUTES.LOGIN}>
               <Sparkles size={16} />
               <span>Sign in</span>
             </a>
@@ -71,7 +72,7 @@ export default function HomePage() {
           );
         })}
         <div className="rail-spacer" />
-        <a className="tool-button" href="/settings" aria-label="Settings">
+        <a className="tool-button" href={ROUTES.SETTINGS} aria-label="Settings">
           <Settings size={20} />
         </a>
       </aside>
@@ -91,7 +92,7 @@ export default function HomePage() {
               <div className="active-environments-title">
                 <span>Active environments</span>
               </div>
-              <a className="terminal-button" href="/dashboard/flows">
+              <a className="terminal-button" href={ROUTES.DASHBOARD_FLOWS}>
                 <Plus size={15} />
                 New flow
               </a>
@@ -113,7 +114,7 @@ export default function HomePage() {
                   icon={Activity}
                   title="No live metrics yet"
                   detail="Runtime counters will appear here when backend telemetry is available."
-                  actionHref="/dashboard/metrics"
+                  actionHref={ROUTES.DASHBOARD_METRICS}
                   actionLabel="Open metrics"
                 />
               </div>
@@ -132,7 +133,7 @@ export default function HomePage() {
                   icon={Activity}
                   title="No endpoints configured"
                   detail="Configured API endpoints will appear here."
-                  actionHref="/dashboard/flows"
+                  actionHref={ROUTES.DASHBOARD_FLOWS}
                   actionLabel="Configure"
                 />
               </div>
@@ -151,7 +152,7 @@ export default function HomePage() {
                   icon={Activity}
                   title="No active deployments"
                   detail="Environment deployments will appear here."
-                  actionHref="/dashboard"
+                  actionHref={ROUTES.DASHBOARD}
                   actionLabel="View"
                 />
               </div>

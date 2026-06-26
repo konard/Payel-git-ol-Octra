@@ -2,6 +2,7 @@ import { Activity, Code2, Settings } from 'lucide-react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { DashboardShell } from './DashboardShell';
+import { ROUTES } from '../config/routes';
 
 export default function DashboardPage() {
   return (
@@ -12,7 +13,7 @@ export default function DashboardPage() {
           icon={Activity}
           title="No live metrics yet"
           detail="Runtime counters will appear here when environments begin reporting telemetry."
-          actionHref="/dashboard/metrics"
+          actionHref={ROUTES.DASHBOARD_METRICS}
           actionLabel="Open metrics"
         />
       </section>
@@ -21,7 +22,7 @@ export default function DashboardPage() {
         <article className="traffic-panel large-panel" aria-label="Environment nodes canvas">
           <div className="panel-heading">
             <span>Environment nodes canvas</span>
-            <a className="ghost-command" href="/dashboard/flows">
+            <a className="ghost-command" href={ROUTES.DASHBOARD_FLOWS}>
               <Code2 size={15} />
               Edit
             </a>
@@ -38,7 +39,7 @@ export default function DashboardPage() {
             icon={Settings}
             title="No policy graph yet"
             detail="Workspace routing and billing policy data will appear here after configuration is saved."
-            actionHref="/settings"
+            actionHref={ROUTES.SETTINGS}
             actionLabel="Open settings"
           />
         </article>

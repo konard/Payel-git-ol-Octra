@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Bell, Plus } from 'lucide-react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
+import { ROUTES } from '../config/routes';
 
 type DashboardShellProps = {
   activeSection: string;
@@ -16,7 +17,7 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
-        <a className="square-brand" href="/app" aria-label="Octra home">
+        <a className="square-brand" href={ROUTES.WORKSPACE} aria-label="Octra home">
           <img src="/assets/octra-node-logo.svg" alt="" />
         </a>
         <nav>
@@ -46,12 +47,12 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
           <div className="topbar-actions">
             <UserBalance />
             {showNotifications && (
-              <a className="icon-button dark-icon" href="/dashboard/security" aria-label="Notifications">
+              <a className="icon-button dark-icon" href={ROUTES.DASHBOARD_SECURITY} aria-label="Notifications">
                 <Bell size={18} />
               </a>
             )}
             {!hideNewFlow && (
-              <a className="small-command accent-command" href="/dashboard/flows">
+              <a className="small-command accent-command" href={ROUTES.DASHBOARD_FLOWS}>
                 <Plus size={15} />
                 New flow
               </a>

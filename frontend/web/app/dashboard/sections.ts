@@ -11,6 +11,8 @@ import {
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
+import { ROUTES } from '../config/routes';
+
 
 export type DashboardSection = {
   slug: string;
@@ -27,7 +29,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Overview',
     title: 'Overview',
     detail: 'Live workspace activity will appear here when environments start reporting telemetry.',
-    href: '/dashboard',
+    href: ROUTES.DASHBOARD,
     icon: Gauge,
   },
   {
@@ -35,7 +37,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Flows',
     title: 'Flows',
     detail: 'Saved environment flows will appear here after they are created.',
-    href: '/dashboard/flows',
+    href: ROUTES.DASHBOARD_FLOWS,
     icon: Workflow,
   },
   {
@@ -43,7 +45,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Models',
     title: 'Models',
     detail: 'Configured model routes will appear here after provider settings are connected.',
-    href: '/dashboard/models',
+    href: ROUTES.DASHBOARD_MODELS,
     icon: Bot,
   },
   {
@@ -51,7 +53,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Files',
     title: 'Files',
     detail: 'Generated files and workspace artifacts will appear here after a run produces output.',
-    href: '/dashboard/files',
+    href: ROUTES.DASHBOARD_FILES,
     icon: FileText,
   },
   {
@@ -59,7 +61,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Security',
     title: 'Security',
     detail: 'Access policies and audit events will appear here after security data is available.',
-    href: '/dashboard/security',
+    href: ROUTES.DASHBOARD_SECURITY,
     icon: ShieldCheck,
   },
   {
@@ -67,7 +69,7 @@ export const dashboardSections: DashboardSection[] = [
     label: 'Settings',
     title: 'Settings',
     detail: 'Account, billing, and workspace settings will be managed from this screen.',
-    href: '/settings',
+    href: ROUTES.SETTINGS,
     icon: Settings,
   },
 ];
@@ -79,7 +81,7 @@ export const dashboardTabs: DashboardSection[] = [
     label: 'Metrics',
     title: 'Metrics',
     detail: 'Runtime counters will appear here after telemetry is connected.',
-    href: '/dashboard/metrics',
+    href: ROUTES.DASHBOARD_METRICS,
     icon: BarChart3,
   },
   {
@@ -87,7 +89,7 @@ export const dashboardTabs: DashboardSection[] = [
     label: 'Evaluations',
     title: 'Evaluations',
     detail: 'Evaluation results will appear here after benchmark runs complete.',
-    href: '/dashboard/evaluations',
+    href: ROUTES.DASHBOARD_EVALUATIONS,
     icon: GitBranch,
   },
   {
@@ -95,7 +97,7 @@ export const dashboardTabs: DashboardSection[] = [
     label: 'Deployments',
     title: 'Deployments',
     detail: 'Deployment status will appear here after environments publish releases.',
-    href: '/dashboard/deployments',
+    href: ROUTES.DASHBOARD_DEPLOYMENTS,
     icon: Rocket,
   },
 ];
@@ -105,7 +107,7 @@ export const accountSection: DashboardSection = {
   label: 'Account',
   title: 'Account',
   detail: 'Account identity and connected providers will appear here after sign-in.',
-  href: '/login',
+  href: ROUTES.LOGIN,
   icon: LockKeyhole,
 };
 

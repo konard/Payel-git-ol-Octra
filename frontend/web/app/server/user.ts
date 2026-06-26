@@ -1,3 +1,5 @@
+import { API } from '../config/routes'
+
 export type MeResponse = {
   data?: {
     balance?: number;
@@ -6,7 +8,7 @@ export type MeResponse = {
 };
 
 export function fetchMe(token: string): Promise<Response> {
-  return fetch('/me', {
+  return fetch(API.ME, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

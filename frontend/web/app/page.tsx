@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { EmptyDataPanel } from './components/EmptyDataPanel';
+import { ROUTES } from './config/routes';
 
 const capabilities = [
   {
@@ -53,7 +54,7 @@ export default function LandingPage() {
   return (
     <main className="landing-shell">
       <header className="top-nav">
-        <a className="brand-link" href="/" aria-label="Octra home">
+        <a className="brand-link" href={ROUTES.HOME} aria-label="Octra home">
           <img src="/assets/octra-node-logo.svg" alt="" className="brand-mark" />
           <span>Octra</span>
         </a>
@@ -61,16 +62,16 @@ export default function LandingPage() {
         <nav className="nav-links" aria-label="Primary navigation">
           <a href="#capabilities">Capabilities</a>
           <a href="#preview">Preview</a>
-          <a href="/login">Sign in</a>
-          <a href="/app">App</a>
+          <a href={ROUTES.LOGIN}>Sign in</a>
+          <a href={ROUTES.WORKSPACE}>App</a>
         </nav>
 
         <div className="nav-actions">
-          <a className="text-button" href="/login">
+          <a className="text-button" href={ROUTES.LOGIN}>
             <LockKeyhole size={17} />
             <span>Sign in</span>
           </a>
-          <a className="primary-button" href="/dashboard">
+          <a className="primary-button" href={ROUTES.DASHBOARD}>
             <Sparkles size={17} />
             <span>Dashboard</span>
             <ArrowRight size={16} />
@@ -97,12 +98,12 @@ export default function LandingPage() {
             Deploy your agents on Octra for 24/7 access and earn money from it.
           </p>
           <div className="hero-actions">
-            <a className="primary-button" href="/login">
+            <a className="primary-button" href={ROUTES.LOGIN}>
               <Zap size={18} />
               <span>Get started</span>
               <ArrowRight size={17} />
             </a>
-            <a className="secondary-button" href="/app">
+            <a className="secondary-button" href={ROUTES.WORKSPACE}>
               <PanelRight size={18} />
               <span>Open workspace</span>
             </a>
@@ -135,7 +136,7 @@ export default function LandingPage() {
                 icon={Activity}
                 title="No live preview metrics yet"
                 detail="Environment and chat counters will appear here when telemetry is connected."
-                actionHref="/dashboard/metrics"
+                actionHref=ROUTES.DASHBOARD_METRICS
                 actionLabel="Open metrics"
               />
             </div>
@@ -209,7 +210,7 @@ export default function LandingPage() {
             </article>
           );
         })}
-        <a className="capability-link" href="/login">
+        <a className="capability-link" href={ROUTES.LOGIN}>
           <span>Explore all</span>
           <ArrowRight size={18} />
         </a>

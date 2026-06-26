@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { EmptyDataPanel } from '../../components/EmptyDataPanel';
 import { DashboardShell } from '../DashboardShell';
 import { findDashboardSection, routeSections } from '../sections';
+import { ROUTES } from '../../config/routes';
 
 export const dynamicParams = false;
 
@@ -28,7 +29,7 @@ export default async function DashboardSectionPage({ params }: { params: Promise
             icon={Icon}
             title={section.title}
             detail={section.detail}
-            actionHref="/app"
+            actionHref={ROUTES.WORKSPACE}
             actionLabel="Open workspace"
           />
         </article>
