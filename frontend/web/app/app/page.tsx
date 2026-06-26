@@ -3,12 +3,8 @@
 import {
   Activity,
   ChevronDown,
-  CircleDollarSign,
-  Database,
-  FileText,
   Layers3,
   LineChart,
-  LockKeyhole,
   Plus,
   Search,
   Settings,
@@ -20,12 +16,6 @@ import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
-
-const backendEndpoints = [
-  { label: 'Environment', value: 'POST /environment', detail: 'environment_id' },
-  { label: 'Chat API', value: 'POST /api/chat', detail: 'octra-api-token prompt' },
-  { label: 'CLI state', value: 'Redis cli_state', detail: 'PID, port, TTL' },
-];
 
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
@@ -120,32 +110,6 @@ export default function HomePage() {
               actionLabel="Open metrics"
             />
           </div>
-
-          <section className="guard-stack" aria-label="Backend endpoints">
-            {backendEndpoints.map((endpoint) => (
-              <div className="guard-row" key={endpoint.label}>
-                {endpoint.label === 'Environment' ? (
-                  <Zap size={16} />
-                ) : endpoint.label === 'CLI state' ? (
-                  <Database size={16} />
-                ) : (
-                  <FileText size={16} />
-                )}
-                <span>{endpoint.label}</span>
-                <strong>{endpoint.value}</strong>
-              </div>
-            ))}
-            <div className="guard-row">
-              <LockKeyhole size={16} />
-              <span>Auth</span>
-              <strong>Bearer cookie</strong>
-            </div>
-            <div className="guard-row">
-              <CircleDollarSign size={16} />
-              <span>Rate limit</span>
-              <strong>api_chat</strong>
-            </div>
-          </section>
         </aside>
       </section>
 
