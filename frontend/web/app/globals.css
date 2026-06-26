@@ -2026,7 +2026,7 @@ button {
 .collapse-wrap {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-rows 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .collapse-wrap.collapsed {
