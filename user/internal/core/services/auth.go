@@ -14,9 +14,8 @@ import (
 )
 
 const (
-	AccessTokenExpiry     = 15 * time.Minute
-	RefreshTokenExpiry    = 7 * 24 * time.Hour // 7 дней
-	DefaultBalanceCredits = 100
+	AccessTokenExpiry  = 15 * time.Minute
+	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 дней
 )
 
 // GenerateTokens generates access and refresh JWT tokens
@@ -139,11 +138,9 @@ func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 		"user": map[string]interface{}{
-			"id":              user.ID.String(),
-			"username":        user.Username,
-			"email":           user.Email,
-			"balance_credits": user.BalanceCredits,
-			"created_at":      user.CreatedAt,
+			"id":       user.ID.String(),
+			"username": user.Username,
+			"email":    user.Email,
 		},
 	}, nil
 }
@@ -174,10 +171,9 @@ func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error)
 	}
 
 	user = models.UserRegister{
-		ID:             uuid.New(),
-		Username:       username,
-		Email:          email,
-		BalanceCredits: DefaultBalanceCredits,
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
@@ -220,10 +216,9 @@ func GetOrCreateUserFromGithub(email, name string) (*models.UserRegister, error)
 	}
 
 	user = models.UserRegister{
-		ID:             uuid.New(),
-		Username:       username,
-		Email:          email,
-		BalanceCredits: DefaultBalanceCredits,
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
@@ -266,10 +261,9 @@ func GetOrCreateUserFromLeFine(email, name, lefineUserID string) (*models.UserRe
 	}
 
 	user = models.UserRegister{
-		ID:             uuid.New(),
-		Username:       username,
-		Email:          email,
-		BalanceCredits: DefaultBalanceCredits,
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
@@ -358,8 +352,6 @@ func GetMe(tokenString string) (map[string]interface{}, error) {
 		"user_id":          user.ID.String(),
 		"username":         user.Username,
 		"email":            user.Email,
-		"balance_credits":  user.BalanceCredits,
-		"created_at":       user.CreatedAt,
 		"has_subscription": hasSubscription,
 		"subscription_end": subscriptionEnd,
 	}, nil
@@ -373,11 +365,10 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 	}
 
 	user := models.UserRegister{
-		ID:             uuid.New(),
-		Username:       req.Username,
-		Email:          req.Email,
-		Password:       hashPs,
-		BalanceCredits: DefaultBalanceCredits,
+		ID:       uuid.New(),
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashPs,
 	}
 
 	err = database.Db.Create(&user).Error
@@ -398,11 +389,9 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 		"user": map[string]interface{}{
-			"id":              user.ID.String(),
-			"username":        user.Username,
-			"email":           user.Email,
-			"balance_credits": user.BalanceCredits,
-			"created_at":      user.CreatedAt,
+			"id":       user.ID.String(),
+			"username": user.Username,
+			"email":    user.Email,
 		},
 	}, nil
 }

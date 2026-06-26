@@ -569,9 +569,6 @@ export default function App() {
         onModeChange={setMode}
         hasUnreadMessages={hasUnreadMessages}
         onToggleSidebar={() => setShowSidebar(true)}
-        onNewChat={() => {
-          void handleNewChat();
-        }}
         isDesktop={isDesktop}
         sessionsOpen={sessionsOpen}
         onToggleSessions={() => setSessionsOpen((v) => !v)}
