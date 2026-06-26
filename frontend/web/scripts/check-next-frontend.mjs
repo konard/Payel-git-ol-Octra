@@ -54,6 +54,17 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
   assert(allRouteSource.includes(phrase), `New frontend source is missing required phrase: ${phrase}`);
 }
 
+if (exists('app/page.tsx')) {
+  const homepageSource = read('app/page.tsx').toLowerCase();
+  for (const phrase of ['node-canvas', 'workflow-node', 'quote board', 'live graph']) {
+    assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
+  }
+
+  for (const rejectedPhrase of ['ai delivery cockpit', 'hero-section', 'capability-band']) {
+    assert(!homepageSource.includes(rejectedPhrase), `Homepage must not fall back to the rejected landing-page shape: ${rejectedPhrase}`);
+  }
+}
+
 if (exists('Dockerfile')) {
   const dockerfile = read('Dockerfile');
   assert(dockerfile.includes('/app/dist'), 'Dockerfile must continue serving the static dist directory');
