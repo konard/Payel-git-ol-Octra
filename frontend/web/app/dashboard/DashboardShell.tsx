@@ -17,10 +17,11 @@ export function DashboardShell({ activeSection, children }: DashboardShellProps)
         <a className="square-brand" href="/app" aria-label="Octra home">
           <img src="/assets/octra-node-logo.svg" alt="" />
         </a>
-        {/* If the user asks to restore Models, Files, Security or other sidebar nav buttons on the dashboard, uncomment the block below
         <nav>
           {dashboardSections.map((item) => {
             const Icon = item.icon;
+            // Models, Files, Security buttons are commented out by user request. To restore, remove the line below
+            if (['models', 'files', 'security'].includes(item.slug)) return null;
             return (
               <a
                 className={item.slug === activeSection ? 'side-icon active' : 'side-icon'}
@@ -33,7 +34,6 @@ export function DashboardShell({ activeSection, children }: DashboardShellProps)
             );
           })}
         </nav>
-        */}
         <a className="side-icon" href={accountSection.href} aria-label={accountSection.label}>
           <AccountIcon size={18} />
         </a>
