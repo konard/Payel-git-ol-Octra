@@ -1446,10 +1446,12 @@ button {
   outline: 0;
   background: transparent;
   color: var(--text);
+  text-align: center;
 }
 
 .tv-search input::placeholder {
   color: var(--quiet);
+  text-align: center;
 }
 
 .tv-nav {
