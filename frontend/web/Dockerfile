@@ -1,13 +1,12 @@
 FROM node:22-alpine AS builder
 
-ARG VITE_FRONTEND_MODE=LOCAL
-ENV VITE_FRONTEND_MODE=$VITE_FRONTEND_MODE
+ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
