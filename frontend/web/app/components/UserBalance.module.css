@@ -21,7 +21,7 @@
 .icon {
   display: inline-flex;
   flex: 0 0 auto;
-  color: var(--metric-warning);
+  color: var(--metric-success);
 }
 
 .copy {
