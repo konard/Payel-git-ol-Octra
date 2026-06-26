@@ -21,7 +21,7 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
         <nav>
           {dashboardSections.map((item) => {
             const Icon = item.icon;
-            const hidden = hideSidebarItems ?? ['models', 'files', 'security'];
+            const hidden = hideSidebarItems ?? ['models', 'files', 'security', 'settings'];
             if (hidden.includes(item.slug)) return null;
             return (
               <a
