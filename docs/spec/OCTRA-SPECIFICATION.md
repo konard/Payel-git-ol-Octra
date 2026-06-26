@@ -1,134 +1,135 @@
-# OCTRA Custom Client Specification (v2)
+# OCTRA Custom Client Specification (v3)
 
 ## 1. Introduction
 
-This document describes how to build a custom client that can replace or supplement the official React frontend.
+This document describes how to build a custom client for Octra, the
+**MCP aggregator**. Octra exposes a small HTTP/JSON API: you register to get an
+`api_key`, create an environment (a Nix profile with an AI CLI and skills), and
+then send prompts to your personal endpoint.
 
-The official frontend connects to the API Gateway using WebSocket and supports automatic reconnection with task state restoration.
-
----
-
-## 2. Connection Endpoints
-
-The frontend uses the following relative paths (proxied through `/api`):
-
-- **Create new task**: `/task/create`
-- **Resume existing task**: `/task/reconnect`
-
-**Full production URL examples**:
-```
-wss://octra.env.pm/api/task/create
-wss://octra.env.pm/api/task/reconnect
-```
-
-**Local development** (via Vite proxy):
-```
-wss://octra.env.pm/api/task/create
-```
+> The previous WebSocket task-streaming protocol (boss/manager/worker pipeline)
+> has been removed along with the old microservices. Octra is now a single
+> backend with a plain REST API.
 
 ---
 
-## 3. Reconnection & Resume Protocol
+## 2. Base URL & authentication
 
-### Important discovery from real frontend
+```
+http://localhost:8080          # local
+https://octra.env.pm           # production example
+```
 
-When reconnecting, the client does **not** send `{"type": "resume"}`.
+All authenticated requests carry the user's API key in a header:
 
-Instead, it sends:
+```
+octra-api-token: octra_…
+```
 
+Send and receive `application/json`.
+
+---
+
+## 3. Endpoints
+
+| Method | Path           | Auth | Purpose |
+|--------|----------------|------|---------|
+| `GET`  | `/health`      | no   | Liveness probe |
+| `POST` | `/register`    | no   | Create a user, return `api_key` |
+| `POST` | `/environment` | yes  | Create/update the user's environment (CLI + skills) |
+| `POST` | `/api/chat`    | yes  | Send a prompt, get a response |
+
+### 3.1 `POST /register`
+
+Request:
+```json
+{ "email": "me@example.com", "password": "secret" }
+```
+Response `201`:
+```json
+{ "user_id": "…", "api_key": "octra_…" }
+```
+
+### 3.2 `POST /environment`
+
+Request:
 ```json
 {
-  "task_id": "550e8400-e29b-41d4-a716-446655440000"
+  "llm":   { "api_key": "sk-…", "base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-6" },
+  "agent": { "cli": "claude-code" },
+  "skills": ["filesystem", "github", "brave-search"]
 }
 ```
-
-This tells the server to restore the task state from Redis and continue streaming updates.
-
-### Reconnection flow
-
-1. Client stores `activeTaskId` locally
-2. On disconnect → wait with exponential backoff
-3. On reconnect → connect to `/task/reconnect`
-4. Immediately send `{ "task_id": "..." }`
-5. Server resumes sending `TaskUpdate` messages
-
----
-
-## 4. Message Format
-
-### Outgoing messages
-
-**Create task**:
+Response `200`:
 ```json
-{
-  "username": "",
-  "user_id": "",
-  "title": "Need a mini proxy in Go without frontend and tests",
-  "description": "Need a mini proxy in Go without frontend and tests",
-  "meta": {
-    "model": "your-model",
-    "provider": "provider",
-    "publish_repositories": "true",
-    "create_pull_requests": "true"
-  },
-  "tokens": {
-    "provider": "your-api-key",
-    "base_url": "https://api.example.com/v1"
-  }
-}
+{ "user_id": "…", "agent_id": "…", "api_key": "octra_…" }
 ```
 
-**GitHub integration flags** (optional, in `meta`):
+- `agent.cli` is optional. Supported values include `claude-code`, `opencode`,
+  `codex`. If omitted, Octra runs as a plain LLM proxy.
+- Octra creates the user's Nix environment, installs the CLI (if any), then
+  installs each skill and records its install status.
 
-| Flag | Type | Default | Effect |
-|------|------|---------|--------|
-| `publish_repositories` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a GitHub repository and pushes the generated code. When `"false"`, skips repo creation. |
-| `create_pull_requests` | `"true"` / `"false"` | not set (old behaviour) | When `"true"`, creates a pull request for issue-linked tasks. When `"false"`, pushes code to a branch but does not create a PR. |
+### 3.3 `POST /api/chat`
 
-If both flags are set to `"false"`, no GitHub node appears on the frontend canvas. If the integration is not connected (flags absent), the backend falls back to its default behaviour (publishes if `GITHUB_TOKEN` is set).
-
-**Resume task**:
+Request:
 ```json
-{
-  "task_id": "550e8400-e29b-41d4-a716-446655440000"
-}
+{ "prompt": "write a csv parser", "skills": ["filesystem"] }
+```
+Response `200`:
+```json
+{ "response": "…" }
 ```
 
-### Incoming messages
-
-The server streams `TaskUpdate` objects with progress, logs, and final results.
-
----
-
-## 5. Heartbeat
-
-The real frontend starts a heartbeat after connection to keep the connection alive and detect dead connections early.
+`skills[]` selects which installed skills are active for this request — omit a
+skill to disable it without uninstalling it.
 
 ---
 
-## 6. Recommended Client Features
+## 4. Request flow (server side)
 
-- Store `taskId` immediately after first update
-- Implement exponential backoff reconnection
-- Support both new task and resume flows
-- Handle authentication token refresh
-- Show clear connection status to the user
+```
+request → validate octra-api-token → load user + agent
+  → if CLI configured:
+      → check Redis: is the process alive?
+        → alive → send prompt to its stdin
+        → dead  → launch subprocess in the user's Nix env
+  → else:
+      → direct LLM call (proxy mode)
+  → return { "response": … }
+```
+
+The CLI subprocess is long-lived (reused across requests) with its state in
+Redis and a TTL; idle processes are reaped.
 
 ---
 
-## 7. Language-Specific Implementations
+## 5. Errors
 
-See detailed examples with correct reconnection logic:
+Errors are returned as JSON with the relevant HTTP status:
 
-- [Python + FastAPI](OCTRA-CLIENT-PYTHON.md)
-- [TypeScript](OCTRA-CLIENT-TYPESCRIPT.md)
+```json
+{ "error": "invalid token" }
+```
+
+| Status | Meaning |
+|--------|---------|
+| `400`  | Malformed request body |
+| `401`  | Missing/invalid `octra-api-token` |
+| `409`  | Email already registered |
+| `5xx`  | Provisioning / upstream LLM failure |
+
+---
+
+## 6. Language-specific clients
+
+Minimal HTTP examples in several languages:
+
+- [Python](OCTRA-CLIENT-PYTHON.md)
+- [TypeScript / Node.js](OCTRA-CLIENT-TYPESCRIPT.md)
 - [Go](OCTRA-CLIENT-GO.md)
-- [Java + Spring](OCTRA-CLIENT-JAVA.md)
-- [C# + ASP.NET](OCTRA-CLIENT-CS.md)
+- [Java](OCTRA-CLIENT-JAVA.md)
+- [C#](OCTRA-CLIENT-CS.md)
 - [Ruby](OCTRA-CLIENT-RUBY.md)
 - [Crystal](OCTRA-CLIENT-CRYSTAL.md)
 - [Rust](OCTRA-CLIENT-RUST.md)
-
----
-
-This specification is aligned with how the official frontend actually works.
