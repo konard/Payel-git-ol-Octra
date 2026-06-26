@@ -16,7 +16,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
@@ -35,6 +35,12 @@ const toolItems = [
 
 export default function HomePage() {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
+    setIsAuthed(hasToken);
+  }, []);
 
   return (
     <main className="site-shell workspace-home">
@@ -60,13 +66,14 @@ export default function HomePage() {
 
         <div className="tv-actions">
           <UserBalance />
-          <a className="upgrade-button" href="/auth">
-            <Sparkles size={16} />
-            <span>Sign in</span>
-          </a>
-          <a className="avatar-button" href="/dashboard" aria-label="Open dashboard">
-            O
-          </a>
+          {isAuthed ? (
+            <a className="avatar-button" href="/dashboard" aria-label="Open dashboard">O</a>
+          ) : (
+            <a className="upgrade-button" href="/auth">
+              <Sparkles size={16} />
+              <span>Sign in</span>
+            </a>
+          )}
         </div>
       </header>
 
