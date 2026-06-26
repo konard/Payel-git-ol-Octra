@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Bell, PanelLeft, Plus, Search } from 'lucide-react';
+import { Bell, Plus, Search } from 'lucide-react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
 
@@ -41,10 +41,6 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
       <section className="dashboard-scene" aria-labelledby="dashboard-title">
         <header className="dashboard-topbar">
           <div className="crumbs">
-            <a className="icon-button dark-icon" href="/app" aria-label="Open app workspace">
-              <PanelLeft size={18} />
-            </a>
-            <a href="/">Octra</a>
             <span id="dashboard-title">Pipeline Command</span>
           </div>
           <label className="search-field dashboard-search">
