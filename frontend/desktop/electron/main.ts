@@ -2,7 +2,7 @@
 
 // Electron main process for Octra Desktop.
 //
-// The renderer is the REAL Octra web app (frontend/web): in dev we load the Vite
+// The renderer is the REAL Octra web app (frontend/web): in dev we load the Next
 // dev server, in prod we serve the built dist over a loopback http server. On top
 // of that we add a frameless window with a custom title bar, native menu, recent-
 // projects store and filesystem bridge. This is what makes the desktop IDE look
