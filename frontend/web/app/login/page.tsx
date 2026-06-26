@@ -17,17 +17,17 @@ import { login, register } from '../server/auth';
 const providers = [
   {
     name: 'Google',
-    href: '/auth/google',
+    href: '/login/google',
     icon: Chrome,
   },
   {
     name: 'GitHub',
-    href: '/auth/github',
+    href: '/login/github',
     icon: Github,
   },
   {
     name: 'Lefine',
-    href: '/auth/lefine',
+    href: '/login/lefine',
     icon: Sparkles,
   },
 ];

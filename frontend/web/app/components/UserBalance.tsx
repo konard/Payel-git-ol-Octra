@@ -95,7 +95,7 @@ export function UserBalance() {
           : 'Loading';
 
   return (
-    <a className={styles.balance} href={state.status === 'signed-out' ? '/auth' : '/dashboard'} title="Account balance">
+    <a className={styles.balance} href={state.status === 'signed-out' ? '/login' : '/dashboard'} title="Account balance">
       <span className={styles.icon} aria-hidden="true">
         <Wallet size={16} />
       </span>

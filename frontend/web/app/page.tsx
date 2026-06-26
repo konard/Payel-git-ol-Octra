@@ -61,12 +61,12 @@ export default function LandingPage() {
         <nav className="nav-links" aria-label="Primary navigation">
           <a href="#capabilities">Capabilities</a>
           <a href="#preview">Preview</a>
-          <a href="/auth">Sign in</a>
+          <a href="/login">Sign in</a>
           <a href="/app">App</a>
         </nav>
 
         <div className="nav-actions">
-          <a className="text-button" href="/auth">
+          <a className="text-button" href="/login">
             <LockKeyhole size={17} />
             <span>Sign in</span>
           </a>
@@ -97,7 +97,7 @@ export default function LandingPage() {
             Deploy your agents on Octra for 24/7 access and earn money from it.
           </p>
           <div className="hero-actions">
-            <a className="primary-button" href="/auth">
+            <a className="primary-button" href="/login">
               <Zap size={18} />
               <span>Get started</span>
               <ArrowRight size={17} />
@@ -209,7 +209,7 @@ export default function LandingPage() {
             </article>
           );
         })}
-        <a className="capability-link" href="/auth">
+        <a className="capability-link" href="/login">
           <span>Explore all</span>
           <ArrowRight size={18} />
         </a>

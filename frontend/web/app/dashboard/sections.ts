@@ -105,7 +105,7 @@ export const accountSection: DashboardSection = {
   label: 'Account',
   title: 'Account',
   detail: 'Account identity and connected providers will appear here after sign-in.',
-  href: '/auth',
+  href: '/login',
   icon: LockKeyhole,
 };
 

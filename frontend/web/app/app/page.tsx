@@ -53,7 +53,7 @@ export default function HomePage() {
           {isAuthed ? (
             <a className="avatar-button" href="/dashboard" aria-label="Open dashboard">O</a>
           ) : (
-            <a className="upgrade-button" href="/auth">
+            <a className="upgrade-button" href="/login">
               <Sparkles size={16} />
               <span>Sign in</span>
             </a>
