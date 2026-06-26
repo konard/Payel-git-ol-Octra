@@ -48,6 +48,90 @@ func GetGithubOauthConfig() *oauth2.Config {
 	}
 }
 
+type githubUserProfile struct {
+	ID    int64  `json:"id"`
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type githubEmail struct {
+	Email    string `json:"email"`
+	Primary  bool   `json:"primary"`
+	Verified bool   `json:"verified"`
+}
+
+func fetchGithubUserProfile(client *http.Client) (*githubUserProfile, error) {
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub user API returned %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var profile githubUserProfile
+	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
+		return nil, fmt.Errorf("failed to parse user info: %w", err)
+	}
+	return &profile, nil
+}
+
+func fetchGithubEmails(client *http.Client) ([]githubEmail, error) {
+	resp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user emails: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub email API returned %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var emails []githubEmail
+	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+		return nil, fmt.Errorf("failed to parse user emails: %w", err)
+	}
+	return emails, nil
+}
+
+func selectGithubEmail(profile githubUserProfile, emails []githubEmail) (string, error) {
+	for _, email := range emails {
+		if email.Primary && email.Verified && strings.TrimSpace(email.Email) != "" {
+			return email.Email, nil
+		}
+	}
+
+	if strings.TrimSpace(profile.Email) != "" {
+		return profile.Email, nil
+	}
+
+	for _, email := range emails {
+		if email.Verified && strings.TrimSpace(email.Email) != "" {
+			return email.Email, nil
+		}
+	}
+
+	return "", fmt.Errorf("GitHub account does not expose a verified email")
+}
+
+func githubDisplayName(profile githubUserProfile) string {
+	if strings.TrimSpace(profile.Login) != "" {
+		return profile.Login
+	}
+	if strings.TrimSpace(profile.Name) != "" {
+		return profile.Name
+	}
+	if profile.ID != 0 {
+		return fmt.Sprintf("github_%d", profile.ID)
+	}
+	return "github_user"
+}
+
 func RegisterGoogleRoutes(r *gin.Engine) {
 	r.GET("/auth/google", func(c *gin.Context) {
 		config := GetGoogleOauthConfig()
@@ -140,35 +224,24 @@ func RegisterGithubRoutes(r *gin.Engine) {
 		}
 
 		client := config.Client(context.Background(), token)
-		resp, err := client.Get("https://api.github.com/user")
+		githubUser, err := fetchGithubUserProfile(client)
 		if err != nil {
-			c.JSON(500, gin.H{"status": "error", "error": "Failed to get user info"})
-			return
-		}
-		defer resp.Body.Close()
-
-		body, _ := io.ReadAll(resp.Body)
-		var githubUser struct {
-			ID    int    `json:"id"`
-			Login string `json:"login"`
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		}
-		if err := json.Unmarshal(body, &githubUser); err != nil {
-			c.JSON(500, gin.H{"status": "error", "error": "Failed to parse user info"})
+			c.JSON(500, gin.H{"status": "error", "error": err.Error()})
 			return
 		}
 
-		email := githubUser.Email
-		if email == "" {
-			email = fmt.Sprintf("%s@github.local", githubUser.Login)
+		emails, emailErr := fetchGithubEmails(client)
+		if emailErr != nil && githubUser.Email == "" {
+			c.JSON(500, gin.H{"status": "error", "error": emailErr.Error()})
+			return
 		}
-		name := githubUser.Login
-		if name == "" {
-			name = githubUser.Name
+		email, err := selectGithubEmail(*githubUser, emails)
+		if err != nil {
+			c.JSON(400, gin.H{"status": "error", "error": err.Error()})
+			return
 		}
 
-		user, err := services.GetOrCreateUserFromGithub(email, name)
+		user, err := services.GetOrCreateUserFromGithub(email, githubDisplayName(*githubUser))
 		if err != nil {
 			c.JSON(500, gin.H{"status": "error", "error": err.Error()})
 			return

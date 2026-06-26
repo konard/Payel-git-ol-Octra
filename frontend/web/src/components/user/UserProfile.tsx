@@ -177,7 +177,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-[var(--text-muted)]">{t('profile.memberSince')}</span>
               <span className="text-sm text-[var(--text)]">
-                {user?.createdAt ? formatDate(new Date(user.createdAt).getTime() / 1000) : 'N/A'}
+                {user?.created_at ? formatDate(new Date(user.created_at).getTime()) : 'N/A'}
               </span>
             </div>
           </div>

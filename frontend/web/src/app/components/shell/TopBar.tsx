@@ -13,6 +13,7 @@ import { IntegrationCard } from '../../../components/integrations/IntegrationCar
 import { CustomProviderCard } from '../../../components/integrations/CustomProviderCard';
 import { TokenStatistics } from '../../../components/user/TokenStatistics';
 import { UserProfile } from '../../../components/user/UserProfile';
+import { UserBalance } from '../../../components/user/UserBalance';
 import lefineIcon from '../../../images/lefine.pro.jpg';
 import telegramIcon from '../../../images/Telegram.webp';
 import n8nIcon from '../../../images/n8n-color.png';
@@ -126,6 +127,7 @@ interface TopBarProps {
   onModeChange: (mode: 'canvas' | 'chat' | 'solution') => void;
   hasUnreadMessages: boolean;
   onToggleSidebar?: () => void;
+  onNewChat?: () => void;
   // When the desktop workspace is active this drives the docked Sessions (left)
   // pane; on narrow screens it stays undefined and the header falls back to the
   // overlay sidebar + single-pane mode tabs. The Solution pane is always visible
@@ -136,7 +138,7 @@ interface TopBarProps {
   onToggleSessions?: () => void;
 }
 
-export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar, isDesktop = false, sessionsOpen = false, onToggleSessions }: TopBarProps) {
+export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSubscription, mode, onModeChange, hasUnreadMessages, onToggleSidebar, onNewChat, isDesktop = false, sessionsOpen = false, onToggleSessions }: TopBarProps) {
   const status = useTaskStore((state) => state.status);
   const zipUrl = useTaskStore((state) => state.zipUrl);
   const repoUrl = useTaskStore((state) => state.repoUrl);
@@ -287,10 +289,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
               </svg>
             </button>
             <button
-              onClick={() => {
-                onToggleSidebar();
-                // Trigger new chat after sidebar opens
-              }}
+              onClick={() => onNewChat?.()}
               className="p-2 hover:bg-[var(--background)] rounded-lg transition-colors text-[var(--text-secondary)]"
               title="New Chat"
               data-tour="new-chat"
@@ -328,6 +327,7 @@ export function TopBar({ isAuthenticated, hasSubscription, onShowAuth, onShowSub
 
         {/* Right: Theme & Settings & Profile */}
         <div className="flex shrink-0 items-center gap-2">
+          {isAuthenticated && <UserBalance />}
           {/* Theme toggle also adds to the mobile clutter; hidden on phones and
               shown from md+ (issue #46). The theme can still be switched from
               Settings → Interface. */}

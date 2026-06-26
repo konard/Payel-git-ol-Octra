@@ -28,37 +28,45 @@ function isUserInTrial(createdAt?: string): boolean {
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
+function getBrowserStorage(): Storage | null {
+  return typeof localStorage === 'undefined' ? null : localStorage;
+}
+
 // Получаем токены из localStorage при инициализации
 function getStoredAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getBrowserStorage()?.getItem(ACCESS_TOKEN_KEY) ?? null;
 }
 
 function getStoredRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return getBrowserStorage()?.getItem(REFRESH_TOKEN_KEY) ?? null;
 }
 
 function setAccessTokenCookie(token: string): void {
+  if (typeof document === 'undefined') return;
   document.cookie = `${ACCESS_TOKEN_KEY}=${token}; path=/; SameSite=Lax`;
 }
 
 function removeAccessTokenCookie(): void {
+  if (typeof document === 'undefined') return;
   document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; SameSite=Lax; Max-Age=0`;
 }
 
 function storeTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  const storage = getBrowserStorage();
+  storage?.setItem(ACCESS_TOKEN_KEY, accessToken);
+  storage?.setItem(REFRESH_TOKEN_KEY, refreshToken);
   setAccessTokenCookie(accessToken);
 }
 
 function storeAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  getBrowserStorage()?.setItem(ACCESS_TOKEN_KEY, token);
   setAccessTokenCookie(token);
 }
 
 function removeTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  const storage = getBrowserStorage();
+  storage?.removeItem(ACCESS_TOKEN_KEY);
+  storage?.removeItem(REFRESH_TOKEN_KEY);
   removeAccessTokenCookie();
 }
 
@@ -120,7 +128,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           hasSubscription: userResponse.data.has_subscription || false,
           subscriptionEnd: userResponse.data.subscription_end || null,
           isInTrial: isUserInTrial(userResponse.data.created_at),
-          user: { ...response.data.user, subscription_end: userResponse.data.subscription_end },
+          user: {
+            ...response.data.user,
+            balance_credits: userResponse.data.balance_credits,
+            subscription_end: userResponse.data.subscription_end,
+            created_at: userResponse.data.created_at,
+          },
         });
       } catch {
         // ignore
@@ -156,6 +169,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           hasSubscription: userResponse.data.has_subscription || false,
           subscriptionEnd: userResponse.data.subscription_end || null,
           isInTrial: isUserInTrial(userResponse.data.created_at),
+          user: {
+            ...response.data.user,
+            balance_credits: userResponse.data.balance_credits,
+            subscription_end: userResponse.data.subscription_end,
+            created_at: userResponse.data.created_at,
+          },
           isAuthenticated: true,
           error: null,
         });
@@ -216,7 +235,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
+              balance_credits: userResponse.data.balance_credits,
               subscription_end: userResponse.data.subscription_end,
+              created_at: userResponse.data.created_at,
             },
             hasSubscription: userResponse.data.has_subscription || false,
             subscriptionEnd: userResponse.data.subscription_end || null,
@@ -250,8 +271,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: response.data.user_id,
           username: response.data.username,
           email: response.data.email,
+          balance_credits: response.data.balance_credits,
           subscription_end: response.data.subscription_end,
-          created_at: (response.data as any).created_at,
+          created_at: response.data.created_at,
         },
         hasSubscription: response.data.has_subscription || false,
         subscriptionEnd: response.data.subscription_end || null,
@@ -275,7 +297,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.data.user_id,
               username: userResponse.data.username,
               email: userResponse.data.email,
+              balance_credits: userResponse.data.balance_credits,
               subscription_end: userResponse.data.subscription_end,
+              created_at: userResponse.data.created_at,
             },
             hasSubscription: userResponse.data.has_subscription || false,
             subscriptionEnd: userResponse.data.subscription_end || null,

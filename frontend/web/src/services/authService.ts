@@ -27,6 +27,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  balance_credits?: number;
   subscription_end?: number;
   created_at?: string;
 }
@@ -46,8 +47,10 @@ export interface UserResponse {
     user_id: string;
     username: string;
     email: string;
+    balance_credits?: number;
     has_subscription?: boolean;
     subscription_end?: number;
+    created_at?: string;
   };
 }
 

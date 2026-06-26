@@ -1,6 +1,10 @@
 import { useAuthStore } from './authStore';
 import type { StateStorage } from 'zustand/middleware';
 
+function getBrowserStorage(): Storage | null {
+  return typeof localStorage === 'undefined' ? null : localStorage;
+}
+
 function getScopedKey(base: string): string {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return base;
@@ -10,15 +14,15 @@ function getScopedKey(base: string): string {
 export const scopedStorage: StateStorage = {
   getItem: (name: string): string | null => {
     const key = getScopedKey(name);
-    return localStorage.getItem(key);
+    return getBrowserStorage()?.getItem(key) ?? null;
   },
   setItem: (name: string, value: string): void => {
     const key = getScopedKey(name);
-    localStorage.setItem(key, value);
+    getBrowserStorage()?.setItem(key, value);
   },
   removeItem: (name: string): void => {
     const key = getScopedKey(name);
-    localStorage.removeItem(key);
+    getBrowserStorage()?.removeItem(key);
   },
 };
 
@@ -32,8 +36,10 @@ const STORE_PREFIXES = [
 export function clearUserScopedData(): void {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
+  const storage = getBrowserStorage();
+  if (!storage) return;
   for (const prefix of STORE_PREFIXES) {
     const key = `${prefix}_${userId}`;
-    localStorage.removeItem(key);
+    storage.removeItem(key);
   }
 }
