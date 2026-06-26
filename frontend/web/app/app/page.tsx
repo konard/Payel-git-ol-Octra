@@ -2,10 +2,8 @@
 
 import {
   Activity,
-  Bot,
   ChevronDown,
   CircleDollarSign,
-  Code2,
   Database,
   FileText,
   Layers3,
@@ -14,7 +12,6 @@ import {
   Plus,
   Search,
   Settings,
-  ShieldCheck,
   Sparkles,
   Workflow,
   Zap,
@@ -33,9 +30,6 @@ const backendEndpoints = [
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
-  { label: 'Environments', icon: Bot, href: '/dashboard' },
-  { label: 'Security', icon: ShieldCheck, href: '/dashboard/security' },
-  { label: 'Code', icon: Code2, href: '/dashboard/files' },
   { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];
 
@@ -76,18 +70,18 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className={`workspace-frame${panelOpen ? '' : ' panel-collapsed'}`} aria-label="Octra backend workflow terminal">
-        <aside className="workspace-tools" aria-label="Workspace tools">
-          {toolItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <a className="tool-button" href={item.href} aria-label={item.label} key={item.label}>
-                <Icon size={20} />
-              </a>
-            );
-          })}
-        </aside>
+      <aside className="workspace-tools" aria-label="Workspace tools">
+        {toolItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <a className="tool-button" href={item.href} aria-label={item.label} key={item.label}>
+              <Icon size={20} />
+            </a>
+          );
+        })}
+      </aside>
 
+      <section className={`workspace-frame${panelOpen ? '' : ' panel-collapsed'}`} aria-label="Octra backend workflow terminal">
         <section className="home-canvas" aria-labelledby="workspace-title">
           <h1 id="workspace-title" className="workspace-word">
             Octra
@@ -154,22 +148,22 @@ export default function HomePage() {
             </div>
           </section>
         </aside>
-
-        <aside className="home-rail" aria-label="Secondary tools">
-          <button type="button" aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
-            <LineChart size={20} />
-          </button>
-          <button type="button" aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
-            <Activity size={20} />
-          </button>
-          <button type="button" aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
-            <Layers3 size={20} />
-          </button>
-          <button type="button" aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
-            <Zap size={20} />
-          </button>
-        </aside>
       </section>
+
+      <aside className="home-rail" aria-label="Secondary tools">
+        <button type="button" aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
+          <LineChart size={20} />
+        </button>
+        <button type="button" aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
+          <Activity size={20} />
+        </button>
+        <button type="button" aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
+          <Layers3 size={20} />
+        </button>
+        <button type="button" aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
+          <Zap size={20} />
+        </button>
+      </aside>
     </main>
   );
 }
