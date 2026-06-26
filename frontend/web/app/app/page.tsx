@@ -83,7 +83,6 @@ export default function HomePage() {
           <section className="active-environments" aria-label="Active environments list">
             <div className="active-environments-header">
               <div className="active-environments-title">
-                <Activity size={16} />
                 <span>Active environments</span>
               </div>
               <a className="terminal-button" href="/dashboard/flows">
