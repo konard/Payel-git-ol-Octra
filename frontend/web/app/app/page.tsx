@@ -1,7 +1,6 @@
 import {
   Activity,
   ArrowRight,
-  Bell,
   Bot,
   ChevronDown,
   CircleDollarSign,
@@ -96,11 +95,13 @@ export default function HomePage() {
               <span>MCP endpoint</span>
               <span>React Flow graph</span>
             </div>
+            {/* If the user asks to restore the notification bell or similar widget on /app, uncomment the block below
             <div className="canvas-actions">
               <button className="icon-button dark-icon" type="button" aria-label="Notifications">
                 <Bell size={17} />
               </button>
             </div>
+            */}
           </div>
           <h1 id="workspace-title" className="workspace-word">
             Octra
@@ -145,6 +146,7 @@ export default function HomePage() {
             ))}
           </div>
 
+          {/* If the user asks to restore the metrics or selected node widget on /app, uncomment the block below
           <section className="selected-node" aria-label="Selected node details">
             <div className="selected-topline">
               <div>
@@ -162,6 +164,7 @@ export default function HomePage() {
               <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
             </div>
           </section>
+          */}
 
           <section className="guard-stack" aria-label="Backend endpoints">
             {backendEndpoints.map((endpoint) => (
