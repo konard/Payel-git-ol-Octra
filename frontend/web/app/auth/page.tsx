@@ -1,3 +1,6 @@
+'use client';
+
+import { FormEvent, useState } from 'react';
 import {
   ArrowRight,
   Chrome,
@@ -29,6 +32,56 @@ const providers = [
 ];
 
 export default function AuthPage() {
+  const [loginError, setLoginError] = useState('');
+  const [registerError, setRegisterError] = useState('');
+
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoginError('');
+    const form = new FormData(e.currentTarget);
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.get('email'),
+          password: form.get('password'),
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setLoginError(text || 'Sign in failed');
+        return;
+      }
+      window.location.href = '/app';
+    } catch {
+      setLoginError('Network error');
+    }
+  }
+
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setRegisterError('');
+    const form = new FormData(e.currentTarget);
+    try {
+      const res = await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: form.get('username'),
+          email: form.get('email'),
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setRegisterError(text || 'Registration failed');
+        return;
+      }
+      window.location.href = '/app';
+    } catch {
+      setRegisterError('Network error');
+    }
+  }
   return (
     <main className="auth-shell">
       <header className="top-nav auth-nav">
@@ -86,11 +139,12 @@ export default function AuthPage() {
           </div>
 
           <div className="auth-forms">
-            <form className="auth-form" action="/login" method="post">
+            <form className="auth-form" onSubmit={handleLogin}>
               <div className="form-heading">
                 <KeyRound size={18} />
                 <h2>Sign in</h2>
               </div>
+              {loginError && <p className="form-error">{loginError}</p>}
               <label>
                 <span>Email</span>
                 <span className="input-shell">
@@ -111,11 +165,12 @@ export default function AuthPage() {
               </button>
             </form>
 
-            <form className="auth-form muted-form" action="/register" method="post">
+            <form className="auth-form muted-form" onSubmit={handleRegister}>
               <div className="form-heading">
                 <UserPlus size={18} />
                 <h2>Create account</h2>
               </div>
+              {registerError && <p className="form-error">{registerError}</p>}
               <label>
                 <span>Username</span>
                 <span className="input-shell">

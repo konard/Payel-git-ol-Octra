@@ -934,6 +934,12 @@ button {
   background: rgba(255, 255, 255, 0.055);
 }
 
+.form-error {
+  color: var(--metric-danger);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
 .form-heading {
   gap: 9px;
 }
