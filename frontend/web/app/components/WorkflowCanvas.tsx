@@ -13,32 +13,32 @@ import {
 } from '@xyflow/react';
 import { useEffect, useMemo, useState } from 'react';
 
-type AgentNodeData = {
+type EnvironmentNodeData = {
   [key: string]: unknown;
-  role: string;
-  agent_id: string;
+  title: string;
+  resource_id: string;
   status: string;
-  progress: string;
+  metric: string;
   endpoint: string;
   detail: string;
 };
 
-type AgentNode = Node<AgentNodeData, 'agentNode'>;
+type EnvironmentNode = Node<EnvironmentNodeData, 'environmentNode'>;
 
-function AgentFlowNode({ data }: NodeProps<AgentNode>) {
+function EnvironmentFlowNode({ data }: NodeProps<EnvironmentNode>) {
   return (
     <article className="octra-flow-node">
       <Handle className="octra-flow-handle" type="target" position={Position.Left} />
       <div className="flow-node-kicker">{data.status}</div>
       <div className="flow-node-title">
-        <span>{data.role}</span>
-        <strong>{data.progress}</strong>
+        <span>{data.title}</span>
+        <strong>{data.metric}</strong>
       </div>
       <p>{data.detail}</p>
       <dl>
         <div>
-          <dt>agent_id</dt>
-          <dd>{data.agent_id}</dd>
+          <dt>resource_id</dt>
+          <dd>{data.resource_id}</dd>
         </div>
         <div>
           <dt>endpoint</dt>
@@ -51,117 +51,131 @@ function AgentFlowNode({ data }: NodeProps<AgentNode>) {
 }
 
 const nodeTypes = {
-  agentNode: AgentFlowNode,
+  environmentNode: EnvironmentFlowNode,
 };
 
 const graphData = [
   {
-    id: 'task-create',
-    type: 'agentNode',
+    id: 'api-chat',
+    type: 'environmentNode',
     data: {
-      role: 'Task ingress',
-      agent_id: 'ws:task/create',
-      status: 'connected',
-      progress: '5%',
-      endpoint: 'GET /task/create',
-      detail: 'Authenticated WebSocket receives CreateTaskRequest JSON.',
+      title: 'API chat request',
+      resource_id: 'route:/api/chat',
+      status: 'incoming',
+      metric: 'prompt',
+      endpoint: 'POST /api/chat',
+      detail: 'Receives a prompt with the octra-api-token header.',
     },
   },
   {
-    id: 'boss-planner',
-    type: 'agentNode',
+    id: 'token-check',
+    type: 'environmentNode',
     data: {
-      role: 'Boss planner',
-      agent_id: 'boss:planner:01',
-      status: 'boss_planning',
-      progress: '32%',
-      endpoint: 'CreateTaskStream',
-      detail: 'Builds manager roles and streams TaskUpdate messages.',
+      title: 'Token validation',
+      resource_id: 'auth:octra-api-token',
+      status: 'verified',
+      metric: 'strict',
+      endpoint: 'middleware',
+      detail: 'Finds the user environment for the supplied API token.',
     },
   },
   {
-    id: 'workflow-store',
-    type: 'agentNode',
+    id: 'user-environment',
+    type: 'environmentNode',
     data: {
-      role: 'Workflow library',
-      agent_id: 'workflow:template',
-      status: 'available',
-      progress: '100%',
-      endpoint: 'POST /workflows',
-      detail: 'Stores saved nodes and edges for reusable workflow templates.',
+      title: 'User environment',
+      resource_id: 'env:usr_742',
+      status: 'active',
+      metric: 'Nix',
+      endpoint: 'POST /environment',
+      detail: 'Stores LLM config, optional CLI, and selected skills.',
     },
   },
   {
-    id: 'manager-team',
-    type: 'agentNode',
+    id: 'nix-profile',
+    type: 'environmentNode',
     data: {
-      role: 'Manager team',
-      agent_id: 'mgr:frontend:04',
-      status: 'managers_assigned',
-      progress: '58%',
-      endpoint: 'ManagerConfig.workers',
-      detail: 'Routes work to predefined managers and worker roles.',
+      title: 'Nix profile',
+      resource_id: 'nix:usr_742',
+      status: 'provisioned',
+      metric: '3 skills',
+      endpoint: 'nix profile install',
+      detail: 'Installs the selected CLI and skill packages in isolation.',
     },
   },
   {
-    id: 'worker-code',
-    type: 'agentNode',
+    id: 'skill-set',
+    type: 'environmentNode',
     data: {
-      role: 'Worker code',
-      agent_id: 'worker:code:17',
-      status: 'processing',
-      progress: '74%',
-      endpoint: 'TaskUpdate.data',
-      detail: 'Writes implementation artifacts and emits progress payloads.',
+      title: 'Skill set',
+      resource_id: 'skills:filesystem+github',
+      status: 'enabled',
+      metric: 'per prompt',
+      endpoint: 'skills[]',
+      detail: 'Lets each request enable only the tools it needs.',
     },
   },
   {
-    id: 'redis-state',
-    type: 'agentNode',
+    id: 'redis-cli-state',
+    type: 'environmentNode',
     data: {
-      role: 'Redis stream state',
-      agent_id: 'redis:stream:history',
-      status: 'persisting',
-      progress: '256',
-      endpoint: 'STREAM:<task_id>',
-      detail: 'Keeps reconnect history and PubSub updates per task_id.',
+      title: 'Redis CLI state',
+      resource_id: 'user:742:cli_state',
+      status: 'alive',
+      metric: '38m TTL',
+      endpoint: 'Redis',
+      detail: 'Keeps PID, optional port, startup time, and process TTL.',
     },
   },
   {
-    id: 'status-api',
-    type: 'agentNode',
+    id: 'cli-process',
+    type: 'environmentNode',
     data: {
-      role: 'Status API',
-      agent_id: 'api:task/status',
-      status: 'ready',
-      progress: '72%',
-      endpoint: 'GET /task/status',
-      detail: 'Returns task progress and current stream state.',
+      title: 'Claude Code CLI',
+      resource_id: 'pid:4812',
+      status: 'running',
+      metric: 'stdin/stdout',
+      endpoint: 'Nix subprocess',
+      detail: 'Reuses a warm CLI process until TTL expiry or crash.',
     },
   },
-] satisfies Array<Omit<AgentNode, 'position'>>;
+  {
+    id: 'response',
+    type: 'environmentNode',
+    data: {
+      title: 'Response',
+      resource_id: 'json:response',
+      status: 'returned',
+      metric: '200 OK',
+      endpoint: 'HTTP JSON',
+      detail: 'Returns the CLI or direct LLM output to the caller.',
+    },
+  },
+] satisfies Array<Omit<EnvironmentNode, 'position'>>;
 
-const desktopPositions: Record<string, AgentNode['position']> = {
-  'task-create': { x: 20, y: 170 },
-  'boss-planner': { x: 260, y: 52 },
-  'workflow-store': { x: 260, y: 300 },
-  'manager-team': { x: 500, y: 112 },
-  'worker-code': { x: 735, y: 42 },
-  'redis-state': { x: 735, y: 292 },
-  'status-api': { x: 970, y: 178 },
+const desktopPositions: Record<string, EnvironmentNode['position']> = {
+  'api-chat': { x: 20, y: 170 },
+  'token-check': { x: 260, y: 52 },
+  'user-environment': { x: 260, y: 300 },
+  'nix-profile': { x: 500, y: 92 },
+  'skill-set': { x: 500, y: 300 },
+  'redis-cli-state': { x: 735, y: 42 },
+  'cli-process': { x: 735, y: 292 },
+  response: { x: 970, y: 178 },
 };
 
-const compactPositions: Record<string, AgentNode['position']> = {
-  'task-create': { x: 20, y: 30 },
-  'boss-planner': { x: 280, y: 30 },
-  'workflow-store': { x: 20, y: 182 },
-  'manager-team': { x: 280, y: 182 },
-  'worker-code': { x: 20, y: 334 },
-  'redis-state': { x: 280, y: 334 },
-  'status-api': { x: 150, y: 486 },
+const compactPositions: Record<string, EnvironmentNode['position']> = {
+  'api-chat': { x: 20, y: 30 },
+  'token-check': { x: 280, y: 30 },
+  'user-environment': { x: 20, y: 182 },
+  'nix-profile': { x: 280, y: 182 },
+  'skill-set': { x: 20, y: 334 },
+  'redis-cli-state': { x: 280, y: 334 },
+  'cli-process': { x: 20, y: 486 },
+  response: { x: 280, y: 486 },
 };
 
-function buildNodes(compact: boolean): AgentNode[] {
+function buildNodes(compact: boolean): EnvironmentNode[] {
   const positions = compact ? compactPositions : desktopPositions;
   return graphData.map((node) => ({
     ...node,
@@ -170,14 +184,14 @@ function buildNodes(compact: boolean): AgentNode[] {
 }
 
 const edges: Edge[] = [
-  { id: 'task-boss', source: 'task-create', target: 'boss-planner', animated: true },
-  { id: 'task-workflow', source: 'task-create', target: 'workflow-store' },
-  { id: 'boss-manager', source: 'boss-planner', target: 'manager-team', animated: true },
-  { id: 'workflow-manager', source: 'workflow-store', target: 'manager-team' },
-  { id: 'manager-worker', source: 'manager-team', target: 'worker-code', animated: true },
-  { id: 'manager-redis', source: 'manager-team', target: 'redis-state' },
-  { id: 'worker-status', source: 'worker-code', target: 'status-api', animated: true },
-  { id: 'redis-status', source: 'redis-state', target: 'status-api' },
+  { id: 'chat-token', source: 'api-chat', target: 'token-check', animated: true },
+  { id: 'token-environment', source: 'token-check', target: 'user-environment', animated: true },
+  { id: 'environment-nix', source: 'user-environment', target: 'nix-profile' },
+  { id: 'environment-skills', source: 'user-environment', target: 'skill-set' },
+  { id: 'nix-redis', source: 'nix-profile', target: 'redis-cli-state' },
+  { id: 'skills-cli', source: 'skill-set', target: 'cli-process' },
+  { id: 'redis-cli', source: 'redis-cli-state', target: 'cli-process', animated: true },
+  { id: 'cli-response', source: 'cli-process', target: 'response', animated: true },
 ];
 
 const defaultEdgeOptions = {

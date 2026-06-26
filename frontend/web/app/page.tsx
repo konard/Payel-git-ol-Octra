@@ -23,59 +23,59 @@ import {
 import { WorkflowCanvas } from './components/WorkflowCanvas';
 
 const backendEndpoints = [
-  { label: 'Task stream', value: 'GET /task/create', detail: 'WebSocket CreateTaskRequest' },
-  { label: 'Task status', value: 'GET /task/status', detail: 'task_id progress lookup' },
-  { label: 'Saved workflow', value: 'POST /workflows', detail: 'nodes and edges JSON' },
+  { label: 'Environment', value: 'POST /environment', detail: 'Nix profile + skills' },
+  { label: 'Chat API', value: 'POST /api/chat', detail: 'octra-api-token prompt' },
+  { label: 'CLI state', value: 'Redis cli_state', detail: 'PID, port, TTL' },
 ];
 
 const backendMetrics = [
-  { label: 'ACTIVE TASKS', value: '18', detail: 'redis streams', tone: 'success' },
-  { label: 'PROGRESS', value: '72%', detail: 'latest TaskUpdate', tone: 'success' },
-  { label: 'MANAGERS', value: '6', detail: 'role + priority', tone: 'warning' },
-  { label: 'WORKERS', value: '24', detail: 'predefined workers', tone: 'success' },
-  { label: 'HISTORY', value: '256', detail: 'stored updates', tone: 'warning' },
-  { label: 'STOP QUEUE', value: '0', detail: '/task/:taskId/stop', tone: 'danger' },
+  { label: 'ACTIVE ENVS', value: '18', detail: 'Nix profiles', tone: 'success' },
+  { label: 'CHAT REQS', value: '124k', detail: '/api/chat', tone: 'success' },
+  { label: 'CLI PROCS', value: '7', detail: 'stdin/stdout live', tone: 'warning' },
+  { label: 'SKILLS', value: '42', detail: 'installed packages', tone: 'success' },
+  { label: 'REDIS TTL', value: '38m', detail: 'cli_state cache', tone: 'warning' },
+  { label: 'PROXY MODE', value: '3', detail: 'LLM fallback', tone: 'danger' },
 ];
 
-const activeAgents = [
+const activeEnvironments = [
   {
-    role: 'Boss planner',
-    agent_id: 'boss:planner:01',
-    task_id: 'usr_742:6e9b',
-    status: 'boss_planning',
-    progress: '32%',
-    endpoint: 'CreateTaskStream',
+    name: 'Claude Code CLI',
+    environment_id: 'env:claude-code:01',
+    user_id: 'usr_742',
+    status: 'running',
+    ttl: '38m',
+    endpoint: '/api/chat',
   },
   {
-    role: 'Frontend manager',
-    agent_id: 'mgr:frontend:04',
-    task_id: 'usr_742:6e9b',
-    status: 'managers_assigned',
-    progress: '58%',
-    endpoint: 'ManagerConfig.workers',
+    name: 'OpenCode CLI',
+    environment_id: 'env:opencode:04',
+    user_id: 'usr_318',
+    status: 'warm',
+    ttl: '21m',
+    endpoint: 'stdin pipe',
   },
   {
-    role: 'Worker code',
-    agent_id: 'worker:code:17',
-    task_id: 'usr_742:6e9b',
-    status: 'processing',
-    progress: '74%',
-    endpoint: 'TaskUpdate.data',
+    name: 'Codex CLI',
+    environment_id: 'env:codex:17',
+    user_id: 'usr_904',
+    status: 'installing',
+    ttl: '9m',
+    endpoint: 'Nix profile',
   },
   {
-    role: 'Reviewer',
-    agent_id: 'worker:review:09',
-    task_id: 'usr_742:6e9b',
-    status: 'queued',
-    progress: '12%',
-    endpoint: 'ResumeTaskStream',
+    name: 'Direct LLM proxy',
+    environment_id: 'env:proxy:09',
+    user_id: 'usr_556',
+    status: 'ready',
+    ttl: 'no CLI',
+    endpoint: 'LLM base_url',
   },
 ];
 
 const toolItems = [
   { label: 'Workflows', icon: Workflow },
   { label: 'Streams', icon: Activity },
-  { label: 'Agents', icon: Bot },
+  { label: 'Environments', icon: Bot },
   { label: 'Security', icon: ShieldCheck },
   { label: 'Code', icon: Code2 },
   { label: 'Settings', icon: Settings },
@@ -93,12 +93,12 @@ export default function HomePage() {
         <label className="tv-search">
           <Search size={18} />
           <span className="sr-only">Search Octra</span>
-          <input placeholder="Search tasks, agents, workflows..." />
+          <input placeholder="Search environments, skills, endpoints..." />
         </label>
 
         <nav className="tv-nav" aria-label="Primary navigation">
           <a href="/dashboard">Products</a>
-          <a href="#node-canvas">Agents</a>
+          <a href="#node-canvas">Environments</a>
           <a href="#runtime-metrics">Metrics</a>
           <a href="/auth">Auth</a>
           <a href="/dashboard">More</a>
@@ -128,8 +128,8 @@ export default function HomePage() {
           <div className="canvas-grid" aria-hidden="true" />
           <div className="canvas-header">
             <div className="canvas-crumbs">
-              <span>Tasks</span>
-              <span>Backend orchestration</span>
+              <span>Environments</span>
+              <span>MCP endpoint</span>
               <span>React Flow graph</span>
             </div>
             <div className="canvas-actions">
@@ -145,51 +145,51 @@ export default function HomePage() {
 
           <section className="command-bar" aria-label="Create workflow request">
             <div>
-              <span>Prompt to backend task</span>
-              <strong>Start a CreateTaskRequest and watch managers, workers, and status updates</strong>
+              <span>Create personal MCP environment</span>
+              <strong>Install CLI skills, keep the process warm, and send prompts through /api/chat</strong>
             </div>
             <button type="button" aria-label="Run workflow request">
               <ArrowRight size={22} />
             </button>
           </section>
 
-          <section className="node-canvas" id="node-canvas" aria-label="React Flow backend nodes">
+          <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
             <WorkflowCanvas />
           </section>
 
-          <section className="active-agents" aria-label="Active agents list">
-            <div className="active-agents-header">
-              <div className="active-agents-title">
+          <section className="active-environments" aria-label="Active environments list">
+            <div className="active-environments-header">
+              <div className="active-environments-title">
                 <Activity size={16} />
-                <span>Active agents</span>
+                <span>Active environments</span>
               </div>
               <button className="terminal-button" type="button">
                 <Plus size={15} />
                 New flow
               </button>
             </div>
-            <div className="active-agent-list">
-              {activeAgents.map((agent) => (
-                <article className="active-agent-row" key={agent.agent_id}>
+            <div className="active-environment-list">
+              {activeEnvironments.map((environment) => (
+                <article className="active-environment-row" key={environment.environment_id}>
                   <div>
-                    <span>{agent.role}</span>
-                    <strong>{agent.agent_id}</strong>
+                    <span>{environment.name}</span>
+                    <strong>{environment.environment_id}</strong>
                   </div>
                   <div>
                     <span>Status</span>
-                    <strong>{agent.status}</strong>
+                    <strong>{environment.status}</strong>
                   </div>
                   <div>
-                    <span>Progress</span>
-                    <strong>{agent.progress}</strong>
+                    <span>TTL</span>
+                    <strong>{environment.ttl}</strong>
                   </div>
                   <div>
                     <span>Endpoint</span>
-                    <strong>{agent.endpoint}</strong>
+                    <strong>{environment.endpoint}</strong>
                   </div>
                   <div>
-                    <span>task_id</span>
-                    <strong>{agent.task_id}</strong>
+                    <span>user_id</span>
+                    <strong>{environment.user_id}</strong>
                   </div>
                 </article>
               ))}
@@ -221,14 +221,14 @@ export default function HomePage() {
             <div className="selected-topline">
               <div>
                 <span>Selected node</span>
-                <strong>Worker code</strong>
+                <strong>Claude Code CLI</strong>
               </div>
               <PanelRight size={18} />
             </div>
             <div className="price-line">
-              <strong>74</strong>
-              <span>% progress from TaskUpdate</span>
-              <em>processing</em>
+              <strong>38</strong>
+              <span>minutes TTL in Redis cli_state</span>
+              <em>running</em>
             </div>
             <div className="market-bars" aria-hidden="true">
               <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
@@ -238,9 +238,9 @@ export default function HomePage() {
           <section className="guard-stack" aria-label="Backend endpoints">
             {backendEndpoints.map((endpoint) => (
               <div className="guard-row" key={endpoint.label}>
-                {endpoint.label === 'Task stream' ? (
+                {endpoint.label === 'Environment' ? (
                   <Zap size={16} />
-                ) : endpoint.label === 'Task status' ? (
+                ) : endpoint.label === 'CLI state' ? (
                   <Database size={16} />
                 ) : (
                   <FileText size={16} />
@@ -257,7 +257,7 @@ export default function HomePage() {
             <div className="guard-row">
               <CircleDollarSign size={16} />
               <span>Rate limit</span>
-              <strong>task_create</strong>
+              <strong>api_chat</strong>
             </div>
           </section>
         </aside>

@@ -57,7 +57,7 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
 
 if (exists('app/page.tsx')) {
   const homepageSource = read('app/page.tsx').toLowerCase();
-  for (const phrase of ['node-canvas', 'active-agents', 'agent_id', 'task/create', 'task/status', '/workflows']) {
+  for (const phrase of ['node-canvas', 'active-environments', 'environment_id', '/environment', '/api/chat', 'cli_state']) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
 
@@ -82,6 +82,16 @@ if (exists('app/components/WorkflowCanvas.tsx')) {
   for (const phrase of ['@xyflow/react', 'reactflow', 'background', 'controls', 'minimap']) {
     assert(workflowCanvasSource.includes(phrase), `Workflow canvas must use React Flow primitives: missing ${phrase}`);
   }
+}
+
+const frontendWorkspaceSource = ['app/page.tsx', 'app/components/WorkflowCanvas.tsx']
+  .filter(exists)
+  .map(read)
+  .join('\n')
+  .toLowerCase();
+
+for (const rejectedPhrase of ['boss', 'manager', 'worker', 'role']) {
+  assert(!frontendWorkspaceSource.includes(rejectedPhrase), `Frontend workspace must not mention removed role hierarchy: ${rejectedPhrase}`);
 }
 
 if (exists('Dockerfile')) {
