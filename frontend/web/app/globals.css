@@ -504,10 +504,19 @@ button {
   overflow: hidden;
 }
 
-.terminal-topline,
-.dashboard-topbar {
+.terminal-topline {
   display: grid;
   grid-template-columns: 1fr minmax(220px, 320px) auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 14px;
   align-items: center;
   min-height: 64px;
