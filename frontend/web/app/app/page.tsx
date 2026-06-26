@@ -102,52 +102,58 @@ export default function HomePage() {
             <span>Runtime metrics</span>
             <ChevronDown size={16} className={`chevron${metricsOpen ? '' : ' collapsed'}`} />
           </div>
-          {metricsOpen && (
-            <div className="quote-stack">
-              <EmptyDataPanel
-                compact
-                icon={Activity}
-                title="No live metrics yet"
-                detail="Runtime counters will appear here when backend telemetry is available."
-                actionHref="/dashboard/metrics"
-                actionLabel="Open metrics"
-              />
+          <div className={`collapse-wrap${metricsOpen ? '' : ' collapsed'}`}>
+            <div className="collapse-inner">
+              <div className="quote-stack">
+                <EmptyDataPanel
+                  compact
+                  icon={Activity}
+                  title="No live metrics yet"
+                  detail="Runtime counters will appear here when backend telemetry is available."
+                  actionHref="/dashboard/metrics"
+                  actionLabel="Open metrics"
+                />
+              </div>
             </div>
-          )}
+          </div>
 
           <div className="market-heading" role="button" tabIndex={0} onClick={() => setEndpointsOpen((v) => !v)} onKeyDown={(e) => e.key === 'Enter' && setEndpointsOpen((v) => !v)}>
             <span>Endpoints</span>
             <ChevronDown size={16} className={`chevron${endpointsOpen ? '' : ' collapsed'}`} />
           </div>
-          {endpointsOpen && (
-            <div className="quote-stack">
-              <EmptyDataPanel
-                compact
-                icon={Activity}
-                title="No endpoints configured"
-                detail="Configured API endpoints will appear here."
-                actionHref="/dashboard/flows"
-                actionLabel="Configure"
-              />
+          <div className={`collapse-wrap${endpointsOpen ? '' : ' collapsed'}`}>
+            <div className="collapse-inner">
+              <div className="quote-stack">
+                <EmptyDataPanel
+                  compact
+                  icon={Activity}
+                  title="No endpoints configured"
+                  detail="Configured API endpoints will appear here."
+                  actionHref="/dashboard/flows"
+                  actionLabel="Configure"
+                />
+              </div>
             </div>
-          )}
+          </div>
 
           <div className="market-heading" role="button" tabIndex={0} onClick={() => setDeploymentsOpen((v) => !v)} onKeyDown={(e) => e.key === 'Enter' && setDeploymentsOpen((v) => !v)}>
             <span>Deployments</span>
             <ChevronDown size={16} className={`chevron${deploymentsOpen ? '' : ' collapsed'}`} />
           </div>
-          {deploymentsOpen && (
-            <div className="quote-stack">
-              <EmptyDataPanel
-                compact
-                icon={Activity}
-                title="No active deployments"
-                detail="Environment deployments will appear here."
-                actionHref="/dashboard"
-                actionLabel="View"
-              />
+          <div className={`collapse-wrap${deploymentsOpen ? '' : ' collapsed'}`}>
+            <div className="collapse-inner">
+              <div className="quote-stack">
+                <EmptyDataPanel
+                  compact
+                  icon={Activity}
+                  title="No active deployments"
+                  detail="Environment deployments will appear here."
+                  actionHref="/dashboard"
+                  actionLabel="View"
+                />
+              </div>
             </div>
-          )}
+          </div>
         </aside>
       </section>
 
