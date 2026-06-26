@@ -1382,11 +1382,6 @@ button {
     #050609;
 }
 
-.workspace-home.panel-closed {
-  max-height: 100svh;
-  overflow: hidden;
-}
-
 .tv-header {
   position: sticky;
   top: 0;
@@ -2011,6 +2006,8 @@ button {
   flex: 0 0 0;
   width: 0;
   min-width: 0;
+  height: 0;
+  min-height: 0;
   padding: 18px 0;
   opacity: 0;
   border-left: 0;
