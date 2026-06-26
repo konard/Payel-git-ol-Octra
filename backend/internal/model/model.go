@@ -16,13 +16,45 @@ import (
 // An empty CLI means the agent runs in pure LLM-proxy mode.
 type CLIType string
 
+// MarginMode controls whether hosting charges may put a user into debt.
+type MarginMode string
+
+// AutoPayInterval is the user-selected cadence for margin-call billing.
+type AutoPayInterval string
+
 // SkillType describes how a skill is provisioned into a Nix environment.
 type SkillType string
 
+// TransactionType classifies balance ledger rows.
+type TransactionType string
+
+// TransactionReason records why credits moved.
+type TransactionReason string
+
 const (
+	DefaultRegistrationCredits = 100
+	DefaultAgentPriority       = 100
+
+	MarginUnlimited MarginMode = "unlimited"
+	MarginSafe      MarginMode = "safe"
+
+	AutoPayDaily    AutoPayInterval = "day"
+	AutoPayWeekly   AutoPayInterval = "week"
+	AutoPayMonthly  AutoPayInterval = "month"
+	AutoPayHalfYear AutoPayInterval = "half_year"
+	AutoPayYearly   AutoPayInterval = "year"
+
 	SkillBuiltin SkillType = "built-in"
 	SkillNixpkgs SkillType = "nixpkgs"
 	SkillCustom  SkillType = "custom"
+
+	TransactionCredit TransactionType = "credit"
+	TransactionDebit  TransactionType = "debit"
+
+	TransactionReasonRegistration TransactionReason = "registration"
+	TransactionReasonHosting      TransactionReason = "hosting"
+	TransactionReasonLefineReward TransactionReason = "lefine_reward"
+	TransactionReasonTopUp        TransactionReason = "topup"
 )
 
 // User is a platform account. Authentication against the public API is done
@@ -38,6 +70,19 @@ type User struct {
 	APIKey string `gorm:"uniqueIndex" json:"api_key"`
 	// Subscription is a free-form status string ("free", "pro", ...).
 	Subscription string `gorm:"default:free" json:"subscription"`
+
+	// Balance is stored in credits. 1 credit = 10 cents. It may go negative in
+	// unlimited margin mode.
+	Balance int `gorm:"column:balance;default:100" json:"balance"`
+	// MarginMode decides whether hosting charges can create debt.
+	MarginMode MarginMode `gorm:"column:margin_mode;default:unlimited" json:"margin_mode"`
+	// SafeMarginLimit is the minimum balance preserved by safe mode.
+	SafeMarginLimit int `gorm:"column:safe_margin_limit;default:0" json:"safe_margin_limit"`
+	// AutoPayInterval and AutoPayDay describe the user's scheduled charge
+	// cadence. A scheduler can consume these fields later without changing the
+	// account schema.
+	AutoPayInterval AutoPayInterval `gorm:"column:auto_pay_interval;default:month" json:"auto_pay_interval"`
+	AutoPayDay      int             `gorm:"column:auto_pay_day;default:1" json:"auto_pay_day"`
 }
 
 // Agent is a user's personal MCP environment. Each user has at most one.
@@ -58,6 +103,10 @@ type Agent struct {
 
 	// Active toggles whether the environment may be used.
 	Active bool `gorm:"default:true" json:"active"`
+
+	// Priority is used by safe margin mode to decide which agents should keep
+	// running when there are not enough credits for all environments.
+	Priority int `gorm:"column:priority;default:100" json:"priority"`
 }
 
 // Skill is a reusable capability that can be installed into an environment.
@@ -85,18 +134,78 @@ type UserSkill struct {
 	Status string `gorm:"default:pending" json:"status"`
 }
 
+// Transaction is an append-only balance ledger entry.
+type Transaction struct {
+	ID        uuid.UUID         `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt time.Time         `json:"created_at"`
+	UserID    uuid.UUID         `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	Type      TransactionType   `gorm:"column:type;not null" json:"type"`
+	Amount    int               `gorm:"column:amount;not null" json:"amount"`
+	Reason    TransactionReason `gorm:"column:reason;not null" json:"reason"`
+	AgentID   *uuid.UUID        `gorm:"column:agent_id;type:uuid;index" json:"agent_id,omitempty"`
+	// BalanceAfter is denormalised to make audit trails stable even if later
+	// transactions are edited during manual incident repair.
+	BalanceAfter int `gorm:"column:balance_after;not null" json:"balance_after"`
+}
+
+// UsageMetric stores daily resource usage that drives hosting charges.
+type UsageMetric struct {
+	ID            uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UserID        uuid.UUID `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	Date          time.Time `gorm:"column:date;index;not null" json:"date"`
+	CPUSeconds    int64     `gorm:"column:cpu_seconds;not null" json:"cpu_seconds"`
+	MemoryMBHours int64     `gorm:"column:memory_mb_hours;not null" json:"memory_mb_hours"`
+	DiskMB        int64     `gorm:"column:disk_mb;not null" json:"disk_mb"`
+	LoadPercent   int       `gorm:"column:load_percent;not null" json:"load_percent"`
+}
+
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UsageMetric{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
 // across databases (PostgreSQL in production, SQLite in tests) without relying
 // on a DB-specific default.
-func (m *User) BeforeCreate(*gorm.DB) error      { return ensureID(&m.ID) }
-func (m *Agent) BeforeCreate(*gorm.DB) error     { return ensureID(&m.ID) }
-func (m *Skill) BeforeCreate(*gorm.DB) error     { return ensureID(&m.ID) }
-func (m *UserSkill) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *User) BeforeCreate(*gorm.DB) error {
+	if err := ensureID(&m.ID); err != nil {
+		return err
+	}
+	if m.Balance == 0 {
+		m.Balance = DefaultRegistrationCredits
+	}
+	m.ApplyBillingDefaults()
+	return nil
+}
+
+func (m *Agent) BeforeCreate(*gorm.DB) error {
+	if err := ensureID(&m.ID); err != nil {
+		return err
+	}
+	if m.Priority == 0 {
+		m.Priority = DefaultAgentPriority
+	}
+	return nil
+}
+
+func (m *Skill) BeforeCreate(*gorm.DB) error       { return ensureID(&m.ID) }
+func (m *UserSkill) BeforeCreate(*gorm.DB) error   { return ensureID(&m.ID) }
+func (m *Transaction) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *UsageMetric) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+
+// ApplyBillingDefaults fills missing billing preference fields.
+func (m *User) ApplyBillingDefaults() {
+	if m.MarginMode == "" {
+		m.MarginMode = MarginUnlimited
+	}
+	if m.AutoPayInterval == "" {
+		m.AutoPayInterval = AutoPayMonthly
+	}
+	if m.AutoPayDay == 0 {
+		m.AutoPayDay = 1
+	}
+}
 
 func ensureID(id *uuid.UUID) error {
 	if *id == uuid.Nil {

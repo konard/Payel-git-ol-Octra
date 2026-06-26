@@ -41,6 +41,8 @@ func main() {
 	agents := repository.NewAgentRepository(db)
 	skills := repository.NewSkillRepository(db)
 	userSkills := repository.NewUserSkillRepository(db)
+	transactions := repository.NewTransactionRepository(db)
+	usageMetrics := repository.NewUsageMetricsRepository(db)
 
 	// Infrastructure.
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
@@ -49,12 +51,13 @@ func main() {
 	llmClient := llm.New(nil)
 
 	// Services.
-	authSvc := service.NewAuthService(users)
-	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr)
+	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
+	authSvc := service.NewAuthService(users, transactions)
+	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
 
 	// HTTP.
-	handler := api.New(authSvc, envSvc, chatSvc).Router().Handler
+	handler := api.New(authSvc, envSvc, chatSvc, billingSvc).Router().Handler
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {
