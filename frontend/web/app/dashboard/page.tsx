@@ -33,10 +33,6 @@ export default function DashboardPage() {
         <article className="architecture-panel large-panel" aria-label="Workspace policy data">
           <div className="panel-heading">
             <span>Workspace policy</span>
-            <a className="ghost-command" href="/settings">
-              <Settings size={15} />
-              Settings
-            </a>
           </div>
           <EmptyDataPanel
             icon={Settings}
