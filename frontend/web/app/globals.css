@@ -2012,6 +2012,15 @@ button {
   justify-content: space-between;
   min-height: 38px;
   font-weight: 900;
+  cursor: pointer;
+}
+
+.chevron {
+  transition: transform 0.2s;
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
 }
 
 .market-columns,

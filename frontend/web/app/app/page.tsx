@@ -25,6 +25,7 @@ const toolItems = [
 
 export default function HomePage() {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [metricsOpen, setMetricsOpen] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
@@ -95,19 +96,29 @@ export default function HomePage() {
         </section>
 
         <aside className={`home-market-panel${panelOpen ? '' : ' panel-hidden'}`} id="runtime-metrics" aria-label="Backend runtime metrics">
-          <div className="market-heading">
+          <div className="market-heading" role="button" tabIndex={0} onClick={() => setMetricsOpen((v) => !v)} onKeyDown={(e) => e.key === 'Enter' && setMetricsOpen((v) => !v)}>
             <span>Runtime metrics</span>
-            <ChevronDown size={16} />
+            <ChevronDown size={16} className={`chevron${metricsOpen ? '' : ' collapsed'}`} />
           </div>
-          <div className="quote-stack">
-            <EmptyDataPanel
-              compact
-              icon={Activity}
-              title="No live metrics yet"
-              detail="Runtime counters will appear here when backend telemetry is available."
-              actionHref="/dashboard/metrics"
-              actionLabel="Open metrics"
-            />
+          {metricsOpen && (
+            <div className="quote-stack">
+              <EmptyDataPanel
+                compact
+                icon={Activity}
+                title="No live metrics yet"
+                detail="Runtime counters will appear here when backend telemetry is available."
+                actionHref="/dashboard/metrics"
+                actionLabel="Open metrics"
+              />
+            </div>
+          )}
+
+          <div className="market-heading" role="button" tabIndex={0}>
+            <span>Endpoints</span>
+          </div>
+
+          <div className="market-heading" role="button" tabIndex={0}>
+            <span>Deployments</span>
           </div>
         </aside>
       </section>
