@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { DesktopTitleBar } from './components/DesktopTitleBar';
 import '@xyflow/react/dist/style.css';
+import './styles/tokens.css';
 import './globals.css';
 
 export const metadata: Metadata = {
