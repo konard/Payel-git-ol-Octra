@@ -1369,6 +1369,7 @@ button {
 
 .workspace-home {
   min-height: calc(100svh - 38px);
+  padding-top: 96px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(9, 10, 11, 0.98), rgba(4, 6, 8, 0.99)),
@@ -1376,6 +1377,11 @@ button {
 }
 
 .tv-header {
+  position: fixed;
+  top: 38px;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: grid;
   grid-template-columns: auto minmax(220px, 360px) minmax(0, 1fr) auto;
   align-items: center;
