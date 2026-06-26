@@ -151,18 +151,18 @@ export default function HomePage() {
         </aside>
 
         <aside className="home-rail" aria-label="Secondary tools">
-          <a href="/dashboard/metrics" aria-label="Chart">
+          <button type="button" aria-label="Chart">
             <LineChart size={20} />
-          </a>
-          <a href="/dashboard/evaluations" aria-label="Activity">
+          </button>
+          <button type="button" aria-label="Activity">
             <Activity size={20} />
-          </a>
-          <a href="/dashboard/deployments" aria-label="Layers">
+          </button>
+          <button type="button" aria-label="Layers">
             <Layers3 size={20} />
-          </a>
-          <a href="/dashboard/flows" aria-label="Automation">
+          </button>
+          <button type="button" aria-label="Automation">
             <Zap size={20} />
-          </a>
+          </button>
         </aside>
       </section>
     </main>
