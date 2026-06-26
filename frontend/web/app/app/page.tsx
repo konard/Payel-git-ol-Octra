@@ -30,7 +30,7 @@ const backendEndpoints = [
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
-  { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
+  { label: 'Settings', icon: Settings, href: '/settings' },
 ];
 
 export default function HomePage() {
