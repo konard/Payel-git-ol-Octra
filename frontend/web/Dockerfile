@@ -2,7 +2,7 @@ FROM node:22-alpine AS builder
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.30.3
 
 WORKDIR /app
 
