@@ -1551,8 +1551,7 @@ button {
 
 .tool-button:hover,
 .home-rail button:hover,
-.home-rail a:hover,
-.tool-button:first-child {
+.home-rail a:hover {
   border-color: rgba(255, 255, 255, 0.34);
   background: rgba(255, 255, 255, 0.1);
   color: var(--text);
