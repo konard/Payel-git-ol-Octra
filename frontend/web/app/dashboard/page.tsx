@@ -104,7 +104,7 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        <section className="dashboard-grid node-canvas" id="node-canvas">
+        <section className="node-canvas dashboard-canvas" id="node-canvas">
           <WorkflowCanvas />
         </section>
       </section>
