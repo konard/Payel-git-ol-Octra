@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Bell, PanelLeft, Plus, Search } from 'lucide-react';
 import { UserBalance } from '../components/UserBalance';
-import { accountSection, dashboardSections, dashboardTabs } from './sections';
+import { dashboardSections, dashboardTabs } from './sections';
 
 type DashboardShellProps = {
   activeSection: string;
@@ -9,8 +9,6 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({ activeSection, children }: DashboardShellProps) {
-  const AccountIcon = accountSection.icon;
-
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
@@ -34,9 +32,6 @@ export function DashboardShell({ activeSection, children }: DashboardShellProps)
             );
           })}
         </nav>
-        <a className="side-icon" href={accountSection.href} aria-label={accountSection.label}>
-          <AccountIcon size={18} />
-        </a>
       </aside>
 
       <section className="dashboard-scene" aria-labelledby="dashboard-title">
