@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Activity,
   Bot,
@@ -17,6 +19,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
+import { useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
@@ -37,6 +40,8 @@ const toolItems = [
 ];
 
 export default function HomePage() {
+  const [panelOpen, setPanelOpen] = useState(false);
+
   return (
     <main className="site-shell workspace-home">
       <header className="tv-header">
@@ -107,7 +112,7 @@ export default function HomePage() {
           </section>
         </section>
 
-        <aside className="home-market-panel" id="runtime-metrics" aria-label="Backend runtime metrics">
+        <aside className={`home-market-panel${panelOpen ? '' : ' panel-hidden'}`} id="runtime-metrics" aria-label="Backend runtime metrics">
           <div className="market-heading">
             <span>Runtime metrics</span>
             <ChevronDown size={16} />
@@ -151,16 +156,16 @@ export default function HomePage() {
         </aside>
 
         <aside className="home-rail" aria-label="Secondary tools">
-          <button type="button" aria-label="Chart">
+          <button type="button" aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
             <LineChart size={20} />
           </button>
-          <button type="button" aria-label="Activity">
+          <button type="button" aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
             <Activity size={20} />
           </button>
-          <button type="button" aria-label="Layers">
+          <button type="button" aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
             <Layers3 size={20} />
           </button>
-          <button type="button" aria-label="Automation">
+          <button type="button" aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
             <Zap size={20} />
           </button>
         </aside>

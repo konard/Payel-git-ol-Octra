@@ -1939,6 +1939,16 @@ button {
   border-left: 1px solid var(--line);
   background: #090b0c;
   overflow: hidden;
+  transition: width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+}
+
+.home-market-panel.panel-hidden {
+  width: 0;
+  min-width: 0;
+  padding: 18px 0;
+  opacity: 0;
+  border-left: 0;
+  overflow: hidden;
 }
 
 .market-heading {
