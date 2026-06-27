@@ -85,34 +85,34 @@ services:
       - octra-network
     restart: unless-stopped
 
-  poster:
-    build:
-      context: ./poster
-      dockerfile: Dockerfile
-    container_name: octra-poster
-    env_file:
-      - .env
-    environment:
-      - TG_BOT_TOKEN_POSTER=${TG_BOT_TOKEN_POSTER}
-      - CHANNEL_ID=@octra_ai
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=octra
-      - POSTGRES_PASSWORD=octra_password
-      - POSTGRES_DB=octra
-      - BASE_ULR=${BASE_ULR:-https://api.gonkagate.com/v1/chat/completions}
-      - API_KEY=${API_KEY}
-      - AI_MODEL=${AI_MODEL:-moonshotai/kimi-k2.6}
-      - REPO_ROOT=/repo
-    volumes:
-      - .:/repo:ro
-    working_dir: /repo
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - octra-network
-    restart: unless-stopped
+  # poster:
+  #   build:
+  #     context: ./poster
+  #     dockerfile: Dockerfile
+  #   container_name: octra-poster
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - TG_BOT_TOKEN_POSTER=${TG_BOT_TOKEN_POSTER}
+  #     - CHANNEL_ID=@octra_ai
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_USER=octra
+  #     - POSTGRES_PASSWORD=octra_password
+  #     - POSTGRES_DB=octra
+  #     - BASE_ULR=${BASE_ULR:-https://api.gonkagate.com/v1/chat/completions}
+  #     - API_KEY=${API_KEY}
+  #     - AI_MODEL=${AI_MODEL:-moonshotai/kimi-k2.6}
+  #     - REPO_ROOT=/repo
+  #   volumes:
+  #     - .:/repo:ro
+  #   working_dir: /repo
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - octra-network
+  #   restart: unless-stopped
 
 networks:
   octra-network:
