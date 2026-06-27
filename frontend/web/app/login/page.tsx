@@ -49,6 +49,17 @@ export default function AuthPage() {
         setLoginError(text || 'Sign in failed');
         return;
       }
+      const body = await res.json();
+      const accessToken = body?.data?.access_token;
+      const refreshToken = body?.data?.refresh_token;
+      if (accessToken) {
+        window.localStorage.setItem('octra_access_token', accessToken);
+        window.localStorage.setItem('access_token', accessToken);
+        if (refreshToken) {
+          window.localStorage.setItem('octra_refresh_token', refreshToken);
+          window.localStorage.setItem('refresh_token', refreshToken);
+        }
+      }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
       setLoginError('Network error');
@@ -65,6 +76,12 @@ export default function AuthPage() {
         const text = await res.text();
         setRegisterError(text || 'Registration failed');
         return;
+      }
+      const body = await res.json();
+      const apiKey = body?.api_key;
+      if (apiKey) {
+        window.localStorage.setItem('octra_access_token', apiKey);
+        window.localStorage.setItem('access_token', apiKey);
       }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
