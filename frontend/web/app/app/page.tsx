@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
+import { EnvironmentPanel } from '../components/EnvironmentPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
@@ -30,7 +31,7 @@ import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
 const toolItems = [
-  { label: 'Environments', icon: Workflow, href: '/dashboard/environments' },
+  { label: 'Environments', icon: Workflow, href: ROUTES.DASHBOARD_ENVIRONMENTS },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
 ];
 
@@ -196,42 +197,12 @@ export default function HomePage() {
               <div className="active-environments-title">
                 <span>Active environments</span>
               </div>
-              <button className="terminal-button" onClick={() => { setCreateError(''); setShowCreate(true); }}>
+              <a className="terminal-button" href={ROUTES.DASHBOARD_ENVIRONMENTS}>
                 <Plus size={15} />
                 New
-              </button>
+              </a>
             </div>
-            {envsLoading ? (
-              <p className="empty-flows-message" style={{ color: 'var(--muted)' }}>Loading…</p>
-            ) : activeEnvs.length === 0 ? (
-              <p className="empty-flows-message">No active environments.</p>
-            ) : (
-              <div className="active-envs-list">
-                {activeEnvs.map((env) => (
-                  <div
-                    key={env.id}
-                    className={`env-pill${selectedEnv === env.id ? ' active' : ''}`}
-                    onClick={() => selectEnv(env.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && selectEnv(env.id)}
-                  >
-                    <span className="env-pill-name">
-                      {env.visibility === 'private' ? <Lock size={13} /> : <LockOpen size={13} />}
-                      {env.name}
-                    </span>
-                    <span className="env-pill-actions">
-                      <IconButton variant="warning" onClick={(e) => { e.stopPropagation(); handlePause(env.id); }} aria-label="Pause">
-                        <Pause size={13} />
-                      </IconButton>
-                      <IconButton variant="danger" onClick={(e) => { e.stopPropagation(); handleDelete(env.id); }} aria-label="Delete">
-                        <Trash2 size={13} />
-                      </IconButton>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <EnvironmentPanel mode="active" />
           </section>
         </section>
 

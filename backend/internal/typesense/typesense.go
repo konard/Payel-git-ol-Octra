@@ -51,7 +51,6 @@ func (c *Client) EnsureCollection(ctx context.Context) error {
 			{Name: "source", Type: "string"},
 			{Name: "install_cmd", Type: "string"},
 		},
-		DefaultSortingField: strPtr("name"),
 	}
 
 	var lastErr error

@@ -2254,6 +2254,10 @@ button {
   min-height: 68px;
 }
 
+.active-environment-row.is-paused {
+  opacity: 0.72;
+}
+
 .active-environment-row div {
   display: grid;
   gap: 5px;
@@ -2274,6 +2278,60 @@ button {
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.active-environment-row strong.environment-name-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.environment-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.environment-icon-button,
+.environment-manage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text);
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.environment-icon-button:hover,
+.environment-manage-link:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+}
+
+.environment-icon-button {
+  cursor: pointer;
+}
+
+.environment-manage-link {
+  width: auto;
+  padding: 0 12px;
+  color: var(--quiet);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dashboard-environment-panel {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 100%;
 }
 
 .execution-row em,

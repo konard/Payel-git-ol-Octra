@@ -41,6 +41,14 @@ export const dashboardSections: DashboardSection[] = [
     icon: Workflow,
   },
   {
+    slug: 'environments',
+    label: 'Environments',
+    title: 'Environments',
+    detail: 'Temporary environments can be paused here and started again when needed.',
+    href: ROUTES.DASHBOARD_ENVIRONMENTS,
+    icon: Workflow,
+  },
+  {
     slug: 'models',
     label: 'Models',
     title: 'Models',

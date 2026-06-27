@@ -9,6 +9,7 @@ export const ROUTES = {
   LOGIN_LEFINE: '/login/lefine',
   DASHBOARD: '/dashboard',
   DASHBOARD_ENVIRONMENTS: '/dashboard/environments',
+  DASHBOARD_FLOWS: '/dashboard/flows',
   DASHBOARD_MODELS: '/dashboard/models',
   DASHBOARD_FILES: '/dashboard/files',
   DASHBOARD_SECURITY: '/dashboard/security',
