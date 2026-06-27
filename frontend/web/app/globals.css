@@ -1006,44 +1006,75 @@ button {
   color: var(--text);
 }
 
-.select-shell {
+.custom-select {
   position: relative;
+}
+
+.custom-select-trigger {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
   min-height: 44px;
+  padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.24);
-}
-
-.select-shell select {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 34px 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23787878'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23787878' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
   color: var(--text);
   font-size: 0.9rem;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  outline: 0;
   cursor: pointer;
+  transition: border-color var(--anim-duration);
 }
 
-.select-shell select:focus {
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+.custom-select-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.select-shell select option {
-  background: #141414;
+.custom-select-chevron {
+  flex: 0 0 auto;
+  color: var(--quiet);
+  transition: transform 0.2s;
+}
+
+.custom-select-chevron.open {
+  transform: rotate(180deg);
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #141416;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.custom-select-option {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--anim-duration), color var(--anim-duration);
+}
+
+.custom-select-option:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
-  padding: 8px;
+}
+
+.custom-select-option.selected {
+  color: var(--text);
+  font-weight: 800;
 }
 
 .full-button {

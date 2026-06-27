@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { X, KeyRound } from 'lucide-react';
+import { Select } from './Select';
 
 interface Props {
   onClose: () => void;
@@ -68,13 +69,7 @@ export function CreateKeyModal({ onClose, onCreate, error }: Props) {
 
           <label>
             <span style={{ display: 'block', marginBottom: 6, fontSize: '0.84rem', color: 'var(--muted)' }}>Expiration</span>
-            <div className="select-shell" style={{ width: '100%' }}>
-              <select value={expiry} onChange={(e) => setExpiry(e.target.value)}>
-                {EXPIRY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+            <Select options={EXPIRY_OPTIONS} value={expiry} onChange={setExpiry} />
           </label>
 
           {error && <p style={{ margin: 0, color: 'var(--metric-danger)', fontSize: '0.84rem' }}>{error}</p>}
