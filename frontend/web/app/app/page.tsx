@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
+import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 
 const toolItems = [
@@ -39,7 +40,7 @@ export default function HomePage() {
     <main className="site-shell workspace-home">
       <header className="tv-header">
         <a className="tv-brand" href="/" aria-label="Octra home">
-          <img src="/assets/octra-node-logo.svg" alt="" />
+          <img src={ASSETS.LOGO} alt="" />
           <span>Octra</span>
         </a>
 

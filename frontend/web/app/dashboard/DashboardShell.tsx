@@ -3,6 +3,7 @@ import { Bell, Plus } from 'lucide-react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
 import { ROUTES } from '../config/routes';
+import { ASSETS } from '../config/images';
 
 type DashboardShellProps = {
   activeSection: string;
@@ -18,7 +19,7 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
         <a className="square-brand" href={ROUTES.WORKSPACE} aria-label="Octra home">
-          <img src="/assets/octra-node-logo.svg" alt="" />
+          <img src={ASSETS.LOGO} alt="" />
         </a>
         <nav>
           {dashboardSections.map((item) => {

@@ -2,6 +2,7 @@
 
 import { Maximize2, Minimize2, Square, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ASSETS } from '../config/images';
 
 type OctraDesktopBridge = {
   isElectron: true;
@@ -38,7 +39,7 @@ export function DesktopTitleBar() {
   return (
     <div className="desktop-titlebar">
       <div className="desktop-titlebar-title">
-        <img src="/assets/octra-node-logo.svg" alt="" />
+        <img src={ASSETS.LOGO} alt="" />
         <span>Octra</span>
       </div>
       <div className="desktop-window-controls" aria-label="Window controls">
