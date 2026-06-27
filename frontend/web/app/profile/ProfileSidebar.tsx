@@ -15,7 +15,9 @@ export function ProfileSidebar() {
 
   return items.map((item) => {
     const Icon = item.icon;
-    const active = item.slug === '' ? pathname === item.href : pathname.startsWith(item.href);
+    const active = item.slug === ''
+      ? (pathname === item.href || pathname === `${item.href}/`)
+      : pathname.startsWith(item.href);
     return (
       <a className={`side-icon${active ? ' active' : ''}`} href={item.href} key={item.slug} aria-label={item.label}>
         <Icon size={18} />
