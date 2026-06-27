@@ -779,20 +779,20 @@ button {
   position: relative;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 16px;
   padding: 0 48px 42px;
 }
 
 .capability-card,
 .capability-link {
-  min-height: 116px;
-  padding: 18px;
+  min-height: 140px;
+  padding: 24px;
 }
 
 .capability-card {
   display: flex;
-  gap: 14px;
+  gap: 16px;
 }
 
 .capability-card svg,
