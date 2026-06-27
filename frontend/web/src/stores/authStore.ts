@@ -28,37 +28,43 @@ function isUserInTrial(createdAt?: string): boolean {
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
+// These helpers run at module-load time, so they must be safe in non-browser
+// (SSR / test) environments where localStorage and document are undefined.
+const hasLocalStorage = typeof localStorage !== 'undefined';
+const hasDocument = typeof document !== 'undefined';
+
 // Получаем токены из localStorage при инициализации
 function getStoredAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return hasLocalStorage ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
 }
 
 function getStoredRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return hasLocalStorage ? localStorage.getItem(REFRESH_TOKEN_KEY) : null;
 }
 
 function setAccessTokenCookie(token: string): void {
+  if (!hasDocument) return;
   document.cookie = `${ACCESS_TOKEN_KEY}=${token}; path=/; SameSite=Lax`;
 }
 
 function removeAccessTokenCookie(): void {
+  if (!hasDocument) return;
   document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; SameSite=Lax; Max-Age=0`;
 }
 
 function storeTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  if (hasLocalStorage) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  }
   setAccessTokenCookie(accessToken);
 }
 
-function storeAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
-  setAccessTokenCookie(token);
-}
-
 function removeTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  if (hasLocalStorage) {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
   removeAccessTokenCookie();
 }
 
@@ -74,7 +80,7 @@ interface AuthState {
   error: string | null;
 
   // Actions
-  register: (username: string, email: string, password: string, captchaToken: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -98,10 +104,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  register: async (username: string, email: string, password: string, captchaToken: string) => {
+  register: async (username: string, email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await registerUser({ username, email, password, captcha_token: captchaToken });
+      const response = await registerUser({ username, email, password });
       storeTokens(response.data.access_token, response.data.refresh_token);
       set({
         user: response.data.user,

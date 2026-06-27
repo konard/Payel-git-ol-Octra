@@ -51,11 +51,17 @@ func GetGithubOauthConfig() *oauth2.Config {
 func RegisterGoogleRoutes(r *gin.Engine) {
 	r.GET("/auth/google", func(c *gin.Context) {
 		config := GetGoogleOauthConfig()
-		url := config.AuthCodeURL("random-state")
+		state := generateState()
+		setStateCookie(c, state)
+		url := config.AuthCodeURL(state)
 		c.Redirect(http.StatusTemporaryRedirect, url)
 	})
 
 	r.GET("/auth/google/callback", func(c *gin.Context) {
+		if !verifyState(c, c.Query("state")) {
+			c.JSON(400, gin.H{"status": "error", "error": "Invalid OAuth state"})
+			return
+		}
 		code := c.Query("code")
 		if code == "" {
 			c.JSON(400, gin.H{"status": "error", "error": "Code not found"})
@@ -118,14 +124,53 @@ func RegisterGoogleRoutes(r *gin.Engine) {
 	})
 }
 
+// fetchGithubPrimaryEmail queries the authenticated user's email list and
+// returns the primary verified address. It returns an empty string when none is
+// available so callers can fall back to a synthetic address.
+func fetchGithubPrimaryEmail(client *http.Client) string {
+	resp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.Unmarshal(body, &emails); err != nil {
+		return ""
+	}
+
+	// Prefer the primary verified email; otherwise any verified email.
+	var firstVerified string
+	for _, e := range emails {
+		if e.Verified && firstVerified == "" {
+			firstVerified = e.Email
+		}
+		if e.Primary && e.Verified {
+			return e.Email
+		}
+	}
+	return firstVerified
+}
+
 func RegisterGithubRoutes(r *gin.Engine) {
 	r.GET("/auth/github", func(c *gin.Context) {
 		config := GetGithubOauthConfig()
-		url := config.AuthCodeURL("random-state")
+		state := generateState()
+		setStateCookie(c, state)
+		url := config.AuthCodeURL(state)
 		c.Redirect(http.StatusTemporaryRedirect, url)
 	})
 
 	r.GET("/auth/github/callback", func(c *gin.Context) {
+		if !verifyState(c, c.Query("state")) {
+			c.JSON(400, gin.H{"status": "error", "error": "Invalid OAuth state"})
+			return
+		}
 		code := c.Query("code")
 		if code == "" {
 			c.JSON(400, gin.H{"status": "error", "error": "Code not found"})
@@ -160,6 +205,12 @@ func RegisterGithubRoutes(r *gin.Engine) {
 		}
 
 		email := githubUser.Email
+		if email == "" {
+			// The public profile hides the email when the user marks it private.
+			// Fall back to the authenticated /user/emails endpoint and pick the
+			// primary verified address before resorting to a synthetic one.
+			email = fetchGithubPrimaryEmail(client)
+		}
 		if email == "" {
 			email = fmt.Sprintf("%s@github.local", githubUser.Login)
 		}

@@ -18,6 +18,13 @@ const (
 	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 дней
 )
 
+// NormalizeEmail trims surrounding whitespace and lowercases an email so that
+// registration, login and OAuth all resolve to the same account regardless of
+// the casing the user typed.
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
 // GenerateTokens generates access and refresh JWT tokens
 func GenerateTokens(user models.UserRegister) (string, string, error) {
 	secret := os.Getenv("JWT_SECRET")
@@ -117,8 +124,13 @@ func ValidateRefreshToken(tokenString string) (*jwt.Token, error) {
 func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
 	// Find user by email
 	var user models.UserRegister
-	err := database.Db.Where("email = ?", req.Email).First(&user).Error
+	err := database.Db.Where("email = ?", NormalizeEmail(req.Email)).First(&user).Error
 	if err != nil {
+		return nil, errors.New("invalid email or password")
+	}
+
+	// OAuth-only accounts have no password set — reject password login explicitly
+	if user.Password == "" {
 		return nil, errors.New("invalid email or password")
 	}
 
@@ -137,147 +149,81 @@ func LoginUser(req requests.UserLoginRequest) (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
-		"user": map[string]interface{}{
-			"id":       user.ID.String(),
-			"username": user.Username,
-			"email":    user.Email,
-		},
+		"user":          userPublicInfo(user),
 	}, nil
+}
+
+// userPublicInfo returns the subset of user fields safe to expose to clients.
+func userPublicInfo(user models.UserRegister) map[string]interface{} {
+	return map[string]interface{}{
+		"id":         user.ID.String(),
+		"username":   user.Username,
+		"email":      user.Email,
+		"created_at": user.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+// getOrCreateOAuthUser finds an existing user by email or creates a new one,
+// generating a unique username when the desired one is already taken. It is the
+// shared implementation behind every OAuth/identity provider.
+func getOrCreateOAuthUser(email, name string) (*models.UserRegister, error) {
+	email = NormalizeEmail(email)
+
+	var user models.UserRegister
+	if err := database.Db.Where("email = ?", email).First(&user).Error; err == nil {
+		return &user, nil
+	}
+
+	baseUsername := strings.TrimSpace(name)
+	if baseUsername == "" {
+		if len(email) > 10 {
+			baseUsername = email[:len(email)-10]
+		} else {
+			baseUsername = "user_" + uuid.New().String()[:8]
+		}
+	}
+
+	username := baseUsername
+	var count int64
+	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		username = baseUsername + "_" + uuid.New().String()[:6]
+	}
+
+	user = models.UserRegister{
+		ID:       uuid.New(),
+		Username: username,
+		Email:    email,
+	}
+
+	if err := database.Db.Create(&user).Error; err != nil {
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			// Race or username collision — retry once with a random suffix.
+			user.Username = baseUsername + "_" + uuid.New().String()[:6]
+			if err := database.Db.Create(&user).Error; err != nil {
+				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+			}
+		} else {
+			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
+		}
+	}
+
+	return &user, nil
 }
 
 // GetOrCreateUserFromGoogle creates or finds a user from Google OAuth
 func GetOrCreateUserFromGoogle(email, name string) (*models.UserRegister, error) {
-	var user models.UserRegister
-
-	result := database.Db.Where("email = ?", email).First(&user)
-	if result.Error == nil {
-		return &user, nil
-	}
-
-	baseUsername := name
-	if baseUsername == "" {
-		if len(email) > 10 {
-			baseUsername = email[:len(email)-10]
-		} else {
-			baseUsername = "user_" + uuid.New().String()[:8]
-		}
-	}
-
-	username := baseUsername
-	var count int64
-	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
-	if count > 0 {
-		username = baseUsername + "_" + uuid.New().String()[:6]
-	}
-
-	user = models.UserRegister{
-		ID:       uuid.New(),
-		Username: username,
-		Email:    email,
-	}
-
-	if err := database.Db.Create(&user).Error; err != nil {
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
-			user.Username = baseUsername + "_" + uuid.New().String()[:6]
-			if err := database.Db.Create(&user).Error; err != nil {
-				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-			}
-		} else {
-			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-		}
-	}
-
-	return &user, nil
+	return getOrCreateOAuthUser(email, name)
 }
 
 // GetOrCreateUserFromGithub creates or finds a user from GitHub OAuth
 func GetOrCreateUserFromGithub(email, name string) (*models.UserRegister, error) {
-	var user models.UserRegister
-
-	result := database.Db.Where("email = ?", email).First(&user)
-	if result.Error == nil {
-		return &user, nil
-	}
-
-	baseUsername := name
-	if baseUsername == "" {
-		if len(email) > 10 {
-			baseUsername = email[:len(email)-10]
-		} else {
-			baseUsername = "user_" + uuid.New().String()[:8]
-		}
-	}
-
-	username := baseUsername
-	var count int64
-	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
-	if count > 0 {
-		username = baseUsername + "_" + uuid.New().String()[:6]
-	}
-
-	user = models.UserRegister{
-		ID:       uuid.New(),
-		Username: username,
-		Email:    email,
-	}
-
-	if err := database.Db.Create(&user).Error; err != nil {
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
-			user.Username = baseUsername + "_" + uuid.New().String()[:6]
-			if err := database.Db.Create(&user).Error; err != nil {
-				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-			}
-		} else {
-			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-		}
-	}
-
-	return &user, nil
+	return getOrCreateOAuthUser(email, name)
 }
 
 // GetOrCreateUserFromLeFine creates or finds a user from LeFine/Kefine OAuth-like integration
 func GetOrCreateUserFromLeFine(email, name, lefineUserID string) (*models.UserRegister, error) {
-	var user models.UserRegister
-
-	result := database.Db.Where("email = ?", email).First(&user)
-	if result.Error == nil {
-		return &user, nil
-	}
-
-	baseUsername := name
-	if baseUsername == "" {
-		if len(email) > 10 {
-			baseUsername = email[:len(email)-10]
-		} else {
-			baseUsername = "user_" + uuid.New().String()[:8]
-		}
-	}
-
-	username := baseUsername
-	var count int64
-	database.Db.Model(&models.UserRegister{}).Where("username = ?", username).Count(&count)
-	if count > 0 {
-		username = baseUsername + "_" + uuid.New().String()[:6]
-	}
-
-	user = models.UserRegister{
-		ID:       uuid.New(),
-		Username: username,
-		Email:    email,
-	}
-
-	if err := database.Db.Create(&user).Error; err != nil {
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
-			user.Username = baseUsername + "_" + uuid.New().String()[:6]
-			if err := database.Db.Create(&user).Error; err != nil {
-				return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-			}
-		} else {
-			return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
-		}
-	}
-
-	return &user, nil
+	return getOrCreateOAuthUser(email, name)
 }
 
 // RefreshTokens generates new tokens from refresh token
@@ -352,6 +298,7 @@ func GetMe(tokenString string) (map[string]interface{}, error) {
 		"user_id":          user.ID.String(),
 		"username":         user.Username,
 		"email":            user.Email,
+		"created_at":       user.CreatedAt.Format(time.RFC3339),
 		"has_subscription": hasSubscription,
 		"subscription_end": subscriptionEnd,
 	}, nil
@@ -366,8 +313,8 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 
 	user := models.UserRegister{
 		ID:       uuid.New(),
-		Username: req.Username,
-		Email:    req.Email,
+		Username: strings.TrimSpace(req.Username),
+		Email:    NormalizeEmail(req.Email),
 		Password: hashPs,
 	}
 
@@ -388,10 +335,6 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 	return map[string]interface{}{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
-		"user": map[string]interface{}{
-			"id":       user.ID.String(),
-			"username": user.Username,
-			"email":    user.Email,
-		},
+		"user":          userPublicInfo(user),
 	}, nil
 }

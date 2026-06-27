@@ -1,16 +1,14 @@
 package requests
 
 type UserLoginRequest struct {
-	Email         string `json:"email"`
-	Password      string `json:"password"`
-	CaptchaToken  string `json:"captcha_token"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type UserRegisterRequest struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	Password     string `json:"password"`
-	CaptchaToken string `json:"captcha_token"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type RefreshTokenRequest struct {

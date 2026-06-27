@@ -18,6 +18,10 @@ func registerRegister(r *gin.Engine) {
 			c.JSON(400, gin.H{"status": "error", "error": "Username, email and password are required"})
 			return
 		}
+		if len(req.Password) < 6 {
+			c.JSON(400, gin.H{"status": "error", "error": "Password must be at least 6 characters long"})
+			return
+		}
 
 		result, err := services.RegisterUser(req)
 		if err != nil {
