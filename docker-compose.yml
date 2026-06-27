@@ -12,12 +12,6 @@ services:
       - typesense_data:/data
     networks:
       - octra-network
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8108/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 15s
     restart: unless-stopped
 
   postgres:
@@ -84,7 +78,7 @@ services:
       redis:
         condition: service_healthy
       typesense:
-        condition: service_healthy
+        condition: service_started
     networks:
       - octra-network
     restart: unless-stopped
