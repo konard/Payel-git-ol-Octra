@@ -1,10 +1,33 @@
 package accaunt
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+
+	"user/internal/core/services"
 )
+
+func TestStatusForRegisterError(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"already exists", services.ErrUserAlreadyExists, 409},
+		{"wrapped already exists", fmt.Errorf("register: %w", services.ErrUserAlreadyExists), 409},
+		{"generic failure", errors.New("database unavailable"), 500},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := statusForRegisterError(tc.err); got != tc.want {
+				t.Errorf("statusForRegisterError(%v) = %d, want %d", tc.err, got, tc.want)
+			}
+		})
+	}
+}
 
 func TestRegisterRoutesRegistersAllAuthEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)

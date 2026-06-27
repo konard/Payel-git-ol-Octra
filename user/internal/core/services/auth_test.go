@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -21,6 +22,26 @@ func TestNormalizeEmail(t *testing.T) {
 		if got := NormalizeEmail(in); got != want {
 			t.Errorf("NormalizeEmail(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestIsDuplicateKeyError(t *testing.T) {
+	cases := map[string]struct {
+		err  error
+		want bool
+	}{
+		"postgres unique": {errors.New("duplicate key value violates unique constraint"), true},
+		"sqlite unique":   {errors.New("UNIQUE constraint failed: users.email"), true},
+		"mixed case":      {errors.New("Duplicate entry"), true},
+		"unrelated":       {errors.New("connection refused"), false},
+		"nil":             {nil, false},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if got := isDuplicateKeyError(tc.err); got != tc.want {
+				t.Errorf("isDuplicateKeyError(%v) = %v, want %v", tc.err, got, tc.want)
+			}
+		})
 	}
 }
 

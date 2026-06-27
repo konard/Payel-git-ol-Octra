@@ -1,11 +1,22 @@
 package accaunt
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 
 	"user/internal/core/services"
 	"user/pkg/requests"
 )
+
+// statusForRegisterError maps a RegisterUser error to the appropriate HTTP
+// status code: 409 Conflict when the account already exists, 500 otherwise.
+func statusForRegisterError(err error) int {
+	if errors.Is(err, services.ErrUserAlreadyExists) {
+		return 409
+	}
+	return 500
+}
 
 func registerRegister(r *gin.Engine) {
 	r.POST("/register", func(c *gin.Context) {
@@ -25,11 +36,7 @@ func registerRegister(r *gin.Engine) {
 
 		result, err := services.RegisterUser(req)
 		if err != nil {
-			status := 500
-			if err.Error() == "UNIQUE constraint failed" || err.Error() == "duplicate key value violates unique constraint" {
-				status = 409
-			}
-			c.JSON(status, gin.H{"status": "error", "error": err.Error()})
+			c.JSON(statusForRegisterError(err), gin.H{"status": "error", "error": err.Error()})
 			return
 		}
 

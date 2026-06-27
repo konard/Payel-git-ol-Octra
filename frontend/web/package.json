@@ -16,6 +16,7 @@
     "test:search-button": "node scripts/check-search-button.mjs",
     "test:search-provider": "node scripts/check-search-provider-config.mjs",
     "test:sidebar-auth": "node scripts/check-sidebar-unauthenticated.mjs",
+    "test:auth-store": "node scripts/check-auth-store.mjs",
     "test:landing": "node scripts/check-landing-content.mjs",
     "test:custom-providers": "node scripts/check-custom-provider-normalization.mjs",
     "test:chat-input": "node scripts/check-chat-input.mjs",
@@ -34,7 +35,7 @@
     "test:ocawe-export": "node scripts/check-ocawe-export.mjs",
     "test:create-solution": "node scripts/check-create-solution.mjs",
     "test:universal-node": "node scripts/check-universal-node.mjs",
-    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:search-provider && npm run test:sidebar-auth && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour && npm run test:token-statistics && npm run test:ocawe-export && npm run test:create-solution && npm run test:universal-node"
+    "test": "npm run test:settings && npm run test:task-store && npm run test:task-payload && npm run test:chat-history && npm run test:solution-viewer && npm run test:search-steps && npm run test:search-button && npm run test:search-provider && npm run test:sidebar-auth && npm run test:auth-store && npm run test:sidebar-dock && npm run test:landing && npm run test:custom-providers && npm run test:chat-input && npm run test:bottom-input-attachments && npm run test:file-tree && npm run test:workspace && npm run test:mobile-header && npm run test:profile-avatar && npm run test:pull-request-summary && npm run test:model-selector-toggle && npm run test:desktop-integration && npm run test:app-render-guards && npm run test:onboarding-tour && npm run test:token-statistics && npm run test:ocawe-export && npm run test:create-solution && npm run test:universal-node"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.12.0",

@@ -18,6 +18,22 @@ const (
 	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 дней
 )
 
+// ErrUserAlreadyExists is returned by RegisterUser when the email or username is
+// already taken. It lets the HTTP layer respond with 409 Conflict instead of a
+// generic 500, regardless of the (localized) message shown to the user.
+var ErrUserAlreadyExists = errors.New("Пользователь с таким email или именем уже существует")
+
+// isDuplicateKeyError reports whether a database error was caused by a unique
+// constraint violation (duplicate email/username), across Postgres and SQLite
+// driver wording.
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate") || strings.Contains(msg, "unique")
+}
+
 // NormalizeEmail trims surrounding whitespace and lowercases an email so that
 // registration, login and OAuth all resolve to the same account regardless of
 // the casing the user typed.
@@ -197,7 +213,7 @@ func getOrCreateOAuthUser(email, name string) (*models.UserRegister, error) {
 	}
 
 	if err := database.Db.Create(&user).Error; err != nil {
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+		if isDuplicateKeyError(err) {
 			// Race or username collision — retry once with a random suffix.
 			user.Username = baseUsername + "_" + uuid.New().String()[:6]
 			if err := database.Db.Create(&user).Error; err != nil {
@@ -321,8 +337,8 @@ func RegisterUser(req requests.UserRegisterRequest) (map[string]interface{}, err
 	err = database.Db.Create(&user).Error
 	if err != nil {
 		println("Register error: " + err.Error())
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
-			return nil, errors.New("Пользователь с таким email или именем уже существует")
+		if isDuplicateKeyError(err) {
+			return nil, ErrUserAlreadyExists
 		}
 		return nil, errors.New("Ошибка при создании аккаунта. Попробуйте ещё раз")
 	}
