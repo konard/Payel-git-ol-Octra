@@ -17,6 +17,8 @@ export const ROUTES = {
   DASHBOARD_DEPLOYMENTS: '/dashboard/deployments',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+  PROFILE_SETTINGS: '/profile/settings',
+  PROFILE_API: '/profile/api',
 } as const;
 
 export const API = {

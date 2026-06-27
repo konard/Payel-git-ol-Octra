@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Eye, EyeOff, User, Mail, KeyRound, Calendar, Check } from 'lucide-react';
-import { DashboardShell } from '../dashboard/DashboardShell';
+import { User, Mail, Calendar } from 'lucide-react';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
@@ -28,8 +27,6 @@ function readToken(): string | null {
 
 export default function ProfilePage() {
   const [state, setState] = useState<ProfileState>({ status: 'loading' });
-  const [showKey, setShowKey] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const token = readToken();
@@ -55,49 +52,34 @@ export default function ProfilePage() {
     });
   }, []);
 
-  async function copyKey() {
-    if (state.status !== 'ready') return;
-    try {
-      await navigator.clipboard.writeText(state.user.api_key);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }
-
   if (state.status === 'loading') {
     return (
-      <DashboardShell activeSection="" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows', 'settings']} showNotifications={false} hideNewFlow={true} hideTabs={true}>
-        <section className="dashboard-grid dashboard-grid-single">
-          <article className="large-panel" aria-label="Profile" style={{ padding: 32, color: 'var(--muted)' }}>
-            Loading profile…
-          </article>
-        </section>
-      </DashboardShell>
+      <div className="dashboard-grid dashboard-grid-single" style={{ padding: 14 }}>
+        <article className="large-panel profile-card" aria-label="Profile" style={{ color: 'var(--muted)' }}>
+          Loading profile…
+        </article>
+      </div>
     );
   }
 
   if (state.status === 'signed-out') {
     return (
-      <DashboardShell activeSection="" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows', 'settings']} showNotifications={false} hideNewFlow={true} hideTabs={true}>
-        <section className="dashboard-grid dashboard-grid-single">
-          <article className="large-panel" aria-label="Profile" style={{ padding: 32 }}>
-            <p style={{ margin: '0 0 12px', color: 'var(--muted)' }}>You are not signed in.</p>
-            <a className="primary-button" href={ROUTES.LOGIN}>Sign in</a>
-          </article>
-        </section>
-      </DashboardShell>
+      <div className="dashboard-grid dashboard-grid-single" style={{ padding: 14 }}>
+        <article className="large-panel" aria-label="Profile" style={{ padding: 32 }}>
+          <p style={{ margin: '0 0 12px', color: 'var(--muted)' }}>You are not signed in.</p>
+          <a className="primary-button" href={ROUTES.LOGIN}>Sign in</a>
+        </article>
+      </div>
     );
   }
 
   if (state.status === 'error') {
     return (
-      <DashboardShell activeSection="" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows', 'settings']} showNotifications={false} hideNewFlow={true} hideTabs={true}>
-        <section className="dashboard-grid dashboard-grid-single">
-          <article className="large-panel" aria-label="Profile" style={{ padding: 32, color: 'var(--danger)' }}>
-            {state.message}
-          </article>
-        </section>
-      </DashboardShell>
+      <div className="dashboard-grid dashboard-grid-single" style={{ padding: 14 }}>
+        <article className="large-panel" aria-label="Profile" style={{ padding: 32, color: 'var(--danger)' }}>
+          {state.message}
+        </article>
+      </div>
     );
   }
 
@@ -105,48 +87,24 @@ export default function ProfilePage() {
   const memberSince = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <DashboardShell activeSection="" hideSidebarItems={['models', 'files', 'security', 'overview', 'flows', 'settings']} showNotifications={false} hideNewFlow={true} hideTabs={true}>
-      <section className="profile-grid">
-        <article className="large-panel profile-card" aria-label="Profile">
-          <div className="profile-avatar">{user.username[0].toUpperCase()}</div>
-          <div className="profile-info">
-            <div className="profile-row">
-              <User size={16} />
-              <span>{user.username}</span>
-            </div>
-            <div className="profile-row">
-              <Mail size={16} />
-              <span>{user.email}</span>
-            </div>
-            <div className="profile-row">
-              <Calendar size={16} />
-              <span>Member since {memberSince}</span>
-            </div>
+    <div className="dashboard-grid dashboard-grid-single" style={{ padding: 14 }}>
+      <article className="large-panel profile-card" aria-label="Profile">
+        <div className="profile-avatar">{user.username[0].toUpperCase()}</div>
+        <div className="profile-info">
+          <div className="profile-row">
+            <User size={16} />
+            <span>{user.username}</span>
           </div>
-        </article>
-
-        <article className="large-panel" aria-label="API key" style={{ padding: 24 }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: '1rem' }}>API key</h2>
-          <div className="api-key-shell">
-            <code className="api-key-value">
-              {showKey ? user.api_key : user.api_key.slice(0, 8) + '••••••••' + user.api_key.slice(-4)}
-            </code>
-            <div className="api-key-actions">
-              <button className="icon-button" onClick={() => setShowKey(!showKey)} aria-label={showKey ? 'Hide' : 'Show'}>
-                {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-              <button className="icon-button" onClick={copyKey} aria-label="Copy">
-                <Copy size={16} />
-              </button>
-            </div>
-            {copied && <span className="copy-check"><Check size={16} /></span>}
+          <div className="profile-row">
+            <Mail size={16} />
+            <span>{user.email}</span>
           </div>
-          <p style={{ margin: '16px 0 0', fontSize: '0.82rem', color: 'var(--muted)', lineHeight: 1.55 }}>
-            Use this key to authenticate API requests from your CLI or MCP client.
-            Treat it like a password — do not share it publicly.
-          </p>
-        </article>
-      </section>
-    </DashboardShell>
+          <div className="profile-row">
+            <Calendar size={16} />
+            <span>Member since {memberSince}</span>
+          </div>
+        </div>
+      </article>
+    </div>
   );
 }
