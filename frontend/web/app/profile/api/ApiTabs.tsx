@@ -17,7 +17,8 @@ export function ApiTabs() {
     <div className="dashboard-tabs" aria-label="API sections" style={{ marginBottom: 14 }}>
       {tabs.map((t) => {
         const Icon = t.icon;
-        const active = pathname.endsWith(t.slug);
+        const clean = pathname.replace(/\/+$/, '');
+        const active = clean.endsWith(t.slug);
         return (
           <a className={active ? 'active' : ''} href={t.href} key={t.slug} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Icon size={15} />
