@@ -117,8 +117,6 @@ export default function LandingPage() {
               <span>environments</span>
               <span>/</span>
               <span>usr_742</span>
-              <span>/</span>
-              <span>cli</span>
             </div>
             <label className="search-field">
               <Globe size={16} />
