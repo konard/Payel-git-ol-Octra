@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
+import { EnvironmentPanel } from '../components/EnvironmentPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
@@ -22,7 +23,7 @@ import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
 const toolItems = [
-  { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
+  { label: 'Environments', icon: Workflow, href: ROUTES.DASHBOARD_ENVIRONMENTS },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
 ];
 
@@ -120,12 +121,12 @@ export default function HomePage() {
               <div className="active-environments-title">
                 <span>Active environments</span>
               </div>
-              <a className="terminal-button" href={ROUTES.DASHBOARD_FLOWS}>
+              <a className="terminal-button" href={ROUTES.DASHBOARD_ENVIRONMENTS}>
                 <Plus size={15} />
-                New flow
+                New
               </a>
             </div>
-            <p className="empty-flows-message">You don't have any flows yet.</p>
+            <EnvironmentPanel mode="active" />
           </section>
         </section>
 
