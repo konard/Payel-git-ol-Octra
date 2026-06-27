@@ -26,4 +26,5 @@ export const API = {
   LOGIN: `${API_BASE}/login`,
   REGISTER: `${API_BASE}/register`,
   ME: `${API_BASE}/me`,
+  KEYS: `${API_BASE}/api/keys`,
 } as const;

@@ -140,6 +140,23 @@ type Transaction struct {
 	BalanceAfter int `gorm:"column:balance_after;not null" json:"balance_after"`
 }
 
+// UserAPIKey is a user-generated API key with a name and optional expiry.
+type UserAPIKey struct {
+	ID        uuid.UUID  `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt time.Time  `json:"created_at"`
+	UserID    uuid.UUID  `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	Name      string     `gorm:"column:name;not null" json:"name"`
+	Key       string     `gorm:"column:key;uniqueIndex;not null" json:"-"`
+	ExpiresAt *time.Time `gorm:"column:expires_at" json:"expires_at,omitempty"`
+}
+
+func (m *UserAPIKey) IsExpired() bool {
+	if m.ExpiresAt == nil {
+		return false
+	}
+	return time.Now().After(*m.ExpiresAt)
+}
+
 // UsageMetric stores daily resource usage that drives hosting charges.
 type UsageMetric struct {
 	ID            uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
@@ -154,7 +171,7 @@ type UsageMetric struct {
 
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UsageMetric{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &UsageMetric{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -184,6 +201,7 @@ func (m *Agent) BeforeCreate(*gorm.DB) error {
 func (m *Skill) BeforeCreate(*gorm.DB) error       { return ensureID(&m.ID) }
 func (m *UserSkill) BeforeCreate(*gorm.DB) error   { return ensureID(&m.ID) }
 func (m *Transaction) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *UserAPIKey) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *UsageMetric) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 
 // ApplyBillingDefaults fills missing billing preference fields.

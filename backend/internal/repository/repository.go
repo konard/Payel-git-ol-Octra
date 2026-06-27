@@ -51,6 +51,14 @@ type TransactionRepository interface {
 	ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.Transaction, error)
 }
 
+// APIKeyRepository persists user-generated API keys.
+type APIKeyRepository interface {
+	Create(ctx context.Context, k *model.UserAPIKey) error
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.UserAPIKey, error)
+	GetByKey(ctx context.Context, key string) (*model.UserAPIKey, error)
+	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
+}
+
 // UsageMetricsRepository persists resource usage snapshots.
 type UsageMetricsRepository interface {
 	Create(ctx context.Context, metric *model.UsageMetric) error
@@ -203,6 +211,31 @@ func (r *usageMetricsRepo) ListByUserID(ctx context.Context, userID uuid.UUID, l
 		Offset(offset).
 		Find(&list).Error
 	return list, err
+}
+
+type apiKeyRepo struct{ db *gorm.DB }
+
+// NewAPIKeyRepository returns a GORM-backed APIKeyRepository.
+func NewAPIKeyRepository(db *gorm.DB) APIKeyRepository { return &apiKeyRepo{db: db} }
+
+func (r *apiKeyRepo) Create(ctx context.Context, k *model.UserAPIKey) error {
+	return r.db.WithContext(ctx).Create(k).Error
+}
+
+func (r *apiKeyRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.UserAPIKey, error) {
+	var list []model.UserAPIKey
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at desc").Find(&list).Error
+	return list, err
+}
+
+func (r *apiKeyRepo) GetByKey(ctx context.Context, key string) (*model.UserAPIKey, error) {
+	var k model.UserAPIKey
+	err := r.db.WithContext(ctx).Where("key = ?", key).First(&k).Error
+	return firstResult(&k, err)
+}
+
+func (r *apiKeyRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	return r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&model.UserAPIKey{}).Error
 }
 
 // firstResult translates GORM's RecordNotFound into ErrNotFound.

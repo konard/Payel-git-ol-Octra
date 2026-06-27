@@ -41,6 +41,7 @@ func main() {
 	userSkills := repository.NewUserSkillRepository(db)
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
+	apiKeys := repository.NewAPIKeyRepository(db)
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
@@ -48,7 +49,7 @@ func main() {
 	llmClient := llm.New(nil)
 
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
-	authSvc := service.NewAuthService(users, cfg, transactions)
+	authSvc := service.NewAuthServiceWithKeys(users, apiKeys, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
 	oauthH := oauth.New(authSvc, cfg)

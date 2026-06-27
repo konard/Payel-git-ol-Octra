@@ -1006,6 +1006,48 @@ button {
   color: var(--text);
 }
 
+.select-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.select-shell::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--quiet);
+  pointer-events: none;
+}
+
+.select-shell select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 32px 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.9rem;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: 0;
+  cursor: pointer;
+}
+
+.select-shell select option {
+  background: #111;
+  color: var(--text);
+}
+
 .full-button {
   width: 100%;
   align-self: end;
@@ -1251,6 +1293,49 @@ button {
   display: flex;
   gap: 4px;
   flex: 0 0 auto;
+}
+
+.api-key-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.api-key-row-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 0 0 140px;
+}
+
+.api-key-row-info strong {
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-key-row-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.api-key-row-value code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 .large-panel {

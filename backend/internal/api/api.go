@@ -63,6 +63,11 @@ func (a *API) Router() *router.Router {
 	r.POST("/billing/topup", a.withAuth(a.handleBillingTopUp))
 	r.POST("/billing/lefine-reward", a.withAuth(a.handleBillingLefineReward))
 	r.POST("/billing/usage", a.withAuth(a.handleBillingUsage))
+
+	// User API keys
+	r.POST("/api/keys", a.withAuth(a.handleCreateAPIKey))
+	r.GET("/api/keys", a.withAuth(a.handleListAPIKeys))
+	r.DELETE("/api/keys/:id", a.withAuth(a.handleDeleteAPIKey))
 	return r
 }
 
@@ -477,6 +482,74 @@ type transactionResponse struct {
 	AgentID      string                  `json:"agent_id,omitempty"`
 	BalanceAfter int                     `json:"balance_after"`
 	CreatedAt    time.Time               `json:"created_at"`
+}
+
+type createAPIKeyRequest struct {
+	Name      string     `json:"name"`
+	ExpiresAt *time.Time `json:"expires_at"`
+}
+
+type createAPIKeyResponse struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Key       string     `json:"key"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+func (a *API) handleCreateAPIKey(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	var req createAPIKeyRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	result, err := a.auth.CreateAPIKey(ctx, user.ID, service.CreateAPIKeyInput{
+		Name:      req.Name,
+		ExpiresAt: req.ExpiresAt,
+	})
+	if errors.Is(err, service.ErrAPIKeyNameEmpty) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusCreated, createAPIKeyResponse{
+		ID:        result.ID,
+		Name:      result.Name,
+		Key:       result.Key,
+		ExpiresAt: result.ExpiresAt,
+		CreatedAt: result.CreatedAt,
+	})
+}
+
+func (a *API) handleListAPIKeys(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	keys, err := a.auth.ListUserAPIKeys(ctx, user.ID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, keys)
+}
+
+func (a *API) handleDeleteAPIKey(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	idStr := ctx.UserValue("id").(string)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid key id")
+		return
+	}
+	if err := a.auth.DeleteUserAPIKey(ctx, id, user.ID); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {

@@ -24,16 +24,20 @@ const (
 )
 
 var (
-	ErrEmailTaken     = errors.New("email already registered")
-	ErrUsernameTaken  = errors.New("username already taken")
-	ErrInvalidToken   = errors.New("invalid api token")
-	ErrInvalidJWT     = errors.New("invalid or expired token")
-	ErrInvalidRefresh = errors.New("invalid refresh token")
-	ErrUserNotFound   = errors.New("user not found")
+	ErrEmailTaken       = errors.New("email already registered")
+	ErrUsernameTaken    = errors.New("username already taken")
+	ErrInvalidToken     = errors.New("invalid api token")
+	ErrInvalidJWT       = errors.New("invalid or expired token")
+	ErrInvalidRefresh   = errors.New("invalid refresh token")
+	ErrUserNotFound     = errors.New("user not found")
+	ErrAPIKeyNameEmpty  = errors.New("key name is required")
+	ErrAPIKeyNotFound   = errors.New("api key not found")
+	ErrAPIKeyExpired    = errors.New("api key expired")
 )
 
 type AuthService struct {
 	users        repository.UserRepository
+	apiKeys      repository.APIKeyRepository
 	transactions repository.TransactionRepository
 	cfg          config.Config
 }
@@ -43,7 +47,15 @@ func NewAuthService(users repository.UserRepository, cfg config.Config, transact
 	if len(transactions) > 0 {
 		txs = transactions[0]
 	}
-	return &AuthService{users: users, transactions: txs, cfg: cfg}
+	return &AuthService{users: users, apiKeys: nil, transactions: txs, cfg: cfg}
+}
+
+func NewAuthServiceWithKeys(users repository.UserRepository, apiKeys repository.APIKeyRepository, cfg config.Config, transactions ...repository.TransactionRepository) *AuthService {
+	var txs repository.TransactionRepository
+	if len(transactions) > 0 {
+		txs = transactions[0]
+	}
+	return &AuthService{users: users, apiKeys: apiKeys, transactions: txs, cfg: cfg}
 }
 
 func (s *AuthService) Authenticate(ctx context.Context, apiKey string) (*model.User, error) {
@@ -51,14 +63,29 @@ func (s *AuthService) Authenticate(ctx context.Context, apiKey string) (*model.U
 	if apiKey == "" {
 		return nil, ErrInvalidToken
 	}
+
 	user, err := s.users.GetByAPIKey(ctx, apiKey)
-	if errors.Is(err, repository.ErrNotFound) {
-		return nil, ErrInvalidToken
+	if err == nil {
+		return user, nil
 	}
-	if err != nil {
+	if !errors.Is(err, repository.ErrNotFound) {
 		return nil, err
 	}
-	return user, nil
+
+	if s.apiKeys != nil {
+		userKey, err := s.apiKeys.GetByKey(ctx, apiKey)
+		if err == nil {
+			if userKey.IsExpired() {
+				return nil, errors.New("api key expired")
+			}
+			return s.users.GetByID(ctx, userKey.UserID)
+		}
+		if !errors.Is(err, repository.ErrNotFound) {
+			return nil, err
+		}
+	}
+
+	return nil, ErrInvalidToken
 }
 
 func (s *AuthService) Register(ctx context.Context, username, email, password string) (*model.User, error) {
@@ -227,6 +254,80 @@ func (s *AuthService) ValidateRefreshToken(tokenString string) (jwt.MapClaims, e
 		return nil, ErrInvalidRefresh
 	}
 	return claims, nil
+}
+
+type CreateAPIKeyInput struct {
+	Name      string     `json:"name"`
+	ExpiresAt *time.Time `json:"expires_at"`
+}
+
+type UserAPIKeyResponse struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Key       string     `json:"key"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+func (s *AuthService) CreateAPIKey(ctx context.Context, userID uuid.UUID, input CreateAPIKeyInput) (*UserAPIKeyResponse, error) {
+	if input.Name == "" {
+		return nil, ErrAPIKeyNameEmpty
+	}
+	if s.apiKeys == nil {
+		return nil, errors.New("api key store not available")
+	}
+
+	key, err := GenerateAPIKey()
+	if err != nil {
+		return nil, err
+	}
+
+	modelKey := &model.UserAPIKey{
+		UserID:    userID,
+		Name:      input.Name,
+		Key:       key,
+		ExpiresAt: input.ExpiresAt,
+	}
+	if err := s.apiKeys.Create(ctx, modelKey); err != nil {
+		return nil, err
+	}
+
+	return &UserAPIKeyResponse{
+		ID:        modelKey.ID.String(),
+		Name:      modelKey.Name,
+		Key:       modelKey.Key,
+		ExpiresAt: modelKey.ExpiresAt,
+		CreatedAt: modelKey.CreatedAt,
+	}, nil
+}
+
+func (s *AuthService) ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]UserAPIKeyResponse, error) {
+	if s.apiKeys == nil {
+		return nil, errors.New("api key store not available")
+	}
+	keys, err := s.apiKeys.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UserAPIKeyResponse, 0, len(keys))
+	for i := range keys {
+		k := &keys[i]
+		out = append(out, UserAPIKeyResponse{
+			ID:        k.ID.String(),
+			Name:      k.Name,
+			Key:       "",
+			ExpiresAt: k.ExpiresAt,
+			CreatedAt: k.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (s *AuthService) DeleteUserAPIKey(ctx context.Context, keyID uuid.UUID, userID uuid.UUID) error {
+	if s.apiKeys == nil {
+		return errors.New("api key store not available")
+	}
+	return s.apiKeys.Delete(ctx, keyID, userID)
 }
 
 func (s *AuthService) GetMe(ctx context.Context, tokenString string) (*UserInfo, error) {
