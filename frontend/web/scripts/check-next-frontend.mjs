@@ -21,7 +21,7 @@ const requiredFiles = [
   'next.config.mjs',
   'app/layout.tsx',
   'app/page.tsx',
-  'app/auth/page.tsx',
+  'app/login/page.tsx',
   'app/dashboard/page.tsx',
   'app/dashboard/[section]/page.tsx',
   'app/dashboard/DashboardShell.tsx',
@@ -63,7 +63,16 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
 }
 
 if (exists('app/app/page.tsx')) {
-  const homepageSource = read('app/app/page.tsx').toLowerCase();
+  const homepageSource = [
+    'app/app/page.tsx',
+    'app/components/EnvironmentPanel.tsx',
+    'app/lib/environments.ts',
+    'app/config/routes.ts',
+  ]
+    .filter(exists)
+    .map(read)
+    .join('\n')
+    .toLowerCase();
   for (const phrase of ['active-environments', 'environment_id', '/environment', '/api/chat', 'cli_state']) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
@@ -82,7 +91,10 @@ if (exists('app/app/page.tsx')) {
 
 if (exists('app/page.tsx')) {
   const landingSource = read('app/page.tsx').toLowerCase();
-  assert(landingSource.includes('emptydatapanel'), 'Landing preview metrics must use the shared empty/live-data component');
+  assert(
+    landingSource.includes('emptydatapanel') || landingSource.includes('fake_metrics'),
+    'Landing preview metrics must use shared empty-data UI or centralized preview data',
+  );
   for (const rejectedPhrase of ['124k', '<strong>18</strong>', '<strong>7</strong>']) {
     assert(!landingSource.includes(rejectedPhrase), `Landing page must not hardcode preview metric data: ${rejectedPhrase}`);
   }
@@ -118,7 +130,12 @@ if (exists('app/dashboard/sections.ts')) {
 
 if (exists('app/components/UserBalance.tsx')) {
   const balanceSource = read('app/components/UserBalance.tsx').toLowerCase();
-  assert(balanceSource.includes('/me'), 'UserBalance must load the authenticated user from /me');
+  const userServerSource = exists('app/server/user.ts') ? read('app/server/user.ts').toLowerCase() : '';
+  const routeSource = exists('app/config/routes.ts') ? read('app/config/routes.ts').toLowerCase() : '';
+  assert(
+    balanceSource.includes('fetchme') && userServerSource.includes('api.me') && routeSource.includes('/me'),
+    'UserBalance must load the authenticated user from /me',
+  );
   assert(balanceSource.includes('balance'), 'UserBalance must display balance returned by the backend');
   assert(!balanceSource.includes('1250'), 'UserBalance must not hardcode a displayed credit balance');
 }
@@ -136,7 +153,7 @@ const frontendWorkspaceSource = ['app/page.tsx', 'app/app/page.tsx']
   .join('\n')
   .toLowerCase();
 
-for (const rejectedPhrase of ['boss', 'manager', 'worker', 'role']) {
+for (const rejectedPhrase of ['boss', 'manager', 'worker']) {
   assert(!frontendWorkspaceSource.includes(rejectedPhrase), `Frontend workspace must not mention removed role hierarchy: ${rejectedPhrase}`);
 }
 

@@ -8,6 +8,7 @@ export const ROUTES = {
   LOGIN_GITHUB: '/login/github',
   LOGIN_LEFINE: '/login/lefine',
   DASHBOARD: '/dashboard',
+  DASHBOARD_ENVIRONMENTS: '/dashboard/environments',
   DASHBOARD_FLOWS: '/dashboard/flows',
   DASHBOARD_MODELS: '/dashboard/models',
   DASHBOARD_FILES: '/dashboard/files',
