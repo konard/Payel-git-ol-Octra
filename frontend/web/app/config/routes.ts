@@ -16,6 +16,7 @@ export const ROUTES = {
   DASHBOARD_EVALUATIONS: '/dashboard/evaluations',
   DASHBOARD_DEPLOYMENTS: '/dashboard/deployments',
   SETTINGS: '/settings',
+  PROFILE: '/profile',
 } as const;
 
 export const API = {
