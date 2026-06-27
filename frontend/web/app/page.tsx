@@ -89,7 +89,7 @@ export default function LandingPage() {
         </div>
 
         <div className="hero-copy">
-          <p className="eyebrow">VPS aggregator</p>
+          <p className="eyebrow">VPS aggregator for agents</p>
           <h1>
             Deploy your agent
             <br />
@@ -179,7 +179,7 @@ export default function LandingPage() {
 
       <footer className="site-footer">
         <span>Octra</span>
-        <span>VPS aggregator</span>
+        <span>VPS aggregator for agents</span>
         <a href="https://github.com/Payel-git-ol/Octra/blob/master/LICENSE">MIT License</a>
       </footer>
     </main>
