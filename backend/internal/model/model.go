@@ -157,6 +157,16 @@ func (m *UserAPIKey) IsExpired() bool {
 	return time.Now().After(*m.ExpiresAt)
 }
 
+// DashboardEnvironment is a named environment visible on the dashboard.
+type DashboardEnvironment struct {
+	ID         uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	UserID     uuid.UUID `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	Name       string    `gorm:"column:name;not null" json:"name"`
+	Visibility string    `gorm:"column:visibility;default:private" json:"visibility"`
+}
+
 // UsageMetric stores daily resource usage that drives hosting charges.
 type UsageMetric struct {
 	ID            uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
@@ -171,7 +181,7 @@ type UsageMetric struct {
 
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &UsageMetric{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -202,6 +212,7 @@ func (m *Skill) BeforeCreate(*gorm.DB) error       { return ensureID(&m.ID) }
 func (m *UserSkill) BeforeCreate(*gorm.DB) error   { return ensureID(&m.ID) }
 func (m *Transaction) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *UserAPIKey) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *DashboardEnvironment) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *UsageMetric) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 
 // ApplyBillingDefaults fills missing billing preference fields.

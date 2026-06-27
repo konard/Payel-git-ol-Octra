@@ -59,6 +59,12 @@ type APIKeyRepository interface {
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
 
+// DashboardEnvironmentRepository persists dashboard environments.
+type DashboardEnvironmentRepository interface {
+	Create(ctx context.Context, env *model.DashboardEnvironment) error
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.DashboardEnvironment, error)
+}
+
 // UsageMetricsRepository persists resource usage snapshots.
 type UsageMetricsRepository interface {
 	Create(ctx context.Context, metric *model.UsageMetric) error
@@ -210,6 +216,23 @@ func (r *usageMetricsRepo) ListByUserID(ctx context.Context, userID uuid.UUID, l
 		Limit(limit).
 		Offset(offset).
 		Find(&list).Error
+	return list, err
+}
+
+type dashboardEnvRepo struct{ db *gorm.DB }
+
+// NewDashboardEnvironmentRepository returns a GORM-backed DashboardEnvironmentRepository.
+func NewDashboardEnvironmentRepository(db *gorm.DB) DashboardEnvironmentRepository {
+	return &dashboardEnvRepo{db: db}
+}
+
+func (r *dashboardEnvRepo) Create(ctx context.Context, env *model.DashboardEnvironment) error {
+	return r.db.WithContext(ctx).Create(env).Error
+}
+
+func (r *dashboardEnvRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.DashboardEnvironment, error) {
+	var list []model.DashboardEnvironment
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at desc").Find(&list).Error
 	return list, err
 }
 

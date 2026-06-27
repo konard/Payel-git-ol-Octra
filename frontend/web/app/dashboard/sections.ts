@@ -33,11 +33,11 @@ export const dashboardSections: DashboardSection[] = [
     icon: Gauge,
   },
   {
-    slug: 'flows',
-    label: 'Flows',
-    title: 'Flows',
-    detail: 'Saved environment flows will appear here after they are created.',
-    href: ROUTES.DASHBOARD_FLOWS,
+    slug: 'environments',
+    label: 'Environments',
+    title: 'Environments',
+    detail: 'Saved environments will appear here after they are created.',
+    href: ROUTES.DASHBOARD_ENVIRONMENTS,
     icon: Workflow,
   },
   {

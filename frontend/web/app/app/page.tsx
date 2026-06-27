@@ -5,6 +5,8 @@ import {
   ChevronDown,
   Layers3,
   LineChart,
+  Lock,
+  LockOpen,
   Plus,
   Search,
   Settings,
@@ -13,20 +15,24 @@ import {
   Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
+import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
+import { createDashboardEnvironment, listDashboardEnvironments, type DashboardEnvironment } from '../server/environments';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
 const toolItems = [
-  { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
+  { label: 'Environments', icon: Workflow, href: '/dashboard/environments' },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
 ];
 
 export default function HomePage() {
+  const router = useRouter();
   const [panelOpen, setPanelOpen] = useState(false);
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [endpointsOpen, setEndpointsOpen] = useState(false);
@@ -34,10 +40,43 @@ export default function HomePage() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [username, setUsername] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [envs, setEnvs] = useState<DashboardEnvironment[]>([]);
+  const [envsLoading, setEnvsLoading] = useState(true);
+  const [selectedEnv, setSelectedEnv] = useState(() => getCookie('octra_selected_env'));
+
+  function selectEnv(id: string) {
+    setSelectedEnv(id);
+    document.cookie = `octra_selected_env=${id}; path=/; max-age=31536000; SameSite=Lax`;
+  }
+
+  async function handleCreate(name: string, visibility: 'private' | 'public') {
+    setCreateError('');
+    const res = await createDashboardEnvironment(name, visibility);
+    if (!res.ok) {
+      const text = await res.text();
+      setCreateError(text || 'Failed to create environment');
+      return;
+    }
+    const env = await res.json();
+    document.cookie = `octra_selected_env=${env.id}; path=/; max-age=31536000; SameSite=Lax`;
+    setShowCreate(false);
+    router.push(ROUTES.DASHBOARD_ENVIRONMENTS);
+  }
 
   useEffect(() => {
     const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
     setIsAuthed(hasToken);
+
+    if (hasToken) {
+      setEnvsLoading(true);
+      listDashboardEnvironments().then(async (res) => {
+        if (res.ok) setEnvs(await res.json());
+      }).catch(() => {}).finally(() => setEnvsLoading(false));
+    } else {
+      setEnvsLoading(false);
+    }
 
     if (window.localStorage.getItem('octra_show_welcome')) {
       setShowWelcome(true);
@@ -120,12 +159,32 @@ export default function HomePage() {
               <div className="active-environments-title">
                 <span>Active environments</span>
               </div>
-              <a className="terminal-button" href={ROUTES.DASHBOARD_FLOWS}>
+              <button className="terminal-button" onClick={() => { setCreateError(''); setShowCreate(true); }}>
                 <Plus size={15} />
-                New flow
-              </a>
+                New
+              </button>
             </div>
-            <p className="empty-flows-message">You don't have any flows yet.</p>
+            {envsLoading ? (
+              <p className="empty-flows-message" style={{ color: 'var(--muted)' }}>Loading…</p>
+            ) : envs.length === 0 ? (
+              <p className="empty-flows-message">No environments yet.</p>
+            ) : (
+              <div className="active-envs-list">
+                {envs.map((env) => (
+                  <div
+                    key={env.id}
+                    className={`env-pill${selectedEnv === env.id ? ' active' : ''}`}
+                    onClick={() => selectEnv(env.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && selectEnv(env.id)}
+                  >
+                    {env.visibility === 'private' ? <Lock size={13} /> : <LockOpen size={13} />}
+                    {env.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </section>
 
@@ -161,7 +220,7 @@ export default function HomePage() {
                   icon={Activity}
                   title="No endpoints configured"
                   detail="Configured API endpoints will appear here."
-                  actionHref={ROUTES.DASHBOARD_FLOWS}
+                  actionHref={ROUTES.DASHBOARD_ENVIRONMENTS}
                   actionLabel="Configure"
                 />
               </div>
@@ -204,6 +263,14 @@ export default function HomePage() {
         </button>
       </aside>
 
+      {showCreate && (
+        <CreateEnvironmentModal
+          onClose={() => setShowCreate(false)}
+          onCreate={handleCreate}
+          error={createError}
+        />
+      )}
+
       {showWelcome && (
         <WelcomeModal
           username={username}
@@ -212,4 +279,10 @@ export default function HomePage() {
       )}
     </main>
   );
+}
+
+function getCookie(name: string): string {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : '';
 }

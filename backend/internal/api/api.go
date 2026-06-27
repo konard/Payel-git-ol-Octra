@@ -10,6 +10,7 @@ import (
 
 	"backend/internal/model"
 	"backend/internal/oauth"
+	"backend/internal/repository"
 	"backend/internal/service"
 
 	"github.com/fasthttp/router"
@@ -22,15 +23,16 @@ const authHeaderBearer = "Authorization"
 const ctxUserKey = "octra_user"
 
 type API struct {
-	auth    *service.AuthService
-	env     *service.EnvironmentService
-	chat    *service.ChatService
-	billing *service.BillingService
-	oauthH  *oauth.Handler
+	auth       *service.AuthService
+	env        *service.EnvironmentService
+	chat       *service.ChatService
+	billing    *service.BillingService
+	oauthH     *oauth.Handler
+	dashboardEnvRepo repository.DashboardEnvironmentRepository
 }
 
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler) *API {
-	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH}
+func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository) *API {
+	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo}
 }
 
 func (a *API) Router() *router.Router {
@@ -68,6 +70,10 @@ func (a *API) Router() *router.Router {
 	r.POST("/api/keys", a.withAuth(a.handleCreateAPIKey))
 	r.GET("/api/keys", a.withAuth(a.handleListAPIKeys))
 	r.DELETE("/api/keys/:id", a.withAuth(a.handleDeleteAPIKey))
+
+	// Dashboard environments
+	r.POST("/api/environments", a.withAuth(a.handleCreateDashboardEnvironment))
+	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
 	return r
 }
 
@@ -550,6 +556,70 @@ func (a *API) handleDeleteAPIKey(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "deleted"})
+}
+
+type createDashboardEnvironmentRequest struct {
+	Name       string `json:"name"`
+	Visibility string `json:"visibility"`
+}
+
+type dashboardEnvironmentResponse struct {
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Visibility string    `json:"visibility"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+func (a *API) handleCreateDashboardEnvironment(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	var req createDashboardEnvironmentRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	if req.Name == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "name is required")
+		return
+	}
+	if req.Visibility != "private" && req.Visibility != "public" {
+		req.Visibility = "private"
+	}
+
+	env := &model.DashboardEnvironment{
+		UserID:     user.ID,
+		Name:       req.Name,
+		Visibility: req.Visibility,
+	}
+	if err := a.dashboardEnvRepo.Create(ctx, env); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusCreated, dashboardEnvironmentResponse{
+		ID:         env.ID.String(),
+		Name:       env.Name,
+		Visibility: env.Visibility,
+		CreatedAt:  env.CreatedAt,
+	})
+}
+
+func (a *API) handleListDashboardEnvironments(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	envs, err := a.dashboardEnvRepo.ListByUserID(ctx, user.ID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	out := make([]dashboardEnvironmentResponse, 0, len(envs))
+	for i := range envs {
+		out = append(out, dashboardEnvironmentResponse{
+			ID:         envs[i].ID.String(),
+			Name:       envs[i].Name,
+			Visibility: envs[i].Visibility,
+			CreatedAt:  envs[i].CreatedAt,
+		})
+	}
+	writeJSON(ctx, fasthttp.StatusOK, out)
 }
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {

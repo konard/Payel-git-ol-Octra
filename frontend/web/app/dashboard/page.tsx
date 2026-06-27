@@ -22,7 +22,7 @@ export default function DashboardPage() {
         <article className="traffic-panel large-panel" aria-label="Environment nodes canvas">
           <div className="panel-heading">
             <span>Environment nodes canvas</span>
-            <a className="ghost-command" href={ROUTES.DASHBOARD_FLOWS}>
+            <a className="ghost-command" href={ROUTES.DASHBOARD_ENVIRONMENTS}>
               <Code2 size={15} />
               Edit
             </a>

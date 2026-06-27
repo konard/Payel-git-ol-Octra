@@ -1,9 +1,15 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
 import { ROUTES } from '../config/routes';
 import { ASSETS } from '../config/images';
+import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
+import { createDashboardEnvironment } from '../server/environments';
 
 type DashboardShellProps = {
   activeSection: string;
@@ -15,6 +21,24 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({ activeSection, children, hideSidebarItems, showNotifications = true, hideNewFlow = false, hideTabs = false }: DashboardShellProps) {
+  const router = useRouter();
+  const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  async function handleCreate(name: string, visibility: 'private' | 'public') {
+    setCreateError('');
+    const res = await createDashboardEnvironment(name, visibility);
+    if (!res.ok) {
+      const text = await res.text();
+      setCreateError(text || 'Failed to create environment');
+      return;
+    }
+    const env = await res.json();
+    document.cookie = `octra_selected_env=${env.id}; path=/; max-age=31536000; SameSite=Lax`;
+    setShowCreate(false);
+    router.push(ROUTES.DASHBOARD_ENVIRONMENTS);
+  }
+
   return (
     <main className="dashboard-page">
       <aside className="app-sidebar" aria-label="Octra sections">
@@ -53,10 +77,10 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
               </a>
             )}
             {!hideNewFlow && (
-              <a className="small-command accent-command" href={ROUTES.DASHBOARD_FLOWS}>
+              <button className="small-command accent-command" onClick={() => { setCreateError(''); setShowCreate(true); }}>
                 <Plus size={15} />
-                New flow
-              </a>
+                New
+              </button>
             )}
           </div>
         </header>
@@ -73,6 +97,14 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
 
         {children}
       </section>
+
+      {showCreate && (
+        <CreateEnvironmentModal
+          onClose={() => setShowCreate(false)}
+          onCreate={handleCreate}
+          error={createError}
+        />
+      )}
     </main>
   );
 }

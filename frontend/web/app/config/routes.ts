@@ -8,7 +8,7 @@ export const ROUTES = {
   LOGIN_GITHUB: '/login/github',
   LOGIN_LEFINE: '/login/lefine',
   DASHBOARD: '/dashboard',
-  DASHBOARD_FLOWS: '/dashboard/flows',
+  DASHBOARD_ENVIRONMENTS: '/dashboard/environments',
   DASHBOARD_MODELS: '/dashboard/models',
   DASHBOARD_FILES: '/dashboard/files',
   DASHBOARD_SECURITY: '/dashboard/security',
@@ -27,4 +27,5 @@ export const API = {
   REGISTER: `${API_BASE}/register`,
   ME: `${API_BASE}/me`,
   KEYS: `${API_BASE}/api/keys`,
+  ENVIRONMENTS: `${API_BASE}/api/environments`,
 } as const;

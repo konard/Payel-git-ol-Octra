@@ -42,6 +42,7 @@ func main() {
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
 	apiKeys := repository.NewAPIKeyRepository(db)
+	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
@@ -54,7 +55,7 @@ func main() {
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
 	oauthH := oauth.New(authSvc, cfg)
 
-	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH).Router().Handler
+	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs).Router().Handler
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

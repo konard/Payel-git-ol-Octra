@@ -2200,6 +2200,8 @@ button {
 .active-environments-header {
   justify-content: space-between;
   gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
 
 .execution-rows,
@@ -2813,4 +2815,199 @@ button {
     transform: translateY(100svh) rotate(calc(var(--rotation) + 720deg));
     opacity: 0.6;
   }
+}
+
+/* Create environment modal */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay);
+}
+
+.create-env-modal {
+  background: var(--panel-elevated);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: var(--shadow);
+}
+
+.create-env-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.create-env-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.create-env-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.create-env-field > span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.create-env-field input[type="text"] {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--anim-ease-fast);
+}
+
+.create-env-field input[type="text"]:focus {
+  border-color: var(--line-strong);
+}
+
+.create-env-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.create-env-toggle button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color var(--anim-ease-fast), background var(--anim-ease-fast), color var(--anim-ease-fast);
+}
+
+.create-env-toggle button.active {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.create-env-toggle button:hover {
+  border-color: var(--line-strong);
+}
+
+.create-env-error {
+  color: var(--metric-danger);
+  font-size: 0.82rem;
+  margin: 0 0 12px;
+}
+
+.create-env-modal .primary-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Environment list */
+
+.env-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--anim-ease-fast), background var(--anim-ease-fast);
+}
+
+.env-list-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--line);
+}
+
+.env-list-item.active {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.env-list-icon {
+  display: flex;
+  align-items: center;
+  color: var(--quiet);
+  flex-shrink: 0;
+}
+
+.env-list-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.env-list-date {
+  color: var(--quiet);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+/* Active environments list on workspace */
+
+.active-envs-list {
+  display: grid;
+  gap: 6px;
+  min-height: 60px;
+  padding: 12px 14px 14px;
+}
+
+.env-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: border-color var(--anim-ease-fast), background var(--anim-ease-fast), color var(--anim-ease-fast);
+}
+
+.env-pill:hover {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.env-pill.active {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.env-pill svg {
+  flex-shrink: 0;
+  color: var(--quiet);
+}
+
+.env-pill.active svg {
+  color: var(--muted);
 }
