@@ -231,25 +231,23 @@ func (s *AuthService) ValidateRefreshToken(tokenString string) (jwt.MapClaims, e
 
 func (s *AuthService) GetMe(ctx context.Context, tokenString string) (*UserInfo, error) {
 	claims, err := s.ValidateAccessToken(tokenString)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		userIDStr, _ := claims["user_id"].(string)
+		userID, err := uuid.Parse(userIDStr)
+		if err == nil {
+			user, err := s.users.GetByID(ctx, userID)
+			if err == nil {
+				return userToInfo(user), nil
+			}
+		}
 	}
 
-	userIDStr, _ := claims["user_id"].(string)
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return nil, ErrInvalidJWT
+	user, err := s.users.GetByAPIKey(ctx, tokenString)
+	if err == nil {
+		return userToInfo(user), nil
 	}
 
-	user, err := s.users.GetByID(ctx, userID)
-	if errors.Is(err, repository.ErrNotFound) {
-		return nil, ErrUserNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return userToInfo(user), nil
+	return nil, ErrInvalidToken
 }
 
 func (s *AuthService) RefreshTokens(ctx context.Context, refreshTokenString string) (*LoginResult, error) {
@@ -279,6 +277,7 @@ type UserInfo struct {
 	UserID          string    `json:"user_id"`
 	Username        string    `json:"username"`
 	Email           string    `json:"email"`
+	APIKey          string    `json:"api_key"`
 	Balance         int       `json:"balance"`
 	CreatedAt       time.Time `json:"created_at"`
 	HasSubscription bool      `json:"has_subscription"`
@@ -292,6 +291,7 @@ func userToInfo(user *model.User) *UserInfo {
 		UserID:          user.ID.String(),
 		Username:        user.Username,
 		Email:           user.Email,
+		APIKey:          user.APIKey,
 		Balance:         user.Balance,
 		CreatedAt:       user.CreatedAt,
 		HasSubscription: hasSubscription,
