@@ -30,10 +30,12 @@ export default function HomePage() {
   const [endpointsOpen, setEndpointsOpen] = useState(false);
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
     setIsAuthed(hasToken);
+    setUsername(window.localStorage.getItem('octra_username') || '');
   }, []);
 
   return (
@@ -53,7 +55,7 @@ export default function HomePage() {
         <div className="tv-actions">
           <UserBalance />
           {isAuthed ? (
-            <a className="avatar-button" href={ROUTES.DASHBOARD} aria-label="Open dashboard">O</a>
+            <a className="avatar-button" href={ROUTES.PROFILE} aria-label="Open profile">{username ? username[0].toUpperCase() : '?'}</a>
           ) : (
             <a className="upgrade-button" href={ROUTES.LOGIN}>
               <Sparkles size={16} />

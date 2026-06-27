@@ -62,6 +62,7 @@ export default function AuthPage() {
       const body = await res.json();
       const accessToken = body?.data?.access_token;
       const refreshToken = body?.data?.refresh_token;
+      const username = body?.data?.user?.username;
       if (accessToken) {
         window.localStorage.setItem('octra_access_token', accessToken);
         window.localStorage.setItem('access_token', accessToken);
@@ -69,6 +70,9 @@ export default function AuthPage() {
           window.localStorage.setItem('octra_refresh_token', refreshToken);
           window.localStorage.setItem('refresh_token', refreshToken);
         }
+      }
+      if (username) {
+        window.localStorage.setItem('octra_username', username);
       }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
