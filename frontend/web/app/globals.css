@@ -609,21 +609,40 @@ button {
 
 .metric-card {
   position: relative;
-  min-height: 118px;
-  padding: 16px;
+  min-height: 140px;
+  padding: 20px;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 8px 6px;
+}
+
+.metric-card span {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .metric-card strong {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
   color: var(--text);
   font-size: 1.8rem;
   line-height: 1;
 }
 
+.metric-card em {
+  grid-column: 1;
+  grid-row: 2;
+}
+
 .spark-bars {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: end;
   display: grid;
   grid-template-columns: repeat(5, 7px);
   align-items: end;
