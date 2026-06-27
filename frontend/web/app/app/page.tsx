@@ -18,6 +18,7 @@ import { UserBalance } from '../components/UserBalance';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
+import { fetchMe } from '../server/user';
 
 const toolItems = [
   { label: 'Workflows', icon: Workflow, href: '/dashboard/flows' },
@@ -35,7 +36,24 @@ export default function HomePage() {
   useEffect(() => {
     const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
     setIsAuthed(hasToken);
-    setUsername(window.localStorage.getItem('octra_username') || '');
+
+    const cached = window.localStorage.getItem('octra_username');
+    if (cached) {
+      setUsername(cached);
+    } else if (hasToken) {
+      const token = window.localStorage.getItem('octra_access_token') ?? window.localStorage.getItem('access_token');
+      if (token) {
+        fetchMe(token).then(async (res) => {
+          if (!res.ok) return;
+          const body = await res.json();
+          const u = body?.data?.username ?? body?.username;
+          if (u) {
+            window.localStorage.setItem('octra_username', u);
+            setUsername(u);
+          }
+        }).catch(() => {});
+      }
+    }
   }, []);
 
   return (
