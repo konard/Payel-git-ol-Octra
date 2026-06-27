@@ -500,6 +500,7 @@ button {
   width: 100vw;
   margin-top: 66px;
   margin-left: calc(-50vw + 50%);
+  padding: 0 48px;
   border: 1px solid var(--line-strong);
   border-left: 0;
   border-right: 0;
