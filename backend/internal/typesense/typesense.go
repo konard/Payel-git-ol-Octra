@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
+	"strings"
 
 	"github.com/typesense/typesense-go/typesense"
 	"github.com/typesense/typesense-go/typesense/api"
@@ -34,6 +36,7 @@ func New(host, apiKey string) *Client {
 	client := typesense.NewClient(
 		typesense.WithServer(fmt.Sprintf("http://%s", host)),
 		typesense.WithAPIKey(apiKey),
+		typesense.WithConnectionTimeout(5*time.Second),
 	)
 	return &Client{client: client}
 }
@@ -51,15 +54,34 @@ func (c *Client) EnsureCollection(ctx context.Context) error {
 		DefaultSortingField: strPtr("name"),
 	}
 
-	_, err := c.client.Collection(SkillsCollection).Retrieve(ctx)
-	if err != nil {
-		_, err := c.client.Collections().Create(ctx, schema)
+	var lastErr error
+	for i := 0; i < 12; i++ {
+		_, err := c.client.Collection(SkillsCollection).Retrieve(ctx)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+
+		if strings.Contains(err.Error(), "Not Ready or Lagging") {
+			log.Printf("typesense: not ready yet, retrying in 5s (attempt %d/12)", i+1)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		_, err = c.client.Collections().Create(ctx, schema)
 		if err != nil {
+			if strings.Contains(err.Error(), "Not Ready or Lagging") {
+				log.Printf("typesense: not ready yet, retrying in 5s (attempt %d/12)", i+1)
+				time.Sleep(5 * time.Second)
+				continue
+			}
 			return fmt.Errorf("typesense create collection: %w", err)
 		}
 		log.Printf("typesense: created collection %s", SkillsCollection)
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("typesense not ready after 12 retries: %w", lastErr)
 }
 
 func (c *Client) IndexSkill(ctx context.Context, doc SkillDocument) error {
