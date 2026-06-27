@@ -180,7 +180,7 @@ export default function LandingPage() {
       <footer className="site-footer">
         <span>Octra</span>
         <span>VPS aggregator</span>
-        <a href="https://github.com/Payel-git-ol/Octra/blob/main/LICENSE">MIT License</a>
+        <a href="https://github.com/Payel-git-ol/Octra/blob/master/LICENSE">MIT License</a>
       </footer>
     </main>
   );
