@@ -1,4 +1,19 @@
 services:
+  typesense:
+    image: typesense/typesense:27.0
+    container_name: octra-typesense
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_API_KEY=octra-typesense-key
+      - TYPESENSE_ENABLE_CORS=true
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense_data:/data
+    networks:
+      - octra-network
+    restart: unless-stopped
+
   postgres:
     image: postgres:15-alpine
     container_name: octra-postgres
@@ -51,6 +66,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENTS_DIR=/var/lib/octra/environments
       - CLI_TTL=30m
+      - TYPESENSE_HOST=typesense:8108
+      - TYPESENSE_API_KEY=octra-typesense-key
     ports:
       - "8080:8080"
     volumes:
@@ -60,6 +77,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      typesense:
+        condition: service_started
     networks:
       - octra-network
     restart: unless-stopped
@@ -122,4 +141,5 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  typesense_data:
   octra_environments:

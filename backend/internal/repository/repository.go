@@ -36,7 +36,9 @@ type AgentRepository interface {
 // SkillRepository persists the skill catalogue.
 type SkillRepository interface {
 	GetByName(ctx context.Context, name string) (*model.Skill, error)
+	GetBySkillID(ctx context.Context, skillID string) (*model.Skill, error)
 	List(ctx context.Context) ([]model.Skill, error)
+	Upsert(ctx context.Context, s *model.Skill) error
 }
 
 // UserSkillRepository persists per-environment skill installations.
@@ -149,6 +151,25 @@ func (r *skillRepo) GetByName(ctx context.Context, name string) (*model.Skill, e
 	var s model.Skill
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&s).Error
 	return firstResult(&s, err)
+}
+
+func (r *skillRepo) GetBySkillID(ctx context.Context, skillID string) (*model.Skill, error) {
+	var s model.Skill
+	err := r.db.WithContext(ctx).Where("skill_id = ?", skillID).First(&s).Error
+	return firstResult(&s, err)
+}
+
+func (r *skillRepo) Upsert(ctx context.Context, s *model.Skill) error {
+	existing, err := r.GetBySkillID(ctx, s.SkillID)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if existing != nil {
+		s.ID = existing.ID
+		s.CreatedAt = existing.CreatedAt
+		return r.db.WithContext(ctx).Save(s).Error
+	}
+	return r.db.WithContext(ctx).Create(s).Error
 }
 
 func (r *skillRepo) List(ctx context.Context) ([]model.Skill, error) {

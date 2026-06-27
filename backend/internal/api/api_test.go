@@ -77,7 +77,7 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	oauthH := oauth.New(authSvc, cfg)
 
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
-	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs).Router().Handler
+	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, nil).Router().Handler
 
 	ln := fasthttputil.NewInmemoryListener()
 	server := &fasthttp.Server{Handler: handler}

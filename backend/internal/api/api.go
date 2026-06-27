@@ -12,6 +12,7 @@ import (
 	"backend/internal/oauth"
 	"backend/internal/repository"
 	"backend/internal/service"
+	ts "backend/internal/typesense"
 
 	"github.com/fasthttp/router"
 	"github.com/google/uuid"
@@ -29,10 +30,11 @@ type API struct {
 	billing    *service.BillingService
 	oauthH     *oauth.Handler
 	dashboardEnvRepo repository.DashboardEnvironmentRepository
+	typesense        *ts.Client
 }
 
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository) *API {
-	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo}
+func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository, typesense *ts.Client) *API {
+	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo, typesense: typesense}
 }
 
 func (a *API) Router() *router.Router {
@@ -76,6 +78,9 @@ func (a *API) Router() *router.Router {
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
 	r.PATCH("/api/environments/:id", a.withAuth(a.handlePatchDashboardEnvironment))
 	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
+
+	// Skills search
+	r.GET("/skills/search", a.handleSkillSearch)
 	return r
 }
 
@@ -773,6 +778,65 @@ func queryInt(ctx *fasthttp.RequestCtx, key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+type skillSearchResponse struct {
+	Query  string              `json:"query"`
+	Skills []skillSearchHit    `json:"skills"`
+	Count  int                 `json:"count"`
+}
+
+type skillSearchHit struct {
+	ID         string `json:"id"`
+	SkillID    string `json:"skill_id"`
+	Name       string `json:"name"`
+	Source     string `json:"source"`
+	InstallCmd string `json:"install_cmd"`
+}
+
+func (a *API) handleSkillSearch(ctx *fasthttp.RequestCtx) {
+	if a.typesense == nil {
+		writeError(ctx, fasthttp.StatusServiceUnavailable, "search not available")
+		return
+	}
+	q := string(ctx.QueryArgs().Peek("q"))
+	if q == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "query parameter q is required")
+		return
+	}
+	limit := queryInt(ctx, "limit", 20)
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	result, err := a.typesense.SearchSkills(ctx, q, limit)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, "search failed")
+		return
+	}
+
+	hits := make([]skillSearchHit, 0, len(*result.Hits))
+	for _, hit := range *result.Hits {
+		doc := *hit.Document
+		hits = append(hits, skillSearchHit{
+			ID:         getStrField(doc, "id"),
+			SkillID:    getStrField(doc, "skill_id"),
+			Name:       getStrField(doc, "name"),
+			Source:     getStrField(doc, "source"),
+			InstallCmd: getStrField(doc, "install_cmd"),
+		})
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, skillSearchResponse{
+		Query:  q,
+		Skills: hits,
+		Count:  len(hits),
+	})
+}
+
+func getStrField(m map[string]interface{}, key string) string {
+	v, _ := m[key].(string)
+	return v
 }
 
 var _ context.Context = (*fasthttp.RequestCtx)(nil)

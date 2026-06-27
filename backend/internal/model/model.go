@@ -112,6 +112,10 @@ type Skill struct {
 	// attribute used to provision the skill.
 	InstallCmd  string `gorm:"column:install_cmd" json:"install_cmd"`
 	Description string `json:"description"`
+	// SkillID is the short identifier from skills.sh (e.g. "claude-api").
+	SkillID string `gorm:"column:skill_id;index" json:"skill_id"`
+	// Source is the source repo from skills.sh (e.g. "anthropics/skills").
+	Source string `gorm:"column:source" json:"source"`
 }
 
 // UserSkill links a skill to a user's agent and records its install status.

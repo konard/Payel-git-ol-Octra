@@ -48,6 +48,13 @@ type Config struct {
 	LeFineBaseURL          string
 	LeFineRedirectURL      string
 	LeFineIntegrationSecret string
+
+	// Skills API base URL for fetching skill definitions.
+	BaseURLGetSkills string
+
+	// Typesense configuration.
+	TypesenseHost   string
+	TypesenseAPIKey string
 }
 
 // Load reads configuration from the environment, applying sensible defaults so
@@ -72,6 +79,11 @@ func Load() Config {
 		LeFineBaseURL:          getEnv("LEFINE_BASE_URL", "https://lefine.pro"),
 		LeFineRedirectURL:      getEnv("LEFINE_REDIRECT_URL", ""),
 		LeFineIntegrationSecret: getEnv("LEFINE_INTEGRATION_SECRET", "dev-only-lefine-octra-shared-secret-change-me"),
+
+		BaseURLGetSkills: getEnv("BASE_URL_GET_SKILLS", "https://skills.sh"),
+
+		TypesenseHost:   getEnv("TYPESENSE_HOST", "typesense:8108"),
+		TypesenseAPIKey: getEnv("TYPESENSE_API_KEY", "octra-typesense-key"),
 	}
 }
 

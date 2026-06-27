@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"backend/internal/api"
 	"backend/internal/cli"
@@ -16,6 +17,7 @@ import (
 	"backend/internal/repository"
 	"backend/internal/service"
 	"backend/internal/storage"
+	ts "backend/internal/typesense"
 
 	"github.com/valyala/fasthttp"
 )
@@ -55,7 +57,21 @@ func main() {
 	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
 	oauthH := oauth.New(authSvc, cfg)
 
-	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs).Router().Handler
+	var tsClient *ts.Client
+	if cfg.TypesenseHost != "" {
+		tsClient = ts.New(cfg.TypesenseHost, cfg.TypesenseAPIKey)
+		if err := tsClient.EnsureCollection(ctx); err != nil {
+			log.Printf("typesense: %v (search will be unavailable)", err)
+			tsClient = nil
+		}
+	}
+
+	if tsClient != nil {
+		syncSvc := service.NewSkillSyncService(skills, tsClient, 24*time.Hour, cfg.BaseURLGetSkills)
+		syncSvc.Start(ctx)
+	}
+
+	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, tsClient).Router().Handler
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {
