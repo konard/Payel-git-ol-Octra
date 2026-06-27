@@ -48,7 +48,15 @@ export default function AuthPage() {
         const text = await res.text();
         let msg = text || 'Sign in failed';
         try { const j = JSON.parse(text); msg = j.error || msg; } catch {}
-        setLoginError(msg);
+        const friendly: Record<string, string> = {
+          'invalid email or password': 'Wrong email or password. Check your credentials or create a new account.',
+          'email already registered': 'This email is already registered. Try signing in instead.',
+          'username already taken': 'This username is taken. Try a different one.',
+          'username, email and password are required': 'Fill in all fields — username, email, and password.',
+          'invalid json body': 'Something went wrong. Please try again.',
+          'failed to create account': 'Could not create account. Try again later.',
+        };
+        setLoginError(friendly[msg] || msg);
         return;
       }
       const body = await res.json();
@@ -78,7 +86,15 @@ export default function AuthPage() {
         const text = await res.text();
         let msg = text || 'Registration failed';
         try { const j = JSON.parse(text); msg = j.error || msg; } catch {}
-        setRegisterError(msg);
+        const friendly: Record<string, string> = {
+          'invalid email or password': 'Wrong email or password. Check your credentials.',
+          'email already registered': 'This email is already registered. Try signing in instead.',
+          'username already taken': 'This username is taken. Try a different one.',
+          'username, email and password are required': 'Fill in all fields — username, email, and password.',
+          'invalid json body': 'Something went wrong. Please try again.',
+          'failed to create account': 'Could not create account. Try again later.',
+        };
+        setRegisterError(friendly[msg] || msg);
         return;
       }
       const body = await res.json();
