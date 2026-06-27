@@ -1,488 +1,182 @@
-# Octra — AI agent factory powered by Nix
+# Octra — the vps aggregator
 
-Octra is a multi-agent AI orchestrator that builds software projects using a Boss → Manager → Worker pipeline. Every project is snapshotted into the [Nix](https://nixos.org) store, enabling instant rollback and zero-storage recovery.
+Octra lets anyone run ready-made AI CLIs (claude-code, opencode, codex, …) with
+configured skills **on our infrastructure** — no VPS, no SSH, no JSON config, no
+fighting with ports, processes, or systemd.
+
+We don't build models and we don't write our own agents. We give every user a
+**personal MCP endpoint** they can call over HTTP, backed by an isolated [Nix](https://nixos.org)
+environment with their chosen CLI and skills already installed.
+
+## Why
+
+Setting up an MCP server by hand normally means renting a VPS, SSH-ing in,
+installing dependencies, writing JSON configs, and understanding ports,
+processes, and systemd. Most "vibe coders" and AI users never cross that
+threshold — they give up or lose days. Octra removes the whole setup.
+
+**Who it's for:** vibe coders who want AI with tools without the hassle,
+freelancers who need a 24/7 AI helper, and teams who want to share a single
+agent.
+
+## How it works
+
+```
+1. Register                → get a personal api_key
+2. POST /environment       → Octra builds your Nix env, installs the CLI + skills
+3. POST /api/chat          → talk to your agent through your MCP endpoint
+```
+
+If you configure a CLI, Octra runs it as a long-lived subprocess inside your Nix
+environment and pipes prompts to it. If you don't, Octra works as a plain LLM
+proxy with your skills as tools.
+
+### 1. Register
+
+```bash
+curl http://localhost:8080/register \
+  -H 'Content-Type: application/json' \
+  -d '{ "email": "me@example.com", "password": "secret" }'
+# → { "user_id": "…", "api_key": "octra_…", "balance": 100 }
+```
+
+### 2. Create your environment
+
+```bash
+curl http://localhost:8080/environment \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "llm":   { "api_key": "sk-…", "base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-6" },
+    "agent": { "cli": "claude-code", "priority": 10 },
+    "skills": ["filesystem", "github", "brave-search"]
+  }'
+# → { "user_id": "…", "agent_id": "…", "api_key": "octra_…" }
+```
+
+Octra creates the user's Nix environment, installs the CLI (if given), then
+installs and configures each skill. Leave `cli` empty to run as a pure LLM proxy.
+
+### 3. Chat
+
+```bash
+curl http://localhost:8080/api/chat \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "prompt": "write a csv parser", "skills": ["filesystem"] }'
+# → { "response": "…" }
+```
+
+Pass only the skills you want active in this request — omit a skill to disable it
+without uninstalling it.
+
+### 4. Billing
+
+Every new user receives 100 credits. One credit is worth 10 cents. Octra charges
+for active hosted environments by recording usage and debiting credits:
+
+```bash
+curl http://localhost:8080/billing/usage \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "cpu_seconds": 120, "memory_mb_hours": 256, "disk_mb": 512, "load_percent": 150, "standard_payment": 40 }'
+# → { "usage": { … }, "transaction": { "amount": 60, "reason": "hosting", … } }
+```
+
+Top-ups and LeFine rewards credit the same balance ledger:
+
+```bash
+curl http://localhost:8080/billing/topup \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "amount": 50 }'
+```
+
+By default users run in unlimited margin mode, so hosting charges may make the
+balance negative. A negative balance blocks creation of new agents, but does not
+delete an existing environment. Safe margin mode preserves `safe_margin_limit`
+and suspends the current agent when a charge cannot be paid.
+
+## Request flow
+
+```
+request → validate token → load user + agent
+  → if CLI configured:
+      → check Redis: is the process alive?
+        → alive → send prompt to its stdin
+        → dead  → launch subprocess in the user's Nix env (state saved to Redis)
+  → else:
+      → direct LLM call (proxy mode)
+  → return response
+```
+
+### CLI process management
+
+- The CLI runs as a subprocess inside the user's Nix environment.
+- The process is **not killed after each request** — it is reused.
+- State lives in Redis: `user:{id}:cli_state` (PID, port, start time) and
+  `user:{id}:cli_ttl` (TTL). On each request Octra checks liveness; a dead or
+  expired process is relaunched, and idle processes are reaped once the TTL
+  elapses.
+- Default transport is an stdin/stdout pipe (fast, native for AI CLIs).
+
+### Skills
+
+Skills are ready-made packages from nixpkgs or custom configurations. Users pick
+them on the canvas (frontend); Octra installs them into the user's Nix
+environment and records how each one is installed in the database. Per request,
+the `skills[]` field selects which installed skills are active.
 
 ## Architecture
 
-> Full API specification for custom clients → [`docs/spec/`](docs/spec/OCTRA-SPECIFICATION.md)
+Octra is a **single Go backend** — the former `user`, `agents`, `orchestrator`,
+and `apigateway` microservices (and the boss/manager/worker agent hierarchy) are
+gone. The `frontend`, `poster`, and `tgbot` are unchanged.
 
-![Octra logic](docs/icons/octra-nix.png)
-
-```
-User → API Gateway → Execution engine
-                        ├── Canvas workflow (user-defined) → direct pipeline
-                        │     ├── Universal node → single AI call
-                        │     └── Manager × N → Worker × N
-                        │
-                        └── Auto mode (no canvas)
-                              ├── AI complexity check (1-10)
-                              │     ├── trivial (≤2) → Universal node
-                              │     └── otherwise → Boss → Manager → Worker
-                              └── Agents Service → Claude / Gemini / GPT / ...
-```
-
-**Canvas workflow** — when the user places nodes on the canvas, Octra executes
-exactly what was laid out. No AI planning, no complexity grading, no fallback.
-The user takes full responsibility for the architecture.
-
-**Auto mode** — Octra grades complexity via AI, then chooses the fast path
-(universal node for trivial tasks) or the full Boss → Manager → Worker pipeline.
-
-**Boss** plans architecture, spawns managers, validates output, pushes to GitHub.  
-**Managers** review and orchestrate workers.  
-**Workers** generate code inside Nix-isolated environments — either via AI or real tool scaffolding. 
-
-## Universal node (trivial-task fast path)
-
-Divide-and-conquer is the right tool for complex projects, but the same machinery
-over-engineers trivial requests: *"write hello world in Python"* would spawn
-managers and workers and emit a tree of files with unclear logic instead of the one
-obvious line of code.
-
-Octra avoids this by routing trivial tasks through a single **universal node** —
-one unconstrained AI call that returns the smallest correct result. The universal
-node is available through two paths:
-
-### Explicit canvas node
-
-Place a universal node on the canvas — Octra executes it directly, no questions
-asked. If the AI call fails, the task fails (no fallback to Boss). The user owns
-the workflow.
-
-### Auto-detected trivial task
-
-When no canvas workflow exists, a lightweight AI complexity check grades every
-task `1-10` from a **pure analysis of the work required — not trigger words**.
-If the model rates the task as trivial (grade ≤ `2` by default), Octra skips the
-Boss → Manager → Worker pipeline and routes it to the universal node. If the
-universal node produces nothing usable, Octra falls back to the full pipeline.
+| Component    | Technology |
+|--------------|------------|
+| Language     | Go         |
+| HTTP         | fasthttp   |
+| ORM          | GORM       |
+| Database     | PostgreSQL |
+| Cache/state  | Redis      |
+| Environments | Nix        |
 
 ```
-User → API Gateway → AI complexity check (1-10)
-                        ├── trivial (≤2)  → Universal node → instant minimal answer
-                        └── otherwise     → Boss → Manager × N → Worker × N
+octra/
+  backend/             — the monolith (see backend/README.md)
+    cmd/server/        — entrypoint
+    internal/
+      api/             — fasthttp handlers, middleware, routes
+      config/          — env-based configuration
+      model/           — GORM models (User, Agent, Skill, UserSkill)
+      service/         — business logic (auth, environment, chat)
+      repository/      — persistence interfaces + GORM implementations
+      nix/             — per-user Nix environment management
+      cli/             — long-lived AI CLI subprocess management (Redis state)
+      llm/             — direct LLM proxy (Anthropic Messages API)
+      storage/         — DB + Redis wiring
+  frontend/            — web canvas + chat UI (unchanged)
+  poster/              — unchanged
+  tgbot/               — unchanged
+  docker-compose.yml
+  docker-compose.prod.yml
 ```
 
-### Smart dependency detection
-
-The AI includes a `"dependencies": true/false` flag in its JSON response. When
-the code uses only the language's standard library (no external frameworks,
-libraries, or packages), Octra skips Nix dependency pinning (`nix flake lock`).
-This saves ~37 seconds on trivial single-file tasks like hello world.
-
-### Configuration
-
-| Variable | Effect |
-|----------|--------|
-| `OCTRA_UNIVERSAL_MAX_GRADE` | Threshold (0-10) for auto-detected trivial tasks. Default `2`. |
-| `OCTRA_DISABLE_UNIVERSAL_NODE` | Set `true` to force all tasks through Boss → Manager → Worker. |
-
-## Web search node
-
-A normal question that needs an *external* fact — *"what is the latest version of
-Go?"*, *"who is the CEO of Acme?"* — cannot be answered from the model's training
-data alone. Previously the universal node answered such questions from memory and
-hallucinated. The **search node** fixes this by fetching real sources and feeding
-them into the answer.
-
-The search node mirrors the universal node's two paths:
-
-### Auto-created (no canvas node)
-
-For every task heading to the universal node, Octra runs a deterministic heuristic
-(`search.NeedsWebSearch`) over the title + description:
-
-- **Search is performed** for explicit requests (*"find…"*, *"search for…"*,
-  *"найди…"*, *"поищи…"*), recency signals (*latest, today, news, последние*),
-  factual lookups (*price, weather, who is, столица, курс*), or an explicit `20xx`
-  year.
-- **Search is skipped** for self-contained work: code/implementation requests and
-  pure math/logic expressions — the universal node solves those itself.
-
-When search is needed and no node was placed, Octra **auto-creates** a search node,
-attaches it to the consuming node (universal / boss / manager / worker), runs the
-query, and injects the ranked sources into the prompt. Non-code answers also get a
-`solution/sources.md` with the citations.
-
-### Explicit canvas node
-
-Place a node with role `search` (synonyms: `web_search`, `websearch`,
-`web-search`) on the canvas. The model used for the node is read from its
-description (`model: gpt-4o`) or from the request meta (`search_model` /
-`search_provider`); when omitted it falls back to the task's model.
-
-A canvas search node is **only used when the task actually needs external
-information** — if it is placed but the task is self-contained, Octra logs the
-decision and skips it (no wasted calls). The search node never enters the
-Manager → Worker file-generation pipeline; it is handled solely as a lookup node.
-
-### Logs
-
-Search is fully traced under the `[Search]` prefix: the planning decision
-(activated / skipped / auto-created, with the reason and model), each query and its
-raw result count, per-query failures, and the final `unique → ranked` source tally.
-Set `WEB_SEARCH_DISABLED=true` to turn web search off entirely.
-
-## Philosophy
-
-Octra's core principle: **AI is a genius but untrustworthy brain — the system is a rigid shell that controls it.**
-
-AI tends to overcomplicate, add features no one asked for, hallucinate APIs, and deviate from the task. Octra does not fight this — it contains it:
-
-- **Divide and conquer** — a single complex task is broken into many small, narrow AI calls (Boss → Manager → Worker). Each call answers exactly one question, with no room for creativity.
-- **JSON-only responses** — every prompt demands structured output. AI does not narrate, justify, or explore — it answers precisely and moves on.
-- **Every step is validated** — Boss validates the final result, Manager reviews worker output, failed commands are retried with error context. No output is trusted without verification.
-- **No system prompt roleplay** — AI does not need to "act like a senior engineer." It needs to follow instructions exactly and produce parseable results.
-- **Determinism over creativity** — low temperatures, constrained output formats, explicit rules for every decision. Predictability is more valuable than cleverness.
-- **Context as a resource, not a story** — project context is stored as structured entries with scopes and importance flags, not as conversation history. AI does not "remember" — it is told what it needs to know.
-
-This is not a limitation — it is the feature. Octra treats AI as a reliable executor within a controlled system, not as an autonomous agent. 
-
-## Tool scaffolding pipeline
-
-Octra can scaffold real projects using native toolchains inside `nix develop`:
-
-```
-setupProject() → FlakeBuilder(techStack) → ToolExecutor(generateViaTools)
-                                              ├── npm init / cargo init / flutter create / …
-                                              ├── AI generation fallback if Nix/tool unavailable
-                                              └── git status --porcelain to detect created files
-```
-
-- **FlakeBuilder** generates `flake.nix` with Nix packages for 20+ tech stacks
-- **ToolExecutor** runs real scaffolding commands (`npm install`, `cargo init`, `composer create-project`, etc.)
-- Graceful fallback to AI generation if Nix or tool is unavailable
-
-## Command error auto-fix
-
-When a scaffolding command fails (non-zero exit), its output is fed back to the AI for automatic fixing:
-
-```
-Worker generates code → runs commands → exit code ≠ 0
-                                         ↓
-                  AI receives error + current files → returns fixed files
-                                         ↓
-                              patched files written to disk
-```
-
-Only errors trigger the fix (successful command output is ignored). Each failed command gets one fix attempt.
-
-## Stream reliability
-
-Progress updates from the Boss → Manager → Worker pipeline are delivered via a buffered channel (256 slots) with blocking sends — no updates are dropped. Previously used non-blocking sends with `select default:`, which silently dropped file-write progress when the channel was full.
-
-## Structured tool guides (`pkg/guids`)
-
-Octra ships with a registry of structured tool guides — one file per tool, organized by language ecosystem:
-
-```
-pkg/guids/
-├── core/               # Guide type, registry, formatting
-├── golang/             # go
-├── rust/               # cargo
-├── node/               # npm
-├── python/             # pip
-├── java/               # maven, gradle, kotlin/
-├── php/                # composer, artisan
-├── flutter/            # flutter
-├── cpp/                # cmake
-├── dotnet/             # dotnet
-├── elixir/             # mix
-├── haskell/            # cabal
-├── zig/                # zig
-├── swift/              # swiftpm
-└── ruby/               # bundler, gem
-```
-
-Each guide contains structured commands, Nix packages, and project structure — injected into AI prompts to prevent hallucinated commands and save tokens.
-
-## Context management system (`internal/service/context/`)
-
-Octra maintains per-project context with three visibility scopes, stored in Redis (fast cache) and PostgreSQL (permanent storage):
-
-```
-                        ┌──────────────────┐
-                        │  AI Agent returns │
-                        │  JSON with        │
-                        │  "context" field  │
-                        └──────┬───────────┘
-                               ↓
-               ┌───────────────────────────────┐
-               │  ContextService.SaveFromAI()   │
-               │  ┌──────────┐  ┌────────────┐ │
-               │  │ Postgres │  │   Redis    │ │
-               │  │ (always) │  │ (5min TTL) │ │
-               │  └──────────┘  └────────────┘ │
-               └───────────────────────────────┘
-                               ↓
-               ┌───────────────────────────────┐
-               │  GetForPrompt() → injects     │
-               │  into Boss/Manager/Worker      │
-               └───────────────────────────────┘
-```
-
-**Three scope levels:**
-
-| Scope | Visibility | Set by | Lifecycle |
-|-------|-----------|--------|-----------|
-| `global` | All agents in project | Boss/Manager | Persists forever |
-| `team` | All workers under one manager | Manager | Until manager finishes |
-| `individual` | Single agent | Any agent | Per agent session |
-
-**How context flows:**
-
-1. **Boss** sends prompt → AI returns JSON with optional `"context": {"scope": "global", "type": "global_rule", "content": "..."}`
-2. **ContextService** saves to Postgres + Redis, then injects into all subsequent agent prompts
-3. **Manager** and **Worker** also receive and can create context (team/individual scopes)
-4. Before every AI call, `GetForPrompt()` assembles all relevant context into a formatted block
-
-**Automatic cleanup:**
-
-- **Messages** capped at ~20 (adaptive: 40 if avg length <200 chars, 30 if <500 chars)
-- When limit exceeded, the **5 oldest non-important** messages are removed (sawtooth pattern)
-- **Global rules** live forever unless user says `"forget"`
-- If user/AI sends `"content": "forget"` → all matching entries are marked `forgotten`
-- Redis entries expire after 5 minutes, reloaded from Postgres on next access
-
-**Key files:**
-
-| File | Purpose |
-|------|---------|
-| `internal/service/context/response.go` | AI context flag parsing, forget detection |
-| `internal/service/context/postgres.go` | Permanent storage, adaptive cleanup |
-| `internal/service/context/redis.go` | TTL cache (5 min), cache-aside pattern |
-| `internal/service/context/service.go` | Coordinator, SaveFromAI, GetForPrompt |
-| `pkg/models/context_entry.go` | GORM model (project_id, scope, type, content, …) |
-
-## Group Chat Agent Orchestration (`internal/service/groupchat/`)
-
-Octra's workers use the **Group Chat** pattern ([Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/group-chat)) for true multi-agent collaboration:
-
-```
-Round 1: all agents generate concurrently (AllAtOnceSelector)
-         Worker A ──→ Message{files}
-         Worker B ──→ Message{files}
-         Worker C ──→ Message{files}
-                ↓ broadcast
-Round 2: each agent sees full conversation → can refine based on peer work
-         Worker A ──→ sees B+C files → improves
-         Worker B ──→ sees A+C files → improves
-         Worker C ──→ sees A+B files → improves
-                ↓ termination condition
-         git add . + git commit
-```
-
-**How agents "check the chat":**
-
-Every agent's `Process(ctx, conv)` receives the full `Conversation` with all messages and files. `WorkerAgent.buildChatContext()` extracts peer-generated files and content, injects them into the AI prompt — workers literally see what others built and can adapt.
-
-**Key components:**
-
-| File | Purpose |
-|------|---------|
-| `internal/service/groupchat/types.go` | Agent, Message, Conversation, SpeakerSelector interfaces |
-| `internal/service/groupchat/orchestrator.go` | Orcherator: registration, concurrent rounds, termination |
-| `internal/service/groupchat/selection.go` | RoundRobin, AllAtOnce, RoleBased, AgentBased selectors |
-| `internal/service/rules/worker/agent.go` | `WorkerAgent` implementing `groupchat.Agent` with AI generation |
-
-## Skill Warehouse (`internal/skills/`)
-
-Octra ships with a **Skill Warehouse** — a registry of atomic skill fragments that replace monolithic skill files. Instead of sending entire skill documents to every AI call, the system picks only the relevant fragments:
-
-### Fragments instead of monoliths
-
-Traditional skills (7 large `.md` files) were broken into **42 atomic fragments** (3-6 lines each):
-
-```
-internal/skills/fragments/
-├── backend-api.md, backend-arch.md, backend-data.md, backend-security.md, ...
-├── frontend-component.md, frontend-state.md, frontend-accessibility.md, ...
-├── devops-cicd.md, devops-containers.md, devops-iac.md, ...
-├── research-intent.md, research-sources.md, research-triangulate.md, ...
-├── presentation-slide.md, presentation-story.md, presentation-visual.md, ...
-├── proxy-types.md, proxy-headers.md, proxy-security.md, ...
-└── vpn-protocol.md, vpn-crypto.md, vpn-network.md, ...
-```
-
-### Warehouse API
-
-```go
-warehouse := skills.NewWarehouse()
-warehouse.Catalog()                    // всё что есть на складе
-warehouse.CatalogFiltered("Backend")   // только указанные категории
-warehouse.Search(role, tech, task, 3)  // top-3 фрагмента по релевантности
-warehouse.SearchFiltered(role, tech, task, 3, "Backend") // с фильтром по категории
-warehouse.Select(slugs...)             // только эти фрагменты → текст для промпта
-```
-
-### Category filtering
-
-The Boss can pass `skill_categories` in task metadata — then:
-
-1. **Boss** sees only those categories in the catalog (via `CatalogFiltered`)
-2. **Manager** searches fragments only in those categories (via `SearchFiltered`)
-3. **Worker** receives only the matching skills
-
-Example:
-```json
-// task metadata
-{ "skill_categories": "Backend, Frontend" }
-```
-
-Without the flag — all skills as before (backward compatibility).
-
-### How the Manager picks
-
-After deciding worker roles, the Manager queries the Warehouse:
-
-```
-Manager → warehouse.Search("backend go", "go", taskDescription, 3)
-       → ["backend-api", "backend-data", "backend-security"]
-       → WorkerRole.SelectedSkillSlugs = ["backend-api", "backend-data", "backend-security"]
-```
-
-The Worker then resolves only those slugs via `warehouse.Select(slugs...)`, injecting **~15-30 lines** of targeted guidance instead of a full 100+ line skill file.
-
-### Adding new skills
-
-Drop a new `.md` file in `internal/skills/fragments/` with frontmatter:
-```yaml
----
-name: My New Skill
-slug: my-skill
-area: MyArea
-keywords: relevant, keywords, here
-tech: go, python
-weight: 3
----
-Short guidance text (3-6 lines).
-```
-
-The Warehouse discovers it automatically via `//go:embed`.
-
-### Key files
-
-| File | Purpose |
-|------|---------|
-| `internal/skills/warehouse.go` | Warehouse registry, catalog, search, select, category filter |
-| `internal/skills/fragments/*.md` | 42 atomic skill fragments |
-| `internal/skills/skills.go` | Legacy skill system (backward compat) |
-| `internal/service/rules/worker/skill.go` | `buildSkillContext()` — fragment resolution entry point |
-| `internal/service/rules/manager/assign.go` | Manager selects fragments per worker via Warehouse |
-
-## GitHub Integration
-
-Octra can automatically publish generated projects to GitHub and create pull requests for issue-linked tasks. The behavior is configured in the Settings panel via two toggles:
-
-| Toggle | Meta flag | Effect |
-|--------|-----------|--------|
-| Publish new projects to GitHub | `publish_repositories` | Creates a new GitHub repository and pushes the generated code |
-| Create pull requests | `create_pull_requests` | Creates a PR for issue-linked tasks (pushes code to a branch in any case) |
-
-### Auto-fork for PRs
-
-When Octra targets a GitHub issue but the bot account lacks write permission, it **automatically forks** the repository under the bot's account:
-
-```
-Octra detects issue URL
-  │
-  ├── Has write permission? ──→ clone original → push branch → PR
-  │
-  └── No write permission
-        │
-        ├── CheckWritePermission(owner/repo) → false
-        ├── ForkRepository(owner/repo) → fork created
-        ├── WaitForkReady → clone fork
-        ├── AddUpstream → SyncWithUpstream
-        └── Push to fork → PR from forkOwner:branch → owner:base
-```
-
-Cross-repo PRs use the `head: "forkOwner:branchName"` format. Fork info (`github_fork_owner`, `github_fork_clone_url`) is persisted in task metadata for subsequent runs — no re-fork on repeat.
-
-### Existing task reuse
-
-If the same issue URL is submitted again, Octra detects the previous task and **reuses its fork**:
-
-```
-detectGitHubIssueTask()
-  │
-  └── findExistingTaskByIssue(issueURL)
-        │
-        ├── Found in DB (status=done, nix_store_path != '')
-        │     │
-        │     ├── Read github_fork_owner from previous task's Meta
-        │     ├── Clone fork directly (skip permission check + fork creation)
-        │     ├── GetIssueCommentsSince(previousTask.UpdatedAt)
-        │     └── Inject "NEW COMMENTS" section into AI prompt
-        │
-        └── Not found → standard flow (permission check → fork → clone)
-```
-
-This ensures repeat runs on the same issue are fast (no re-fork) and incorporate user feedback from new comments.
-
-### Data flow
-
-```
-Settings (UI) → meta.publish_repositories / meta.create_pull_requests
-                                    ↓
-                   task.go → pushToGitHub(ctx, task, projectPath, issueTarget, meta)
-                                    ↓
-                   github.go — checks flags and decides:
-                     publish_repositories=false → skip repo creation
-                     create_pull_requests=false → push branch only, skip PR
-                                    ↓
-                   WebSocket response → frontend adds GitHubNode
-                     repoUrl → repository link
-                     pullRequestUrl → PR link (displayed as "GitHub PR" node)
-```
-
-### Frontend behavior
-
-- If both toggles are off (integration connected but disabled) — no GitHub node is added to the canvas
-- If a pull request is created — the node shows "GitHub PR" as role and opens the PR URL on click
-- If a repository is published — the node shows "GitHub" as role and opens the repo URL on click
-- The click handler respects `prUrl` over `repoUrl` when both are present
-
-## Project lifecycle with Nix
-
-```
-New issue:   setupProject() → generate flake.nix → AI generates code → nix-store --add → cleanup
-                                                                              ↓
-Repeat issue: findExistingTask() → clone fork → AI with new comments → nix-store --add → cleanup
-```
-
-Each project:
-
-1. Gets a `flake.nix` at creation time (auto-generated per tech stack)
-2. Is built by AI agents inside the working directory
-3. On completion: **snapshotted to `/nix/store/`** via `nix-store --add`
-4. Working directory is removed (zero disk waste)
-5. **`RestoreProject(taskID)`** recovers the project from the Nix store instantly
-6. **Repeat runs** on the same GitHub issue detect the previous snapshot and skip the fork step — only new comments are fetched and fed to AI
-
-This means projects take zero space when idle but can be restored at any time.
-
-## Services
-
-| Service | Stack | Role |
-|---------|-------|------|
-| `orchestrator` | Go, gRPC | Boss → Manager → Worker pipeline, Group Chat orchestration, Skill Warehouse, Nix snapshots, tool scaffolding, command auto-fix, AI search providers (Apodex, custom) |
-| `agents` | Go, gRPC | AI provider proxy (Claude, Gemini, GPT, DeepSeek, Ollama/custom, …) — supports OpenAI-compatible streaming and non-streaming |
-| `apigateway` | Go, Gin, WebSocket | HTTP/WS → gRPC bridge |
-| `user` | Go, Gin | Auth, subscriptions, custom providers |
-| `frontend/web` | React, Vite, Electron | Interactive canvas + chat UI |
-
-Run with NixOS:
-
-```nix
-{
-  imports = [ octra.flake.nixosModules.octra-orchestrator ];
-  services.octra-orchestrator = {
-    enable = true;
-    environment.DB_DNS = "postgres://...";
-  };
-}
-```
+### Data models
+
+| Model         | Fields |
+|---------------|--------|
+| `User`        | ID, email, password hash, api_key, subscription, balance, margin settings |
+| `Agent`       | ID, user ID, LLM config (api_key, base_url, model), CLI (optional), active, priority |
+| `Skill`       | ID, name, type (`built-in` / `nixpkgs` / `custom`), install command, description |
+| `UserSkill`   | user ID, agent ID, skill ID, install status |
+| `Transaction` | user ID, type, amount, reason, optional agent ID, balance after, created_at |
+| `UsageMetric` | user ID, date, CPU seconds, memory MB-hours, disk MB, load percent |
+
+See [`CONCEPT_USER_PAYMENT.md`](CONCEPT_USER_PAYMENT.md) and
+[`NEW_CONCEPT_USER_BALANCE.md`](NEW_CONCEPT_USER_BALANCE.md) for the payment and
+balance concept details.
 
 ## Quick start
 
@@ -490,9 +184,16 @@ Run with NixOS:
 docker compose up -d --build
 ```
 
-Open http://localhost, describe your task, Octra builds it.  
-Project is cached in Nix store — recover anytime via `RestoreProject(taskID)`.
+This starts PostgreSQL, Redis, and the Octra backend (plus the frontend and
+poster). The API listens on `:8080`. See [`backend/README.md`](backend/README.md)
+for configuration variables and local development.
+
+```bash
+cd backend
+go build ./...
+go test ./...   # in-memory SQLite + fakes, no external services needed
+```
 
 ---
 
-*Octra: describe once, rebuild forever.*
+*Octra: your personal MCP endpoint, without the setup.*
