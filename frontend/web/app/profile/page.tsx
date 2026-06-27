@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Eye, EyeOff, User, Mail, KeyRound, Calendar } from 'lucide-react';
+import { Copy, Eye, EyeOff, User, Mail, KeyRound, Calendar, Check } from 'lucide-react';
 import { DashboardShell } from '../dashboard/DashboardShell';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
@@ -139,8 +139,8 @@ export default function ProfilePage() {
                 <Copy size={16} />
               </button>
             </div>
+            {copied && <span className="copy-check"><Check size={16} /></span>}
           </div>
-          {copied && <span style={{ fontSize: '0.82rem', color: 'var(--metric-success)' }}>Copied!</span>}
           <p style={{ margin: '16px 0 0', fontSize: '0.82rem', color: 'var(--muted)', lineHeight: 1.55 }}>
             Use this key to authenticate API requests from your CLI or MCP client.
             Treat it like a password — do not share it publicly.
