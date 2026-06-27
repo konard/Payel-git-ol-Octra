@@ -1,3 +1,5 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+
 export const ROUTES = {
   HOME: '/',
   WORKSPACE: '/app',
@@ -17,7 +19,8 @@ export const ROUTES = {
 } as const;
 
 export const API = {
-  LOGIN: '/login',
-  REGISTER: '/register',
-  ME: '/me',
+  BASE: API_BASE,
+  LOGIN: `${API_BASE}/login`,
+  REGISTER: `${API_BASE}/register`,
+  ME: `${API_BASE}/me`,
 } as const;

@@ -69,6 +69,7 @@ services:
       context: ./frontend/web
       dockerfile: Dockerfile
       args:
+        - NEXT_PUBLIC_API_URL=
         - VITE_FRONTEND_MODE
     container_name: octra-frontend
     env_file:
