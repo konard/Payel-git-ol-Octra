@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import {
   ArrowRight,
   Chrome,
@@ -38,6 +38,13 @@ export default function AuthPage() {
   const [loginError, setLoginError] = useState('');
   const [registerError, setRegisterError] = useState('');
 
+  useEffect(() => {
+    const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
+    if (hasToken) {
+      window.location.href = ROUTES.WORKSPACE;
+    }
+  }, []);
+
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoginError('');
@@ -62,7 +69,7 @@ export default function AuthPage() {
       const body = await res.json();
       const accessToken = body?.data?.access_token;
       const refreshToken = body?.data?.refresh_token;
-      const username = body?.data?.user?.username;
+      const uname = body?.data?.user?.username;
       if (accessToken) {
         window.localStorage.setItem('octra_access_token', accessToken);
         window.localStorage.setItem('access_token', accessToken);
@@ -71,8 +78,8 @@ export default function AuthPage() {
           window.localStorage.setItem('refresh_token', refreshToken);
         }
       }
-      if (username) {
-        window.localStorage.setItem('octra_username', username);
+      if (uname) {
+        window.localStorage.setItem('octra_username', uname);
       }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
@@ -103,15 +110,19 @@ export default function AuthPage() {
       }
       const body = await res.json();
       const apiKey = body?.api_key;
+      const uname = form.get('username') as string;
       if (apiKey) {
         window.localStorage.setItem('octra_access_token', apiKey);
         window.localStorage.setItem('access_token', apiKey);
+        window.localStorage.setItem('octra_username', uname);
+        window.localStorage.setItem('octra_show_welcome', '1');
       }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
       setRegisterError('Network error');
     }
   }
+
   return (
     <main className="auth-shell">
       <header className="top-nav auth-nav">

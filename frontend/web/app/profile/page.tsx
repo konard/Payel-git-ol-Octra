@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, Mail, Calendar } from 'lucide-react';
+import { User, Mail, Calendar, LogOut } from 'lucide-react';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
@@ -86,6 +86,16 @@ export default function ProfilePage() {
   const { user } = state;
   const memberSince = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  function handleLogout() {
+    const keys = [
+      'octra_access_token', 'access_token',
+      'octra_refresh_token', 'refresh_token',
+      'octra_username', 'octra_show_welcome',
+    ];
+    keys.forEach((k) => window.localStorage.removeItem(k));
+    window.location.href = ROUTES.HOME;
+  }
+
   return (
     <div className="dashboard-grid dashboard-grid-single" style={{ padding: 14 }}>
       <article className="large-panel profile-card" aria-label="Profile">
@@ -104,6 +114,10 @@ export default function ProfilePage() {
             <span>Member since {memberSince}</span>
           </div>
         </div>
+        <button className="logout-button" onClick={handleLogout} type="button">
+          <LogOut size={16} />
+          <span>Sign out</span>
+        </button>
       </article>
     </div>
   );

@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
+import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
@@ -32,10 +33,16 @@ export default function HomePage() {
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [username, setUsername] = useState('');
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     const hasToken = ['octra_access_token', 'access_token'].some((key) => window.localStorage.getItem(key));
     setIsAuthed(hasToken);
+
+    if (window.localStorage.getItem('octra_show_welcome')) {
+      setShowWelcome(true);
+      window.localStorage.removeItem('octra_show_welcome');
+    }
 
     const cached = window.localStorage.getItem('octra_username');
     if (cached) {
@@ -196,6 +203,13 @@ export default function HomePage() {
           <Zap size={20} />
         </button>
       </aside>
+
+      {showWelcome && (
+        <WelcomeModal
+          username={username}
+          onClose={() => setShowWelcome(false)}
+        />
+      )}
     </main>
   );
 }
