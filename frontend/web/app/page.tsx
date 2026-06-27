@@ -21,33 +21,33 @@ import { FAKE_METRICS } from './config/fake-metrics';
 const capabilities = [
   {
     icon: Workflow,
-    title: 'MCP environments',
-    detail: 'Provision isolated Nix profiles per user with pinned tool versions.',
+    title: 'Deploy AI agents 24/7',
+    detail: 'Run Claude Code and other AI agents on a remote server that stays online even when you close your laptop.',
   },
   {
     icon: Bot,
-    title: 'CLI process lifecycle',
-    detail: 'Keep Claude Code and other CLI processes warm, route stdin/stdout via Redis state.',
+    title: 'Personal MCP endpoints',
+    detail: 'Each user gets their own MCP endpoint with isolated environments. Share tools with your team without sharing credentials.',
   },
   {
     icon: ShieldCheck,
-    title: 'API token auth',
-    detail: 'Validate octra-api-token on every request, map to user environment automatically.',
+    title: 'Token-based access',
+    detail: 'Secure every request with API tokens. Each token maps to a specific user environment automatically.',
   },
   {
     icon: Cpu,
-    title: 'Per-request skills',
-    detail: 'Let each prompt enable only the tools it needs — filesystem, GitHub, and more.',
+    title: 'Per-request tool control',
+    detail: 'Choose exactly which tools each prompt can use — filesystem, GitHub, browsing, or your own custom skills.',
   },
   {
-    icon: Database,
-    title: 'Redis-backed state',
-    detail: 'Track PID, TTL, and port for every running CLI instance in Redis.',
+    icon: Sparkles,
+    title: 'Usage analytics & billing',
+    detail: 'Track token usage, monitor active sessions, and manage billing in real time from a single dashboard.',
   },
   {
-    icon: Code2,
-    title: 'Nix + CLI integration',
-    detail: 'Install skill packages declaratively with Nix, spawn CLI as a subprocess.',
+    icon: Zap,
+    title: 'Earn from your agents',
+    detail: 'Monetise your deployed agents. Octra handles routing, auth, and provisioning so you focus on building.',
   },
 ];
 
