@@ -315,7 +315,7 @@ func (s *AuthService) ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]
 		out = append(out, UserAPIKeyResponse{
 			ID:        k.ID.String(),
 			Name:      k.Name,
-			Key:       "",
+			Key:       k.Key,
 			ExpiresAt: k.ExpiresAt,
 			CreatedAt: k.CreatedAt,
 		})

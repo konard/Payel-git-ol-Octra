@@ -2,7 +2,7 @@ import { API } from '../config/routes'
 
 function authHeaders(): HeadersInit {
   const token = window.localStorage.getItem('octra_access_token') ?? window.localStorage.getItem('access_token');
-  return { Authorization: `Bearer ${token}` };
+  return { 'octra-api-token': token ?? '' };
 }
 
 export async function createAPIKey(name: string, expiresAt: string | null): Promise<Response> {

@@ -49,7 +49,6 @@ export default function ApiKeysPage() {
     }
     const newKey = await res.json();
     setKeys((prev) => [newKey, ...prev]);
-    setShowKeyMap((prev) => ({ ...prev, [newKey.id]: true }));
     setShowCreate(false);
   }
 
@@ -117,7 +116,7 @@ export default function ApiKeysPage() {
                       </>
                     )}
                   </div>
-                  <button className="icon-button" onClick={() => handleDelete(item.id)} aria-label="Delete" style={{ color: 'var(--muted)', flex: '0 0 auto' }}>
+                  <button className="icon-button icon-button-danger" onClick={() => handleDelete(item.id)} aria-label="Delete" style={{ color: 'var(--muted)', flex: '0 0 auto' }}>
                     <Trash2 size={15} />
                   </button>
                 </div>

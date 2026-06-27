@@ -285,6 +285,11 @@ button {
   border-color: var(--line-strong);
 }
 
+.icon-button-danger:hover {
+  color: var(--metric-danger) !important;
+  border-color: color-mix(in srgb, var(--metric-danger) 40%, transparent);
+}
+
 .hero-section {
   position: relative;
   z-index: 2;
