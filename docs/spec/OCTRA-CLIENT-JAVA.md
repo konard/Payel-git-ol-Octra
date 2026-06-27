@@ -1,110 +1,126 @@
 # OCTRA Java Client
 
-## 1. Plain Java (with java.net.http)
+A minimal client for the Octra HTTP/JSON API using the built-in
+`java.net.http.HttpClient` (Java 11+). JSON bodies are small, so this example
+builds them with a tiny helper instead of pulling in a JSON library.
+
+The full flow is: **register** to get an `api_key`, **create an environment**
+(an AI CLI plus skills), then **chat**.
+
+---
+
+## 1. Reusable Client
 
 ```java
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.WebSocket;
-import java.util.concurrent.CompletableFuture;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 public class OctraClient {
-    private String taskId;
-    private int backoff = 1000;
+    private final String baseUrl;
+    private String apiKey;
+    private final HttpClient http = HttpClient.newHttpClient();
 
-    public void connect() {
-        String uri = "wss://octra.env.pm/ws";
+    public OctraClient(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
-        HttpClient.newHttpClient().newWebSocketBuilder()
-            .buildAsync(URI.create(uri), new WebSocket.Listener() {
-                @Override
-                public void onOpen(WebSocket ws) {
-                    if (taskId != null) {
-                        ws.sendText("{\"type\":\"resume\",\"taskId\":\"" + taskId + "\"}", true);
-                    } else {
-                        ws.sendText("{\"username\":\"JavaClient\",\"user_id\":\"00000000-0000-0000-0000-000000000004\",\"title\":\"Java Task\",\"description\":\"Test from Java\",\"meta\":{\"model\":\"your-model\",\"provider\":\"provider\",\"publish_repositories\":\"true\",\"create_pull_requests\":\"true\"},\"tokens\":{\"provider\":\"your-api-key\"}}", true);
-                    }
-                }
+    private String post(String path, String jsonBody) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody));
+        if (apiKey != null) {
+            builder.header("octra-api-token", apiKey);
+        }
 
-                @Override
-                public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
-                    System.out.println("Update: " + data);
-                    return null;
-                }
+        HttpResponse<String> resp = http.send(builder.build(),
+                HttpResponse.BodyHandlers.ofString());
+        if (resp.statusCode() >= 300) {
+            throw new RuntimeException("Octra " + path + " failed: "
+                    + resp.statusCode() + " " + resp.body());
+        }
+        return resp.body();
+    }
 
-                @Override
-                public void onError(WebSocket ws, Throwable error) {
-                    try { Thread.sleep(backoff); } catch (InterruptedException ignored) {}
-                    backoff = Math.min(backoff * 2, 30000);
-                    connect();
-                }
-            });
+    // Tiny extractor for flat string fields like "api_key" or "response".
+    private static String field(String json, String name) {
+        String needle = "\"" + name + "\"";
+        int i = json.indexOf(needle);
+        if (i < 0) return null;
+        int start = json.indexOf('"', json.indexOf(':', i) + 1) + 1;
+        int end = json.indexOf('"', start);
+        return json.substring(start, end);
+    }
+
+    public String register(String email, String password) throws Exception {
+        String body = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
+        String resp = post("/register", body);
+        this.apiKey = field(resp, "api_key"); // remember it for later calls
+        return field(resp, "user_id");
+    }
+
+    public void createEnvironment(String llmApiKey, String llmBaseUrl,
+                                  String model, String cli, String[] skills) throws Exception {
+        StringBuilder skillsJson = new StringBuilder("[");
+        for (int i = 0; i < skills.length; i++) {
+            if (i > 0) skillsJson.append(',');
+            skillsJson.append('"').append(skills[i]).append('"');
+        }
+        skillsJson.append(']');
+
+        String body = "{"
+                + "\"llm\":{\"api_key\":\"" + llmApiKey + "\","
+                + "\"base_url\":\"" + llmBaseUrl + "\","
+                + "\"model\":\"" + model + "\"},"
+                + "\"agent\":{\"cli\":\"" + cli + "\"},"
+                + "\"skills\":" + skillsJson
+                + "}";
+        post("/environment", body);
+    }
+
+    public String chat(String prompt, String[] skills) throws Exception {
+        StringBuilder skillsJson = new StringBuilder("[");
+        for (int i = 0; i < skills.length; i++) {
+            if (i > 0) skillsJson.append(',');
+            skillsJson.append('"').append(skills[i]).append('"');
+        }
+        skillsJson.append(']');
+
+        String body = "{\"prompt\":\"" + prompt + "\",\"skills\":" + skillsJson + "}";
+        return field(post("/api/chat", body), "response");
     }
 }
 ```
 
+> For production code, prefer a real JSON library (Jackson or Gson) over manual
+> string building so values are escaped correctly.
+
 ---
 
-## 2. Spring Boot WebSocket Client
+## 2. Full Flow Example
 
 ```java
-package com.octra.client;
+public class Main {
+    public static void main(String[] args) throws Exception {
+        OctraClient client = new OctraClient("http://localhost:8080");
 
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.*;
-import org.springframework.web.socket.client.WebSocketConnectionManager;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+        // 1. Register and capture the API key.
+        String userId = client.register("me@example.com", "secret");
+        System.out.println("user_id: " + userId);
 
-@Component
-public class OctraSpringClient implements WebSocketHandler {
+        // 2. Create an environment: an AI CLI plus some skills.
+        client.createEnvironment(
+                "sk-...",
+                "https://api.anthropic.com",
+                "claude-sonnet-4-6",
+                "claude-code",
+                new String[]{"filesystem", "github", "brave-search"});
 
-    private String taskId;
-    private WebSocketSession session;
-    private int backoff = 1000;
-
-    public void connect() {
-        String url = "wss://octra.env.pm/ws";
-        WebSocketConnectionManager manager = new WebSocketConnectionManager(
-                new StandardWebSocketClient(), this, url);
-        manager.start();
-    }
-
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        this.session = session;
-        if (taskId != null) {
-            session.sendMessage(new TextMessage("{\"type\":\"resume\",\"taskId\":\"" + taskId + "\"}"));
-        } else {
-            session.sendMessage(new TextMessage("{\"type\":\"create\",\"title\":\"Spring Task\"}"));
-        }
-    }
-
-    @Override
-    public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-        System.out.println("Update: " + message.getPayload());
-    }
-
-    @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        reconnect();
-    }
-
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        reconnect();
-    }
-
-    private void reconnect() {
-        try {
-            Thread.sleep(backoff);
-            backoff = Math.min(backoff * 2, 30000);
-            connect();
-        } catch (InterruptedException ignored) {}
-    }
-
-    @Override
-    public boolean supportsPartialMessages() {
-        return false;
+        // 3. Send a prompt.
+        String answer = client.chat("write a csv parser", new String[]{"filesystem"});
+        System.out.println(answer);
     }
 }
 ```
