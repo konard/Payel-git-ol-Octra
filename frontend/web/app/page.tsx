@@ -170,34 +170,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-
-            <div className="architecture-panel">
-              <div className="panel-heading">
-                <span>Architecture</span>
-              </div>
-              <div className="architecture-list">
-                <div className="rule-row">
-                  <Globe size={16} />
-                  <span>Runtime</span>
-                  <strong>Node.js + Next.js</strong>
-                </div>
-                <div className="rule-row">
-                  <Database size={16} />
-                  <span>Cache</span>
-                  <strong>Redis</strong>
-                </div>
-                <div className="rule-row">
-                  <Code2 size={16} />
-                  <span>Provisioning</span>
-                  <strong>Nix</strong>
-                </div>
-                <div className="rule-row">
-                  <LockKeyhole size={16} />
-                  <span>Auth</span>
-                  <strong>JWT + OAuth</strong>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
