@@ -615,7 +615,7 @@ button {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto;
-  align-items: start;
+  align-content: space-between;
   gap: 8px 6px;
 }
 
