@@ -89,7 +89,7 @@ export default function LandingPage() {
         </div>
 
         <div className="hero-copy">
-          <p className="eyebrow">MCP aggregator monolith</p>
+          <p className="eyebrow">VPS</p>
           <h1>
             Deploy your agent
             <br />
@@ -181,7 +181,7 @@ export default function LandingPage() {
 
       <footer className="site-footer">
         <span>Octra</span>
-        <span>MCP aggregator monolith</span>
+        <span>VPS</span>
         <span>MIT License</span>
       </footer>
     </main>
