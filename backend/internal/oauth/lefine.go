@@ -38,12 +38,13 @@ func (h *Handler) HandleLeFineLogin(ctx *fasthttp.RequestCtx) {
 		redirectURI = fmt.Sprintf("%s://%s/auth/lefine/callback", scheme, string(ctx.Host()))
 	}
 
-	state := fmt.Sprintf("%d", time.Now().UnixNano())
+	state := generateState()
+	setStateCookie(ctx, state)
 
 	authURL := fmt.Sprintf("%s/oauth/authorize?client_id=octra&redirect_uri=%s&state=%s&response_type=code",
 		kefineBase,
 		url.QueryEscape(redirectURI),
-		state,
+		url.QueryEscape(state),
 	)
 
 	ctx.Redirect(authURL, fasthttp.StatusTemporaryRedirect)
@@ -51,6 +52,11 @@ func (h *Handler) HandleLeFineLogin(ctx *fasthttp.RequestCtx) {
 
 // HandleLeFineCallback processes the callback from LeFine.
 func (h *Handler) HandleLeFineCallback(ctx *fasthttp.RequestCtx) {
+	if !verifyState(ctx, string(ctx.QueryArgs().Peek("state"))) {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid oauth state")
+		return
+	}
+
 	code := string(ctx.QueryArgs().Peek("code"))
 	if code == "" {
 		writeError(ctx, fasthttp.StatusBadRequest, "no authorization code from LeFine")

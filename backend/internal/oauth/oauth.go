@@ -54,11 +54,18 @@ func (h *Handler) googleConfig() *oauth2.Config {
 
 func (h *Handler) HandleGoogleLogin(ctx *fasthttp.RequestCtx) {
 	config := h.googleConfig()
-	url := config.AuthCodeURL("random-state")
+	state := generateState()
+	setStateCookie(ctx, state)
+	url := config.AuthCodeURL(state)
 	ctx.Redirect(url, fasthttp.StatusTemporaryRedirect)
 }
 
 func (h *Handler) HandleGoogleCallback(ctx *fasthttp.RequestCtx) {
+	if !verifyState(ctx, string(ctx.QueryArgs().Peek("state"))) {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid oauth state")
+		return
+	}
+
 	code := string(ctx.QueryArgs().Peek("code"))
 	if code == "" {
 		writeError(ctx, fasthttp.StatusBadRequest, "code not found")
@@ -211,11 +218,18 @@ func githubDisplayName(profile githubUserProfile) string {
 
 func (h *Handler) HandleGitHubLogin(ctx *fasthttp.RequestCtx) {
 	config := h.githubConfig()
-	url := config.AuthCodeURL("random-state")
+	state := generateState()
+	setStateCookie(ctx, state)
+	url := config.AuthCodeURL(state)
 	ctx.Redirect(url, fasthttp.StatusTemporaryRedirect)
 }
 
 func (h *Handler) HandleGitHubCallback(ctx *fasthttp.RequestCtx) {
+	if !verifyState(ctx, string(ctx.QueryArgs().Peek("state"))) {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid oauth state")
+		return
+	}
+
 	code := string(ctx.QueryArgs().Peek("code"))
 	if code == "" {
 		writeError(ctx, fasthttp.StatusBadRequest, "code not found")
