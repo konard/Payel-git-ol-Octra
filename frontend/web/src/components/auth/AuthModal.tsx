@@ -104,7 +104,7 @@ export function AuthModal({ onClose, onAuthSuccess }: AuthModalProps) {
     }
 
     try {
-      await register(regUsername, regEmail, regPassword, '');
+      await register(regUsername, regEmail, regPassword);
       onAuthSuccess();
     } catch (err) {
       console.error('Registration error:', err);
