@@ -121,7 +121,8 @@ func RegisterLeFineRoutes(r *gin.Engine) {
 			redirectURI = fmt.Sprintf("%s://%s/auth/lefine/callback", scheme, c.Request.Host)
 		}
 
-		state := fmt.Sprintf("%d", time.Now().UnixNano()) // simple stateless state for now
+		state := generateState()
+		setStateCookie(c, state)
 
 		authURL := fmt.Sprintf("%s/oauth/authorize?client_id=octra&redirect_uri=%s&state=%s&response_type=code",
 			kefineBase,
@@ -133,8 +134,11 @@ func RegisterLeFineRoutes(r *gin.Engine) {
 	})
 
 	r.GET("/auth/lefine/callback", func(c *gin.Context) {
+		if !verifyState(c, c.Query("state")) {
+			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Invalid OAuth state"})
+			return
+		}
 		code := c.Query("code")
-		// state := c.Query("state") // we can verify state if we persist it later
 
 		if code == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "No authorization code from LeFine"})
