@@ -610,7 +610,7 @@ button {
 .metric-card {
   position: relative;
   min-height: 140px;
-  padding: 20px;
+  padding: 20px 20px 10px;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr auto;
