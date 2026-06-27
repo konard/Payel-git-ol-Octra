@@ -21,12 +21,8 @@ globalThis.localStorage = {
 globalThis.document = { cookie: '' };
 globalThis.window = {};
 
-// Minimal mock of the auth API. Routes by URL + method.
-const calls = [];
+// Minimal mock of the auth API. Routes by URL.
 globalThis.fetch = (url, options = {}) => {
-  const method = options.method || 'GET';
-  calls.push(`${method} ${url}`);
-
   const ok = (data) => Promise.resolve({
     ok: true,
     status: 200,
