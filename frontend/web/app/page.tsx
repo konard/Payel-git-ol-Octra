@@ -60,13 +60,6 @@ export default function LandingPage() {
           <span>Octra</span>
         </a>
 
-        <nav className="nav-links" aria-label="Primary navigation">
-          <a href="#capabilities">Capabilities</a>
-          <a href="#preview">Preview</a>
-          <a href={ROUTES.LOGIN}>Sign in</a>
-          <a href={ROUTES.WORKSPACE}>App</a>
-        </nav>
-
         <div className="nav-actions">
           <a className="text-button" href={ROUTES.LOGIN}>
             <LockKeyhole size={17} />
