@@ -14,9 +14,9 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
-import { EmptyDataPanel } from './components/EmptyDataPanel';
 import { ROUTES } from './config/routes';
 import { ASSETS } from './config/images';
+import { FAKE_METRICS } from './config/fake-metrics';
 
 const capabilities = [
   {
@@ -131,15 +131,19 @@ export default function LandingPage() {
           </div>
 
           <div className="terminal-grid">
-            <div className="metric-strip metric-strip-empty">
-              <EmptyDataPanel
-                compact
-                icon={Activity}
-                title="No live preview metrics yet"
-                detail="Environment and chat counters will appear here when telemetry is connected."
-                actionHref={ROUTES.DASHBOARD_METRICS}
-                actionLabel="Open metrics"
-              />
+            <div className="metric-strip">
+              {FAKE_METRICS.map((m) => (
+                <div className={`metric-card metric-tone-${m.tone}`} key={m.label}>
+                  <span>{m.label}</span>
+                  <strong>{m.value}</strong>
+                  <em className="metric-delta">{m.delta}</em>
+                  <div className="spark-bars">
+                    {m.bars.map((h, i) => (
+                      <i key={i} style={{ height: `${h}%` }} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="traffic-panel">

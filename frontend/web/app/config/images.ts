@@ -1,5 +1,5 @@
 export const ASSETS = {
-  LOGO: '/assets/octra-node-logo.svg',
+  LOGO: '/assets/octra-node-logo.png',
   LOGO_PNG: '/assets/octra-node-logo.png',
   ICON: '/assets/icon.png',
   CLAUDE_SYMBOL: '/assets/Claude_AI_symbol.svg',
