@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Eye, EyeOff, User, Mail, KeyRound, Wallet, Calendar, ShieldCheck } from 'lucide-react';
+import { Copy, Eye, EyeOff, User, Mail, KeyRound, Calendar, ShieldCheck } from 'lucide-react';
 import { DashboardShell } from '../dashboard/DashboardShell';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
@@ -117,10 +117,6 @@ export default function ProfilePage() {
             <div className="profile-row">
               <Mail size={16} />
               <span>{user.email}</span>
-            </div>
-            <div className="profile-row">
-              <Wallet size={16} />
-              <span>{user.balance.toLocaleString()} credits</span>
             </div>
             <div className="profile-row">
               <Calendar size={16} />
