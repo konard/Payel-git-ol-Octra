@@ -46,7 +46,9 @@ export default function AuthPage() {
       const res = await login(form.get('email') as string, form.get('password') as string);
       if (!res.ok) {
         const text = await res.text();
-        setLoginError(text || 'Sign in failed');
+        let msg = text || 'Sign in failed';
+        try { const j = JSON.parse(text); msg = j.error || msg; } catch {}
+        setLoginError(msg);
         return;
       }
       const body = await res.json();
@@ -74,7 +76,9 @@ export default function AuthPage() {
       const res = await register(form.get('username') as string, form.get('email') as string, form.get('password') as string);
       if (!res.ok) {
         const text = await res.text();
-        setRegisterError(text || 'Registration failed');
+        let msg = text || 'Registration failed';
+        try { const j = JSON.parse(text); msg = j.error || msg; } catch {}
+        setRegisterError(msg);
         return;
       }
       const body = await res.json();
