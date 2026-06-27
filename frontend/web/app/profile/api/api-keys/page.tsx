@@ -5,6 +5,7 @@ import { Copy, Eye, EyeOff, Check, Plus, Trash2, KeyRound } from 'lucide-react';
 import { ApiTabs } from '../ApiTabs';
 import { listAPIKeys, createAPIKey, deleteAPIKey } from '../../../server/keys';
 import { CreateKeyModal } from '../../../components/CreateKeyModal';
+import { IconButton } from '../../../components/IconButton';
 
 type APIKeyItem = {
   id: string;
@@ -107,18 +108,18 @@ export default function ApiKeysPage() {
                     {item.key && (
                       <>
                         <code>{showKeyMap[item.id] ? item.key : maskKey(item.key)}</code>
-                        <button className="icon-button" onClick={() => setShowKeyMap((prev) => ({ ...prev, [item.id]: !prev[item.id] }))} aria-label={showKeyMap[item.id] ? 'Hide' : 'Show'}>
+                        <IconButton onClick={() => setShowKeyMap((prev) => ({ ...prev, [item.id]: !prev[item.id] }))} aria-label={showKeyMap[item.id] ? 'Hide' : 'Show'}>
                           {showKeyMap[item.id] ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
-                        <button className="icon-button" onClick={() => copyKey(item.key!, item.id)} aria-label="Copy">
+                        </IconButton>
+                        <IconButton onClick={() => copyKey(item.key!, item.id)} aria-label="Copy">
                           {copiedId === item.id ? <Check size={15} style={{ color: 'var(--metric-success)' }} /> : <Copy size={15} />}
-                        </button>
+                        </IconButton>
                       </>
                     )}
                   </div>
-                  <button className="icon-button icon-button-danger" onClick={() => handleDelete(item.id)} aria-label="Delete" style={{ color: 'var(--muted)', flex: '0 0 auto' }}>
+                  <IconButton variant="danger" onClick={() => handleDelete(item.id)} aria-label="Delete">
                     <Trash2 size={15} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>

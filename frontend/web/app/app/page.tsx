@@ -7,10 +7,12 @@ import {
   LineChart,
   Lock,
   LockOpen,
+  Pause,
   Plus,
   Search,
   Settings,
   Sparkles,
+  Trash2,
   Workflow,
   Zap,
 } from 'lucide-react';
@@ -21,7 +23,8 @@ import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
-import { createDashboardEnvironment, listDashboardEnvironments, type DashboardEnvironment } from '../server/environments';
+import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
+import { IconButton } from '../components/IconButton';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
@@ -51,6 +54,29 @@ export default function HomePage() {
     document.cookie = `octra_selected_env=${id}; path=/; max-age=31536000; SameSite=Lax`;
   }
 
+  async function handlePause(id: string) {
+    await patchDashboardEnvironment(id, { active: false });
+    setEnvs((prev) => prev.filter((e) => e.id !== id));
+    if (selectedEnv === id) {
+      const next = envs.find((e) => e.id !== id);
+      if (next) selectEnv(next.id);
+      else document.cookie = `octra_selected_env=; path=/; max-age=0`;
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this environment?')) return;
+    await deleteDashboardEnvironment(id);
+    setEnvs((prev) => prev.filter((e) => e.id !== id));
+    if (selectedEnv === id) {
+      const next = envs.find((e) => e.id !== id);
+      if (next) selectEnv(next.id);
+      else document.cookie = `octra_selected_env=; path=/; max-age=0`;
+    }
+  }
+
+  const activeEnvs = envs.filter((e) => e.active);
+
   async function handleCreate(name: string, visibility: 'private' | 'public') {
     setCreateError('');
     const res = await createDashboardEnvironment(name, visibility);
@@ -61,8 +87,15 @@ export default function HomePage() {
     }
     const env = await res.json();
     document.cookie = `octra_selected_env=${env.id}; path=/; max-age=31536000; SameSite=Lax`;
+    setEnvs((prev) => [env, ...prev]);
+    setSelectedEnv(env.id);
     setShowCreate(false);
-    router.push(ROUTES.DASHBOARD_ENVIRONMENTS);
+  }
+
+  function fetchEnvs() {
+    return listDashboardEnvironments().then(async (res) => {
+      if (res.ok) setEnvs(await res.json());
+    }).catch(() => {});
   }
 
   useEffect(() => {
@@ -71,9 +104,7 @@ export default function HomePage() {
 
     if (hasToken) {
       setEnvsLoading(true);
-      listDashboardEnvironments().then(async (res) => {
-        if (res.ok) setEnvs(await res.json());
-      }).catch(() => {}).finally(() => setEnvsLoading(false));
+      fetchEnvs().finally(() => setEnvsLoading(false));
     } else {
       setEnvsLoading(false);
     }
@@ -100,6 +131,12 @@ export default function HomePage() {
         }).catch(() => {});
       }
     }
+
+    function onVisibility() {
+      if (document.visibilityState === 'visible') fetchEnvs();
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
   return (
@@ -166,11 +203,11 @@ export default function HomePage() {
             </div>
             {envsLoading ? (
               <p className="empty-flows-message" style={{ color: 'var(--muted)' }}>Loading…</p>
-            ) : envs.length === 0 ? (
-              <p className="empty-flows-message">No environments yet.</p>
+            ) : activeEnvs.length === 0 ? (
+              <p className="empty-flows-message">No active environments.</p>
             ) : (
               <div className="active-envs-list">
-                {envs.map((env) => (
+                {activeEnvs.map((env) => (
                   <div
                     key={env.id}
                     className={`env-pill${selectedEnv === env.id ? ' active' : ''}`}
@@ -179,8 +216,18 @@ export default function HomePage() {
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' && selectEnv(env.id)}
                   >
-                    {env.visibility === 'private' ? <Lock size={13} /> : <LockOpen size={13} />}
-                    {env.name}
+                    <span className="env-pill-name">
+                      {env.visibility === 'private' ? <Lock size={13} /> : <LockOpen size={13} />}
+                      {env.name}
+                    </span>
+                    <span className="env-pill-actions">
+                      <IconButton variant="warning" onClick={(e) => { e.stopPropagation(); handlePause(env.id); }} aria-label="Pause">
+                        <Pause size={13} />
+                      </IconButton>
+                      <IconButton variant="danger" onClick={(e) => { e.stopPropagation(); handleDelete(env.id); }} aria-label="Delete">
+                        <Trash2 size={13} />
+                      </IconButton>
+                    </span>
                   </div>
                 ))}
               </div>

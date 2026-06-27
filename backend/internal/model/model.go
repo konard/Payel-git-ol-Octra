@@ -165,6 +165,7 @@ type DashboardEnvironment struct {
 	UserID     uuid.UUID `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
 	Name       string    `gorm:"column:name;not null" json:"name"`
 	Visibility string    `gorm:"column:visibility;default:private" json:"visibility"`
+	Active     bool      `gorm:"column:active;default:true" json:"active"`
 }
 
 // UsageMetric stores daily resource usage that drives hosting charges.

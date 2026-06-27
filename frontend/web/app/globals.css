@@ -290,6 +290,16 @@ button {
   border-color: color-mix(in srgb, var(--metric-danger) 40%, transparent);
 }
 
+.icon-button-warning:hover {
+  color: var(--metric-warning) !important;
+  border-color: color-mix(in srgb, var(--metric-warning) 40%, transparent);
+}
+
+.icon-button-success:hover {
+  color: var(--metric-success) !important;
+  border-color: color-mix(in srgb, var(--metric-success) 40%, transparent);
+}
+
 .hero-section {
   position: relative;
   z-index: 2;
@@ -2949,6 +2959,14 @@ button {
   background: rgba(255, 255, 255, 0.07);
 }
 
+.env-list-item.paused {
+  opacity: 0.5;
+}
+
+.env-list-item.paused:hover {
+  opacity: 0.8;
+}
+
 .env-list-icon {
   display: flex;
   align-items: center;
@@ -2956,9 +2974,68 @@ button {
   flex-shrink: 0;
 }
 
+.env-list-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--anim-ease-fast), color var(--anim-ease-fast);
+}
+
+.env-list-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
 .env-list-name {
   flex: 1;
   font-weight: 600;
+}
+
+.env-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.env-list-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background var(--anim-ease-fast), color var(--anim-ease-fast);
+}
+
+.env-list-btn-resume {
+  background: rgba(50, 213, 131, 0.12);
+  color: var(--metric-success);
+}
+
+.env-list-btn-resume:hover {
+  background: rgba(50, 213, 131, 0.25);
+}
+
+.env-list-btn-delete {
+  background: transparent;
+  color: var(--quiet);
+}
+
+.env-list-btn-delete:hover {
+  background: rgba(255, 91, 102, 0.15);
+  color: var(--metric-danger);
 }
 
 .env-list-date {
@@ -2973,13 +3050,19 @@ button {
   display: grid;
   gap: 6px;
   min-height: 60px;
+  max-height: 200px;
+  overflow-y: auto;
   padding: 12px 14px 14px;
+  scrollbar-width: none;
+}
+
+.active-envs-list::-webkit-scrollbar {
+  display: none;
 }
 
 .env-pill {
   display: flex;
   align-items: center;
-  gap: 8px;
   width: 100%;
   padding: 12px 14px;
   border-radius: 8px;
@@ -2998,16 +3081,62 @@ button {
 }
 
 .env-pill.active {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--text);
 }
 
-.env-pill svg {
+.env-pill-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.env-pill-name svg {
   flex-shrink: 0;
   color: var(--quiet);
 }
 
-.env-pill.active svg {
-  color: var(--muted);
+.env-pill.active .env-pill-name svg {
+  color: var(--text);
+}
+
+.env-pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.env-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--quiet);
+  cursor: pointer;
+  transition: border-color var(--anim-ease-fast), background var(--anim-ease-fast), color var(--anim-ease-fast);
+}
+
+.env-btn:hover {
+  border-color: var(--line-strong);
+}
+
+.env-btn-delete:hover {
+  color: var(--metric-danger) !important;
+  border-color: color-mix(in srgb, var(--metric-danger) 40%, transparent);
+  background: rgba(255, 91, 102, 0.12);
+}
+
+.env-btn-pause:hover {
+  color: var(--metric-warning) !important;
+  border-color: color-mix(in srgb, var(--metric-warning) 40%, transparent);
+  background: rgba(247, 201, 72, 0.12);
 }

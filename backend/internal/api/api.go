@@ -74,6 +74,8 @@ func (a *API) Router() *router.Router {
 	// Dashboard environments
 	r.POST("/api/environments", a.withAuth(a.handleCreateDashboardEnvironment))
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
+	r.PATCH("/api/environments/:id", a.withAuth(a.handlePatchDashboardEnvironment))
+	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
 	return r
 }
 
@@ -567,6 +569,7 @@ type dashboardEnvironmentResponse struct {
 	ID         string    `json:"id"`
 	Name       string    `json:"name"`
 	Visibility string    `json:"visibility"`
+	Active     bool      `json:"active"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
@@ -599,6 +602,7 @@ func (a *API) handleCreateDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 		ID:         env.ID.String(),
 		Name:       env.Name,
 		Visibility: env.Visibility,
+		Active:     true,
 		CreatedAt:  env.CreatedAt,
 	})
 }
@@ -616,10 +620,85 @@ func (a *API) handleListDashboardEnvironments(ctx *fasthttp.RequestCtx) {
 			ID:         envs[i].ID.String(),
 			Name:       envs[i].Name,
 			Visibility: envs[i].Visibility,
+			Active:     envs[i].Active,
 			CreatedAt:  envs[i].CreatedAt,
 		})
 	}
 	writeJSON(ctx, fasthttp.StatusOK, out)
+}
+
+type patchDashboardEnvironmentRequest struct {
+	Active     *bool   `json:"active"`
+	Visibility *string `json:"visibility"`
+}
+
+func (a *API) handlePatchDashboardEnvironment(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	idStr := ctx.UserValue("id").(string)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+
+	var req patchDashboardEnvironmentRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	if req.Active == nil && req.Visibility == nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "nothing to update")
+		return
+	}
+
+	target, err := a.dashboardEnvRepo.GetByID(ctx, id)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusNotFound, "environment not found")
+		return
+	}
+	if target.UserID != user.ID {
+		writeError(ctx, fasthttp.StatusForbidden, "not your environment")
+		return
+	}
+
+	if req.Active != nil {
+		target.Active = *req.Active
+	}
+	if req.Visibility != nil {
+		vis := *req.Visibility
+		if vis != "private" && vis != "public" {
+			writeError(ctx, fasthttp.StatusBadRequest, "visibility must be private or public")
+			return
+		}
+		target.Visibility = vis
+	}
+	if err := a.dashboardEnvRepo.Update(ctx, target); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, dashboardEnvironmentResponse{
+		ID:         target.ID.String(),
+		Name:       target.Name,
+		Visibility: target.Visibility,
+		Active:     target.Active,
+		CreatedAt:  target.CreatedAt,
+	})
+}
+
+func (a *API) handleDeleteDashboardEnvironment(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	idStr := ctx.UserValue("id").(string)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+	if err := a.dashboardEnvRepo.Delete(ctx, id, user.ID); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {
