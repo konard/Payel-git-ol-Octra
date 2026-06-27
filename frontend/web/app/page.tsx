@@ -154,20 +154,6 @@ export default function LandingPage() {
               <div className="flow-map">
                 <div className="flow-node gateway">POST /api/chat</div>
                 <div className="flow-node">Middleware → token check</div>
-                <div className="flow-split">
-                  <div className="model-node neutral">
-                    <span>environment</span>
-                    Nix profile
-                  </div>
-                  <div className="model-node ok">
-                    <span>CLI</span>
-                    claude code
-                  </div>
-                  <div className="model-node caution">
-                    <span>Redis</span>
-                    cli_state
-                  </div>
-                </div>
               </div>
             </div>
           </div>
