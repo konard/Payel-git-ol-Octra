@@ -44,7 +44,16 @@ func (l ExecLauncher) Launch(ctx context.Context, spec LaunchSpec) (Process, err
 		cmd = exec.Command(args[0], args[1:]...)
 	}
 	cmd.Dir = spec.EnvPath
-	cmd.Env = append(os.Environ(), llmEnv(spec.LLM)...)
+
+	homeDir := filepath.Join(spec.EnvPath, "home")
+	os.MkdirAll(filepath.Join(homeDir, ".config"), 0o755)
+	os.MkdirAll(filepath.Join(homeDir, ".local", "share"), 0o755)
+	cmd.Env = append(os.Environ(), []string{
+		"HOME=" + homeDir,
+		"XDG_CONFIG_HOME=" + filepath.Join(homeDir, ".config"),
+		"XDG_DATA_HOME=" + filepath.Join(homeDir, ".local", "share"),
+	}...)
+	cmd.Env = append(cmd.Env, llmEnv(spec.LLM)...)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

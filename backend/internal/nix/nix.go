@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"backend/internal/cli"
 	"backend/internal/model"
 )
 
@@ -40,10 +41,25 @@ func (ExecRunner) Run(ctx context.Context, workDir, command string) ([]byte, err
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 	cmd.Dir = workDir
+
+	homeDir := filepath.Join(workDir, "home")
+	os.MkdirAll(filepath.Join(homeDir, ".config"), 0o755)
+	os.MkdirAll(filepath.Join(homeDir, ".local", "share"), 0o755)
+	cmd.Env = append(os.Environ(),
+		"HOME="+homeDir,
+		"XDG_CONFIG_HOME="+filepath.Join(homeDir, ".config"),
+		"XDG_DATA_HOME="+filepath.Join(homeDir, ".local", "share"),
+	)
+
 	return cmd.CombinedOutput()
 }
 
 func nixAvailable() bool {
+	return Available()
+}
+
+// Available reports whether the Nix toolchain is present on $PATH.
+func Available() bool {
 	_, err := exec.LookPath("nix")
 	return err == nil
 }
@@ -124,20 +140,38 @@ func skillInstallCommand(skill model.Skill) string {
 }
 
 // cliPackage maps a CLI identifier to its nixpkgs attribute.
-func cliPackage(cli model.CLIType) string {
-	switch cli {
-	case "claude-code":
-		return "claude-code"
-	case "opencode":
-		return "opencode"
-	case "codex":
-		return "codex"
-	default:
-		// Allow arbitrary CLIs as long as the name is a plausible attribute.
-		s := string(cli)
-		if s != "" && !strings.ContainsAny(s, " \t\n;|&$`") {
-			return s
-		}
-		return ""
+func cliPackage(ct model.CLIType) string {
+	if attr := cli.NixpkgsAttr(string(ct)); attr != "" {
+		return attr
 	}
+	// Allow arbitrary CLIs as long as the name is a plausible attribute.
+	s := string(ct)
+	if s != "" && !strings.ContainsAny(s, " \t\n;|&$`") {
+		return s
+	}
+	return ""
+}
+
+// ProvisionSystem installs every built-in CLI into the default Nix user profile
+// so they are available globally (no per-environment install needed).
+func (m *Manager) ProvisionSystem(ctx context.Context) error {
+	workDir, err := os.MkdirTemp("", "octra-provision-*")
+	if err != nil {
+		return fmt.Errorf("provision workdir: %w", err)
+	}
+	defer os.RemoveAll(workDir)
+
+	for _, pkg := range cli.BuiltinCLIs() {
+		cmd := pkg.InstallCmd
+		if attr := pkg.NixAttr; attr != "" {
+			cmd = fmt.Sprintf("nix profile install nixpkgs#%s || true", attr)
+		}
+		if cmd == "" {
+			continue
+		}
+		if out, err := m.runner.Run(ctx, workDir, cmd); err != nil {
+			return fmt.Errorf("provision %s: %w\n%s", pkg.Name, err, string(out))
+		}
+	}
+	return nil
 }

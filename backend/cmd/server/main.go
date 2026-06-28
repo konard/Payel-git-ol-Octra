@@ -11,6 +11,7 @@ import (
 	"backend/internal/api"
 	"backend/internal/cli"
 	"backend/internal/config"
+	"backend/internal/model"
 	"backend/internal/llm"
 	"backend/internal/nix"
 	"backend/internal/oauth"
@@ -21,6 +22,42 @@ import (
 
 	"github.com/valyala/fasthttp"
 )
+
+func seedCLIs(ctx context.Context, cliRepo repository.CLIRepository, tsClient *ts.Client) {
+	builtins := cli.BuiltinCLIs()
+	for _, p := range builtins {
+		record := &model.CLI{
+			Name:       p.Name,
+			NixAttr:    p.NixAttr,
+			InstallCmd: p.InstallCmd,
+		}
+		if err := cliRepo.Upsert(ctx, record); err != nil {
+			log.Printf("seed cli %s: %v", p.Name, err)
+		}
+	}
+	if tsClient == nil {
+		return
+	}
+	all, err := cliRepo.List(ctx)
+	if err != nil {
+		log.Printf("seed cli list: %v", err)
+		return
+	}
+	docs := make([]ts.CLIDocument, len(all))
+	for i, cli := range all {
+		docs[i] = ts.CLIDocument{
+			ID:         cli.ID.String(),
+			Name:       cli.Name,
+			NixAttr:    cli.NixAttr,
+			InstallCmd: cli.InstallCmd,
+		}
+	}
+	if err := tsClient.IndexCLIs(ctx, docs); err != nil {
+		log.Printf("seed cli index: %v", err)
+	} else {
+		log.Printf("seeded %d CLIs into Typesense", len(docs))
+	}
+}
 
 func loggingMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
@@ -53,8 +90,20 @@ func main() {
 	usageMetrics := repository.NewUsageMetricsRepository(db)
 	apiKeys := repository.NewAPIKeyRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
+	clis := repository.NewCLIRepository(db)
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
+
+	// Provision all built-in CLIs into the system Nix profile so they are
+	// available to every user environment without per-user installation.
+	if nix.Available() {
+		if err := nixMgr.ProvisionSystem(ctx); err != nil {
+			log.Printf("nix provision (non-fatal): %v", err)
+		} else {
+			log.Println("built-in CLIs provisioned into system profile")
+		}
+	}
+
 	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
 	defer cliMgr.Shutdown()
 	llmClient := llm.New(nil)
@@ -71,6 +120,8 @@ func main() {
 		if err := tsClient.EnsureCollection(ctx); err != nil {
 			log.Printf("typesense: %v (search will be unavailable)", err)
 			tsClient = nil
+		} else if err := tsClient.EnsureCLICollection(ctx); err != nil {
+			log.Printf("typesense cli: %v", err)
 		}
 	}
 
@@ -79,7 +130,10 @@ func main() {
 		syncSvc.Start(ctx)
 	}
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, tsClient).Router().Handler)
+	// Seed CLI catalogue from registry into DB + Typesense.
+	seedCLIs(ctx, clis, tsClient)
+
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, clis, tsClient).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

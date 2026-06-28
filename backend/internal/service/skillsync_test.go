@@ -23,6 +23,7 @@ func (m *mockTSClient) IndexSkills(ctx context.Context, docs []ts.SkillDocument)
 	m.indexed = append(m.indexed, docs...)
 	return nil
 }
+func (m *mockTSClient) IndexCLIs(ctx context.Context, docs []ts.CLIDocument) error { return nil }
 func (m *mockTSClient) SearchSkills(ctx context.Context, query string, limit int) (*interface{}, error) {
 	return nil, nil
 }

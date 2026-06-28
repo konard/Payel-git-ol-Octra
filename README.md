@@ -120,6 +120,14 @@ request → validate token → load user + agent
   elapses.
 - Default transport is an stdin/stdout pipe (fast, native for AI CLIs).
 
+### Session isolation
+
+Each user environment gets its own virtual `$HOME`, `$XDG_CONFIG_HOME`, and
+`$XDG_DATA_HOME` pointing to `environments/<userID>/home/`. This keeps
+CLI authentication tokens, chat history, and configuration strictly
+per-user — no cross-user data leaks even though all environments share
+the same system-level packages and Nix store.
+
 ### Skills
 
 Skills are ready-made packages from nixpkgs or custom configurations. Users pick

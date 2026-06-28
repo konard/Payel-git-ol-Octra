@@ -30,11 +30,12 @@ type API struct {
 	billing    *service.BillingService
 	oauthH     *oauth.Handler
 	dashboardEnvRepo repository.DashboardEnvironmentRepository
+	cliRepo          repository.CLIRepository
 	typesense        *ts.Client
 }
 
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository, typesense *ts.Client) *API {
-	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo, typesense: typesense}
+func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository, cliRepo repository.CLIRepository, typesense *ts.Client) *API {
+	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo, cliRepo: cliRepo, typesense: typesense}
 }
 
 func (a *API) Router() *router.Router {
@@ -81,6 +82,10 @@ func (a *API) Router() *router.Router {
 
 	// Skills search
 	r.GET("/skills/search", a.handleSkillSearch)
+
+	// CLI catalogue
+	r.GET("/api/cli", a.handleListCLIs)
+	r.GET("/api/cli/search", a.handleCLISearch)
 	return r
 }
 
@@ -839,6 +844,83 @@ func (a *API) handleSkillSearch(ctx *fasthttp.RequestCtx) {
 		Skills: hits,
 		Count:  len(hits),
 	})
+}
+
+type cliResponse struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	NixAttr    string `json:"nix_attr"`
+	InstallCmd string `json:"install_cmd,omitempty"`
+}
+
+func (a *API) handleListCLIs(ctx *fasthttp.RequestCtx) {
+	list, err := a.cliRepo.List(ctx)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	out := make([]cliResponse, 0, len(list))
+	for _, c := range list {
+		out = append(out, cliResponse{
+			ID:         c.ID.String(),
+			Name:       c.Name,
+			NixAttr:    c.NixAttr,
+			InstallCmd: c.InstallCmd,
+		})
+	}
+	writeJSON(ctx, fasthttp.StatusOK, out)
+}
+
+type cliSearchResult struct {
+	Query string        `json:"query"`
+	CLIs  []cliResponse `json:"clis"`
+	Count int           `json:"count"`
+}
+
+func (a *API) handleCLISearch(ctx *fasthttp.RequestCtx) {
+	if a.typesense == nil {
+		writeError(ctx, fasthttp.StatusServiceUnavailable, "search not available")
+		return
+	}
+	q := string(ctx.QueryArgs().Peek("q"))
+	if q == "" {
+		list, err := a.cliRepo.List(ctx)
+		if err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		out := make([]cliResponse, 0, len(list))
+		for _, c := range list {
+			out = append(out, cliResponse{
+				ID:         c.ID.String(),
+				Name:       c.Name,
+				NixAttr:    c.NixAttr,
+				InstallCmd: c.InstallCmd,
+			})
+		}
+		writeJSON(ctx, fasthttp.StatusOK, cliSearchResult{Query: q, CLIs: out, Count: len(out)})
+		return
+	}
+	limit := queryInt(ctx, "limit", 20)
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	result, err := a.typesense.SearchCLIs(ctx, q, limit)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, "search failed")
+		return
+	}
+	hits := make([]cliResponse, 0, len(*result.Hits))
+	for _, hit := range *result.Hits {
+		doc := *hit.Document
+		hits = append(hits, cliResponse{
+			ID:         getStrField(doc, "id"),
+			Name:       getStrField(doc, "name"),
+			NixAttr:    getStrField(doc, "nix_attr"),
+			InstallCmd: getStrField(doc, "install_cmd"),
+		})
+	}
+	writeJSON(ctx, fasthttp.StatusOK, cliSearchResult{Query: q, CLIs: hits, Count: len(hits)})
 }
 
 func getStrField(m map[string]interface{}, key string) string {

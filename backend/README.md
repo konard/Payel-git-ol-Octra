@@ -113,6 +113,16 @@ request → validate token → load user + agent
   → return response
 ```
 
+## Session isolation
+
+Every subprocess (both CLI execution and skill provisioning) runs with
+`$HOME`, `$XDG_CONFIG_HOME`, and `$XDG_DATA_HOME` overridden to
+`environments/<userID>/home/`. This ensures:
+
+- Authentication tokens, chat history, and config files stay per-user.
+- Shared system-level packages (Nix store) — no redundant installs.
+- Deleting an environment removes all user session data.
+
 ## Development
 
 ```bash

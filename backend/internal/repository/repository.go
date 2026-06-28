@@ -72,6 +72,13 @@ type DashboardEnvironmentRepository interface {
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
 
+// CLIRepository persists the CLI catalogue.
+type CLIRepository interface {
+	Upsert(ctx context.Context, c *model.CLI) error
+	List(ctx context.Context) ([]model.CLI, error)
+	GetByName(ctx context.Context, name string) (*model.CLI, error)
+}
+
 // UsageMetricsRepository persists resource usage snapshots.
 type UsageMetricsRepository interface {
 	Create(ctx context.Context, metric *model.UsageMetric) error
@@ -218,6 +225,36 @@ func (r *transactionRepo) ListByUserID(ctx context.Context, userID uuid.UUID, li
 		Offset(offset).
 		Find(&list).Error
 	return list, err
+}
+
+type cliRepo struct{ db *gorm.DB }
+
+// NewCLIRepository returns a GORM-backed CLIRepository.
+func NewCLIRepository(db *gorm.DB) CLIRepository { return &cliRepo{db: db} }
+
+func (r *cliRepo) Upsert(ctx context.Context, c *model.CLI) error {
+	existing, err := r.GetByName(ctx, c.Name)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if existing != nil {
+		c.ID = existing.ID
+		c.CreatedAt = existing.CreatedAt
+		return r.db.WithContext(ctx).Save(c).Error
+	}
+	return r.db.WithContext(ctx).Create(c).Error
+}
+
+func (r *cliRepo) List(ctx context.Context) ([]model.CLI, error) {
+	var list []model.CLI
+	err := r.db.WithContext(ctx).Order("name asc").Find(&list).Error
+	return list, err
+}
+
+func (r *cliRepo) GetByName(ctx context.Context, name string) (*model.CLI, error) {
+	var c model.CLI
+	err := r.db.WithContext(ctx).Where("name = ?", name).First(&c).Error
+	return firstResult(&c, err)
 }
 
 type usageMetricsRepo struct{ db *gorm.DB }

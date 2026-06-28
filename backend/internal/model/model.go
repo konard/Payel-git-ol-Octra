@@ -118,6 +118,16 @@ type Skill struct {
 	Source string `gorm:"column:source" json:"source"`
 }
 
+// CLI is a known AI CLI that Octra can provision and launch.
+type CLI struct {
+	ID         uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Name       string    `gorm:"uniqueIndex" json:"name"`
+	NixAttr    string    `gorm:"column:nix_attr" json:"nix_attr"`
+	InstallCmd string   `gorm:"column:install_cmd" json:"install_cmd,omitempty"`
+}
+
 // UserSkill links a skill to a user's agent and records its install status.
 type UserSkill struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
@@ -186,7 +196,7 @@ type UsageMetric struct {
 
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -218,6 +228,7 @@ func (m *UserSkill) BeforeCreate(*gorm.DB) error   { return ensureID(&m.ID) }
 func (m *Transaction) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *UserAPIKey) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *DashboardEnvironment) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *CLI) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 func (m *UsageMetric) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
 
 // ApplyBillingDefaults fills missing billing preference fields.
