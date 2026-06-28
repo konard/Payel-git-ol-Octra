@@ -2301,6 +2301,10 @@ button {
   gap: 8px;
 }
 
+.active-environments .active-environment-row .environment-actions {
+  grid-column: 5;
+}
+
 .environment-icon-button,
 .environment-manage-link {
   display: inline-flex;
