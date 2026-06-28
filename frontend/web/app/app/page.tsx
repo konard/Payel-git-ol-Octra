@@ -22,6 +22,7 @@ import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
+import { IconButton } from '../components/IconButton';
 import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
@@ -219,12 +220,12 @@ export default function HomePage() {
                       <strong>{env.id}</strong>
                     </div>
                     <div className="environment-actions">
-                      <button type="button" className="environment-icon-button" onClick={() => handlePause(env.id)} aria-label={`Pause ${env.name}`} title="Pause environment">
+                      <IconButton variant="warning" onClick={() => handlePause(env.id)} aria-label={`Pause ${env.name}`}>
                         <Pause size={15} />
-                      </button>
-                      <button type="button" className="environment-icon-button" onClick={() => handleDelete(env.id)} aria-label={`Delete ${env.name}`} title="Delete environment">
+                      </IconButton>
+                      <IconButton variant="danger" onClick={() => handleDelete(env.id)} aria-label={`Delete ${env.name}`}>
                         <Trash2 size={15} />
-                      </button>
+                      </IconButton>
                     </div>
                   </article>
                 ))}
