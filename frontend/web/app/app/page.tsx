@@ -51,11 +51,20 @@ export default function HomePage() {
   const [selectedEnv, setSelectedEnv] = useState(() => getCookie('octra_selected_env'));
   const [searchOpen, setSearchOpen] = useState(false);
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
+  const canvasItemsRef = useRef(canvasItems);
+  canvasItemsRef.current = canvasItems;
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const selectedEnvRef = useRef(selectedEnv);
   selectedEnvRef.current = selectedEnv;
 
   function selectEnv(id: string) {
+    if (id === selectedEnvRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const prevItems = canvasItemsRef.current;
+    const prevId = selectedEnvRef.current;
+    if (prevId && prevItems.length > 0) {
+      saveCanvas(prevId, prevItems).catch((err) => console.error('save before switch failed', err));
+    }
     setSelectedEnv(id);
     document.cookie = `octra_selected_env=${id}; path=/; max-age=31536000; SameSite=Lax`;
   }
@@ -204,12 +213,10 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (!selectedEnv) {
       setCanvasItems([]);
       return;
     }
-    setCanvasItems([]);
     getCanvas(selectedEnv).then(async (res) => {
       if (!res.ok) {
         console.error('load canvas failed', res.status, await res.text().catch(() => ''));
