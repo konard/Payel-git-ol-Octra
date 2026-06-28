@@ -22,6 +22,14 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+func loggingMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		start := time.Now()
+		next(ctx)
+		log.Printf("%s %s %d %s", ctx.Method(), ctx.Path(), ctx.Response.StatusCode(), time.Since(start))
+	}
+}
+
 func main() {
 	cfg := config.Load()
 	ctx := context.Background()
@@ -71,7 +79,7 @@ func main() {
 		syncSvc.Start(ctx)
 	}
 
-	handler := api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, tsClient).Router().Handler
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, tsClient).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {
