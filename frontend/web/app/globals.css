@@ -1941,8 +1941,6 @@ button {
 .catalog-tabs {
   display: flex;
   gap: 8px;
-  min-width: 0;
-  overflow-x: auto;
   padding: 0 14px;
 }
 
@@ -2011,7 +2009,11 @@ button {
   gap: 8px;
   min-height: 260px;
   overflow-y: auto;
+  scrollbar-width: none;
   padding: 2px 14px 14px;
+}
+.catalog-results::-webkit-scrollbar {
+  display: none;
 }
 
 .catalog-result {

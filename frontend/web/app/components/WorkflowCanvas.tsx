@@ -2,6 +2,7 @@
 
 import {
   Background,
+  ConnectionLineType,
   Controls,
   Handle,
   MiniMap,
@@ -25,6 +26,8 @@ export type WorkflowCanvasItem = {
   detail?: string;
   description?: string;
   meta?: Record<string, string | undefined>;
+  positionX?: number;
+  positionY?: number;
 };
 
 type WorkflowNodeData = {
@@ -35,6 +38,7 @@ type WorkflowNode = Node<WorkflowNodeData, 'octra'>;
 
 type WorkflowCanvasProps = {
   items?: WorkflowCanvasItem[];
+  onItemsChange?: (items: WorkflowCanvasItem[]) => void;
 };
 
 const nodeTypes = {
@@ -49,16 +53,35 @@ const iconByKind = {
   environment: Layers3,
 } as const;
 
-export function WorkflowCanvas({ items = [] }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProps) {
   const initialNodes = useMemo(() => buildNodes(items), [items]);
-  const initialEdges = useMemo(() => buildEdges(items), [items]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     setNodes(buildNodes(items));
-    setEdges(buildEdges(items));
+    setEdges([]);
   }, [items, setEdges, setNodes]);
+
+  const handleNodesChange = useCallback(
+    (changes: any) => {
+      onNodesChange(changes);
+      if (!onItemsChange) return;
+      const positionChanges = changes.filter((c: any) => c.type === 'position' && c.dragging === false);
+      if (positionChanges.length === 0) return;
+      const updated = items.map((item) => {
+        const posChange = positionChanges.find((c: any) => c.id === item.id);
+        if (!posChange) return item;
+        return {
+          ...item,
+          positionX: posChange.position?.x ?? item.positionX,
+          positionY: posChange.position?.y ?? item.positionY,
+        };
+      });
+      onItemsChange(updated);
+    },
+    [items, onItemsChange, onNodesChange],
+  );
 
   const onConnect = useCallback(
     (connection: Connection) => setEdges((current) => addEdge({ ...connection, animated: true, type: 'smoothstep' }, current)),
@@ -66,14 +89,15 @@ export function WorkflowCanvas({ items = [] }: WorkflowCanvasProps) {
   );
 
   return (
-    <ReactFlow
+      <ReactFlow
       className="octra-flow"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
+      onNodesChange={handleNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      connectionLineType={ConnectionLineType.SmoothStep}
       fitView
       fitViewOptions={{ padding: 0.16 }}
       minZoom={0.45}
@@ -100,24 +124,11 @@ function buildNodes(items: WorkflowCanvasItem[]): WorkflowNode[] {
     id: item.id,
     type: 'octra',
     position: {
-      x: 80 + (index % 4) * 280,
-      y: 86 + Math.floor(index / 4) * 220,
+      x: item.positionX ?? 80 + (index % 4) * 280,
+      y: item.positionY ?? 86 + Math.floor(index / 4) * 220,
     },
     data: { item },
   }));
-}
-
-function buildEdges(items: WorkflowCanvasItem[]): Edge[] {
-  return items.slice(1).map((item, index) => {
-    const source = items[index];
-    return {
-      id: `edge-${source.id}-${item.id}`,
-      source: source.id,
-      target: item.id,
-      type: 'smoothstep',
-      animated: true,
-    };
-  });
 }
 
 function WorkflowNodeCard({ data }: NodeProps<WorkflowNode>) {

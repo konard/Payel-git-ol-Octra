@@ -31,6 +31,7 @@ type API struct {
 	oauthH  *oauth.Handler
 
 	dashboardEnvRepo repository.DashboardEnvironmentRepository
+	canvasNodeRepo   repository.CanvasNodeRepository
 	skillsRepo       repository.SkillRepository
 	cliRepo          repository.CLIRepository
 	providerRepo     repository.ProviderRepository
@@ -44,6 +45,7 @@ func New(
 	billing *service.BillingService,
 	oauthH *oauth.Handler,
 	dashboardEnvRepo repository.DashboardEnvironmentRepository,
+	canvasNodeRepo repository.CanvasNodeRepository,
 	skillsRepo repository.SkillRepository,
 	cliRepo repository.CLIRepository,
 	providerRepo repository.ProviderRepository,
@@ -56,6 +58,7 @@ func New(
 		billing:          billing,
 		oauthH:           oauthH,
 		dashboardEnvRepo: dashboardEnvRepo,
+		canvasNodeRepo:   canvasNodeRepo,
 		skillsRepo:       skillsRepo,
 		cliRepo:          cliRepo,
 		providerRepo:     providerRepo,
@@ -104,6 +107,10 @@ func (a *API) Router() *router.Router {
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
 	r.POST("/api/environments/patch", a.withAuth(a.handlePatchDashboardEnvironment))
 	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
+
+	// Workflow canvas per environment
+	r.GET("/api/environments/:id/canvas", a.withAuth(a.handleGetCanvas))
+	r.PUT("/api/environments/:id/canvas", a.withAuth(a.handlePutCanvas))
 
 	// Skills search
 	r.GET("/skills/search", a.handleSkillSearch)
@@ -748,6 +755,138 @@ func (a *API) handleDeleteDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "deleted"})
+}
+
+type canvasNodeRequest struct {
+	ItemID    string             `json:"item_id"`
+	Kind      string             `json:"kind"`
+	Name      string             `json:"name"`
+	Detail    string             `json:"detail"`
+	DetailSet bool               `json:"-"`
+	Desc      string             `json:"description"`
+	DescSet   bool               `json:"-"`
+	Meta      map[string]*string `json:"meta"`
+	PositionX float64            `json:"position_x"`
+	PositionY float64            `json:"position_y"`
+	SortOrder int                `json:"sort_order"`
+}
+
+type putCanvasRequest struct {
+	Nodes []canvasNodeRequest `json:"nodes"`
+}
+
+type canvasNodeResponse struct {
+	ID          string             `json:"id"`
+	ItemID      string             `json:"item_id"`
+	Kind        string             `json:"kind"`
+	Name        string             `json:"name"`
+	Detail      string             `json:"detail,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Meta        map[string]*string `json:"meta,omitempty"`
+	PositionX   float64            `json:"position_x"`
+	PositionY   float64            `json:"position_y"`
+	SortOrder   int                `json:"sort_order"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+func (a *API) handleGetCanvas(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	envID, err := uuid.Parse(ctx.UserValue("id").(string))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+	env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusNotFound, "environment not found")
+		return
+	}
+	if env.UserID != user.ID {
+		writeError(ctx, fasthttp.StatusForbidden, "not your environment")
+		return
+	}
+
+	nodes, err := a.canvasNodeRepo.ListByEnvironment(ctx, envID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	out := make([]canvasNodeResponse, len(nodes))
+	for i, n := range nodes {
+		var meta map[string]*string
+		if n.Meta != "" {
+			json.Unmarshal([]byte(n.Meta), &meta)
+		}
+		out[i] = canvasNodeResponse{
+			ID:          n.ID.String(),
+			ItemID:      n.ItemID,
+			Kind:        n.Kind,
+			Name:        n.Name,
+			Detail:      n.Detail,
+			Description: n.Description,
+			Meta:        meta,
+			PositionX:   n.PositionX,
+			PositionY:   n.PositionY,
+			SortOrder:   n.SortOrder,
+			CreatedAt:   n.CreatedAt,
+			UpdatedAt:   n.UpdatedAt,
+		}
+	}
+	writeJSON(ctx, fasthttp.StatusOK, out)
+}
+
+func (a *API) handlePutCanvas(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	envID, err := uuid.Parse(ctx.UserValue("id").(string))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+	env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusNotFound, "environment not found")
+		return
+	}
+	if env.UserID != user.ID {
+		writeError(ctx, fasthttp.StatusForbidden, "not your environment")
+		return
+	}
+
+	var req putCanvasRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	nodes := make([]model.CanvasNode, len(req.Nodes))
+	for i, n := range req.Nodes {
+		var metaBytes []byte
+		if n.Meta != nil {
+			metaBytes, _ = json.Marshal(n.Meta)
+		}
+		nodes[i] = model.CanvasNode{
+			EnvironmentID: envID,
+			UserID:        user.ID,
+			ItemID:        n.ItemID,
+			Kind:          n.Kind,
+			Name:          n.Name,
+			Detail:        n.Detail,
+			Description:   n.Desc,
+			Meta:          string(metaBytes),
+			PositionX:     n.PositionX,
+			PositionY:     n.PositionY,
+			SortOrder:     n.SortOrder,
+		}
+	}
+
+	if err := a.canvasNodeRepo.Replace(ctx, envID, nodes); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "saved"})
 }
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {

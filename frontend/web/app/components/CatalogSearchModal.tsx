@@ -5,19 +5,16 @@ import {
   Braces,
   Cpu,
   Globe2,
-  Layers3,
   Plus,
   Search,
   Server,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { searchCatalog, type CatalogCategory, type CatalogItem } from '../server/catalog';
-import type { DashboardEnvironment } from '../server/environments';
 
 type CatalogSearchModalProps = {
   open: boolean;
-  environments: DashboardEnvironment[];
   onClose: () => void;
   onSelect: (item: CatalogItem) => void;
 };
@@ -35,19 +32,14 @@ const iconByType = {
   cli: Cpu,
   skill: Box,
   custom_provider: Braces,
-  environment: Layers3,
 } as const;
 
-export function CatalogSearchModal({ open, environments, onClose, onSelect }: CatalogSearchModalProps) {
+export function CatalogSearchModal({ open, onClose, onSelect }: CatalogSearchModalProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CatalogCategory>('all');
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [customName, setCustomName] = useState('Custom provider');
-  const [customBaseURL, setCustomBaseURL] = useState('');
-  const [customModel, setCustomModel] = useState('');
-  const [customAPIKey, setCustomAPIKey] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -82,37 +74,7 @@ export function CatalogSearchModal({ open, environments, onClose, onSelect }: Ca
     };
   }, [open, query, category]);
 
-  const environmentItems = useMemo<CatalogItem[]>(() => {
-    if (category !== 'all') return [];
-    const needle = query.trim().toLowerCase();
-    return environments
-      .filter((env) => !needle || env.name.toLowerCase().includes(needle) || env.id.toLowerCase().includes(needle))
-      .slice(0, 6)
-      .map((env) => ({
-        id: env.id,
-        type: 'environment',
-        name: env.name,
-        subtitle: env.visibility,
-        description: env.id,
-      }));
-  }, [category, environments, query]);
-
-  const visibleItems = [...environmentItems, ...items];
-  const showCustomForm = category === 'custom' || category === 'providers' || category === 'all';
-
-  function addCustomProvider() {
-    onSelect({
-      id: `custom-${Date.now()}`,
-      type: 'custom_provider',
-      name: customName.trim() || 'Custom provider',
-      subtitle: customBaseURL.trim() || 'OpenAI-compatible endpoint',
-      description: customAPIKey ? 'API key set' : 'No API key',
-      base_url: customBaseURL.trim(),
-      default_model: customModel.trim(),
-      auth_env: 'CUSTOM_API_KEY',
-      api_key: customAPIKey,
-    });
-  }
+  const visibleItems = items;
 
   if (!open) return null;
 
@@ -151,26 +113,6 @@ export function CatalogSearchModal({ open, environments, onClose, onSelect }: Ca
             </button>
           ))}
         </div>
-
-        {showCustomForm ? (
-          <section className="catalog-custom-provider" aria-label="Custom provider">
-            <div className="catalog-custom-grid">
-              <input value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder="Provider name" />
-              <input value={customBaseURL} onChange={(event) => setCustomBaseURL(event.target.value)} placeholder="Base URL" />
-              <input value={customModel} onChange={(event) => setCustomModel(event.target.value)} placeholder="Model" />
-              <input
-                value={customAPIKey}
-                onChange={(event) => setCustomAPIKey(event.target.value)}
-                placeholder="API key"
-                type="password"
-              />
-            </div>
-            <button type="button" className="catalog-add-custom" onClick={addCustomProvider}>
-              <Plus size={16} />
-              Add custom
-            </button>
-          </section>
-        ) : null}
 
         <div className="catalog-results" aria-live="polite">
           {loading ? <p className="catalog-state">Searching...</p> : null}

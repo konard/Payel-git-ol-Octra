@@ -4,7 +4,7 @@ export type CatalogCategory = 'all' | 'providers' | 'cli' | 'skills' | 'custom';
 
 export type CatalogItem = {
   id: string;
-  type: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'environment';
+  type: 'provider' | 'cli' | 'skill' | 'custom_provider';
   name: string;
   subtitle?: string;
   description?: string;

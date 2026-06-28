@@ -15,7 +15,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
@@ -24,7 +24,7 @@ import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowC
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { IconButton } from '../components/IconButton';
 import { CatalogSearchModal } from '../components/CatalogSearchModal';
-import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
+import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, getCanvas, putCanvas, type DashboardEnvironment, type CanvasNodeRequest } from '../server/environments';
 import type { CatalogItem } from '../server/catalog';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
@@ -51,11 +51,37 @@ export default function HomePage() {
   const [selectedEnv, setSelectedEnv] = useState(() => getCookie('octra_selected_env'));
   const [searchOpen, setSearchOpen] = useState(false);
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   function selectEnv(id: string) {
     setSelectedEnv(id);
     document.cookie = `octra_selected_env=${id}; path=/; max-age=31536000; SameSite=Lax`;
   }
+
+  const saveCanvas = useCallback(async (envId: string, items: WorkflowCanvasItem[]) => {
+    if (!envId) return;
+    const nodes: CanvasNodeRequest[] = items.map((item, i) => ({
+      item_id: item.id,
+      kind: item.kind,
+      name: item.name,
+      detail: item.detail,
+      description: item.description,
+      meta: item.meta as Record<string, string | null>,
+      position_x: item.positionX ?? 0,
+      position_y: item.positionY ?? 0,
+      sort_order: i,
+    }));
+    await putCanvas(envId, nodes);
+  }, []);
+
+  const handleCanvasItemsChange = useCallback((items: WorkflowCanvasItem[]) => {
+    setCanvasItems(items);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const envId = getCookie('octra_selected_env');
+      if (envId) saveCanvas(envId, items);
+    }, 500);
+  }, [saveCanvas]);
 
   async function handlePause(id: string) {
     const res = await patchDashboardEnvironment(id, { active: false });
@@ -97,24 +123,32 @@ export default function HomePage() {
   }
 
   function handleCatalogSelect(item: CatalogItem) {
-    setCanvasItems((prev) => [
-      ...prev,
-      {
-        id: `${item.type}-${item.id}-${Date.now()}`,
-        kind: item.type,
-        name: item.name,
-        detail: item.subtitle || item.description,
-        description: item.description,
-        meta: {
-          provider: item.key,
-          base_url: item.base_url,
-          model: item.default_model,
-          cli: item.nix_attr || item.install_cmd,
-          skill: item.skill_id || item.source,
-          auth: item.api_key ? 'set' : item.auth_env,
+    setCanvasItems((prev) => {
+      const next = [
+        ...prev,
+        {
+          id: `${item.type}-${item.id}-${Date.now()}`,
+          kind: item.type,
+          name: item.name,
+          detail: item.subtitle || item.description,
+          description: item.description,
+          meta: {
+            provider: item.key,
+            base_url: item.base_url,
+            model: item.default_model,
+            cli: item.nix_attr || item.install_cmd,
+            skill: item.skill_id || item.source,
+            auth: item.api_key ? 'set' : item.auth_env,
+          },
         },
-      },
-    ]);
+      ];
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        const envId = getCookie('octra_selected_env');
+        if (envId) saveCanvas(envId, next);
+      }, 500);
+      return next;
+    });
   }
 
   function fetchEnvs() {
@@ -164,6 +198,29 @@ export default function HomePage() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
+  useEffect(() => {
+    if (!selectedEnv) {
+      setCanvasItems([]);
+      return;
+    }
+    getCanvas(selectedEnv).then(async (res) => {
+      if (!res.ok) return;
+      const nodes = await res.json();
+      setCanvasItems(
+        nodes.map((n: any) => ({
+          id: n.item_id,
+          kind: n.kind,
+          name: n.name,
+          detail: n.detail,
+          description: n.description,
+          meta: n.meta ?? undefined,
+          positionX: n.position_x,
+          positionY: n.position_y,
+        })),
+      );
+    }).catch(() => {});
+  }, [selectedEnv]);
+
   return (
     <main className="site-shell workspace-home">
       <header className="tv-header">
@@ -212,7 +269,7 @@ export default function HomePage() {
           </h1>
 
           <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
-            <WorkflowCanvas items={canvasItems} />
+            <WorkflowCanvas items={canvasItems} onItemsChange={handleCanvasItemsChange} />
           </section>
 
           <section className="active-environments" aria-label="Active environments list">
@@ -358,7 +415,6 @@ export default function HomePage() {
 
       <CatalogSearchModal
         open={searchOpen}
-        environments={activeEnvs}
         onClose={() => setSearchOpen(false)}
         onSelect={handleCatalogSelect}
       />

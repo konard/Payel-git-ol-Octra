@@ -39,3 +39,42 @@ export async function deleteDashboardEnvironment(id: string): Promise<Response> 
     headers: authHeaders(),
   });
 }
+
+export type CanvasNodeRequest = {
+  item_id: string;
+  kind: string;
+  name: string;
+  detail?: string;
+  description?: string;
+  meta?: Record<string, string | null>;
+  position_x: number;
+  position_y: number;
+  sort_order: number;
+};
+
+export type CanvasNodeResponse = {
+  id: string;
+  item_id: string;
+  kind: string;
+  name: string;
+  detail?: string;
+  description?: string;
+  meta?: Record<string, string | null>;
+  position_x: number;
+  position_y: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getCanvas(envId: string): Promise<Response> {
+  return fetch(`${API.ENVIRONMENTS}/${envId}/canvas`, { headers: authHeaders(), cache: 'no-cache' });
+}
+
+export async function putCanvas(envId: string, nodes: CanvasNodeRequest[]): Promise<Response> {
+  return fetch(`${API.ENVIRONMENTS}/${envId}/canvas`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ nodes }),
+  });
+}

@@ -209,9 +209,28 @@ type UsageMetric struct {
 	LoadPercent   int       `gorm:"column:load_percent;not null" json:"load_percent"`
 }
 
+// CanvasNode stores a single node on the workflow canvas linked to a dashboard
+// environment. The entire set of nodes for an environment is replaced atomically.
+type CanvasNode struct {
+	ID            uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	EnvironmentID uuid.UUID `gorm:"column:environment_id;type:uuid;index;not null" json:"environment_id"`
+	UserID        uuid.UUID `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	ItemID        string    `gorm:"column:item_id;not null" json:"item_id"`
+	Kind          string    `gorm:"column:kind;not null" json:"kind"`
+	Name          string    `gorm:"column:name;not null" json:"name"`
+	Detail        string    `gorm:"column:detail" json:"detail,omitempty"`
+	Description   string    `gorm:"column:description" json:"description,omitempty"`
+	Meta          string    `gorm:"column:meta;type:jsonb" json:"meta,omitempty"`
+	PositionX     float64   `gorm:"column:position_x" json:"position_x"`
+	PositionY     float64   `gorm:"column:position_y" json:"position_y"`
+	SortOrder     int       `gorm:"column:sort_order;default:0" json:"sort_order"`
+}
+
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}, &Provider{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}, &Provider{}, &CanvasNode{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -243,6 +262,7 @@ func (m *UserSkill) BeforeCreate(*gorm.DB) error            { return ensureID(&m
 func (m *Transaction) BeforeCreate(*gorm.DB) error          { return ensureID(&m.ID) }
 func (m *UserAPIKey) BeforeCreate(*gorm.DB) error           { return ensureID(&m.ID) }
 func (m *DashboardEnvironment) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *CanvasNode) BeforeCreate(*gorm.DB) error           { return ensureID(&m.ID) }
 func (m *CLI) BeforeCreate(*gorm.DB) error                  { return ensureID(&m.ID) }
 func (m *Provider) BeforeCreate(*gorm.DB) error             { return ensureID(&m.ID) }
 func (m *UsageMetric) BeforeCreate(*gorm.DB) error          { return ensureID(&m.ID) }

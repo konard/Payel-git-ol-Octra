@@ -133,20 +133,11 @@ func main() {
 	usageMetrics := repository.NewUsageMetricsRepository(db)
 	apiKeys := repository.NewAPIKeyRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
+	canvasNodes := repository.NewCanvasNodeRepository(db)
 	clis := repository.NewCLIRepository(db)
 	providers := repository.NewProviderRepository(db)
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
-
-	// Provision all built-in CLIs into the system Nix profile so they are
-	// available to every user environment without per-user installation.
-	if nix.Available() {
-		if err := nixMgr.ProvisionSystem(ctx); err != nil {
-			log.Printf("nix provision (non-fatal): %v", err)
-		} else {
-			log.Println("built-in CLIs provisioned into system profile")
-		}
-	}
 
 	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
 	defer cliMgr.Shutdown()
@@ -188,7 +179,7 @@ func main() {
 	seedCLIs(ctx, clis, tsClient)
 	seedProviders(ctx, providers, tsClient)
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, skills, clis, providers, tsClient).Router().Handler)
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {
@@ -197,6 +188,18 @@ func main() {
 			log.Fatalf("http server: %v", err)
 		}
 	}()
+
+	// Provision built-in CLIs in the background so the HTTP server starts
+	// accepting requests immediately instead of blocking on Nix downloads.
+	if nix.Available() {
+		go func() {
+			if err := nixMgr.ProvisionSystem(ctx); err != nil {
+				log.Printf("nix provision (non-fatal): %v", err)
+			} else {
+				log.Println("built-in CLIs provisioned into system profile")
+			}
+		}()
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

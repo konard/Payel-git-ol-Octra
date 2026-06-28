@@ -92,6 +92,13 @@ type UsageMetricsRepository interface {
 	ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.UsageMetric, error)
 }
 
+// CanvasNodeRepository persists workflow canvas nodes per dashboard environment.
+type CanvasNodeRepository interface {
+	Replace(ctx context.Context, envID uuid.UUID, nodes []model.CanvasNode) error
+	ListByEnvironment(ctx context.Context, envID uuid.UUID) ([]model.CanvasNode, error)
+	DeleteByEnvironment(ctx context.Context, envID uuid.UUID) error
+}
+
 // --- GORM implementations ---------------------------------------------------
 
 type userRepo struct{ db *gorm.DB }
@@ -356,6 +363,33 @@ func (r *dashboardEnvRepo) SetVisibility(ctx context.Context, id uuid.UUID, visi
 
 func (r *dashboardEnvRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&model.DashboardEnvironment{}).Error
+}
+
+type canvasNodeRepo struct{ db *gorm.DB }
+
+// NewCanvasNodeRepository returns a GORM-backed CanvasNodeRepository.
+func NewCanvasNodeRepository(db *gorm.DB) CanvasNodeRepository { return &canvasNodeRepo{db: db} }
+
+func (r *canvasNodeRepo) Replace(ctx context.Context, envID uuid.UUID, nodes []model.CanvasNode) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("environment_id = ?", envID).Delete(&model.CanvasNode{}).Error; err != nil {
+			return err
+		}
+		if len(nodes) == 0 {
+			return nil
+		}
+		return tx.Create(nodes).Error
+	})
+}
+
+func (r *canvasNodeRepo) ListByEnvironment(ctx context.Context, envID uuid.UUID) ([]model.CanvasNode, error) {
+	var list []model.CanvasNode
+	err := r.db.WithContext(ctx).Where("environment_id = ?", envID).Order("sort_order asc").Find(&list).Error
+	return list, err
+}
+
+func (r *canvasNodeRepo) DeleteByEnvironment(ctx context.Context, envID uuid.UUID) error {
+	return r.db.WithContext(ctx).Where("environment_id = ?", envID).Delete(&model.CanvasNode{}).Error
 }
 
 type apiKeyRepo struct{ db *gorm.DB }

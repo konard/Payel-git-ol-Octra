@@ -28,7 +28,7 @@ func BuiltinCLIs() []CLIPackage {
 		{Name: "cursor", NixAttr: "cursor", Binary: "cursor"},
 		{Name: "antigravity", NixAttr: "", Binary: "antigravity", InstallCmd: `nix-shell -p curl bash --run "curl -fsSL https://antigravity.google/cli/install.sh | bash"`},
 		{Name: "cline", NixAttr: "", Binary: "cline", InstallCmd: `nix-shell -p nodejs_22 --run "npm install -g cline"`},
-		{Name: "openhands", NixAttr: "", Binary: "openhands", InstallCmd: `nix-shell -p python3 --run "pip install openhands"`},
+		{Name: "openhands", NixAttr: "", Binary: "openhands", InstallCmd: `nix-shell -p python3 --run "python3 -m pip install openhands"`},
 		{Name: "hermes", NixAttr: "hermes-agent", Binary: "hermes"},
 	}
 }
