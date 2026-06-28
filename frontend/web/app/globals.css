@@ -2647,13 +2647,13 @@ button {
 }
 
 .active-environments .active-environment-row:hover {
-  background: var(--white-subtle);
-  border-color: var(--line);
+  background: var(--white-12);
+  border-color: var(--white-26);
 }
 
 .active-environments .active-environment-row.selected {
-  border-color: var(--white-strong);
-  background: var(--white-mid);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .active-environment-row div {

@@ -204,10 +204,12 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (!selectedEnv) {
       setCanvasItems([]);
       return;
     }
+    setCanvasItems([]);
     getCanvas(selectedEnv).then(async (res) => {
       if (!res.ok) {
         console.error('load canvas failed', res.status, await res.text().catch(() => ''));
