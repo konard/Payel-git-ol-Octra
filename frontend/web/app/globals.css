@@ -2260,26 +2260,25 @@ button {
   grid-template-columns: 1.15fr 1fr 0.72fr 1fr 0.9fr;
   align-items: center;
   min-height: 68px;
+  transition: border-color var(--anim-ease-fast), background var(--anim-ease-fast);
 }
 
 .active-environment-row.is-paused {
   opacity: 0.72;
 }
 
-.active-environment-row.selected {
-  border-color: var(--accent);
+.active-environments .active-environment-row {
+  cursor: pointer;
 }
 
-@media (hover: hover) {
-  .active-environments .active-environment-row {
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
+.active-environments .active-environment-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--line);
+}
 
-  .active-environments .active-environment-row:hover {
-    border-color: var(--text);
-    background: rgba(255, 255, 255, 0.06);
-  }
+.active-environments .active-environment-row.selected {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .active-environment-row div {
