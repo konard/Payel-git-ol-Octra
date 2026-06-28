@@ -74,7 +74,7 @@ func main() {
 		}
 	}
 
-	if tsClient != nil {
+	if tsClient != nil && os.Getenv("SKILL_SYNC_DISABLED") == "" {
 		syncSvc := service.NewSkillSyncService(skills, tsClient, 24*time.Hour, cfg.BaseURLGetSkills)
 		syncSvc.Start(ctx)
 	}
