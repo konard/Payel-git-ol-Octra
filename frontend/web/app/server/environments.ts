@@ -27,7 +27,7 @@ export async function listDashboardEnvironments(): Promise<Response> {
 
 export async function patchDashboardEnvironment(id: string, changes: { active?: boolean; visibility?: string }): Promise<Response> {
   return fetch(`${API.ENVIRONMENTS}/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(changes),
   });

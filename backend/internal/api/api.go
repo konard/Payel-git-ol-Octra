@@ -76,7 +76,7 @@ func (a *API) Router() *router.Router {
 	// Dashboard environments
 	r.POST("/api/environments", a.withAuth(a.handleCreateDashboardEnvironment))
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
-	r.PATCH("/api/environments/:id", a.withAuth(a.handlePatchDashboardEnvironment))
+	r.PUT("/api/environments/:id", a.withAuth(a.handlePatchDashboardEnvironment))
 	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
 
 	// Skills search
