@@ -2218,6 +2218,14 @@ button {
 .active-environment-list {
   display: grid;
   gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.active-environment-list::-webkit-scrollbar {
+  display: none;
 }
 
 .empty-flows-message {
