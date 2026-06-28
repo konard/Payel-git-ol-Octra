@@ -2266,6 +2266,22 @@ button {
   opacity: 0.72;
 }
 
+.active-environment-row.selected {
+  border-color: var(--accent);
+}
+
+@media (hover: hover) {
+  .active-environments .active-environment-row {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .active-environments .active-environment-row:hover {
+    border-color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
 .active-environment-row div {
   display: grid;
   gap: 5px;

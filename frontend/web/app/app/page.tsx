@@ -208,7 +208,14 @@ export default function HomePage() {
             ) : (
               <div className="active-environment-list">
                 {activeEnvs.map((env) => (
-                  <article className="active-environment-row" key={env.id}>
+                  <article
+                    className={`active-environment-row${selectedEnv === env.id ? ' selected' : ''}`}
+                    key={env.id}
+                    onClick={() => selectEnv(env.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && selectEnv(env.id)}
+                  >
                     <div>
                       <span>Active</span>
                       <strong className="environment-name-line">
@@ -221,10 +228,10 @@ export default function HomePage() {
                       <strong>{env.id}</strong>
                     </div>
                     <div className="environment-actions">
-                      <IconButton variant="warning" onClick={() => handlePause(env.id)} aria-label={`Pause ${env.name}`}>
+                      <IconButton variant="warning" onClick={(e) => { e.stopPropagation(); handlePause(env.id); }} aria-label={`Pause ${env.name}`}>
                         <Pause size={15} />
                       </IconButton>
-                      <IconButton variant="danger" onClick={() => handleDelete(env.id)} aria-label={`Delete ${env.name}`}>
+                      <IconButton variant="danger" onClick={(e) => { e.stopPropagation(); handleDelete(env.id); }} aria-label={`Delete ${env.name}`}>
                         <Trash2 size={15} />
                       </IconButton>
                     </div>
