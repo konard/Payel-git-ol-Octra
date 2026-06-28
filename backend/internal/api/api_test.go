@@ -12,6 +12,7 @@ import (
 	"backend/internal/llm"
 	"backend/internal/model"
 	"backend/internal/oauth"
+	"backend/internal/provider"
 	"backend/internal/repository"
 	"backend/internal/service"
 
@@ -45,9 +46,9 @@ func (fakeEnvPaths) EnvPath(id string) string { return "/envs/" + id }
 
 func testCfg() config.Config {
 	return config.Config{
-		JWTSecret:              "test-jwt-secret",
-		JWTRefreshSecret:       "test-jwt-refresh-secret",
-		FrontendURL:            "http://localhost:5173",
+		JWTSecret:               "test-jwt-secret",
+		JWTRefreshSecret:        "test-jwt-refresh-secret",
+		FrontendURL:             "http://localhost:5173",
 		LeFineIntegrationSecret: "test-lefine-secret",
 	}
 }
@@ -68,6 +69,36 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	userSkills := repository.NewUserSkillRepository(db)
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
+	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
+	clis := repository.NewCLIRepository(db)
+	providers := repository.NewProviderRepository(db)
+
+	for _, p := range cli.BuiltinCLIs() {
+		if err := clis.Upsert(context.Background(), &model.CLI{Name: p.Name, NixAttr: p.NixAttr, InstallCmd: p.InstallCmd}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, p := range provider.BuiltinProviders() {
+		if err := providers.Upsert(context.Background(), &model.Provider{
+			Key:          p.Key,
+			Name:         p.Name,
+			BaseURL:      p.BaseURL,
+			AuthEnv:      p.AuthEnv,
+			DefaultModel: p.DefaultModel,
+			Description:  p.Description,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := skills.Upsert(context.Background(), &model.Skill{
+		Name:       "github-tools",
+		Type:       model.SkillNixpkgs,
+		InstallCmd: "gh",
+		SkillID:    "github-tools",
+		Source:     "octra/tests",
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := testCfg()
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
@@ -76,8 +107,7 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	chatSvc := service.NewChatService(agents, fakeCLIRouter{}, fakeLLM{}, fakeEnvPaths{})
 	oauthH := oauth.New(authSvc, cfg)
 
-	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
-	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, nil, nil).Router().Handler
+	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, skills, clis, providers, nil).Router().Handler
 
 	ln := fasthttputil.NewInmemoryListener()
 	server := &fasthttp.Server{Handler: handler}
@@ -157,6 +187,95 @@ func TestEndToEndProxyFlow(t *testing.T) {
 	}
 	if chat.Response != "llm:hello" {
 		t.Fatalf("unexpected chat response %q", chat.Response)
+	}
+}
+
+func TestCLISearchFallsBackWithoutTypesense(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	code, body := do(t, client, "GET", "/api/cli/search?q=cod&limit=5", "", "")
+	if code != 200 {
+		t.Fatalf("cli search code %d: %s", code, body)
+	}
+	var result cliSearchResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Count == 0 {
+		t.Fatalf("expected CLI results: %s", body)
+	}
+	found := false
+	for _, item := range result.CLIs {
+		if item.Name == "codex" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected codex in CLI results: %+v", result.CLIs)
+	}
+}
+
+func TestSkillSearchFallsBackWithoutTypesense(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	code, body := do(t, client, "GET", "/skills/search?q=github&limit=5", "", "")
+	if code != 200 {
+		t.Fatalf("skill search code %d: %s", code, body)
+	}
+	var result skillSearchResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Count != 1 || result.Skills[0].Name != "github-tools" {
+		t.Fatalf("unexpected skill search result: %+v", result)
+	}
+}
+
+func TestProviderSearchFallsBackWithoutTypesense(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	code, body := do(t, client, "GET", "/api/providers/search?q=open&limit=5", "", "")
+	if code != 200 {
+		t.Fatalf("provider search code %d: %s", code, body)
+	}
+	var result providerSearchResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		t.Fatal(err)
+	}
+	foundOpenAI := false
+	for _, item := range result.Providers {
+		if item.Key == "openai" {
+			foundOpenAI = true
+		}
+	}
+	if !foundOpenAI {
+		t.Fatalf("expected openai provider in results: %+v", result.Providers)
+	}
+}
+
+func TestCatalogSearchAggregatesProvidersCLIsSkillsAndCustom(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	code, body := do(t, client, "GET", "/api/catalog/search?q=&category=all&limit=50", "", "")
+	if code != 200 {
+		t.Fatalf("catalog search code %d: %s", code, body)
+	}
+	var result catalogSearchResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	for _, item := range result.Items {
+		seen[item.Type] = true
+	}
+	for _, typ := range []string{"provider", "cli", "skill", "custom_provider"} {
+		if !seen[typ] {
+			t.Fatalf("expected catalog type %s in %+v", typ, result.Items)
+		}
 	}
 }
 

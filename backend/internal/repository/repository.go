@@ -79,6 +79,13 @@ type CLIRepository interface {
 	GetByName(ctx context.Context, name string) (*model.CLI, error)
 }
 
+// ProviderRepository persists the provider catalogue.
+type ProviderRepository interface {
+	Upsert(ctx context.Context, p *model.Provider) error
+	List(ctx context.Context) ([]model.Provider, error)
+	GetByKey(ctx context.Context, key string) (*model.Provider, error)
+}
+
 // UsageMetricsRepository persists resource usage snapshots.
 type UsageMetricsRepository interface {
 	Create(ctx context.Context, metric *model.UsageMetric) error
@@ -255,6 +262,36 @@ func (r *cliRepo) GetByName(ctx context.Context, name string) (*model.CLI, error
 	var c model.CLI
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&c).Error
 	return firstResult(&c, err)
+}
+
+type providerRepo struct{ db *gorm.DB }
+
+// NewProviderRepository returns a GORM-backed ProviderRepository.
+func NewProviderRepository(db *gorm.DB) ProviderRepository { return &providerRepo{db: db} }
+
+func (r *providerRepo) Upsert(ctx context.Context, p *model.Provider) error {
+	existing, err := r.GetByKey(ctx, p.Key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if existing != nil {
+		p.ID = existing.ID
+		p.CreatedAt = existing.CreatedAt
+		return r.db.WithContext(ctx).Save(p).Error
+	}
+	return r.db.WithContext(ctx).Create(p).Error
+}
+
+func (r *providerRepo) List(ctx context.Context) ([]model.Provider, error) {
+	var list []model.Provider
+	err := r.db.WithContext(ctx).Order("name asc").Find(&list).Error
+	return list, err
+}
+
+func (r *providerRepo) GetByKey(ctx context.Context, key string) (*model.Provider, error) {
+	var p model.Provider
+	err := r.db.WithContext(ctx).Where("key = ?", key).First(&p).Error
+	return firstResult(&p, err)
 }
 
 type usageMetricsRepo struct{ db *gorm.DB }

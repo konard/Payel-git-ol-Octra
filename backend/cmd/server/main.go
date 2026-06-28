@@ -11,10 +11,11 @@ import (
 	"backend/internal/api"
 	"backend/internal/cli"
 	"backend/internal/config"
-	"backend/internal/model"
 	"backend/internal/llm"
+	"backend/internal/model"
 	"backend/internal/nix"
 	"backend/internal/oauth"
+	"backend/internal/provider"
 	"backend/internal/repository"
 	"backend/internal/service"
 	"backend/internal/storage"
@@ -59,6 +60,48 @@ func seedCLIs(ctx context.Context, cliRepo repository.CLIRepository, tsClient *t
 	}
 }
 
+func seedProviders(ctx context.Context, providerRepo repository.ProviderRepository, tsClient *ts.Client) {
+	builtins := provider.BuiltinProviders()
+	for _, p := range builtins {
+		record := &model.Provider{
+			Key:          p.Key,
+			Name:         p.Name,
+			BaseURL:      p.BaseURL,
+			AuthEnv:      p.AuthEnv,
+			DefaultModel: p.DefaultModel,
+			Description:  p.Description,
+		}
+		if err := providerRepo.Upsert(ctx, record); err != nil {
+			log.Printf("seed provider %s: %v", p.Key, err)
+		}
+	}
+	if tsClient == nil {
+		return
+	}
+	all, err := providerRepo.List(ctx)
+	if err != nil {
+		log.Printf("seed provider list: %v", err)
+		return
+	}
+	docs := make([]ts.ProviderDocument, len(all))
+	for i, p := range all {
+		docs[i] = ts.ProviderDocument{
+			ID:           p.ID.String(),
+			Key:          p.Key,
+			Name:         p.Name,
+			BaseURL:      p.BaseURL,
+			AuthEnv:      p.AuthEnv,
+			DefaultModel: p.DefaultModel,
+			Description:  p.Description,
+		}
+	}
+	if err := tsClient.IndexProviders(ctx, docs); err != nil {
+		log.Printf("seed provider index: %v", err)
+	} else {
+		log.Printf("seeded %d providers into Typesense", len(docs))
+	}
+}
+
 func loggingMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		start := time.Now()
@@ -91,6 +134,7 @@ func main() {
 	apiKeys := repository.NewAPIKeyRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
 	clis := repository.NewCLIRepository(db)
+	providers := repository.NewProviderRepository(db)
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 
@@ -122,6 +166,8 @@ func main() {
 			tsClient = nil
 		} else if err := tsClient.EnsureCLICollection(ctx); err != nil {
 			log.Printf("typesense cli: %v", err)
+		} else if err := tsClient.EnsureProviderCollection(ctx); err != nil {
+			log.Printf("typesense provider: %v", err)
 		}
 	}
 
@@ -132,8 +178,9 @@ func main() {
 
 	// Seed CLI catalogue from registry into DB + Typesense.
 	seedCLIs(ctx, clis, tsClient)
+	seedProviders(ctx, providers, tsClient)
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, clis, tsClient).Router().Handler)
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, skills, clis, providers, tsClient).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

@@ -24,18 +24,43 @@ const authHeaderBearer = "Authorization"
 const ctxUserKey = "octra_user"
 
 type API struct {
-	auth       *service.AuthService
-	env        *service.EnvironmentService
-	chat       *service.ChatService
-	billing    *service.BillingService
-	oauthH     *oauth.Handler
+	auth    *service.AuthService
+	env     *service.EnvironmentService
+	chat    *service.ChatService
+	billing *service.BillingService
+	oauthH  *oauth.Handler
+
 	dashboardEnvRepo repository.DashboardEnvironmentRepository
+	skillsRepo       repository.SkillRepository
 	cliRepo          repository.CLIRepository
+	providerRepo     repository.ProviderRepository
 	typesense        *ts.Client
 }
 
-func New(auth *service.AuthService, env *service.EnvironmentService, chat *service.ChatService, billing *service.BillingService, oauthH *oauth.Handler, dashboardEnvRepo repository.DashboardEnvironmentRepository, cliRepo repository.CLIRepository, typesense *ts.Client) *API {
-	return &API{auth: auth, env: env, chat: chat, billing: billing, oauthH: oauthH, dashboardEnvRepo: dashboardEnvRepo, cliRepo: cliRepo, typesense: typesense}
+func New(
+	auth *service.AuthService,
+	env *service.EnvironmentService,
+	chat *service.ChatService,
+	billing *service.BillingService,
+	oauthH *oauth.Handler,
+	dashboardEnvRepo repository.DashboardEnvironmentRepository,
+	skillsRepo repository.SkillRepository,
+	cliRepo repository.CLIRepository,
+	providerRepo repository.ProviderRepository,
+	typesense *ts.Client,
+) *API {
+	return &API{
+		auth:             auth,
+		env:              env,
+		chat:             chat,
+		billing:          billing,
+		oauthH:           oauthH,
+		dashboardEnvRepo: dashboardEnvRepo,
+		skillsRepo:       skillsRepo,
+		cliRepo:          cliRepo,
+		providerRepo:     providerRepo,
+		typesense:        typesense,
+	}
 }
 
 func (a *API) Router() *router.Router {
@@ -86,6 +111,11 @@ func (a *API) Router() *router.Router {
 	// CLI catalogue
 	r.GET("/api/cli", a.handleListCLIs)
 	r.GET("/api/cli/search", a.handleCLISearch)
+
+	// Provider and combined catalogue search
+	r.GET("/api/providers", a.handleListProviders)
+	r.GET("/api/providers/search", a.handleProviderSearch)
+	r.GET("/api/catalog/search", a.handleCatalogSearch)
 	return r
 }
 
@@ -233,9 +263,10 @@ func (a *API) handleRefresh(ctx *fasthttp.RequestCtx) {
 
 type environmentRequest struct {
 	LLM struct {
-		APIKey  string `json:"api_key"`
-		BaseURL string `json:"base_url"`
-		Model   string `json:"model"`
+		Provider string `json:"provider"`
+		APIKey   string `json:"api_key"`
+		BaseURL  string `json:"base_url"`
+		Model    string `json:"model"`
 	} `json:"llm"`
 	Agent struct {
 		CLI      string `json:"cli"`
@@ -259,12 +290,13 @@ func (a *API) handleEnvironment(ctx *fasthttp.RequestCtx) {
 	}
 
 	agent, err := a.env.Create(ctx, user, service.EnvironmentInput{
-		LLMAPIKey:  req.LLM.APIKey,
-		LLMBaseURL: req.LLM.BaseURL,
-		LLMModel:   req.LLM.Model,
-		CLI:        model.CLIType(req.Agent.CLI),
-		Priority:   req.Agent.Priority,
-		Skills:     req.Skills,
+		LLMProvider: req.LLM.Provider,
+		LLMAPIKey:   req.LLM.APIKey,
+		LLMBaseURL:  req.LLM.BaseURL,
+		LLMModel:    req.LLM.Model,
+		CLI:         model.CLIType(req.Agent.CLI),
+		Priority:    req.Agent.Priority,
+		Skills:      req.Skills,
 	})
 	if errors.Is(err, service.ErrBalanceNegative) {
 		writeError(ctx, fasthttp.StatusPaymentRequired, err.Error())
@@ -792,10 +824,18 @@ func queryInt(ctx *fasthttp.RequestCtx, key string, fallback int) int {
 	return value
 }
 
+func boundedQueryInt(ctx *fasthttp.RequestCtx, key string, fallback, min, max int) int {
+	value := queryInt(ctx, key, fallback)
+	if value < min || value > max {
+		return fallback
+	}
+	return value
+}
+
 type skillSearchResponse struct {
-	Query  string              `json:"query"`
-	Skills []skillSearchHit    `json:"skills"`
-	Count  int                 `json:"count"`
+	Query  string           `json:"query"`
+	Skills []skillSearchHit `json:"skills"`
+	Count  int              `json:"count"`
 }
 
 type skillSearchHit struct {
@@ -807,38 +847,13 @@ type skillSearchHit struct {
 }
 
 func (a *API) handleSkillSearch(ctx *fasthttp.RequestCtx) {
-	if a.typesense == nil {
-		writeError(ctx, fasthttp.StatusServiceUnavailable, "search not available")
-		return
-	}
-	q := string(ctx.QueryArgs().Peek("q"))
-	if q == "" {
-		writeError(ctx, fasthttp.StatusBadRequest, "query parameter q is required")
-		return
-	}
-	limit := queryInt(ctx, "limit", 20)
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-
-	result, err := a.typesense.SearchSkills(ctx, q, limit)
+	q := strings.TrimSpace(string(ctx.QueryArgs().Peek("q")))
+	limit := boundedQueryInt(ctx, "limit", 20, 1, 100)
+	hits, err := a.searchSkillHits(ctx, q, limit)
 	if err != nil {
-		writeError(ctx, fasthttp.StatusInternalServerError, "search failed")
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 		return
 	}
-
-	hits := make([]skillSearchHit, 0, len(*result.Hits))
-	for _, hit := range *result.Hits {
-		doc := *hit.Document
-		hits = append(hits, skillSearchHit{
-			ID:         getStrField(doc, "id"),
-			SkillID:    getStrField(doc, "skill_id"),
-			Name:       getStrField(doc, "name"),
-			Source:     getStrField(doc, "source"),
-			InstallCmd: getStrField(doc, "install_cmd"),
-		})
-	}
-
 	writeJSON(ctx, fasthttp.StatusOK, skillSearchResponse{
 		Query:  q,
 		Skills: hits,
@@ -854,6 +869,10 @@ type cliResponse struct {
 }
 
 func (a *API) handleListCLIs(ctx *fasthttp.RequestCtx) {
+	if a.cliRepo == nil {
+		writeJSON(ctx, fasthttp.StatusOK, []cliResponse{})
+		return
+	}
 	list, err := a.cliRepo.List(ctx)
 	if err != nil {
 		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
@@ -878,49 +897,373 @@ type cliSearchResult struct {
 }
 
 func (a *API) handleCLISearch(ctx *fasthttp.RequestCtx) {
-	if a.typesense == nil {
-		writeError(ctx, fasthttp.StatusServiceUnavailable, "search not available")
+	q := strings.TrimSpace(string(ctx.QueryArgs().Peek("q")))
+	limit := boundedQueryInt(ctx, "limit", 20, 1, 100)
+	hits, err := a.searchCLIResponses(ctx, q, limit)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 		return
 	}
-	q := string(ctx.QueryArgs().Peek("q"))
-	if q == "" {
-		list, err := a.cliRepo.List(ctx)
+	writeJSON(ctx, fasthttp.StatusOK, cliSearchResult{Query: q, CLIs: hits, Count: len(hits)})
+}
+
+type providerResponse struct {
+	ID           string `json:"id"`
+	Key          string `json:"key"`
+	Name         string `json:"name"`
+	BaseURL      string `json:"base_url"`
+	AuthEnv      string `json:"auth_env"`
+	DefaultModel string `json:"default_model,omitempty"`
+	Description  string `json:"description,omitempty"`
+}
+
+func (a *API) handleListProviders(ctx *fasthttp.RequestCtx) {
+	if a.providerRepo == nil {
+		writeJSON(ctx, fasthttp.StatusOK, []providerResponse{})
+		return
+	}
+	list, err := a.providerRepo.List(ctx)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	out := make([]providerResponse, 0, len(list))
+	for _, p := range list {
+		out = append(out, providerResponseFromModel(p))
+	}
+	writeJSON(ctx, fasthttp.StatusOK, out)
+}
+
+type providerSearchResult struct {
+	Query     string             `json:"query"`
+	Providers []providerResponse `json:"providers"`
+	Count     int                `json:"count"`
+}
+
+func (a *API) handleProviderSearch(ctx *fasthttp.RequestCtx) {
+	q := strings.TrimSpace(string(ctx.QueryArgs().Peek("q")))
+	limit := boundedQueryInt(ctx, "limit", 20, 1, 100)
+	hits, err := a.searchProviderResponses(ctx, q, limit)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, providerSearchResult{Query: q, Providers: hits, Count: len(hits)})
+}
+
+type catalogSearchResponse struct {
+	Query    string                `json:"query"`
+	Category string                `json:"category"`
+	Items    []catalogItemResponse `json:"items"`
+	Count    int                   `json:"count"`
+}
+
+type catalogItemResponse struct {
+	ID           string `json:"id"`
+	Type         string `json:"type"`
+	Name         string `json:"name"`
+	Subtitle     string `json:"subtitle,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Key          string `json:"key,omitempty"`
+	BaseURL      string `json:"base_url,omitempty"`
+	AuthEnv      string `json:"auth_env,omitempty"`
+	DefaultModel string `json:"default_model,omitempty"`
+	NixAttr      string `json:"nix_attr,omitempty"`
+	InstallCmd   string `json:"install_cmd,omitempty"`
+	SkillID      string `json:"skill_id,omitempty"`
+	Source       string `json:"source,omitempty"`
+}
+
+func (a *API) handleCatalogSearch(ctx *fasthttp.RequestCtx) {
+	q := strings.TrimSpace(string(ctx.QueryArgs().Peek("q")))
+	category := normalizeCatalogCategory(string(ctx.QueryArgs().Peek("category")))
+	limit := boundedQueryInt(ctx, "limit", 20, 1, 100)
+	items := make([]catalogItemResponse, 0, limit)
+
+	if includesCatalogCategory(category, "providers") {
+		providers, err := a.searchProviderResponses(ctx, q, limit-len(items))
 		if err != nil {
 			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 			return
 		}
-		out := make([]cliResponse, 0, len(list))
-		for _, c := range list {
-			out = append(out, cliResponse{
-				ID:         c.ID.String(),
+		for _, p := range providers {
+			items = append(items, catalogItemResponse{
+				ID:           p.ID,
+				Type:         "provider",
+				Name:         p.Name,
+				Subtitle:     p.BaseURL,
+				Description:  p.Description,
+				Key:          p.Key,
+				BaseURL:      p.BaseURL,
+				AuthEnv:      p.AuthEnv,
+				DefaultModel: p.DefaultModel,
+			})
+		}
+	}
+	if len(items) < limit && includesCatalogCategory(category, "cli") {
+		clis, err := a.searchCLIResponses(ctx, q, limit-len(items))
+		if err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		for _, c := range clis {
+			items = append(items, catalogItemResponse{
+				ID:         c.ID,
+				Type:       "cli",
 				Name:       c.Name,
+				Subtitle:   c.NixAttr,
 				NixAttr:    c.NixAttr,
 				InstallCmd: c.InstallCmd,
 			})
 		}
-		writeJSON(ctx, fasthttp.StatusOK, cliSearchResult{Query: q, CLIs: out, Count: len(out)})
-		return
 	}
-	limit := queryInt(ctx, "limit", 20)
-	if limit < 1 || limit > 100 {
-		limit = 20
+	if len(items) < limit && includesCatalogCategory(category, "skills") {
+		skills, err := a.searchSkillHits(ctx, q, limit-len(items))
+		if err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		for _, s := range skills {
+			items = append(items, catalogItemResponse{
+				ID:         s.ID,
+				Type:       "skill",
+				Name:       s.Name,
+				Subtitle:   s.Source,
+				SkillID:    s.SkillID,
+				Source:     s.Source,
+				InstallCmd: s.InstallCmd,
+			})
+		}
 	}
-	result, err := a.typesense.SearchCLIs(ctx, q, limit)
-	if err != nil {
-		writeError(ctx, fasthttp.StatusInternalServerError, "search failed")
-		return
-	}
-	hits := make([]cliResponse, 0, len(*result.Hits))
-	for _, hit := range *result.Hits {
-		doc := *hit.Document
-		hits = append(hits, cliResponse{
-			ID:         getStrField(doc, "id"),
-			Name:       getStrField(doc, "name"),
-			NixAttr:    getStrField(doc, "nix_attr"),
-			InstallCmd: getStrField(doc, "install_cmd"),
+	if len(items) < limit && includesCustomProvider(category) && customProviderMatches(q) {
+		items = append(items, catalogItemResponse{
+			ID:          "custom-provider",
+			Type:        "custom_provider",
+			Name:        "Custom provider",
+			Subtitle:    "Base URL and API key",
+			Description: "Configure an OpenAI-compatible provider endpoint.",
 		})
 	}
-	writeJSON(ctx, fasthttp.StatusOK, cliSearchResult{Query: q, CLIs: hits, Count: len(hits)})
+
+	writeJSON(ctx, fasthttp.StatusOK, catalogSearchResponse{
+		Query:    q,
+		Category: category,
+		Items:    items,
+		Count:    len(items),
+	})
+}
+
+func (a *API) searchSkillHits(ctx context.Context, q string, limit int) ([]skillSearchHit, error) {
+	if limit <= 0 {
+		return []skillSearchHit{}, nil
+	}
+	if a.typesense != nil && q != "" {
+		result, err := a.typesense.SearchSkills(ctx, q, limit)
+		if err == nil {
+			hits := make([]skillSearchHit, 0, limit)
+			if result.Hits != nil {
+				for _, hit := range *result.Hits {
+					if hit.Document == nil {
+						continue
+					}
+					doc := *hit.Document
+					hits = append(hits, skillSearchHit{
+						ID:         getStrField(doc, "id"),
+						SkillID:    getStrField(doc, "skill_id"),
+						Name:       getStrField(doc, "name"),
+						Source:     getStrField(doc, "source"),
+						InstallCmd: getStrField(doc, "install_cmd"),
+					})
+				}
+			}
+			return hits, nil
+		}
+	}
+	if a.skillsRepo == nil {
+		return []skillSearchHit{}, nil
+	}
+	list, err := a.skillsRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hits := make([]skillSearchHit, 0, minInt(limit, len(list)))
+	for _, s := range list {
+		if !textMatches(q, s.Name, s.SkillID, s.Source, s.InstallCmd, s.Description) {
+			continue
+		}
+		hits = append(hits, skillSearchHit{
+			ID:         s.ID.String(),
+			SkillID:    s.SkillID,
+			Name:       s.Name,
+			Source:     s.Source,
+			InstallCmd: s.InstallCmd,
+		})
+		if len(hits) >= limit {
+			break
+		}
+	}
+	return hits, nil
+}
+
+func (a *API) searchCLIResponses(ctx context.Context, q string, limit int) ([]cliResponse, error) {
+	if limit <= 0 {
+		return []cliResponse{}, nil
+	}
+	if a.typesense != nil && q != "" {
+		result, err := a.typesense.SearchCLIs(ctx, q, limit)
+		if err == nil {
+			hits := make([]cliResponse, 0, limit)
+			if result.Hits != nil {
+				for _, hit := range *result.Hits {
+					if hit.Document == nil {
+						continue
+					}
+					doc := *hit.Document
+					hits = append(hits, cliResponse{
+						ID:         getStrField(doc, "id"),
+						Name:       getStrField(doc, "name"),
+						NixAttr:    getStrField(doc, "nix_attr"),
+						InstallCmd: getStrField(doc, "install_cmd"),
+					})
+				}
+			}
+			return hits, nil
+		}
+	}
+	if a.cliRepo == nil {
+		return []cliResponse{}, nil
+	}
+	list, err := a.cliRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hits := make([]cliResponse, 0, minInt(limit, len(list)))
+	for _, c := range list {
+		if !textMatches(q, c.Name, c.NixAttr, c.InstallCmd) {
+			continue
+		}
+		hits = append(hits, cliResponseFromModel(c))
+		if len(hits) >= limit {
+			break
+		}
+	}
+	return hits, nil
+}
+
+func (a *API) searchProviderResponses(ctx context.Context, q string, limit int) ([]providerResponse, error) {
+	if limit <= 0 {
+		return []providerResponse{}, nil
+	}
+	if a.typesense != nil && q != "" {
+		result, err := a.typesense.SearchProviders(ctx, q, limit)
+		if err == nil {
+			hits := make([]providerResponse, 0, limit)
+			if result.Hits != nil {
+				for _, hit := range *result.Hits {
+					if hit.Document == nil {
+						continue
+					}
+					doc := *hit.Document
+					hits = append(hits, providerResponse{
+						ID:           getStrField(doc, "id"),
+						Key:          getStrField(doc, "key"),
+						Name:         getStrField(doc, "name"),
+						BaseURL:      getStrField(doc, "base_url"),
+						AuthEnv:      getStrField(doc, "auth_env"),
+						DefaultModel: getStrField(doc, "default_model"),
+						Description:  getStrField(doc, "description"),
+					})
+				}
+			}
+			return hits, nil
+		}
+	}
+	if a.providerRepo == nil {
+		return []providerResponse{}, nil
+	}
+	list, err := a.providerRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hits := make([]providerResponse, 0, minInt(limit, len(list)))
+	for _, p := range list {
+		if !textMatches(q, p.Key, p.Name, p.BaseURL, p.AuthEnv, p.DefaultModel, p.Description) {
+			continue
+		}
+		hits = append(hits, providerResponseFromModel(p))
+		if len(hits) >= limit {
+			break
+		}
+	}
+	return hits, nil
+}
+
+func cliResponseFromModel(c model.CLI) cliResponse {
+	return cliResponse{
+		ID:         c.ID.String(),
+		Name:       c.Name,
+		NixAttr:    c.NixAttr,
+		InstallCmd: c.InstallCmd,
+	}
+}
+
+func providerResponseFromModel(p model.Provider) providerResponse {
+	return providerResponse{
+		ID:           p.ID.String(),
+		Key:          p.Key,
+		Name:         p.Name,
+		BaseURL:      p.BaseURL,
+		AuthEnv:      p.AuthEnv,
+		DefaultModel: p.DefaultModel,
+		Description:  p.Description,
+	}
+}
+
+func normalizeCatalogCategory(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "providers", "provider":
+		return "providers"
+	case "cli", "clis":
+		return "cli"
+	case "skills", "skill":
+		return "skills"
+	case "custom", "custom_provider", "custom-provider":
+		return "custom"
+	default:
+		return "all"
+	}
+}
+
+func includesCatalogCategory(category, target string) bool {
+	return category == "all" || category == target
+}
+
+func includesCustomProvider(category string) bool {
+	return category == "all" || category == "providers" || category == "custom"
+}
+
+func customProviderMatches(q string) bool {
+	return textMatches(q, "custom provider", "custom", "provider", "base url", "api key", "openai compatible")
+}
+
+func textMatches(query string, fields ...string) bool {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		return true
+	}
+	for _, field := range fields {
+		if strings.Contains(strings.ToLower(field), query) {
+			return true
+		}
+	}
+	return false
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func getStrField(m map[string]interface{}, key string) string {

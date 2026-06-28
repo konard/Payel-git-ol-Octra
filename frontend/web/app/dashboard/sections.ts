@@ -41,11 +41,11 @@ export const dashboardSections: DashboardSection[] = [
     icon: Workflow,
   },
   {
-    slug: 'environments',
-    label: 'Environments',
-    title: 'Environments',
-    detail: 'Temporary environments can be paused here and started again when needed.',
-    href: ROUTES.DASHBOARD_ENVIRONMENTS,
+    slug: 'flows',
+    label: 'Flows',
+    title: 'Flows',
+    detail: 'Workflow canvas runs will appear here after nodes are connected.',
+    href: ROUTES.DASHBOARD_FLOWS,
     icon: Workflow,
   },
   {

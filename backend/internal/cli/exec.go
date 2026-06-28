@@ -14,9 +14,8 @@ import (
 	"backend/internal/model"
 )
 
-// ExecLauncher launches AI CLIs as real OS subprocesses, wrapping them in
-// `nix develop` when Nix is available so the CLI runs inside the user's
-// isolated environment.
+// ExecLauncher launches AI CLIs as real OS subprocesses using the user's
+// isolated HOME plus Nix profile bin directories on PATH.
 type ExecLauncher struct {
 	// QuietPeriod is how long stdout must be silent before a reply is
 	// considered complete. Defaults to 750ms.
@@ -31,24 +30,14 @@ func (l ExecLauncher) Launch(ctx context.Context, spec LaunchSpec) (Process, err
 	}
 
 	args := cliInvocation(spec.CLI)
-	var cmd *exec.Cmd
-	if nixAvailable() {
-		profile := filepath.Join(spec.EnvPath, ".octra", "nix-profile")
-		_ = os.MkdirAll(filepath.Dir(profile), 0o755)
-		nixArgs := append([]string{"develop",
-			"--extra-experimental-features", "nix-command flakes",
-			"--profile", profile,
-			"--command"}, args...)
-		cmd = exec.Command("nix", nixArgs...)
-	} else {
-		cmd = exec.Command(args[0], args[1:]...)
-	}
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = spec.EnvPath
 
 	homeDir := filepath.Join(spec.EnvPath, "home")
 	os.MkdirAll(filepath.Join(homeDir, ".config"), 0o755)
 	os.MkdirAll(filepath.Join(homeDir, ".local", "share"), 0o755)
-	cmd.Env = append(os.Environ(), []string{
+	cmd.Env = prependPath(os.Environ(), profileBinPaths(spec.EnvPath))
+	cmd.Env = append(cmd.Env, []string{
 		"HOME=" + homeDir,
 		"XDG_CONFIG_HOME=" + filepath.Join(homeDir, ".config"),
 		"XDG_DATA_HOME=" + filepath.Join(homeDir, ".local", "share"),
@@ -81,11 +70,6 @@ func (l ExecLauncher) Launch(ctx context.Context, spec LaunchSpec) (Process, err
 	return p, nil
 }
 
-func nixAvailable() bool {
-	_, err := exec.LookPath("nix")
-	return err == nil
-}
-
 // cliInvocation returns the argv used to start a CLI in a persistent,
 // stdin-driven mode.
 func cliInvocation(cli model.CLIType) []string {
@@ -99,16 +83,76 @@ func cliInvocation(cli model.CLIType) []string {
 // common AI CLIs.
 func llmEnv(c LLMConfig) []string {
 	var env []string
+	provider := strings.ToLower(c.Provider)
 	if c.APIKey != "" {
-		env = append(env, "ANTHROPIC_API_KEY="+c.APIKey)
+		env = append(env,
+			"ANTHROPIC_API_KEY="+c.APIKey,
+			"OPENAI_API_KEY="+c.APIKey,
+		)
+		switch provider {
+		case "gemini":
+			env = append(env, "GEMINI_API_KEY="+c.APIKey)
+		case "deepseek":
+			env = append(env, "DEEPSEEK_API_KEY="+c.APIKey)
+		case "qwen":
+			env = append(env, "DASHSCOPE_API_KEY="+c.APIKey)
+		case "kimi":
+			env = append(env, "MOONSHOT_API_KEY="+c.APIKey)
+		case "grok":
+			env = append(env, "XAI_API_KEY="+c.APIKey)
+		case "openrouter":
+			env = append(env, "OPENROUTER_API_KEY="+c.APIKey)
+		}
 	}
 	if c.BaseURL != "" {
-		env = append(env, "ANTHROPIC_BASE_URL="+c.BaseURL)
+		env = append(env,
+			"ANTHROPIC_BASE_URL="+c.BaseURL,
+			"OPENAI_BASE_URL="+c.BaseURL,
+			"OPENAI_API_BASE="+c.BaseURL,
+		)
 	}
 	if c.Model != "" {
-		env = append(env, "ANTHROPIC_MODEL="+c.Model)
+		env = append(env,
+			"ANTHROPIC_MODEL="+c.Model,
+			"OPENAI_MODEL="+c.Model,
+		)
 	}
 	return env
+}
+
+func profileBinPaths(envPath string) []string {
+	baseDir := filepath.Dir(envPath)
+	return []string{
+		filepath.Join(envPath, ".octra", "nix-profile", "bin"),
+		filepath.Join(envPath, "home", ".nix-profile", "bin"),
+		filepath.Join(baseDir, ".system", "nix-profile", "bin"),
+		filepath.Join(baseDir, ".system", "home", ".nix-profile", "bin"),
+	}
+}
+
+func prependPath(env []string, dirs []string) []string {
+	currentPath := os.Getenv("PATH")
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "PATH=") {
+			currentPath = strings.TrimPrefix(entry, "PATH=")
+			break
+		}
+	}
+	pathValue := strings.Join(append(dirs, currentPath), string(os.PathListSeparator))
+	next := make([]string, 0, len(env)+1)
+	added := false
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "PATH=") {
+			next = append(next, "PATH="+pathValue)
+			added = true
+			continue
+		}
+		next = append(next, entry)
+	}
+	if !added {
+		next = append(next, "PATH="+pathValue)
+	}
+	return next
 }
 
 // execProcess is a running CLI subprocess.
