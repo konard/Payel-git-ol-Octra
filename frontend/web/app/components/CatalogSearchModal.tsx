@@ -3,6 +3,7 @@
 import {
   Box,
   Braces,
+  Check,
   Cpu,
   Globe2,
   Plus,
@@ -10,7 +11,7 @@ import {
   Server,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { searchCatalog, type CatalogCategory, type CatalogItem } from '../server/catalog';
 
 type CatalogSearchModalProps = {
@@ -126,9 +127,16 @@ export function CatalogSearchModal({ open, onClose, onSelect }: CatalogSearchMod
 }
 
 function CatalogResult({ item, onSelect }: { item: CatalogItem; onSelect: (item: CatalogItem) => void }) {
+  const [added, setAdded] = useState(false);
   const Icon = iconByType[item.type] ?? Server;
+
+  const handleAdd = useCallback(() => {
+    setAdded(true);
+    onSelect(item);
+  }, [item, onSelect]);
+
   return (
-    <button type="button" className={`catalog-result type-${item.type}`} onClick={() => onSelect(item)}>
+    <section className={`catalog-result type-${item.type}${added ? ' added' : ''}`}>
       <span className="catalog-result-icon">
         <Icon size={18} />
       </span>
@@ -136,7 +144,12 @@ function CatalogResult({ item, onSelect }: { item: CatalogItem; onSelect: (item:
         <strong>{item.name}</strong>
         <span>{item.subtitle || item.description || item.type}</span>
       </span>
-      <Plus size={18} />
-    </button>
+      <button type="button" className="catalog-result-add" onClick={handleAdd} aria-label={`Add ${item.name}`}>
+        <span className="catalog-result-add-icon">
+          <Plus size={18} />
+          <Check size={18} />
+        </span>
+      </button>
+    </section>
   );
 }
