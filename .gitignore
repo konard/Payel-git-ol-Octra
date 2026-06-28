@@ -20,6 +20,5 @@ docs\compose\plans
 docs\promts
 DAY_PROBLEMS_AND_SOLUTION.md
 ci-logs/
-backend/server
 backend/server.exe
 frontend/web/tsconfig.tsbuildinfo
