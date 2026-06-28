@@ -8,7 +8,7 @@
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--white-mid);
   color: var(--text);
    transition: color var(--anim-duration), background var(--anim-duration), border-color var(--anim-duration);
 }
