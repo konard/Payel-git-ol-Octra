@@ -54,7 +54,8 @@ export default function HomePage() {
   }
 
   async function handlePause(id: string) {
-    await patchDashboardEnvironment(id, { active: false });
+    const res = await patchDashboardEnvironment(id, { active: false });
+    if (!res.ok) return;
     setEnvs((prev) => prev.filter((e) => e.id !== id));
     if (selectedEnv === id) {
       const next = envs.find((e) => e.id !== id);

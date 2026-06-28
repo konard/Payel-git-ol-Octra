@@ -67,6 +67,8 @@ type DashboardEnvironmentRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.DashboardEnvironment, error)
 	ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.DashboardEnvironment, error)
 	Update(ctx context.Context, env *model.DashboardEnvironment) error
+	SetActive(ctx context.Context, id uuid.UUID, active bool) error
+	SetVisibility(ctx context.Context, id uuid.UUID, visibility string) error
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
 
@@ -268,6 +270,14 @@ func (r *dashboardEnvRepo) ListByUserID(ctx context.Context, userID uuid.UUID) (
 
 func (r *dashboardEnvRepo) Update(ctx context.Context, env *model.DashboardEnvironment) error {
 	return r.db.WithContext(ctx).Save(env).Error
+}
+
+func (r *dashboardEnvRepo) SetActive(ctx context.Context, id uuid.UUID, active bool) error {
+	return r.db.WithContext(ctx).Model(&model.DashboardEnvironment{}).Where("id = ?", id).Update("active", active).Error
+}
+
+func (r *dashboardEnvRepo) SetVisibility(ctx context.Context, id uuid.UUID, visibility string) error {
+	return r.db.WithContext(ctx).Model(&model.DashboardEnvironment{}).Where("id = ?", id).Update("visibility", visibility).Error
 }
 
 func (r *dashboardEnvRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {

@@ -666,8 +666,20 @@ func (a *API) handlePatchDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	resp := dashboardEnvironmentResponse{
+		ID:         target.ID.String(),
+		Name:       target.Name,
+		Visibility: target.Visibility,
+		Active:     target.Active,
+		CreatedAt:  target.CreatedAt,
+	}
+
 	if req.Active != nil {
-		target.Active = *req.Active
+		if err := a.dashboardEnvRepo.SetActive(ctx, id, *req.Active); err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		resp.Active = *req.Active
 	}
 	if req.Visibility != nil {
 		vis := *req.Visibility
@@ -675,20 +687,14 @@ func (a *API) handlePatchDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 			writeError(ctx, fasthttp.StatusBadRequest, "visibility must be private or public")
 			return
 		}
-		target.Visibility = vis
-	}
-	if err := a.dashboardEnvRepo.Update(ctx, target); err != nil {
-		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
-		return
+		if err := a.dashboardEnvRepo.SetVisibility(ctx, id, vis); err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		resp.Visibility = vis
 	}
 
-	writeJSON(ctx, fasthttp.StatusOK, dashboardEnvironmentResponse{
-		ID:         target.ID.String(),
-		Name:       target.Name,
-		Visibility: target.Visibility,
-		Active:     target.Active,
-		CreatedAt:  target.CreatedAt,
-	})
+	writeJSON(ctx, fasthttp.StatusOK, resp)
 }
 
 func (a *API) handleDeleteDashboardEnvironment(ctx *fasthttp.RequestCtx) {
