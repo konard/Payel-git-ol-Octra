@@ -18,6 +18,7 @@ type CatalogSearchModalProps = {
   open: boolean;
   onClose: () => void;
   onSelect: (item: CatalogItem) => void;
+  addedKeys?: Set<string>;
 };
 
 const categories: Array<{ id: CatalogCategory; label: string }> = [
@@ -35,7 +36,7 @@ const iconByType = {
   custom_provider: Braces,
 } as const;
 
-export function CatalogSearchModal({ open, onClose, onSelect }: CatalogSearchModalProps) {
+export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: CatalogSearchModalProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CatalogCategory>('all');
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -119,15 +120,16 @@ export function CatalogSearchModal({ open, onClose, onSelect }: CatalogSearchMod
           {loading ? <p className="catalog-state">Searching...</p> : null}
           {!loading && error ? <p className="catalog-state">{error}</p> : null}
           {!loading && !error && visibleItems.length === 0 ? <p className="catalog-state">No results</p> : null}
-          {!loading && !error ? visibleItems.map((item) => <CatalogResult key={`${item.type}-${item.id}`} item={item} onSelect={onSelect} />) : null}
+          {!loading && !error ? visibleItems.map((item) => <CatalogResult key={`${item.type}-${item.id}`} item={item} onSelect={onSelect} addedKeys={addedKeys} />) : null}
         </div>
       </section>
     </div>
   );
 }
 
-function CatalogResult({ item, onSelect }: { item: CatalogItem; onSelect: (item: CatalogItem) => void }) {
-  const [added, setAdded] = useState(false);
+function CatalogResult({ item, onSelect, addedKeys }: { item: CatalogItem; onSelect: (item: CatalogItem) => void; addedKeys?: Set<string> }) {
+  const itemKey = `${item.type}-${item.id}`;
+  const [added, setAdded] = useState(addedKeys?.has(itemKey) ?? false);
   const Icon = iconByType[item.type] ?? Server;
 
   const handleAdd = useCallback(() => {

@@ -15,7 +15,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
@@ -56,6 +56,16 @@ export default function HomePage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const selectedEnvRef = useRef(selectedEnv);
   selectedEnvRef.current = selectedEnv;
+
+  const addedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const item of canvasItems) {
+      // canvas item id format: `${type}-${catalogId}-${Date.now()}`
+      const lastDash = item.id.lastIndexOf('-');
+      if (lastDash > 0) keys.add(item.id.slice(0, lastDash));
+    }
+    return keys;
+  }, [canvasItems]);
 
   function selectEnv(id: string) {
     if (id === selectedEnvRef.current) return;
@@ -434,6 +444,7 @@ export default function HomePage() {
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onSelect={handleCatalogSelect}
+        addedKeys={addedKeys}
       />
     </main>
   );
