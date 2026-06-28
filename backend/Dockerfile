@@ -15,8 +15,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /octra-backend ./cmd/server
 FROM nixos/nix:latest
 
 # Enable flakes / nix-command, used when provisioning user environments.
+# allowUnfree for packages like claude-code.
 RUN mkdir -p /etc/nix && \
-    echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+    echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf && \
+    echo "allowUnfree = true" >> /etc/nix/nix.conf
 
 WORKDIR /app
 COPY --from=builder /octra-backend /app/octra-backend

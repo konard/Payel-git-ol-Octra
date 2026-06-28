@@ -164,10 +164,18 @@ func main() {
 		if err := tsClient.EnsureCollection(ctx); err != nil {
 			log.Printf("typesense: %v (search will be unavailable)", err)
 			tsClient = nil
-		} else if err := tsClient.EnsureCLICollection(ctx); err != nil {
-			log.Printf("typesense cli: %v", err)
-		} else if err := tsClient.EnsureProviderCollection(ctx); err != nil {
-			log.Printf("typesense provider: %v", err)
+		}
+		if tsClient != nil {
+			if err := tsClient.EnsureCLICollection(ctx); err != nil {
+				log.Printf("typesense cli collection: %v", err)
+				tsClient = nil
+			}
+		}
+		if tsClient != nil {
+			if err := tsClient.EnsureProviderCollection(ctx); err != nil {
+				log.Printf("typesense provider collection: %v", err)
+				tsClient = nil
+			}
 		}
 	}
 

@@ -7,6 +7,7 @@ package nix
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -145,19 +146,22 @@ func (m *Manager) ProvisionSystem(ctx context.Context) error {
 	}
 	profile := filepath.Join(workDir, "nix-profile")
 
+	var lastErr error
 	for _, pkg := range cli.BuiltinCLIs() {
 		cmd := pkg.InstallCmd
 		if attr := pkg.NixAttr; attr != "" {
-			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
+			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s || true", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
 		}
 		if cmd == "" {
 			continue
 		}
 		if out, err := m.runner.Run(ctx, workDir, cmd); err != nil {
-			return fmt.Errorf("provision %s: %w\n%s", pkg.Name, err, string(out))
+			err = fmt.Errorf("provision %s: %w\n%s", pkg.Name, err, string(out))
+			log.Printf("nix provision (non-fatal): %v", err)
+			lastErr = err
 		}
 	}
-	return nil
+	return lastErr
 }
 
 func profileBinPaths(workDir string) []string {
