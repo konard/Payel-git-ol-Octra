@@ -66,6 +66,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENTS_DIR=/var/lib/octra/environments
       - CLI_TTL=30m
+      - SKILL_SYNC_DISABLED=1
       - TYPESENSE_HOST=typesense:8108
       - TYPESENSE_API_KEY=octra-typesense-key
     ports:
