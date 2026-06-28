@@ -52,6 +52,8 @@ export default function HomePage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const selectedEnvRef = useRef(selectedEnv);
+  selectedEnvRef.current = selectedEnv;
 
   function selectEnv(id: string) {
     setSelectedEnv(id);
@@ -77,9 +79,10 @@ export default function HomePage() {
   const handleCanvasItemsChange = useCallback((items: WorkflowCanvasItem[]) => {
     setCanvasItems(items);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const envId = selectedEnvRef.current;
+    if (!envId) return;
     saveTimerRef.current = setTimeout(() => {
-      const envId = getCookie('octra_selected_env');
-      if (envId) saveCanvas(envId, items);
+      saveCanvas(envId, items).catch((err) => console.error('save canvas failed', err));
     }, 500);
   }, [saveCanvas]);
 
@@ -123,6 +126,7 @@ export default function HomePage() {
   }
 
   function handleCatalogSelect(item: CatalogItem) {
+    const envId = selectedEnvRef.current;
     setCanvasItems((prev) => {
       const next = [
         ...prev,
@@ -143,10 +147,11 @@ export default function HomePage() {
         },
       ];
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
-        const envId = getCookie('octra_selected_env');
-        if (envId) saveCanvas(envId, next);
-      }, 500);
+      if (envId) {
+        saveTimerRef.current = setTimeout(() => {
+          saveCanvas(envId, next).catch((err) => console.error('save canvas failed', err));
+        }, 500);
+      }
       return next;
     });
   }
@@ -204,7 +209,10 @@ export default function HomePage() {
       return;
     }
     getCanvas(selectedEnv).then(async (res) => {
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error('load canvas failed', res.status, await res.text().catch(() => ''));
+        return;
+      }
       const nodes = await res.json();
       setCanvasItems(
         nodes.map((n: any) => ({
@@ -218,7 +226,7 @@ export default function HomePage() {
           positionY: n.position_y,
         })),
       );
-    }).catch(() => {});
+    }).catch((err) => console.error('load canvas error', err));
   }, [selectedEnv]);
 
   return (
