@@ -11,6 +11,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Trash2,
   Workflow,
   Zap,
 } from 'lucide-react';
@@ -221,7 +222,9 @@ export default function HomePage() {
                       <button type="button" className="environment-icon-button" onClick={() => handlePause(env.id)} aria-label={`Pause ${env.name}`} title="Pause environment">
                         <Pause size={15} />
                       </button>
-                      <a className="environment-manage-link" href={ROUTES.DASHBOARD_ENVIRONMENTS}>Manage</a>
+                      <button type="button" className="environment-icon-button" onClick={() => handleDelete(env.id)} aria-label={`Delete ${env.name}`} title="Delete environment">
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </article>
                 ))}
