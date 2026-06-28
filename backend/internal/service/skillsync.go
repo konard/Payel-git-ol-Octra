@@ -29,9 +29,10 @@ func NewSkillSyncService(skillsRepo repository.SkillRepository, tsClient ts.Clie
 
 func (s *SkillSyncService) Start(ctx context.Context) {
 	log.Printf("skillsync: starting sync every %v", s.interval)
-	s.Sync(ctx)
 
 	go func() {
+		s.Sync(ctx)
+
 		ticker := time.NewTicker(s.interval)
 		defer ticker.Stop()
 		for {
