@@ -26,6 +26,24 @@ func TestSkillDocumentStruct(t *testing.T) {
 	}
 }
 
+func TestProviderDocumentStruct(t *testing.T) {
+	doc := ProviderDocument{
+		ID:           "provider-openai",
+		Key:          "openai",
+		Name:         "OpenAI",
+		BaseURL:      "https://api.openai.com/v1",
+		AuthEnv:      "OPENAI_API_KEY",
+		DefaultModel: "gpt-4.1",
+		Description:  "OpenAI-compatible chat completions provider.",
+	}
+	if doc.Key != "openai" {
+		t.Fatalf("doc.Key = %q", doc.Key)
+	}
+	if doc.BaseURL == "" || doc.AuthEnv == "" {
+		t.Fatalf("provider document is missing connection metadata: %+v", doc)
+	}
+}
+
 func TestStrPtr(t *testing.T) {
 	s := "hello"
 	ptr := strPtr(s)

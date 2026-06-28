@@ -20,10 +20,12 @@ import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
-import { WorkflowCanvas } from '../components/WorkflowCanvas';
+import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowCanvas';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { IconButton } from '../components/IconButton';
+import { CatalogSearchModal } from '../components/CatalogSearchModal';
 import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
+import type { CatalogItem } from '../server/catalog';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
@@ -47,6 +49,8 @@ export default function HomePage() {
   const [envs, setEnvs] = useState<DashboardEnvironment[]>([]);
   const [envsLoading, setEnvsLoading] = useState(true);
   const [selectedEnv, setSelectedEnv] = useState(() => getCookie('octra_selected_env'));
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
 
   function selectEnv(id: string) {
     setSelectedEnv(id);
@@ -90,6 +94,27 @@ export default function HomePage() {
     setEnvs((prev) => [env, ...prev]);
     setSelectedEnv(env.id);
     setShowCreate(false);
+  }
+
+  function handleCatalogSelect(item: CatalogItem) {
+    setCanvasItems((prev) => [
+      ...prev,
+      {
+        id: `${item.type}-${item.id}-${Date.now()}`,
+        kind: item.type,
+        name: item.name,
+        detail: item.subtitle || item.description,
+        description: item.description,
+        meta: {
+          provider: item.key,
+          base_url: item.base_url,
+          model: item.default_model,
+          cli: item.nix_attr || item.install_cmd,
+          skill: item.skill_id || item.source,
+          auth: item.api_key ? 'set' : item.auth_env,
+        },
+      },
+    ]);
   }
 
   function fetchEnvs() {
@@ -147,11 +172,10 @@ export default function HomePage() {
           <span>Octra</span>
         </a>
 
-        <label className="tv-search">
+        <button type="button" className="tv-search" onClick={() => setSearchOpen(true)}>
           <Search size={18} />
-          <span className="sr-only">Search Octra</span>
-          <input placeholder="Search environments, skills, endpoints..." />
-        </label>
+          <span className="tv-search-placeholder">Search environments, skills, endpoints...</span>
+        </button>
 
         <div className="tv-actions">
           <UserBalance />
@@ -188,7 +212,7 @@ export default function HomePage() {
           </h1>
 
           <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
-            <WorkflowCanvas />
+            <WorkflowCanvas items={canvasItems} />
           </section>
 
           <section className="active-environments" aria-label="Active environments list">
@@ -331,6 +355,13 @@ export default function HomePage() {
           onClose={() => setShowWelcome(false)}
         />
       )}
+
+      <CatalogSearchModal
+        open={searchOpen}
+        environments={activeEnvs}
+        onClose={() => setSearchOpen(false)}
+        onSelect={handleCatalogSelect}
+      />
     </main>
   );
 }

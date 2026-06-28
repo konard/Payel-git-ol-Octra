@@ -21,12 +21,13 @@ type EnvProvisioner interface {
 
 // EnvironmentInput is the request payload for creating/updating an environment.
 type EnvironmentInput struct {
-	LLMAPIKey  string
-	LLMBaseURL string
-	LLMModel   string
-	CLI        model.CLIType
-	Priority   int
-	Skills     []string
+	LLMProvider string
+	LLMAPIKey   string
+	LLMBaseURL  string
+	LLMModel    string
+	CLI         model.CLIType
+	Priority    int
+	Skills      []string
 }
 
 // EnvironmentBilling is the billing gate used before a new environment starts.
@@ -80,13 +81,14 @@ func (s *EnvironmentService) Create(ctx context.Context, user *model.User, in En
 	}
 
 	agent := &model.Agent{
-		UserID:     user.ID,
-		LLMAPIKey:  in.LLMAPIKey,
-		LLMBaseURL: in.LLMBaseURL,
-		LLMModel:   in.LLMModel,
-		CLI:        in.CLI,
-		Active:     true,
-		Priority:   priority,
+		UserID:      user.ID,
+		LLMProvider: in.LLMProvider,
+		LLMAPIKey:   in.LLMAPIKey,
+		LLMBaseURL:  in.LLMBaseURL,
+		LLMModel:    in.LLMModel,
+		CLI:         in.CLI,
+		Active:      true,
+		Priority:    priority,
 	}
 	if err := s.agents.Upsert(ctx, agent); err != nil {
 		return nil, err

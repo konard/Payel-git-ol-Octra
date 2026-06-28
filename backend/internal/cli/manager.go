@@ -35,9 +35,10 @@ type LaunchSpec struct {
 
 // LLMConfig is the LLM connection injected into the CLI's environment.
 type LLMConfig struct {
-	APIKey  string
-	BaseURL string
-	Model   string
+	Provider string
+	APIKey   string
+	BaseURL  string
+	Model    string
 }
 
 // Launcher starts a new CLI process for a user environment.

@@ -67,9 +67,10 @@ func (s *ChatService) Chat(ctx context.Context, user *model.User, prompt string,
 			EnvPath: s.envPaths.EnvPath(user.ID.String()),
 			CLI:     agent.CLI,
 			LLM: cli.LLMConfig{
-				APIKey:  agent.LLMAPIKey,
-				BaseURL: agent.LLMBaseURL,
-				Model:   agent.LLMModel,
+				Provider: agent.LLMProvider,
+				APIKey:   agent.LLMAPIKey,
+				BaseURL:  agent.LLMBaseURL,
+				Model:    agent.LLMModel,
 			},
 		}
 		return s.cli.Send(ctx, spec, prompt)
@@ -77,9 +78,10 @@ func (s *ChatService) Chat(ctx context.Context, user *model.User, prompt string,
 
 	// Proxy mode: forward straight to the LLM.
 	return s.llm.Complete(ctx, llm.Request{
-		APIKey:  agent.LLMAPIKey,
-		BaseURL: agent.LLMBaseURL,
-		Model:   agent.LLMModel,
-		Prompt:  prompt,
+		Provider: agent.LLMProvider,
+		APIKey:   agent.LLMAPIKey,
+		BaseURL:  agent.LLMBaseURL,
+		Model:    agent.LLMModel,
+		Prompt:   prompt,
 	})
 }

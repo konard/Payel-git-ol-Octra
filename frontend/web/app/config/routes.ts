@@ -29,4 +29,10 @@ export const API = {
   ME: `${API_BASE}/me`,
   KEYS: `${API_BASE}/api/keys`,
   ENVIRONMENTS: `${API_BASE}/api/environments`,
+  CLIS: `${API_BASE}/api/cli`,
+  CLI_SEARCH: `${API_BASE}/api/cli/search`,
+  PROVIDERS: `${API_BASE}/api/providers`,
+  PROVIDER_SEARCH: `${API_BASE}/api/providers/search`,
+  SKILLS_SEARCH: `${API_BASE}/skills/search`,
+  CATALOG_SEARCH: `${API_BASE}/api/catalog/search`,
 } as const;

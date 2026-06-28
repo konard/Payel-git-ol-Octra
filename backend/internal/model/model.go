@@ -69,12 +69,12 @@ type User struct {
 	APIKey       string     `gorm:"uniqueIndex" json:"api_key"`
 	Subscription string     `gorm:"default:free" json:"subscription"`
 
-	Balance     int             `gorm:"column:balance;default:100" json:"balance"`
-	MarginMode  MarginMode      `gorm:"column:margin_mode;default:unlimited" json:"margin_mode"`
-	SafeMarginLimit int         `gorm:"column:safe_margin_limit;default:0" json:"safe_margin_limit"`
+	Balance         int             `gorm:"column:balance;default:100" json:"balance"`
+	MarginMode      MarginMode      `gorm:"column:margin_mode;default:unlimited" json:"margin_mode"`
+	SafeMarginLimit int             `gorm:"column:safe_margin_limit;default:0" json:"safe_margin_limit"`
 	AutoPayInterval AutoPayInterval `gorm:"column:auto_pay_interval;default:month" json:"auto_pay_interval"`
-	AutoPayDay int               `gorm:"column:auto_pay_day;default:1" json:"auto_pay_day"`
-	SubscriptionEnd *int64       `json:"subscription_end"`
+	AutoPayDay      int             `gorm:"column:auto_pay_day;default:1" json:"auto_pay_day"`
+	SubscriptionEnd *int64          `json:"subscription_end"`
 }
 
 // Agent is a user's personal MCP environment. Each user has at most one.
@@ -86,9 +86,10 @@ type Agent struct {
 
 	// LLM connection details used both for the proxy mode and to configure the
 	// launched CLI.
-	LLMAPIKey  string `gorm:"column:llm_api_key" json:"-"`
-	LLMBaseURL string `gorm:"column:llm_base_url" json:"llm_base_url"`
-	LLMModel   string `gorm:"column:llm_model" json:"llm_model"`
+	LLMProvider string `gorm:"column:llm_provider" json:"llm_provider"`
+	LLMAPIKey   string `gorm:"column:llm_api_key" json:"-"`
+	LLMBaseURL  string `gorm:"column:llm_base_url" json:"llm_base_url"`
+	LLMModel    string `gorm:"column:llm_model" json:"llm_model"`
 
 	// CLI is the agent CLI to launch (e.g. "claude-code"). Empty => proxy mode.
 	CLI CLIType `gorm:"column:cli" json:"cli"`
@@ -125,7 +126,21 @@ type CLI struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 	Name       string    `gorm:"uniqueIndex" json:"name"`
 	NixAttr    string    `gorm:"column:nix_attr" json:"nix_attr"`
-	InstallCmd string   `gorm:"column:install_cmd" json:"install_cmd,omitempty"`
+	InstallCmd string    `gorm:"column:install_cmd" json:"install_cmd,omitempty"`
+}
+
+// Provider is a known model provider shown in search and used to configure
+// proxy-mode or CLI-backed environments.
+type Provider struct {
+	ID           uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Key          string    `gorm:"column:key;uniqueIndex" json:"key"`
+	Name         string    `gorm:"column:name" json:"name"`
+	BaseURL      string    `gorm:"column:base_url" json:"base_url"`
+	AuthEnv      string    `gorm:"column:auth_env" json:"auth_env"`
+	DefaultModel string    `gorm:"column:default_model" json:"default_model"`
+	Description  string    `gorm:"column:description" json:"description"`
 }
 
 // UserSkill links a skill to a user's agent and records its install status.
@@ -196,7 +211,7 @@ type UsageMetric struct {
 
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}, &Provider{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -223,13 +238,14 @@ func (m *Agent) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
-func (m *Skill) BeforeCreate(*gorm.DB) error       { return ensureID(&m.ID) }
-func (m *UserSkill) BeforeCreate(*gorm.DB) error   { return ensureID(&m.ID) }
-func (m *Transaction) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
-func (m *UserAPIKey) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *Skill) BeforeCreate(*gorm.DB) error                { return ensureID(&m.ID) }
+func (m *UserSkill) BeforeCreate(*gorm.DB) error            { return ensureID(&m.ID) }
+func (m *Transaction) BeforeCreate(*gorm.DB) error          { return ensureID(&m.ID) }
+func (m *UserAPIKey) BeforeCreate(*gorm.DB) error           { return ensureID(&m.ID) }
 func (m *DashboardEnvironment) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
-func (m *CLI) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
-func (m *UsageMetric) BeforeCreate(*gorm.DB) error { return ensureID(&m.ID) }
+func (m *CLI) BeforeCreate(*gorm.DB) error                  { return ensureID(&m.ID) }
+func (m *Provider) BeforeCreate(*gorm.DB) error             { return ensureID(&m.ID) }
+func (m *UsageMetric) BeforeCreate(*gorm.DB) error          { return ensureID(&m.ID) }
 
 // ApplyBillingDefaults fills missing billing preference fields.
 func (m *User) ApplyBillingDefaults() {

@@ -22,40 +22,27 @@ type Runner interface {
 	Run(ctx context.Context, workDir, command string) ([]byte, error)
 }
 
-// ExecRunner runs commands via the OS shell, wrapping them in `nix develop`
-// when the Nix toolchain is available so they execute inside the project's
-// pinned environment.
+// ExecRunner runs commands via the OS shell inside an isolated HOME. Nix
+// profile bin directories are prepended to PATH so provisioned packages are
+// visible without requiring a flake in the working directory.
 type ExecRunner struct{}
 
 // Run implements Runner.
 func (ExecRunner) Run(ctx context.Context, workDir, command string) ([]byte, error) {
-	var cmd *exec.Cmd
-	if nixAvailable() {
-		profile := filepath.Join(workDir, ".octra", "nix-profile")
-		_ = os.MkdirAll(filepath.Dir(profile), 0o755)
-		cmd = exec.CommandContext(ctx, "nix", "develop",
-			"--extra-experimental-features", "nix-command flakes",
-			"--profile", profile,
-			"--command", "sh", "-c", command)
-	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", command)
-	}
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = workDir
 
 	homeDir := filepath.Join(workDir, "home")
 	os.MkdirAll(filepath.Join(homeDir, ".config"), 0o755)
 	os.MkdirAll(filepath.Join(homeDir, ".local", "share"), 0o755)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = prependPath(os.Environ(), profileBinPaths(workDir))
+	cmd.Env = append(cmd.Env,
 		"HOME="+homeDir,
 		"XDG_CONFIG_HOME="+filepath.Join(homeDir, ".config"),
 		"XDG_DATA_HOME="+filepath.Join(homeDir, ".local", "share"),
 	)
 
 	return cmd.CombinedOutput()
-}
-
-func nixAvailable() bool {
-	return Available()
 }
 
 // Available reports whether the Nix toolchain is present on $PATH.
@@ -84,8 +71,9 @@ func (m *Manager) EnvPath(userID string) string {
 	return filepath.Join(m.baseDir, userID)
 }
 
-// CreateEnvironment ensures the user's environment directory exists and, when a
-// CLI is requested, installs it. Installing the CLI is idempotent.
+// CreateEnvironment ensures the user's environment directory exists. CLI
+// packages are provisioned into the shared system profile by ProvisionSystem so
+// each environment stays focused on per-profile dependencies like skills.
 func (m *Manager) CreateEnvironment(ctx context.Context, userID string, cli model.CLIType) error {
 	path := m.EnvPath(userID)
 	if err := os.MkdirAll(path, 0o755); err != nil {
@@ -95,13 +83,8 @@ func (m *Manager) CreateEnvironment(ctx context.Context, userID string, cli mode
 		// No CLI: the environment is only used for proxy-mode requests.
 		return nil
 	}
-	pkg := cliPackage(cli)
-	if pkg == "" {
+	if cliPackage(cli) == "" {
 		return fmt.Errorf("unknown cli %q", cli)
-	}
-	cmd := fmt.Sprintf("nix profile install nixpkgs#%s || true", pkg)
-	if out, err := m.runner.Run(ctx, path, cmd); err != nil {
-		return fmt.Errorf("install cli %s: %w\n%s", cli, err, string(out))
 	}
 	return nil
 }
@@ -110,7 +93,8 @@ func (m *Manager) CreateEnvironment(ctx context.Context, userID string, cli mode
 // install strategy depends on the skill type.
 func (m *Manager) InstallSkill(ctx context.Context, userID string, skill model.Skill) error {
 	path := m.EnvPath(userID)
-	cmd := skillInstallCommand(skill)
+	profile := filepath.Join(path, ".octra", "nix-profile")
+	cmd := skillInstallCommand(skill, profile)
 	if cmd == "" {
 		// built-in skills need no provisioning.
 		return nil
@@ -122,7 +106,7 @@ func (m *Manager) InstallSkill(ctx context.Context, userID string, skill model.S
 }
 
 // skillInstallCommand derives the shell command used to install a skill.
-func skillInstallCommand(skill model.Skill) string {
+func skillInstallCommand(skill model.Skill, profile string) string {
 	switch skill.Type {
 	case model.SkillBuiltin:
 		return ""
@@ -131,7 +115,7 @@ func skillInstallCommand(skill model.Skill) string {
 		if attr == "" {
 			attr = skill.Name
 		}
-		return fmt.Sprintf("nix profile install nixpkgs#%s || true", attr)
+		return fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
 	case model.SkillCustom:
 		return skill.InstallCmd
 	default:
@@ -155,16 +139,16 @@ func cliPackage(ct model.CLIType) string {
 // ProvisionSystem installs every built-in CLI into the default Nix user profile
 // so they are available globally (no per-environment install needed).
 func (m *Manager) ProvisionSystem(ctx context.Context) error {
-	workDir, err := os.MkdirTemp("", "octra-provision-*")
-	if err != nil {
+	workDir := filepath.Join(m.baseDir, ".system")
+	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		return fmt.Errorf("provision workdir: %w", err)
 	}
-	defer os.RemoveAll(workDir)
+	profile := filepath.Join(workDir, "nix-profile")
 
 	for _, pkg := range cli.BuiltinCLIs() {
 		cmd := pkg.InstallCmd
 		if attr := pkg.NixAttr; attr != "" {
-			cmd = fmt.Sprintf("nix profile install nixpkgs#%s || true", attr)
+			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
 		}
 		if cmd == "" {
 			continue
@@ -174,4 +158,43 @@ func (m *Manager) ProvisionSystem(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func profileBinPaths(workDir string) []string {
+	baseDir := filepath.Dir(workDir)
+	return []string{
+		filepath.Join(workDir, ".octra", "nix-profile", "bin"),
+		filepath.Join(workDir, "home", ".nix-profile", "bin"),
+		filepath.Join(baseDir, ".system", "nix-profile", "bin"),
+		filepath.Join(baseDir, ".system", "home", ".nix-profile", "bin"),
+	}
+}
+
+func prependPath(env []string, dirs []string) []string {
+	currentPath := os.Getenv("PATH")
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "PATH=") {
+			currentPath = strings.TrimPrefix(entry, "PATH=")
+			break
+		}
+	}
+	pathValue := strings.Join(append(dirs, currentPath), string(os.PathListSeparator))
+	next := make([]string, 0, len(env)+1)
+	added := false
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "PATH=") {
+			next = append(next, "PATH="+pathValue)
+			added = true
+			continue
+		}
+		next = append(next, entry)
+	}
+	if !added {
+		next = append(next, "PATH="+pathValue)
+	}
+	return next
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
 }

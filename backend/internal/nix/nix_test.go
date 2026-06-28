@@ -31,15 +31,25 @@ func TestCreateEnvironmentWithoutCLI(t *testing.T) {
 	}
 }
 
-func TestCreateEnvironmentInstallsCLI(t *testing.T) {
+func TestCreateEnvironmentUsesGlobalCLIProfile(t *testing.T) {
 	r := &fakeRunner{}
 	m := NewManager(t.TempDir(), r)
 
 	if err := m.CreateEnvironment(context.Background(), "user1", "claude-code"); err != nil {
 		t.Fatalf("CreateEnvironment: %v", err)
 	}
-	if len(r.commands) != 1 || !strings.Contains(r.commands[0], "nixpkgs#claude-code") {
-		t.Fatalf("expected claude-code install, got %v", r.commands)
+	if len(r.commands) != 0 {
+		t.Fatalf("expected no per-environment CLI install, got %v", r.commands)
+	}
+}
+
+func TestCreateEnvironmentRejectsUnknownCLI(t *testing.T) {
+	r := &fakeRunner{}
+	m := NewManager(t.TempDir(), r)
+
+	err := m.CreateEnvironment(context.Background(), "user1", "bad cli; rm -rf /")
+	if err == nil {
+		t.Fatal("expected unknown CLI error")
 	}
 }
 
@@ -69,10 +79,46 @@ func TestInstallSkillByType(t *testing.T) {
 				if !strings.Contains(r.commands[0], tc.contains) {
 					t.Fatalf("command %q does not contain %q", r.commands[0], tc.contains)
 				}
+				if tc.skill.Type == model.SkillNixpkgs {
+					if !strings.Contains(r.commands[0], "--profile") {
+						t.Fatalf("expected nixpkgs skill command to install into explicit profile: %q", r.commands[0])
+					}
+					if strings.Contains(r.commands[0], "|| true") {
+						t.Fatalf("skill install command must not mask failures: %q", r.commands[0])
+					}
+				}
 			} else if len(r.commands) != 0 {
 				t.Fatalf("expected no command for builtin, got %v", r.commands)
 			}
 		})
+	}
+}
+
+func TestProvisionSystemInstallsCLIsIntoPersistentProfile(t *testing.T) {
+	r := &fakeRunner{}
+	baseDir := t.TempDir()
+	m := NewManager(baseDir, r)
+
+	if err := m.ProvisionSystem(context.Background()); err != nil {
+		t.Fatalf("ProvisionSystem: %v", err)
+	}
+	if len(r.commands) == 0 {
+		t.Fatal("expected built-in CLI provisioning commands")
+	}
+	foundNixProfileInstall := false
+	for _, cmd := range r.commands {
+		if strings.Contains(cmd, "profile install") {
+			foundNixProfileInstall = true
+			if !strings.Contains(cmd, ".system/nix-profile") {
+				t.Fatalf("nix CLI install must target persistent system profile: %q", cmd)
+			}
+		}
+		if strings.Contains(cmd, "|| true") {
+			t.Fatalf("provisioning command must not mask failures: %q", cmd)
+		}
+	}
+	if !foundNixProfileInstall {
+		t.Fatal("expected at least one nix profile install command")
 	}
 }
 

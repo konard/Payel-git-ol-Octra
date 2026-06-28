@@ -30,6 +30,9 @@ const requiredFiles = [
   'app/components/EmptyDataPanel.module.css',
   'app/components/UserBalance.tsx',
   'app/components/UserBalance.module.css',
+  'app/components/CatalogSearchModal.tsx',
+  'app/components/WorkflowCanvas.tsx',
+  'app/server/catalog.ts',
   'app/globals.css',
 ];
 
@@ -65,6 +68,9 @@ for (const phrase of ['octra', 'google', 'github', 'lefine', 'dashboard', 'sign 
 if (exists('app/app/page.tsx')) {
   const homepageSource = [
     'app/app/page.tsx',
+    'app/components/CatalogSearchModal.tsx',
+    'app/components/WorkflowCanvas.tsx',
+    'app/server/catalog.ts',
     'app/components/EnvironmentPanel.tsx',
     'app/lib/environments.ts',
     'app/config/routes.ts',
@@ -76,6 +82,9 @@ if (exists('app/app/page.tsx')) {
   for (const phrase of ['active-environments', 'environment_id', '/environment', '/api/chat', 'cli_state']) {
     assert(homepageSource.includes(phrase), `Homepage must present the requested TradingView-style node workspace: missing ${phrase}`);
   }
+  for (const phrase of ['catalogsearchmodal', 'workflowcanvasitem', 'catalogitem', 'providers', 'custom_provider']) {
+    assert(homepageSource.includes(phrase), `Homepage must wire catalogue search into the canvas: missing ${phrase}`);
+  }
 
   assert(homepageSource.includes('userbalance'), 'Homepage top bar must render the server-backed UserBalance component');
   assert(homepageSource.includes('emptydatapanel'), 'Homepage runtime metrics must use an empty/live-data component instead of hardcoded metrics');
@@ -86,6 +95,20 @@ if (exists('app/app/page.tsx')) {
 
   for (const rejectedPhrase of ['ai delivery cockpit', 'hero-section', 'capability-band', 'live execution tape']) {
     assert(!homepageSource.includes(rejectedPhrase), `Homepage must not fall back to the rejected landing-page shape: ${rejectedPhrase}`);
+  }
+}
+
+if (exists('app/server/catalog.ts')) {
+  const catalogSource = read('app/server/catalog.ts').toLowerCase();
+  for (const phrase of ['api.catalog_search', 'providers', 'cli', 'skills', 'custom']) {
+    assert(catalogSource.includes(phrase), `Catalog client must support live provider/CLI/skill/custom search: missing ${phrase}`);
+  }
+}
+
+if (exists('app/components/WorkflowCanvas.tsx')) {
+  const canvasSource = read('app/components/WorkflowCanvas.tsx').toLowerCase();
+  for (const phrase of ['usenodesstate', 'useedgesstate', 'onconnect', 'nodesconnectable', 'nodesdraggable']) {
+    assert(canvasSource.includes(phrase), `Workflow canvas must support movable connected nodes: missing ${phrase}`);
   }
 }
 
