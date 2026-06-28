@@ -1,0 +1,16 @@
+export const ASSETS = {
+  LOGO: '/assets/octra-node-logo.png',
+  LOGO_PNG: '/assets/octra-node-logo.png',
+  ICON: '/assets/icon.png',
+  CLAUDE_SYMBOL: '/assets/Claude_AI_symbol.svg',
+  OPENROUTER: '/assets/openrouter.svg',
+  CREWAI_MASCOT: '/assets/crewai-mascot.png',
+  CREWAI_MASCOT_CUNNING: '/assets/crewai-mascot-cunning.png',
+  DEEPSEEK: '/assets/deepseek-color.png',
+  GEMINI: '/assets/gemini-color.png',
+  GROK: '/assets/grok.png',
+  N8N: '/assets/n8n-color.png',
+  QWEN: '/assets/qwen-color.png',
+  TELEGRAM: '/assets/Telegram.webp',
+  ZAI: '/assets/zai.png',
+} as const;
