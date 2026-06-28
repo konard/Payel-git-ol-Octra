@@ -76,7 +76,7 @@ func (a *API) Router() *router.Router {
 	// Dashboard environments
 	r.POST("/api/environments", a.withAuth(a.handleCreateDashboardEnvironment))
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
-	r.PUT("/api/environments/:id", a.withAuth(a.handlePatchDashboardEnvironment))
+	r.POST("/api/environments/patch", a.withAuth(a.handlePatchDashboardEnvironment))
 	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
 
 	// Skills search
@@ -633,18 +633,13 @@ func (a *API) handleListDashboardEnvironments(ctx *fasthttp.RequestCtx) {
 }
 
 type patchDashboardEnvironmentRequest struct {
+	ID         string  `json:"id"`
 	Active     *bool   `json:"active"`
 	Visibility *string `json:"visibility"`
 }
 
 func (a *API) handlePatchDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 	user := userFrom(ctx)
-	idStr := ctx.UserValue("id").(string)
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
-		return
-	}
 
 	var req patchDashboardEnvironmentRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
@@ -653,6 +648,12 @@ func (a *API) handlePatchDashboardEnvironment(ctx *fasthttp.RequestCtx) {
 	}
 	if req.Active == nil && req.Visibility == nil {
 		writeError(ctx, fasthttp.StatusBadRequest, "nothing to update")
+		return
+	}
+
+	id, err := uuid.Parse(req.ID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
 		return
 	}
 

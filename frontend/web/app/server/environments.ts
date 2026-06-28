@@ -26,10 +26,10 @@ export async function listDashboardEnvironments(): Promise<Response> {
 }
 
 export async function patchDashboardEnvironment(id: string, changes: { active?: boolean; visibility?: string }): Promise<Response> {
-  return fetch(`${API.ENVIRONMENTS}/${id}`, {
-    method: 'PUT',
+  return fetch(`${API.ENVIRONMENTS}/patch`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(changes),
+    body: JSON.stringify({ id, ...changes }),
   });
 }
 
