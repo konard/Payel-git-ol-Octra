@@ -5,27 +5,23 @@ import {
   ChevronDown,
   Layers3,
   LineChart,
-  Lock,
-  LockOpen,
+  LockKeyhole,
   Pause,
   Plus,
   Search,
   Settings,
   Sparkles,
-  Trash2,
   Workflow,
   Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
-import { EnvironmentPanel } from '../components/EnvironmentPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
-import { IconButton } from '../components/IconButton';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
@@ -197,12 +193,40 @@ export default function HomePage() {
               <div className="active-environments-title">
                 <span>Active environments</span>
               </div>
-              <a className="terminal-button" href={ROUTES.DASHBOARD_ENVIRONMENTS}>
+              <button className="terminal-button" onClick={() => setShowCreate(true)}>
                 <Plus size={15} />
                 New
-              </a>
+              </button>
             </div>
-            <EnvironmentPanel mode="active" />
+            {envsLoading ? (
+              <p className="empty-flows-message">Loading environments…</p>
+            ) : activeEnvs.length === 0 ? (
+              <p className="empty-flows-message">You don't have any active environments.</p>
+            ) : (
+              <div className="active-environment-list">
+                {activeEnvs.map((env) => (
+                  <article className="active-environment-row" key={env.id}>
+                    <div>
+                      <span>Active</span>
+                      <strong className="environment-name-line">
+                        <LockKeyhole size={14} aria-hidden="true" />
+                        {env.name}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>environment_id</span>
+                      <strong>{env.id}</strong>
+                    </div>
+                    <div className="environment-actions">
+                      <button type="button" className="environment-icon-button" onClick={() => handlePause(env.id)} aria-label={`Pause ${env.name}`} title="Pause environment">
+                        <Pause size={15} />
+                      </button>
+                      <a className="environment-manage-link" href={ROUTES.DASHBOARD_ENVIRONMENTS}>Manage</a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </section>
 
