@@ -2305,6 +2305,16 @@ button {
   grid-column: 5;
 }
 
+.active-environments .active-environment-row > div:nth-child(2) {
+  text-align: center;
+}
+
+.active-environments .active-environment-row > div:nth-child(2) strong {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
 .environment-icon-button,
 .environment-manage-link {
   display: inline-flex;
