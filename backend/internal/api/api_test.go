@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
 	"backend/internal/cli"
 	"backend/internal/config"
-	"backend/internal/llm"
 	"backend/internal/model"
 	"backend/internal/oauth"
 	"backend/internal/provider"
@@ -28,21 +28,61 @@ type fakeProvisioner struct{}
 func (fakeProvisioner) CreateEnvironment(context.Context, string, model.CLIType) error { return nil }
 func (fakeProvisioner) InstallSkill(context.Context, string, model.Skill) error        { return nil }
 
-type fakeCLIRouter struct{}
-
-func (fakeCLIRouter) Send(_ context.Context, _ cli.LaunchSpec, prompt string) (string, error) {
-	return "cli:" + prompt, nil
-}
-
-type fakeLLM struct{}
-
-func (fakeLLM) Complete(_ context.Context, req llm.Request) (string, error) {
-	return "llm:" + req.Prompt, nil
-}
-
 type fakeEnvPaths struct{}
 
 func (fakeEnvPaths) EnvPath(id string) string { return "/envs/" + id }
+
+type fakeOcaweProvider struct {
+	port int
+}
+
+func (f *fakeOcaweProvider) EnsureOcawe(_ context.Context, _ cli.LaunchSpec) (int, error) {
+	if f.port > 0 {
+		return f.port, nil
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		model, _ := body["model"].(string)
+
+		var prefix string
+		if len(model) > 4 && model[:4] == "cli/" {
+			prefix = "cli:"
+		} else {
+			prefix = "llm:"
+		}
+
+		messages := body["messages"].([]any)
+		msg := messages[0].(map[string]any)
+		prompt, _ := msg["content"].(string)
+
+		resp := map[string]any{
+			"choices": []map[string]any{
+				{
+					"message": map[string]any{
+						"role":    "assistant",
+						"content": prefix + prompt,
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	})
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	f.port = listener.Addr().(*net.TCPAddr).Port
+
+	go http.Serve(listener, mux)
+
+	time.Sleep(50 * time.Millisecond)
+	return f.port, nil
+}
 
 func testCfg() config.Config {
 	return config.Config{
@@ -70,6 +110,7 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
+	canvasNodes := repository.NewCanvasNodeRepository(db)
 	clis := repository.NewCLIRepository(db)
 	providers := repository.NewProviderRepository(db)
 
@@ -104,10 +145,10 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
 	authSvc := service.NewAuthService(users, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, fakeProvisioner{}, billingSvc)
-	chatSvc := service.NewChatService(agents, fakeCLIRouter{}, fakeLLM{}, fakeEnvPaths{})
+	chatSvc := service.NewChatService(agents, &fakeOcaweProvider{}, fakeEnvPaths{})
 	oauthH := oauth.New(authSvc, cfg)
 
-	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, skills, clis, providers, nil).Router().Handler
+	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, nil).Router().Handler
 
 	ln := fasthttputil.NewInmemoryListener()
 	server := &fasthttp.Server{Handler: handler}

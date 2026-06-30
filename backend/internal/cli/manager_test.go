@@ -27,6 +27,7 @@ func (p *fakeProcess) Send(_ context.Context, prompt string) (string, error) {
 func (p *fakeProcess) Alive() bool { return p.alive }
 func (p *fakeProcess) Kill() error { p.killed++; p.alive = false; return nil }
 func (p *fakeProcess) PID() int    { return p.id }
+func (p *fakeProcess) Port() int   { return 0 }
 
 // fakeLauncher hands out preconfigured processes and counts launches.
 type fakeLauncher struct {
@@ -56,6 +57,15 @@ func (s *memStore) Save(_ context.Context, id string, _ State, _ time.Duration) 
 	defer s.mu.Unlock()
 	s.alive[id] = true
 	return nil
+}
+func (s *memStore) Get(_ context.Context, id string) (State, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.alive[id]
+	if !ok {
+		return State{}, errors.New("not found")
+	}
+	return State{PID: 1, StartedAt: time.Now()}, nil
 }
 func (s *memStore) Delete(_ context.Context, id string) error {
 	s.mu.Lock()

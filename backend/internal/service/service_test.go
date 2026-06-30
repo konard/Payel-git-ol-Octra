@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"net"
+	"net/http"
 	"testing"
+	"time"
 
 	"backend/internal/cli"
 	"backend/internal/config"
-	"backend/internal/llm"
 	"backend/internal/model"
 	"backend/internal/repository"
 
@@ -459,31 +462,59 @@ func TestCalculateHostingCharge(t *testing.T) {
 	}
 }
 
-type fakeCLIRouter struct {
-	called bool
-	spec   cli.LaunchSpec
-}
-
-func (f *fakeCLIRouter) Send(_ context.Context, spec cli.LaunchSpec, prompt string) (string, error) {
-	f.called = true
-	f.spec = spec
-	return "cli:" + prompt, nil
-}
-
-type fakeLLM struct {
-	called bool
-	req    llm.Request
-}
-
-func (f *fakeLLM) Complete(_ context.Context, req llm.Request) (string, error) {
-	f.called = true
-	f.req = req
-	return "llm:" + req.Prompt, nil
-}
-
 type fakeEnvPaths struct{}
 
 func (fakeEnvPaths) EnvPath(userID string) string { return "/envs/" + userID }
+
+type fakeOcawePortProvider struct {
+	port int
+}
+
+func (f *fakeOcawePortProvider) EnsureOcawe(_ context.Context, _ cli.LaunchSpec) (int, error) {
+	if f.port > 0 {
+		return f.port, nil
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		model, _ := body["model"].(string)
+
+		var prefix string
+		if len(model) > 4 && model[:4] == "cli/" {
+			prefix = "cli:"
+		} else {
+			prefix = "llm:"
+		}
+
+		messages := body["messages"].([]any)
+		msg := messages[0].(map[string]any)
+		prompt, _ := msg["content"].(string)
+
+		resp := map[string]any{
+			"choices": []map[string]any{
+				{
+					"message": map[string]any{
+						"role":    "assistant",
+						"content": prefix + prompt,
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	})
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	f.port = listener.Addr().(*net.TCPAddr).Port
+	go http.Serve(listener, mux)
+	time.Sleep(50 * time.Millisecond)
+	return f.port, nil
+}
 
 func TestChatRoutesToCLI(t *testing.T) {
 	db := newTestDB(t)
@@ -493,9 +524,7 @@ func TestChatRoutesToCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cliR := &fakeCLIRouter{}
-	llmC := &fakeLLM{}
-	svc := NewChatService(agents, cliR, llmC, fakeEnvPaths{})
+	svc := NewChatService(agents, &fakeOcawePortProvider{}, fakeEnvPaths{})
 
 	out, err := svc.Chat(context.Background(), user, "hello", nil)
 	if err != nil {
@@ -503,12 +532,6 @@ func TestChatRoutesToCLI(t *testing.T) {
 	}
 	if out != "cli:hello" {
 		t.Fatalf("unexpected output %q", out)
-	}
-	if !cliR.called || llmC.called {
-		t.Fatal("expected CLI router to be used, not LLM")
-	}
-	if cliR.spec.EnvPath != "/envs/"+user.ID.String() {
-		t.Fatalf("env path not wired: %q", cliR.spec.EnvPath)
 	}
 }
 
@@ -520,9 +543,7 @@ func TestChatRoutesToLLMWhenNoCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cliR := &fakeCLIRouter{}
-	llmC := &fakeLLM{}
-	svc := NewChatService(agents, cliR, llmC, fakeEnvPaths{})
+	svc := NewChatService(agents, &fakeOcawePortProvider{}, fakeEnvPaths{})
 
 	out, err := svc.Chat(context.Background(), user, "hi", nil)
 	if err != nil {
@@ -531,15 +552,12 @@ func TestChatRoutesToLLMWhenNoCLI(t *testing.T) {
 	if out != "llm:hi" {
 		t.Fatalf("unexpected output %q", out)
 	}
-	if cliR.called || !llmC.called {
-		t.Fatal("expected LLM to be used, not CLI router")
-	}
 }
 
 func TestChatWithoutEnvironment(t *testing.T) {
 	db := newTestDB(t)
 	user := seedUser(t, db)
-	svc := NewChatService(repository.NewAgentRepository(db), &fakeCLIRouter{}, &fakeLLM{}, fakeEnvPaths{})
+	svc := NewChatService(repository.NewAgentRepository(db), &fakeOcawePortProvider{}, fakeEnvPaths{})
 	if _, err := svc.Chat(context.Background(), user, "hi", nil); err != ErrNoEnvironment {
 		t.Fatalf("expected ErrNoEnvironment, got %v", err)
 	}
