@@ -50,6 +50,31 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ocawe — AI runtime engine. Each user normally gets their own instance
+  # launched inside a Nix environment. This dev instance is used for testing
+  # and development; the backend proxies chat/workflow requests to it when
+  # OCAWE_ADDR is set.
+  ocawe:
+    build:
+      context: ./ocawe
+      dockerfile: Dockerfile
+    container_name: octra-ocawe
+    environment:
+      - OCAWE_PORT=4111
+      - OCAWE_WORKFLOWS_ROOT=/ocawe/workflows
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - COGNICORE_MOCK_LLM=${COGNICORE_MOCK_LLM:-1}
+    ports:
+      - "4111:4111"
+    volumes:
+      - ocawe_workflows:/ocawe/workflows
+    networks:
+      - octra-network
+    restart: unless-stopped
+
   # backend — the Octra monolith. Replaces the former user / agents /
   # orchestrator / apigateway microservices with a single Go service that
   # aggregates AI CLIs and exposes a personal MCP endpoint per user.
@@ -144,3 +169,4 @@ volumes:
   redis_data:
   typesense_data:
   octra_environments:
+  ocawe_workflows:
