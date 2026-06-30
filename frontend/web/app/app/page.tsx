@@ -55,6 +55,8 @@ export default function HomePage() {
   const [canvasEdges, setCanvasEdges] = useState<Edge[]>([]);
   const canvasItemsRef = useRef(canvasItems);
   canvasItemsRef.current = canvasItems;
+  const canvasEdgesRef = useRef(canvasEdges);
+  canvasEdgesRef.current = canvasEdges;
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const selectedEnvRef = useRef(selectedEnv);
   selectedEnvRef.current = selectedEnv;
@@ -119,10 +121,11 @@ export default function HomePage() {
   const saveCanvas = useCallback(async (items: WorkflowCanvasItem[]) => {
     const envId = selectedEnvRef.current;
     if (!envId) return;
+    const edges = canvasEdgesRef.current;
 
     if (wsConnectedRef.current) {
       const nodes = itemsToNodes(items);
-      const sent = sendWS({ type: 'save', nodes });
+      const sent = sendWS({ type: 'save', nodes, edges: edges.map(e => ({ source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle })) });
       if (sent) return;
     }
 
@@ -374,8 +377,7 @@ export default function HomePage() {
               positionY: n.position_y ?? 0,
             }));
             setCanvasItems(items);
-            setCanvasEdges([]);
-            saveCanvasLocal(selectedEnv, items, []);
+            saveCanvasLocal(selectedEnvRef.current, items, canvasEdgesRef.current);
             break;
           }
           case 'saved':
