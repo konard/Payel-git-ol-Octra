@@ -23,6 +23,8 @@ type Process interface {
 	Kill() error
 	// PID returns the OS process id.
 	PID() int
+	// Port returns the HTTP port of the process (0 for non-HTTP processes).
+	Port() int
 }
 
 // LaunchSpec carries everything needed to start a CLI for a user.
@@ -84,8 +86,28 @@ func (m *Manager) Send(ctx context.Context, spec LaunchSpec, prompt string) (str
 	}
 
 	// Keep the process warm for another TTL window.
-	_ = m.store.Save(ctx, spec.UserID, State{PID: proc.PID(), StartedAt: time.Now()}, m.ttl)
+	_ = m.store.Save(ctx, spec.UserID, State{PID: proc.PID(), Port: proc.Port(), StartedAt: time.Now()}, m.ttl)
 	return reply, nil
+}
+
+// EnsureOcawe returns the port of a running Ocawe HTTP server for the user,
+// launching one if necessary.
+func (m *Manager) EnsureOcawe(ctx context.Context, spec LaunchSpec) (int, error) {
+	proc, err := m.ensure(ctx, spec)
+	if err != nil {
+		return 0, err
+	}
+	return proc.Port(), nil
+}
+
+// OcawePort returns the stored Ocawe port for the user from Redis, or 0 if
+// no port is recorded.
+func (m *Manager) OcawePort(ctx context.Context, userID string) (int, error) {
+	st, err := m.store.Get(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+	return st.Port, nil
 }
 
 // ensure returns a live process for the user, launching one if necessary.

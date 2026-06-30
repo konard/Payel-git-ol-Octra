@@ -265,3 +265,7 @@ func (p *execProcess) PID() int {
 	}
 	return 0
 }
+
+func (p *execProcess) Port() int {
+	return 0
+}

@@ -24,6 +24,8 @@ type StateStore interface {
 	Alive(ctx context.Context, userID string) (bool, error)
 	// Save writes the state with the given TTL (refreshing it on every call).
 	Save(ctx context.Context, userID string, st State, ttl time.Duration) error
+	// Get reads the current state for the user.
+	Get(ctx context.Context, userID string) (State, error)
 	// Delete removes the state record.
 	Delete(ctx context.Context, userID string) error
 }
@@ -45,6 +47,19 @@ func NewRedisStateStore(rdb *redis.Client) *RedisStateStore {
 func (s *RedisStateStore) Alive(ctx context.Context, userID string) (bool, error) {
 	n, err := s.rdb.Exists(ctx, stateKey(userID)).Result()
 	return n > 0, err
+}
+
+// Get implements StateStore.
+func (s *RedisStateStore) Get(ctx context.Context, userID string) (State, error) {
+	data, err := s.rdb.Get(ctx, stateKey(userID)).Bytes()
+	if err != nil {
+		return State{}, err
+	}
+	var st State
+	if err := json.Unmarshal(data, &st); err != nil {
+		return State{}, err
+	}
+	return st, nil
 }
 
 // Save implements StateStore.
