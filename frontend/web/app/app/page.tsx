@@ -54,6 +54,7 @@ export default function HomePage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
   const [canvasEdges, setCanvasEdges] = useState<Edge[]>([]);
+  const [copiedEnvId, setCopiedEnvId] = useState<string | null>(null);
   const canvasItemsRef = useRef(canvasItems);
   canvasItemsRef.current = canvasItems;
   const canvasEdgesRef = useRef(canvasEdges);
@@ -505,11 +506,11 @@ export default function HomePage() {
                     <div>
                       <span>environment_id</span>
                       <strong>{env.id}</strong>
-                      <button className="copy-id-button" onClick={() => navigator.clipboard.writeText(env.id)} aria-label="Copy environment ID">
-                        <Copy size={13} />
-                      </button>
                     </div>
                     <div className="environment-actions">
+                      <IconButton variant="success" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(env.id); setCopiedEnvId(env.id); setTimeout(() => setCopiedEnvId(null), 1200); }} aria-label="Copy environment ID">
+                        {copiedEnvId === env.id ? <span className="copy-check-inline">✓</span> : <Copy size={15} />}
+                      </IconButton>
                       <IconButton variant="warning" onClick={(e) => { e.stopPropagation(); handlePause(env.id); }} aria-label={`Pause ${env.name}`}>
                         <Pause size={15} />
                       </IconButton>
