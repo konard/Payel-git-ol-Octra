@@ -911,26 +911,6 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	token := string(ctx.QueryArgs().Peek("token"))
-	if token == "" {
-		token = string(ctx.Request.Header.Peek(authHeader))
-	}
-	user, err := a.auth.Authenticate(ctx, token)
-	if err != nil {
-		writeError(ctx, fasthttp.StatusUnauthorized, "invalid or missing api token")
-		return
-	}
-
-	env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
-	if err != nil {
-		writeError(ctx, fasthttp.StatusNotFound, "environment not found")
-		return
-	}
-	if env.UserID != user.ID {
-		writeError(ctx, fasthttp.StatusForbidden, "not your environment")
-		return
-	}
-
 	upgrader := websocket.FastHTTPUpgrader{
 		CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true },
 	}
@@ -943,6 +923,26 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 			return nil
 		})
 		conn.SetReadDeadline(time.Now().Add(45 * time.Second))
+
+		token := string(ctx.QueryArgs().Peek("token"))
+		if token == "" {
+			token = string(ctx.Request.Header.Peek(authHeader))
+		}
+		user, err := a.auth.Authenticate(ctx, token)
+		if err != nil {
+			conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: "invalid or missing api token"})
+			return
+		}
+
+		env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
+		if err != nil {
+			conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: "environment not found"})
+			return
+		}
+		if env.UserID != user.ID {
+			conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: "not your environment"})
+			return
+		}
 
 		nodes, err := a.canvasNodeRepo.ListByEnvironment(ctx, envID)
 		if err != nil {
