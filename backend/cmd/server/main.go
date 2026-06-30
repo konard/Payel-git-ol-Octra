@@ -177,7 +177,7 @@ func main() {
 	seedCLIs(ctx, clis, tsClient)
 	seedProviders(ctx, providers, tsClient)
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient).Router().Handler)
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient, cliMgr).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

@@ -1,9 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +28,10 @@ const authHeader = "octra-api-token"
 const authHeaderBearer = "Authorization"
 const ctxUserKey = "octra_user"
 
+type WorkflowProxy interface {
+	OcawePort(ctx context.Context, userID string) (int, error)
+}
+
 type API struct {
 	auth    *service.AuthService
 	env     *service.EnvironmentService
@@ -37,6 +45,7 @@ type API struct {
 	cliRepo          repository.CLIRepository
 	providerRepo     repository.ProviderRepository
 	typesense        *ts.Client
+	workflowProxy    WorkflowProxy
 }
 
 func New(
@@ -51,8 +60,9 @@ func New(
 	cliRepo repository.CLIRepository,
 	providerRepo repository.ProviderRepository,
 	typesense *ts.Client,
+	workflowProxy ...WorkflowProxy,
 ) *API {
-	return &API{
+	api := &API{
 		auth:             auth,
 		env:              env,
 		chat:             chat,
@@ -65,6 +75,10 @@ func New(
 		providerRepo:     providerRepo,
 		typesense:        typesense,
 	}
+	if len(workflowProxy) > 0 {
+		api.workflowProxy = workflowProxy[0]
+	}
+	return api
 }
 
 func (a *API) Router() *router.Router {
@@ -127,6 +141,9 @@ func (a *API) Router() *router.Router {
 	r.GET("/api/providers", a.handleListProviders)
 	r.GET("/api/providers/search", a.handleProviderSearch)
 	r.GET("/api/catalog/search", a.handleCatalogSearch)
+
+	// Workflow proxy to Ocawe: forwards /v1/workflows/* to the user's Ocawe
+	r.ANY("/v1/workflows/{rest:*}", a.withAuth(a.handleWorkflowProxy))
 	return r
 }
 
@@ -357,6 +374,55 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeJSON(ctx, fasthttp.StatusOK, chatResponse{Response: resp})
+}
+
+func (a *API) handleWorkflowProxy(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	if a.workflowProxy == nil {
+		writeError(ctx, fasthttp.StatusNotFound, "workflow proxy not configured")
+		return
+	}
+
+	port, err := a.workflowProxy.OcawePort(ctx, user.ID.String())
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, fmt.Sprintf("ocawe unavailable: %v", err))
+		return
+	}
+
+	path := string(ctx.Path())
+	suffix := strings.TrimPrefix(path, "/v1/workflows")
+	target := fmt.Sprintf("http://127.0.0.1:%d/v1/workflows%s", port, suffix)
+	a.reverseProxy(ctx, target)
+}
+
+func (a *API) reverseProxy(ctx *fasthttp.RequestCtx, target string) {
+	body := ctx.PostBody()
+	req, err := http.NewRequest(string(ctx.Method()), target, bytes.NewReader(body))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
+		return
+	}
+	ctx.Request.Header.VisitAll(func(key, value []byte) {
+		req.Header.Set(string(key), string(value))
+	})
+	req.Header.Set("X-Forwarded-For", ctx.RemoteIP().String())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
+		return
+	}
+
+	ctx.SetStatusCode(resp.StatusCode)
+	ctx.SetContentType(resp.Header.Get("Content-Type"))
+	ctx.Write(respBody)
 }
 
 type billingBalanceResponse struct {

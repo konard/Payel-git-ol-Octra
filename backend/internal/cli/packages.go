@@ -30,6 +30,7 @@ func BuiltinCLIs() []CLIPackage {
 		{Name: "cline", NixAttr: "", Binary: "cline", InstallCmd: `nix-shell -p nodejs_22 --run "npm install -g cline"`},
 		{Name: "openhands", NixAttr: "", Binary: "openhands", InstallCmd: `nix-shell -p python3 --run "python3 -m pip install openhands"`},
 		{Name: "hermes", NixAttr: "hermes-agent", Binary: "hermes"},
+		{Name: "ocawecore", NixAttr: "", Binary: "ocawecore", InstallCmd: `nix-shell -p crystal --run "cd /opt/ocawe && shards build --production && cp bin/ocawecore /usr/local/bin/ocawecore"`},
 	}
 }
 
