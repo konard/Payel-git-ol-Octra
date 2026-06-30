@@ -92,7 +92,11 @@ export default function HomePage() {
       position_y: item.positionY ?? 0,
       sort_order: i,
     }));
-    await putCanvas(envId, nodes);
+    const res = await putCanvas(envId, nodes);
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'unknown error');
+      throw new Error(`putCanvas ${res.status}: ${text}`);
+    }
   }, []);
 
   const handleCanvasItemsChange = useCallback((items: WorkflowCanvasItem[]) => {
@@ -165,11 +169,8 @@ export default function HomePage() {
           },
         },
       ];
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (envId) {
-        saveTimerRef.current = setTimeout(() => {
-          saveCanvas(envId, next).catch((err) => console.error('save canvas failed', err));
-        }, 500);
+        saveCanvas(envId, next).catch((err) => console.error('save canvas failed', err));
       }
       return next;
     });
