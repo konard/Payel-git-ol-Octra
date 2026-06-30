@@ -3,6 +3,7 @@
 import {
   Activity,
   ChevronDown,
+  Copy,
   Layers3,
   LineChart,
   LockKeyhole,
@@ -504,6 +505,9 @@ export default function HomePage() {
                     <div>
                       <span>environment_id</span>
                       <strong>{env.id}</strong>
+                      <button className="copy-id-button" onClick={() => navigator.clipboard.writeText(env.id)} aria-label="Copy environment ID">
+                        <Copy size={13} />
+                      </button>
                     </div>
                     <div className="environment-actions">
                       <IconButton variant="warning" onClick={(e) => { e.stopPropagation(); handlePause(env.id); }} aria-label={`Pause ${env.name}`}>

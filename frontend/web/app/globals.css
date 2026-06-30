@@ -2762,13 +2762,34 @@ button {
 }
 
 .active-environments .active-environment-row > div:nth-child(2) {
-  text-align: center;
+  margin-left: 250px;
 }
 
 .active-environments .active-environment-row > div:nth-child(2) strong {
   font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
   word-break: break-all;
+}
+
+.copy-id-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  transition: color var(--anim-duration), border-color var(--anim-duration);
+  justify-self: start;
+}
+
+.copy-id-button:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
 }
 
 .environment-icon-button,
