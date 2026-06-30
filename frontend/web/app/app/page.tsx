@@ -21,6 +21,7 @@ import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowCanvas';
+import type { Edge } from '@xyflow/react';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { IconButton } from '../components/IconButton';
 import { CatalogSearchModal } from '../components/CatalogSearchModal';
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [selectedEnv, setSelectedEnv] = useState(() => getCookie('octra_selected_env'));
   const [searchOpen, setSearchOpen] = useState(false);
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
+  const [canvasEdges, setCanvasEdges] = useState<Edge[]>([]);
   const canvasItemsRef = useRef(canvasItems);
   canvasItemsRef.current = canvasItems;
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -58,7 +60,7 @@ export default function HomePage() {
   selectedEnvRef.current = selectedEnv;
   const wsRef = useRef<WebSocket | null>(null);
   const wsConnectedRef = useRef(false);
-  const wsFailedRef = useRef(false);
+  const backendCanvasSupported = useRef(true);
 
   const itemsToNodes = useCallback((items: WorkflowCanvasItem[]) =>
     items.map((item, i) => ({
@@ -116,27 +118,23 @@ export default function HomePage() {
 
   const saveCanvas = useCallback(async (items: WorkflowCanvasItem[]) => {
     const envId = selectedEnvRef.current;
-    if (!envId) {
-      console.warn('[canvas] save: no envId');
-      return;
-    }
-    console.log('[canvas] save:', items.length, 'items');
-
-    const nodes = itemsToNodes(items);
+    if (!envId) return;
 
     if (wsConnectedRef.current) {
+      const nodes = itemsToNodes(items);
       const sent = sendWS({ type: 'save', nodes });
-      if (sent) {
-        console.log('[canvas] save sent via ws');
-        return;
-      }
+      if (sent) return;
     }
 
-    console.log('[canvas] save via rest fallback');
-    const res = await putCanvas(envId, nodes);
-    if (!res.ok) {
-      console.error('[canvas] save rest failed:', res.status);
-    }
+    if (!backendCanvasSupported.current) return;
+
+    try {
+      const nodes = itemsToNodes(items);
+      const res = await putCanvas(envId, nodes);
+      if (res.status === 404) {
+        backendCanvasSupported.current = false;
+      }
+    } catch {}
   }, [itemsToNodes, sendWS]);
 
   const handleCanvasItemsChange = useCallback((items: WorkflowCanvasItem[]) => {
@@ -282,7 +280,7 @@ export default function HomePage() {
     try {
       const res = await getCanvas(envId);
       if (res.status === 404) {
-        console.log('[canvas] loadViaRest: 404 - no canvas saved yet');
+        backendCanvasSupported.current = false;
         return;
       }
       if (!res.ok) {
@@ -324,10 +322,12 @@ export default function HomePage() {
     }
 
     // Try loading from localStorage first (instant)
+    setCanvasEdges([]);
     const local = loadCanvasLocal(selectedEnv);
     if (local) {
-      console.log('[canvas] loaded', local.length, 'nodes from localStorage');
-      setCanvasItems(local);
+      console.log('[canvas] loaded', local.items.length, 'nodes,', local.edges.length, 'edges from localStorage');
+      setCanvasItems(local.items);
+      setCanvasEdges(local.edges);
     }
 
     const token = window.localStorage.getItem('octra_access_token') ?? window.localStorage.getItem('access_token');
@@ -374,7 +374,8 @@ export default function HomePage() {
               positionY: n.position_y ?? 0,
             }));
             setCanvasItems(items);
-            saveCanvasLocal(selectedEnv, items);
+            setCanvasEdges([]);
+            saveCanvasLocal(selectedEnv, items, []);
             break;
           }
           case 'saved':
@@ -409,11 +410,11 @@ export default function HomePage() {
     };
   }, [selectedEnv]);
 
-  // Persist canvas items to localStorage on every change
+  // Persist canvas items + edges to localStorage on every change
   useEffect(() => {
     if (!selectedEnv) return;
-    saveCanvasLocal(selectedEnv, canvasItems);
-  }, [canvasItems, selectedEnv]);
+    saveCanvasLocal(selectedEnv, canvasItems, canvasEdges);
+  }, [canvasItems, canvasEdges, selectedEnv]);
 
   return (
     <main className="site-shell workspace-home">
@@ -463,7 +464,7 @@ export default function HomePage() {
           </h1>
 
           <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
-            <WorkflowCanvas items={canvasItems} onItemsChange={handleCanvasItemsChange} />
+            <WorkflowCanvas items={canvasItems} onItemsChange={handleCanvasItemsChange} edges={canvasEdges} onEdgesChange={setCanvasEdges} />
           </section>
 
           <section className="active-environments" aria-label="Active environments list">
@@ -625,22 +626,24 @@ function getCookie(name: string): string {
 
 const CANVAS_STORAGE_PREFIX = 'octra_canvas_';
 
-function saveCanvasLocal(envId: string, items: WorkflowCanvasItem[]) {
+function saveCanvasLocal(envId: string, items: WorkflowCanvasItem[], edges: Edge[]) {
   try {
-    window.localStorage.setItem(CANVAS_STORAGE_PREFIX + envId, JSON.stringify(items));
-    console.log('[canvas] saved to localStorage for env', envId, items.length, 'items');
+    window.localStorage.setItem(CANVAS_STORAGE_PREFIX + envId, JSON.stringify({ items, edges }));
+    console.log('[canvas] saved to localStorage for env', envId, items.length, 'items,', edges.length, 'edges');
   } catch (e) {
     console.error('[canvas] localStorage save failed', e);
   }
 }
 
-function loadCanvasLocal(envId: string): WorkflowCanvasItem[] | null {
+function loadCanvasLocal(envId: string): { items: WorkflowCanvasItem[]; edges: Edge[] } | null {
   try {
     const raw = window.localStorage.getItem(CANVAS_STORAGE_PREFIX + envId);
     if (!raw) return null;
-    const items = JSON.parse(raw);
-    console.log('[canvas] loaded from localStorage for env', envId, items.length, 'items');
-    return items;
+    const data = JSON.parse(raw);
+    const items = data.items ?? data ?? [];
+    const edges = data.edges ?? [];
+    console.log('[canvas] loaded from localStorage for env', envId, items.length, 'items,', edges.length, 'edges');
+    return { items, edges };
   } catch (e) {
     console.error('[canvas] localStorage load failed', e);
     return null;

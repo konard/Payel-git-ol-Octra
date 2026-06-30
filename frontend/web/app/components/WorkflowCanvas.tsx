@@ -9,10 +9,11 @@ import {
   Position,
   ReactFlow,
   addEdge,
-  useEdgesState,
+  applyEdgeChanges,
   useNodesState,
   type Connection,
   type Edge,
+  type EdgeChange,
   type Node,
   type NodeProps,
 } from '@xyflow/react';
@@ -39,6 +40,8 @@ type WorkflowNode = Node<WorkflowNodeData, 'octra'>;
 type WorkflowCanvasProps = {
   items?: WorkflowCanvasItem[];
   onItemsChange?: (items: WorkflowCanvasItem[]) => void;
+  edges?: Edge[];
+  onEdgesChange?: (edges: Edge[]) => void;
 };
 
 const nodeTypes = {
@@ -53,10 +56,9 @@ const iconByKind = {
   environment: Layers3,
 } as const;
 
-export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
   const initialNodes = useMemo(() => buildNodes(items), [items]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     console.log('[canvas] WorkflowCanvas useEffect[items]: items count=', items.length, 'ids:', items.map(i => i.id));
@@ -92,13 +94,20 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
   const onConnect = useCallback(
     (connection: Connection) => {
       console.log('[canvas] onConnect: new connection', connection);
-      setEdges((current) => {
-        const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, current);
-        console.log('[canvas] onConnect: edges now', next.length);
-        return next;
-      });
+      if (!onEdgesChange) return;
+      const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, edges);
+      console.log('[canvas] onConnect: edges now', next.length);
+      onEdgesChange(next);
     },
-    [setEdges],
+    [edges, onEdgesChange],
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      const next = applyEdgeChanges(changes, edges);
+      onEdgesChange?.(next);
+    },
+    [edges, onEdgesChange],
   );
 
   return (
@@ -108,7 +117,7 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
       edges={edges}
       nodeTypes={nodeTypes}
       onNodesChange={handleNodesChange}
-      onEdgesChange={onEdgesChange}
+      onEdgesChange={handleEdgesChange}
       onConnect={onConnect}
       connectionLineType={ConnectionLineType.SmoothStep}
       fitView
