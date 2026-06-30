@@ -101,20 +101,20 @@ func (a *API) Router() *router.Router {
 	// User API keys
 	r.POST("/api/keys", a.withAuth(a.handleCreateAPIKey))
 	r.GET("/api/keys", a.withAuth(a.handleListAPIKeys))
-	r.DELETE("/api/keys/:id", a.withAuth(a.handleDeleteAPIKey))
+	r.DELETE("/api/keys/{id}", a.withAuth(a.handleDeleteAPIKey))
 
 	// Dashboard environments
 	r.POST("/api/environments", a.withAuth(a.handleCreateDashboardEnvironment))
 	r.GET("/api/environments", a.withAuth(a.handleListDashboardEnvironments))
 	r.POST("/api/environments/patch", a.withAuth(a.handlePatchDashboardEnvironment))
-	r.DELETE("/api/environments/:id", a.withAuth(a.handleDeleteDashboardEnvironment))
+	r.DELETE("/api/environments/{id}", a.withAuth(a.handleDeleteDashboardEnvironment))
 
 	// Workflow canvas per environment
-	r.GET("/api/environments/:id/canvas", a.withAuth(a.handleGetCanvas))
-	r.PUT("/api/environments/:id/canvas", a.withAuth(a.handlePutCanvas))
+	r.GET("/api/environments/{id}/canvas", a.withAuth(a.handleGetCanvas))
+	r.PUT("/api/environments/{id}/canvas", a.withAuth(a.handlePutCanvas))
 
 	// WebSocket for real-time canvas sync (auth via query param)
-	r.GET("/ws/canvas/:id", a.handleWSCanvas)
+	r.GET("/ws/canvas/{id}", a.handleWSCanvas)
 
 	// Skills search
 	r.GET("/skills/search", a.handleSkillSearch)
