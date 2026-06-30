@@ -11,7 +11,6 @@ import (
 	"backend/internal/api"
 	"backend/internal/cli"
 	"backend/internal/config"
-	"backend/internal/llm"
 	"backend/internal/model"
 	"backend/internal/nix"
 	"backend/internal/oauth"
@@ -139,14 +138,13 @@ func main() {
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 
-	cliMgr := cli.NewManager(cli.ExecLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
+	cliMgr := cli.NewManager(cli.OcaweLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
 	defer cliMgr.Shutdown()
-	llmClient := llm.New(nil)
 
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
 	authSvc := service.NewAuthServiceWithKeys(users, apiKeys, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
-	chatSvc := service.NewChatService(agents, cliMgr, llmClient, nixMgr)
+	chatSvc := service.NewChatService(agents, cliMgr, nixMgr)
 	oauthH := oauth.New(authSvc, cfg)
 
 	var tsClient *ts.Client
