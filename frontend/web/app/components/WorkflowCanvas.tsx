@@ -60,8 +60,7 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
 
   useEffect(() => {
     setNodes(buildNodes(items));
-    setEdges([]);
-  }, [items, setEdges, setNodes]);
+  }, [items, setNodes]);
 
   const handleNodesChange = useCallback(
     (changes: any) => {
