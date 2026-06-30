@@ -24,7 +24,7 @@ import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowC
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { IconButton } from '../components/IconButton';
 import { CatalogSearchModal } from '../components/CatalogSearchModal';
-import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, getCanvas, putCanvas, type DashboardEnvironment, type CanvasNodeRequest } from '../server/environments';
+import { createDashboardEnvironment, listDashboardEnvironments, patchDashboardEnvironment, deleteDashboardEnvironment, type DashboardEnvironment } from '../server/environments';
 import type { CatalogItem } from '../server/catalog';
 import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
@@ -56,6 +56,22 @@ export default function HomePage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const selectedEnvRef = useRef(selectedEnv);
   selectedEnvRef.current = selectedEnv;
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsConnectedRef = useRef(false);
+
+  const itemsToNodes = useCallback((items: WorkflowCanvasItem[]) =>
+    items.map((item, i) => ({
+      item_id: item.id,
+      kind: item.kind,
+      name: item.name,
+      detail: item.detail || '',
+      description: item.description || '',
+      meta: item.meta as Record<string, string | null>,
+      position_x: item.positionX ?? 0,
+      position_y: item.positionY ?? 0,
+      sort_order: i,
+    })),
+  []);
 
   const addedKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -68,46 +84,63 @@ export default function HomePage() {
   }, [canvasItems]);
 
   function selectEnv(id: string) {
-    if (id === selectedEnvRef.current) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    console.log('[canvas] selectEnv: attempting switch to', id, 'current ref:', selectedEnvRef.current);
+    if (id === selectedEnvRef.current) {
+      console.log('[canvas] selectEnv: same env, skipping');
+      return;
+    }
+    if (saveTimerRef.current) {
+      console.log('[canvas] selectEnv: clearing pending save timer');
+      clearTimeout(saveTimerRef.current);
+    }
     const prevItems = canvasItemsRef.current;
     const prevId = selectedEnvRef.current;
+    console.log('[canvas] selectEnv: prevId=', prevId, 'prevItems count=', prevItems.length);
     if (prevId && prevItems.length > 0) {
-      saveCanvas(prevId, prevItems).catch((err) => console.error('save before switch failed', err));
+      console.log('[canvas] selectEnv: saving prev env via ws before switch');
+      saveCanvasWS(prevItems);
     }
     setSelectedEnv(id);
     document.cookie = `octra_selected_env=${id}; path=/; max-age=31536000; SameSite=Lax`;
   }
 
-  const saveCanvas = useCallback(async (envId: string, items: WorkflowCanvasItem[]) => {
-    if (!envId) return;
-    const nodes: CanvasNodeRequest[] = items.map((item, i) => ({
-      item_id: item.id,
-      kind: item.kind,
-      name: item.name,
-      detail: item.detail,
-      description: item.description,
-      meta: item.meta as Record<string, string | null>,
-      position_x: item.positionX ?? 0,
-      position_y: item.positionY ?? 0,
-      sort_order: i,
-    }));
-    const res = await putCanvas(envId, nodes);
-    if (!res.ok) {
-      const text = await res.text().catch(() => 'unknown error');
-      throw new Error(`putCanvas ${res.status}: ${text}`);
+  const sendWS = useCallback((msg: object) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('[canvas] ws not connected');
+      return false;
     }
+    ws.send(JSON.stringify(msg));
+    return true;
   }, []);
 
+  const saveCanvasWS = useCallback((items: WorkflowCanvasItem[]) => {
+    console.log('[canvas] saveCanvasWS:', items.length, 'items');
+    const nodes = itemsToNodes(items);
+    const sent = sendWS({ type: 'save', nodes });
+    if (!sent) {
+      console.warn('[canvas] save failed: ws not connected');
+    }
+  }, [itemsToNodes, sendWS]);
+
   const handleCanvasItemsChange = useCallback((items: WorkflowCanvasItem[]) => {
+    console.log('[canvas] handleCanvasItemsChange: items count=', items.length, 'ids:', items.map(i => i.id));
     setCanvasItems(items);
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (saveTimerRef.current) {
+      console.log('[canvas] handleCanvasItemsChange: clearing previous save timer');
+      clearTimeout(saveTimerRef.current);
+    }
     const envId = selectedEnvRef.current;
-    if (!envId) return;
+    if (!envId) {
+      console.log('[canvas] handleCanvasItemsChange: no envId, skipping save');
+      return;
+    }
     saveTimerRef.current = setTimeout(() => {
-      saveCanvas(envId, items).catch((err) => console.error('save canvas failed', err));
+      console.log('[canvas] handleCanvasItemsChange: save timer fired, saving', items.length, 'items via ws');
+      saveCanvasWS(items);
     }, 500);
-  }, [saveCanvas]);
+    console.log('[canvas] handleCanvasItemsChange: save timer set for 500ms');
+  }, [saveCanvasWS]);
 
   async function handlePause(id: string) {
     const res = await patchDashboardEnvironment(id, { active: false });
@@ -150,6 +183,7 @@ export default function HomePage() {
 
   function handleCatalogSelect(item: CatalogItem) {
     const envId = selectedEnvRef.current;
+    console.log('[canvas] handleCatalogSelect: envId=', envId, 'item=', { id: item.id, name: item.name, type: item.type });
     setCanvasItems((prev) => {
       const next = [
         ...prev,
@@ -169,8 +203,12 @@ export default function HomePage() {
           },
         },
       ];
+      console.log('[canvas] handleCatalogSelect: new items count=', next.length, 'ids:', next.map(i => i.id));
       if (envId) {
-        saveCanvas(envId, next).catch((err) => console.error('save canvas failed', err));
+        console.log('[canvas] handleCatalogSelect: immediate save via ws');
+        saveCanvasWS(next);
+      } else {
+        console.log('[canvas] handleCatalogSelect: no envId, cannot save');
       }
       return next;
     });
@@ -224,29 +262,93 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const old = wsRef.current;
+    if (old) {
+      console.log('[canvas] closing old ws connection');
+      old.close();
+      wsRef.current = null;
+      wsConnectedRef.current = false;
+    }
+
+    console.log('[canvas] useEffect[selectedEnv]: selectedEnv=', selectedEnv, 'clearing items');
+    setCanvasItems([]);
+
     if (!selectedEnv) {
-      setCanvasItems([]);
+      console.log('[canvas] useEffect[selectedEnv]: no selectedEnv, skipping ws connect');
       return;
     }
-    getCanvas(selectedEnv).then(async (res) => {
-      if (!res.ok) {
-        console.error('load canvas failed', res.status, await res.text().catch(() => ''));
-        return;
+
+    const token = window.localStorage.getItem('octra_access_token') ?? window.localStorage.getItem('access_token');
+    if (!token) {
+      console.warn('[canvas] no auth token for ws');
+      return;
+    }
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    const wsBase = apiBase ? apiBase.replace(/^http/, 'ws') : '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const base = wsBase || origin.replace(/^http/, 'ws') || 'ws://localhost';
+    const wsUrl = `${base}/ws/canvas/${selectedEnv}?token=${encodeURIComponent(token)}`;
+
+    console.log('[canvas] connecting ws:', wsUrl);
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[canvas] ws connected');
+      wsConnectedRef.current = true;
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        console.log('[canvas] ws msg:', msg.type, msg);
+
+        switch (msg.type) {
+          case 'init': {
+            const nodes = msg.nodes || [];
+            console.log('[canvas] ws init: loaded', nodes.length, 'nodes');
+            setCanvasItems(
+              nodes.map((n: any) => ({
+                id: n.item_id,
+                kind: n.kind,
+                name: n.name,
+                detail: n.detail,
+                description: n.description,
+                meta: n.meta ?? undefined,
+                positionX: n.position_x ?? 0,
+                positionY: n.position_y ?? 0,
+              })),
+            );
+            break;
+          }
+          case 'saved':
+            console.log('[canvas] ws save confirmed');
+            break;
+          case 'error':
+            console.error('[canvas] ws error:', msg.error);
+            break;
+        }
+      } catch (e) {
+        console.error('[canvas] ws parse error:', e);
       }
-      const nodes = await res.json();
-      setCanvasItems(
-        nodes.map((n: any) => ({
-          id: n.item_id,
-          kind: n.kind,
-          name: n.name,
-          detail: n.detail,
-          description: n.description,
-          meta: n.meta ?? undefined,
-          positionX: n.position_x,
-          positionY: n.position_y,
-        })),
-      );
-    }).catch((err) => console.error('load canvas error', err));
+    };
+
+    ws.onclose = () => {
+      console.log('[canvas] ws disconnected');
+      wsConnectedRef.current = false;
+    };
+
+    ws.onerror = (err) => {
+      console.error('[canvas] ws error event:', err);
+    };
+
+    return () => {
+      console.log('[canvas] cleanup: closing ws');
+      ws.close();
+      wsRef.current = null;
+      wsConnectedRef.current = false;
+    };
   }, [selectedEnv]);
 
   return (

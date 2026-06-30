@@ -15,6 +15,7 @@ import (
 	ts "backend/internal/typesense"
 
 	"github.com/fasthttp/router"
+	"github.com/fasthttp/websocket"
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 )
@@ -111,6 +112,9 @@ func (a *API) Router() *router.Router {
 	// Workflow canvas per environment
 	r.GET("/api/environments/:id/canvas", a.withAuth(a.handleGetCanvas))
 	r.PUT("/api/environments/:id/canvas", a.withAuth(a.handlePutCanvas))
+
+	// WebSocket for real-time canvas sync (auth via query param)
+	r.GET("/ws/canvas/:id", a.handleWSCanvas)
 
 	// Skills search
 	r.GET("/skills/search", a.handleSkillSearch)
@@ -887,6 +891,123 @@ func (a *API) handlePutCanvas(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "saved"})
+}
+
+type wsCanvasMessage struct {
+	Type  string             `json:"type"`
+	Nodes []canvasNodeRequest `json:"nodes,omitempty"`
+}
+
+type wsCanvasResponse struct {
+	Type  string              `json:"type"`
+	Nodes []canvasNodeResponse `json:"nodes,omitempty"`
+	Error string              `json:"error,omitempty"`
+}
+
+func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
+	envID, err := uuid.Parse(ctx.UserValue("id").(string))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+
+	token := string(ctx.QueryArgs().Peek("token"))
+	if token == "" {
+		token = string(ctx.Request.Header.Peek(authHeader))
+	}
+	user, err := a.auth.Authenticate(ctx, token)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid or missing api token")
+		return
+	}
+
+	env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusNotFound, "environment not found")
+		return
+	}
+	if env.UserID != user.ID {
+		writeError(ctx, fasthttp.StatusForbidden, "not your environment")
+		return
+	}
+
+	upgrader := websocket.FastHTTPUpgrader{
+		CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true },
+	}
+
+	err = upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
+		defer conn.Close()
+
+		nodes, err := a.canvasNodeRepo.ListByEnvironment(ctx, envID)
+		if err != nil {
+			conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: err.Error()})
+			return
+		}
+
+		out := make([]canvasNodeResponse, len(nodes))
+		for i, n := range nodes {
+			var meta map[string]*string
+			if n.Meta != "" {
+				json.Unmarshal([]byte(n.Meta), &meta)
+			}
+			out[i] = canvasNodeResponse{
+				ID:          n.ID.String(),
+				ItemID:      n.ItemID,
+				Kind:        n.Kind,
+				Name:        n.Name,
+				Detail:      n.Detail,
+				Description: n.Description,
+				Meta:        meta,
+				PositionX:   n.PositionX,
+				PositionY:   n.PositionY,
+				SortOrder:   n.SortOrder,
+				CreatedAt:   n.CreatedAt,
+				UpdatedAt:   n.UpdatedAt,
+			}
+		}
+		conn.WriteJSON(&wsCanvasResponse{Type: "init", Nodes: out})
+
+		for {
+			var msg wsCanvasMessage
+			if err := conn.ReadJSON(&msg); err != nil {
+				break
+			}
+
+			switch msg.Type {
+			case "save":
+				modelNodes := make([]model.CanvasNode, len(msg.Nodes))
+				for i, n := range msg.Nodes {
+					var metaBytes []byte
+					if n.Meta != nil {
+						metaBytes, _ = json.Marshal(n.Meta)
+					}
+					modelNodes[i] = model.CanvasNode{
+						EnvironmentID: envID,
+						UserID:        user.ID,
+						ItemID:        n.ItemID,
+						Kind:          n.Kind,
+						Name:          n.Name,
+						Detail:        n.Detail,
+						Description:   n.Desc,
+						Meta:          string(metaBytes),
+						PositionX:     n.PositionX,
+						PositionY:     n.PositionY,
+						SortOrder:     n.SortOrder,
+					}
+				}
+				if err := a.canvasNodeRepo.Replace(ctx, envID, modelNodes); err != nil {
+					conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: err.Error()})
+				} else {
+					conn.WriteJSON(&wsCanvasResponse{Type: "saved"})
+				}
+			default:
+				conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: "unknown message type"})
+			}
+		}
+	})
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+	}
 }
 
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {

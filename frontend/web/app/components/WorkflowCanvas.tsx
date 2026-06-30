@@ -59,6 +59,7 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
+    console.log('[canvas] WorkflowCanvas useEffect[items]: items count=', items.length, 'ids:', items.map(i => i.id));
     setNodes(buildNodes(items));
   }, [items, setNodes]);
 
@@ -67,7 +68,12 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
       onNodesChange(changes);
       if (!onItemsChange) return;
       const positionChanges = changes.filter((c: any) => c.type === 'position' && c.dragging === false);
-      if (positionChanges.length === 0) return;
+      if (positionChanges.length === 0) {
+        const otherChanges = changes.filter((c: any) => c.type !== 'position');
+        if (otherChanges.length > 0) console.log('[canvas] handleNodesChange: non-position changes:', otherChanges);
+        return;
+      }
+      console.log('[canvas] handleNodesChange: drag ended for', positionChanges.length, 'node(s):', positionChanges.map((c: any) => ({ id: c.id, pos: c.position })));
       const updated = items.map((item) => {
         const posChange = positionChanges.find((c: any) => c.id === item.id);
         if (!posChange) return item;
@@ -77,13 +83,21 @@ export function WorkflowCanvas({ items = [], onItemsChange }: WorkflowCanvasProp
           positionY: posChange.position?.y ?? item.positionY,
         };
       });
+      console.log('[canvas] handleNodesChange: calling onItemsChange with', updated.length, 'items');
       onItemsChange(updated);
     },
     [items, onItemsChange, onNodesChange],
   );
 
   const onConnect = useCallback(
-    (connection: Connection) => setEdges((current) => addEdge({ ...connection, animated: true, type: 'smoothstep' }, current)),
+    (connection: Connection) => {
+      console.log('[canvas] onConnect: new connection', connection);
+      setEdges((current) => {
+        const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, current);
+        console.log('[canvas] onConnect: edges now', next.length);
+        return next;
+      });
+    },
     [setEdges],
   );
 
