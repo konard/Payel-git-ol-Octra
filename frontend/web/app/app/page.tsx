@@ -323,10 +323,17 @@ export default function HomePage() {
       return;
     }
 
+    // Try loading from localStorage first (instant)
+    const local = loadCanvasLocal(selectedEnv);
+    if (local) {
+      console.log('[canvas] loaded', local.length, 'nodes from localStorage');
+      setCanvasItems(local);
+    }
+
     const token = window.localStorage.getItem('octra_access_token') ?? window.localStorage.getItem('access_token');
     if (!token) {
       console.warn('[canvas] no auth token, loading via rest');
-      loadViaRest(selectedEnv);
+      if (!local) loadViaRest(selectedEnv);
       return;
     }
 
@@ -356,18 +363,18 @@ export default function HomePage() {
           case 'init': {
             const nodes = msg.nodes || [];
             console.log('[canvas] ws init: loaded', nodes.length, 'nodes');
-            setCanvasItems(
-              nodes.map((n: any) => ({
-                id: n.item_id,
-                kind: n.kind,
-                name: n.name,
-                detail: n.detail,
-                description: n.description,
-                meta: n.meta ?? undefined,
-                positionX: n.position_x ?? 0,
-                positionY: n.position_y ?? 0,
-              })),
-            );
+            const items = nodes.map((n: any) => ({
+              id: n.item_id,
+              kind: n.kind,
+              name: n.name,
+              detail: n.detail,
+              description: n.description,
+              meta: n.meta ?? undefined,
+              positionX: n.position_x ?? 0,
+              positionY: n.position_y ?? 0,
+            }));
+            setCanvasItems(items);
+            saveCanvasLocal(selectedEnv, items);
             break;
           }
           case 'saved':
@@ -385,7 +392,7 @@ export default function HomePage() {
     ws.onclose = () => {
       console.log('[canvas] ws disconnected, didOpen=', didOpen);
       wsConnectedRef.current = false;
-      if (!didOpen) {
+      if (!didOpen && !local) {
         console.log('[canvas] ws never opened, falling back to rest');
         loadViaRest(selectedEnv);
       }
@@ -401,6 +408,12 @@ export default function HomePage() {
       wsConnectedRef.current = false;
     };
   }, [selectedEnv]);
+
+  // Persist canvas items to localStorage on every change
+  useEffect(() => {
+    if (!selectedEnv) return;
+    saveCanvasLocal(selectedEnv, canvasItems);
+  }, [canvasItems, selectedEnv]);
 
   return (
     <main className="site-shell workspace-home">
@@ -608,4 +621,28 @@ function getCookie(name: string): string {
   if (typeof document === 'undefined') return '';
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : '';
+}
+
+const CANVAS_STORAGE_PREFIX = 'octra_canvas_';
+
+function saveCanvasLocal(envId: string, items: WorkflowCanvasItem[]) {
+  try {
+    window.localStorage.setItem(CANVAS_STORAGE_PREFIX + envId, JSON.stringify(items));
+    console.log('[canvas] saved to localStorage for env', envId, items.length, 'items');
+  } catch (e) {
+    console.error('[canvas] localStorage save failed', e);
+  }
+}
+
+function loadCanvasLocal(envId: string): WorkflowCanvasItem[] | null {
+  try {
+    const raw = window.localStorage.getItem(CANVAS_STORAGE_PREFIX + envId);
+    if (!raw) return null;
+    const items = JSON.parse(raw);
+    console.log('[canvas] loaded from localStorage for env', envId, items.length, 'items');
+    return items;
+  } catch (e) {
+    console.error('[canvas] localStorage load failed', e);
+    return null;
+  }
 }
