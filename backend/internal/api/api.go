@@ -938,6 +938,12 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 	err = upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		defer conn.Close()
 
+		conn.SetPongHandler(func(_ string) error {
+			conn.SetReadDeadline(time.Now().Add(45 * time.Second))
+			return nil
+		})
+		conn.SetReadDeadline(time.Now().Add(45 * time.Second))
+
 		nodes, err := a.canvasNodeRepo.ListByEnvironment(ctx, envID)
 		if err != nil {
 			conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: err.Error()})
@@ -966,6 +972,22 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 			}
 		}
 		conn.WriteJSON(&wsCanvasResponse{Type: "init", Nodes: out})
+
+		done := make(chan struct{})
+		defer close(done)
+
+		go func() {
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					conn.WriteMessage(websocket.PingMessage, nil)
+				case <-done:
+					return
+				}
+			}
+		}()
 
 		for {
 			var msg wsCanvasMessage
