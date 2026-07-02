@@ -242,7 +242,12 @@ func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt s
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
+	var url string
+	if s.ocaweBaseURL != "" {
+		url = fmt.Sprintf("%s/v1/chat/completions", s.ocaweBaseURL)
+	} else {
+		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyJSON))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
