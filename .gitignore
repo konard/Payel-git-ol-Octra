@@ -21,4 +21,5 @@ docs\promts
 DAY_PROBLEMS_AND_SOLUTION.md
 ci-logs/
 backend/server.exe
+backend/ocawecore
 frontend/web/tsconfig.tsbuildinfo
