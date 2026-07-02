@@ -150,7 +150,7 @@ func (m *Manager) ProvisionSystem(ctx context.Context) error {
 	for _, pkg := range cli.BuiltinCLIs() {
 		cmd := pkg.InstallCmd
 		if attr := pkg.NixAttr; attr != "" {
-			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s || true", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
+			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
 		}
 		if cmd == "" {
 			continue
