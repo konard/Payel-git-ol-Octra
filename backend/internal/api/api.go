@@ -103,7 +103,7 @@ func (a *API) Router() *router.Router {
 	// API key auth (MCP clients)
 	r.POST("/environment", a.withAuth(a.handleEnvironment))
 	r.POST("/api/chat", a.withAuth(a.handleChat))
-	r.POST("/api/chat/environments/:id", a.handleChatWithEnvironment)
+	r.POST("/api/chat/environments/{id}", a.handleChatWithEnvironment)
 
 	// Billing
 	r.GET("/billing/balance", a.withAuth(a.handleBillingBalance))
