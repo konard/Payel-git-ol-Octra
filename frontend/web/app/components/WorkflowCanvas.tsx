@@ -17,8 +17,10 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import { Bot, Box, Braces, Cpu, Globe2, Layers3 } from 'lucide-react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { Bot, Box, Braces, Cpu, Globe2, Layers3, Trash2, Unplug, Pencil } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { EditNodeModal } from './EditNodeModal';
 
 export type WorkflowCanvasItem = {
   id: string;
@@ -59,11 +61,64 @@ const iconByKind = {
 export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
   const initialNodes = useMemo(() => buildNodes(items), [items]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(initialNodes);
+  const [contextMenu, setContextMenu] = useState<{ node: WorkflowNode; x: number; y: number } | null>(null);
+  const [editItem, setEditItem] = useState<WorkflowCanvasItem | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log('[canvas] WorkflowCanvas useEffect[items]: items count=', items.length, 'ids:', items.map(i => i.id));
     setNodes(buildNodes(items));
   }, [items, setNodes]);
+
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: WorkflowNode) => {
+    event.preventDefault();
+    setContextMenu({
+      node,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.node.id;
+    const updatedItems = items.filter((i) => i.id !== nodeId);
+    onItemsChange?.(updatedItems);
+    if (onEdgesChange) {
+      const remainingEdges = edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
+      onEdgesChange(remainingEdges);
+    }
+    setContextMenu(null);
+  }, [contextMenu, items, onItemsChange, edges, onEdgesChange]);
+
+  const handleDisconnect = useCallback(() => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.node.id;
+    if (onEdgesChange) {
+      const remainingEdges = edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
+      onEdgesChange(remainingEdges);
+    }
+    setContextMenu(null);
+  }, [contextMenu, edges, onEdgesChange]);
+
+  const handleEdit = useCallback(() => {
+    if (!contextMenu) return;
+    setEditItem(contextMenu.node.data.item);
+    setContextMenu(null);
+  }, [contextMenu]);
+
+  const handleEditSave = useCallback(
+    (updated: WorkflowCanvasItem) => {
+      const updatedItems = items.map((i) => (i.id === updated.id ? updated : i));
+      onItemsChange?.(updatedItems);
+      setEditItem(null);
+    },
+    [items, onItemsChange],
+  );
 
   const handleNodesChange = useCallback(
     (changes: any) => {
@@ -111,33 +166,69 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
   );
 
   return (
+    <>
       <ReactFlow
-      className="octra-flow"
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={handleNodesChange}
-      onEdgesChange={handleEdgesChange}
-      onConnect={onConnect}
-      connectionLineType={ConnectionLineType.SmoothStep}
-      fitView
-      fitViewOptions={{ padding: 0.16 }}
-      minZoom={0.45}
-      maxZoom={1.5}
-      nodesDraggable
-      nodesConnectable
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background color="rgba(255,255,255,0.6)" gap={28} size={1.5} />
-      <MiniMap
-        pannable
-        zoomable
-        nodeBorderRadius={4}
-        nodeColor="rgba(255,255,255,0.36)"
-        maskColor="rgba(0,0,0,0.5)"
-      />
-      <Controls showInteractive={false} />
-    </ReactFlow>
+        className="octra-flow"
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={onConnect}
+        onNodeContextMenu={handleNodeContextMenu}
+        onPaneClick={closeContextMenu}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        fitView
+        fitViewOptions={{ padding: 0.16 }}
+        minZoom={0.45}
+        maxZoom={1.5}
+        nodesDraggable
+        nodesConnectable
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background color="rgba(255,255,255,0.6)" gap={28} size={1.5} />
+        <MiniMap
+          pannable
+          zoomable
+          nodeBorderRadius={4}
+          nodeColor="rgba(255,255,255,0.36)"
+          maskColor="rgba(0,0,0,0.5)"
+        />
+        <Controls showInteractive={false} />
+      </ReactFlow>
+
+      {contextMenu && createPortal(
+        <div
+          ref={menuRef}
+          className="node-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y, position: 'fixed' }}
+          role="menu"
+        >
+          <button type="button" role="menuitem" onClick={handleEdit}>
+            <Pencil size={15} />
+            Edit
+          </button>
+          <button type="button" role="menuitem" onClick={handleDisconnect}>
+            <Unplug size={15} />
+            Disconnect
+          </button>
+          <button type="button" role="menuitem" className="danger" onClick={handleDelete}>
+            <Trash2 size={15} />
+            Delete
+          </button>
+        </div>,
+        document.body,
+      )}
+
+      {editItem && createPortal(
+        <EditNodeModal
+          item={editItem}
+          onSave={handleEditSave}
+          onClose={() => setEditItem(null)}
+        />,
+        document.body,
+      )}
+    </>
   );
 }
 
