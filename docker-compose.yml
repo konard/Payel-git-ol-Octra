@@ -94,6 +94,7 @@ services:
       - SKILL_SYNC_DISABLED=1
       - TYPESENSE_HOST=typesense:8108
       - TYPESENSE_API_KEY=octra-typesense-key
+      - OCAWE_ADDR=http://octra-ocawe:4111
     ports:
       - "8080:8080"
     volumes:

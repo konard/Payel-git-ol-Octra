@@ -103,6 +103,7 @@ func (a *API) Router() *router.Router {
 	// API key auth (MCP clients)
 	r.POST("/environment", a.withAuth(a.handleEnvironment))
 	r.POST("/api/chat", a.withAuth(a.handleChat))
+	r.POST("/api/chat/environments/:id", a.handleChatWithEnvironment)
 
 	// Billing
 	r.GET("/billing/balance", a.withAuth(a.handleBillingBalance))
@@ -347,6 +348,11 @@ type chatRequest struct {
 	Skills []string `json:"skills"`
 }
 
+type chatEnvRequest struct {
+	Prompt string `json:"prompt"`
+	APIKey string `json:"api_key"`
+}
+
 type chatResponse struct {
 	Response string `json:"response"`
 }
@@ -364,6 +370,47 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 	}
 
 	resp, err := a.chat.Chat(ctx, user, req.Prompt, req.Skills)
+	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, chatResponse{Response: resp})
+}
+
+func (a *API) handleChatWithEnvironment(ctx *fasthttp.RequestCtx) {
+	var req chatEnvRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	if req.Prompt == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "prompt is required")
+		return
+	}
+	if req.APIKey == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "api_key is required")
+		return
+	}
+
+	idStr := ctx.UserValue("id").(string)
+	envID, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+
+	user, err := a.auth.Authenticate(ctx, req.APIKey)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid api key")
+		return
+	}
+
+	resp, err := a.chat.ChatWithEnvironment(ctx, user, envID, req.Prompt)
 	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
 		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
 		return

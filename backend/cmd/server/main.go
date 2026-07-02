@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -138,13 +139,29 @@ func main() {
 
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 
-	cliMgr := cli.NewManager(cli.OcaweLauncher{}, cli.NewRedisStateStore(rdb), cfg.CLITTL)
+	ocaweAddr := os.Getenv("OCAWE_ADDR")
+	var ocaweHost string
+	var ocaweLauncher cli.Launcher
+	if ocaweAddr != "" {
+		parsed, err := url.Parse(ocaweAddr)
+		if err != nil {
+			log.Fatalf("invalid OCAWE_ADDR: %v", err)
+		}
+		ocaweHost = parsed.Hostname()
+		ocaweLauncher = cli.RemoteOcaweLauncher{BaseURL: parsed}
+	} else {
+		ocaweLauncher = cli.OcaweLauncher{}
+	}
+
+	cliMgr := cli.NewManager(ocaweLauncher, cli.NewRedisStateStore(rdb), cfg.CLITTL)
 	defer cliMgr.Shutdown()
 
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
 	authSvc := service.NewAuthServiceWithKeys(users, apiKeys, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
-	chatSvc := service.NewChatService(agents, cliMgr, nixMgr)
+	chatSvc := service.NewChatService(agents, cliMgr, nixMgr).
+		WithEnvironmentRepos(dashboardEnvs, canvasNodes).
+		WithOcaweAddr(ocaweHost)
 	oauthH := oauth.New(authSvc, cfg)
 
 	var tsClient *ts.Client
