@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1003,6 +1004,10 @@ func (a *API) handlePutCanvas(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	if err := a.chat.SyncEnvironment(ctx, envID); err != nil {
+		log.Printf("sync env %s after canvas save: %v", envID, err)
+	}
+
 	writeJSON(ctx, fasthttp.StatusOK, map[string]string{"status": "saved"})
 }
 
@@ -1133,6 +1138,9 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 				if err := a.canvasNodeRepo.Replace(ctx, envID, modelNodes); err != nil {
 					conn.WriteJSON(&wsCanvasResponse{Type: "error", Error: err.Error()})
 				} else {
+					if err := a.chat.SyncEnvironment(ctx, envID); err != nil {
+						log.Printf("sync env %s after ws save: %v", envID, err)
+					}
 					conn.WriteJSON(&wsCanvasResponse{Type: "saved"})
 				}
 			default:

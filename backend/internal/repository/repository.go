@@ -66,9 +66,11 @@ type DashboardEnvironmentRepository interface {
 	Create(ctx context.Context, env *model.DashboardEnvironment) error
 	GetByID(ctx context.Context, id uuid.UUID) (*model.DashboardEnvironment, error)
 	ListByUserID(ctx context.Context, userID uuid.UUID) ([]model.DashboardEnvironment, error)
+	ListByBuilding(ctx context.Context, building bool) ([]model.DashboardEnvironment, error)
 	Update(ctx context.Context, env *model.DashboardEnvironment) error
 	SetActive(ctx context.Context, id uuid.UUID, active bool) error
 	SetVisibility(ctx context.Context, id uuid.UUID, visibility string) error
+	SetBuilding(ctx context.Context, id uuid.UUID, building bool) error
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
 
@@ -359,6 +361,16 @@ func (r *dashboardEnvRepo) SetActive(ctx context.Context, id uuid.UUID, active b
 
 func (r *dashboardEnvRepo) SetVisibility(ctx context.Context, id uuid.UUID, visibility string) error {
 	return r.db.WithContext(ctx).Model(&model.DashboardEnvironment{}).Where("id = ?", id).Update("visibility", visibility).Error
+}
+
+func (r *dashboardEnvRepo) ListByBuilding(ctx context.Context, building bool) ([]model.DashboardEnvironment, error) {
+	var list []model.DashboardEnvironment
+	err := r.db.WithContext(ctx).Where("building = ?", building).Order("created_at asc").Find(&list).Error
+	return list, err
+}
+
+func (r *dashboardEnvRepo) SetBuilding(ctx context.Context, id uuid.UUID, building bool) error {
+	return r.db.WithContext(ctx).Model(&model.DashboardEnvironment{}).Where("id = ?", id).Update("building", building).Error
 }
 
 func (r *dashboardEnvRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {

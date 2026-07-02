@@ -140,14 +140,12 @@ func main() {
 	nixMgr := nix.NewManager(cfg.EnvironmentsDir, nil)
 
 	ocaweAddr := os.Getenv("OCAWE_ADDR")
-	var ocaweHost string
 	var ocaweLauncher cli.Launcher
 	if ocaweAddr != "" {
 		parsed, err := url.Parse(ocaweAddr)
 		if err != nil {
 			log.Fatalf("invalid OCAWE_ADDR: %v", err)
 		}
-		ocaweHost = parsed.Hostname()
 		ocaweLauncher = cli.RemoteOcaweLauncher{BaseURL: parsed}
 	} else {
 		ocaweLauncher = cli.OcaweLauncher{}
@@ -161,7 +159,7 @@ func main() {
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, nixMgr).
 		WithEnvironmentRepos(dashboardEnvs, canvasNodes).
-		WithOcaweAddr(ocaweHost)
+		WithBaseURL(ocaweAddr)
 	oauthH := oauth.New(authSvc, cfg)
 
 	var tsClient *ts.Client
@@ -215,6 +213,13 @@ func main() {
 			}
 		}()
 	}
+
+	// Sync unbuilt environments to ocawe in the background.
+	go func() {
+		if err := chatSvc.SyncEnvironmentBuilds(ctx); err != nil {
+			log.Printf("env sync: %v", err)
+		}
+	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

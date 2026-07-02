@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,8 @@ type EnvPathResolver interface {
 
 type DashboardEnvRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.DashboardEnvironment, error)
+	ListByBuilding(ctx context.Context, building bool) ([]model.DashboardEnvironment, error)
+	SetBuilding(ctx context.Context, id uuid.UUID, building bool) error
 }
 
 type CanvasNodeRepository interface {
@@ -48,16 +51,17 @@ type ChatService struct {
 	dashboardEnvRepo DashboardEnvRepository
 	canvasNodeRepo   CanvasNodeRepository
 
-	ocaweAddr string
+	ocaweHost    string
+	ocaweBaseURL string
 }
 
 func NewChatService(agents repository.AgentRepository, ocaweProv OcawePortProvider, envPaths EnvPathResolver) *ChatService {
 	return &ChatService{
-		agents:    agents,
-		ocaweProv: ocaweProv,
-		envPaths:  envPaths,
-		httpCli:   http.DefaultClient,
-		ocaweAddr: "127.0.0.1",
+		agents:     agents,
+		ocaweProv:  ocaweProv,
+		envPaths:   envPaths,
+		httpCli:    http.DefaultClient,
+		ocaweHost:  "127.0.0.1",
 	}
 }
 
@@ -67,9 +71,9 @@ func (s *ChatService) WithEnvironmentRepos(dashboardEnvRepo DashboardEnvReposito
 	return s
 }
 
-func (s *ChatService) WithOcaweAddr(addr string) *ChatService {
-	if addr != "" {
-		s.ocaweAddr = addr
+func (s *ChatService) WithBaseURL(baseURL string) *ChatService {
+	if baseURL != "" {
+		s.ocaweBaseURL = baseURL
 	}
 	return s
 }
@@ -142,6 +146,83 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 	return s.sendChat(ctx, port, modelStr, prompt, llmCfg.APIKey, llmCfg.BaseURL)
 }
 
+func (s *ChatService) SyncEnvironmentBuilds(ctx context.Context) error {
+	if s.ocaweBaseURL == "" {
+		return nil
+	}
+
+	envs, err := s.dashboardEnvRepo.ListByBuilding(ctx, false)
+	if err != nil {
+		return fmt.Errorf("list unbuilt: %w", err)
+	}
+
+	for _, env := range envs {
+		if err := s.syncOne(ctx, env.ID); err != nil {
+			log.Printf("sync env %s: %v", env.ID, err)
+			continue
+		}
+	}
+	return nil
+}
+
+func (s *ChatService) SyncEnvironment(ctx context.Context, envID uuid.UUID) error {
+	if s.ocaweBaseURL == "" {
+		return nil
+	}
+	return s.syncOne(ctx, envID)
+}
+
+func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
+	nodes, err := s.canvasNodeRepo.ListByEnvironment(ctx, envID)
+	if err != nil {
+		return fmt.Errorf("canvas nodes: %w", err)
+	}
+
+	llmCfg, _, err := extractConfigFromNodes(nodes)
+	if errors.Is(err, ErrNoProviderNode) || llmCfg.APIKey == "" {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	body := map[string]any{
+		"provider": llmCfg.Provider,
+		"api_key":  llmCfg.APIKey,
+	}
+	if llmCfg.BaseURL != "" {
+		body["base_url"] = llmCfg.BaseURL
+	}
+	if llmCfg.Model != "" {
+		body["model"] = llmCfg.Model
+	}
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+
+	url := s.ocaweBaseURL + "/v1/environments/config"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyJSON))
+	if err != nil {
+		return fmt.Errorf("create config request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpCli.Do(req)
+	if err != nil {
+		return fmt.Errorf("config request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("ocawe config responded %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return s.dashboardEnvRepo.SetBuilding(ctx, envID, true)
+}
+
 func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt string, apiKey, baseURL string) (string, error) {
 	body := map[string]any{
 		"model": modelStr,
@@ -161,7 +242,7 @@ func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt s
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweAddr, port)
+	url := fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyJSON))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)

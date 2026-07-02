@@ -195,6 +195,7 @@ type DashboardEnvironment struct {
 	Name       string    `gorm:"column:name;not null" json:"name"`
 	Visibility string    `gorm:"column:visibility;default:private" json:"visibility"`
 	Active     bool      `gorm:"column:active;default:true" json:"active"`
+	Building   bool      `gorm:"column:building;default:false" json:"building"`
 }
 
 // UsageMetric stores daily resource usage that drives hosting charges.
