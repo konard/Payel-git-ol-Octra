@@ -6,6 +6,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"backend/internal/model"
 
@@ -92,6 +93,16 @@ type ProviderRepository interface {
 type UsageMetricsRepository interface {
 	Create(ctx context.Context, metric *model.UsageMetric) error
 	ListByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.UsageMetric, error)
+}
+
+// RequestMetricsRepository persists per-request telemetry used to build the
+// request-count metrics on the dashboard.
+type RequestMetricsRepository interface {
+	Create(ctx context.Context, metric *model.RequestMetric) error
+	// ListByUserSince returns request metrics for a user newer than since,
+	// ordered oldest-first. When envID is non-nil only requests tied to that
+	// dashboard environment are returned.
+	ListByUserSince(ctx context.Context, userID uuid.UUID, envID *uuid.UUID, since time.Time) ([]model.RequestMetric, error)
 }
 
 // CanvasNodeRepository persists workflow canvas nodes per dashboard environment.
@@ -325,6 +336,30 @@ func (r *usageMetricsRepo) ListByUserID(ctx context.Context, userID uuid.UUID, l
 		Limit(limit).
 		Offset(offset).
 		Find(&list).Error
+	return list, err
+}
+
+type requestMetricsRepo struct{ db *gorm.DB }
+
+// NewRequestMetricsRepository returns a GORM-backed RequestMetricsRepository.
+func NewRequestMetricsRepository(db *gorm.DB) RequestMetricsRepository {
+	return &requestMetricsRepo{db: db}
+}
+
+func (r *requestMetricsRepo) Create(ctx context.Context, metric *model.RequestMetric) error {
+	return r.db.WithContext(ctx).Create(metric).Error
+}
+
+func (r *requestMetricsRepo) ListByUserSince(ctx context.Context, userID uuid.UUID, envID *uuid.UUID, since time.Time) ([]model.RequestMetric, error) {
+	q := r.db.WithContext(ctx).
+		Where("user_id = ? AND created_at >= ?", userID, since)
+	if envID != nil {
+		q = q.Where("environment_id = ?", *envID)
+	}
+	var list []model.RequestMetric
+	// Cap the scan so a very busy account cannot blow up memory while still
+	// covering the widest supported window at a generous request rate.
+	err := q.Order("created_at asc").Limit(20000).Find(&list).Error
 	return list, err
 }
 

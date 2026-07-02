@@ -210,6 +210,26 @@ type UsageMetric struct {
 	LoadPercent   int       `gorm:"column:load_percent;not null" json:"load_percent"`
 }
 
+// RequestMetric records a single chat/completion request routed through Octra.
+// These rows drive the request-count metrics shown on the dashboard, both
+// globally for a user and broken down per dashboard environment.
+type RequestMetric struct {
+	ID uuid.UUID `gorm:"column:id;type:uuid;primaryKey" json:"id"`
+	// CreatedAt is the moment the request completed. It is the time axis used
+	// when bucketing metrics into an hourly or daily series.
+	CreatedAt time.Time `gorm:"column:created_at;index" json:"created_at"`
+	UserID    uuid.UUID `gorm:"column:user_id;type:uuid;index;not null" json:"user_id"`
+	// EnvironmentID links the request to a dashboard environment. It is nil for
+	// agent (proxy-mode) chats that are not tied to a named environment.
+	EnvironmentID *uuid.UUID `gorm:"column:environment_id;type:uuid;index" json:"environment_id,omitempty"`
+	// Model is the resolved "provider/model" (or "cli/<name>") string.
+	Model string `gorm:"column:model" json:"model,omitempty"`
+	// Success is true when the upstream provider answered with a 2xx response.
+	Success bool `gorm:"column:success" json:"success"`
+	// LatencyMs is the wall-clock duration of the upstream request.
+	LatencyMs int64 `gorm:"column:latency_ms" json:"latency_ms"`
+}
+
 // CanvasNode stores a single node on the workflow canvas linked to a dashboard
 // environment. The entire set of nodes for an environment is replaced atomically.
 type CanvasNode struct {
@@ -231,7 +251,7 @@ type CanvasNode struct {
 
 // AllModels returns every model for AutoMigrate.
 func AllModels() []any {
-	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}, &Provider{}, &CanvasNode{}}
+	return []any{&User{}, &Agent{}, &Skill{}, &UserSkill{}, &Transaction{}, &UserAPIKey{}, &DashboardEnvironment{}, &UsageMetric{}, &CLI{}, &Provider{}, &CanvasNode{}, &RequestMetric{}}
 }
 
 // BeforeCreate assigns a UUID at the application level so the models work
@@ -267,6 +287,7 @@ func (m *CanvasNode) BeforeCreate(*gorm.DB) error           { return ensureID(&m
 func (m *CLI) BeforeCreate(*gorm.DB) error                  { return ensureID(&m.ID) }
 func (m *Provider) BeforeCreate(*gorm.DB) error             { return ensureID(&m.ID) }
 func (m *UsageMetric) BeforeCreate(*gorm.DB) error          { return ensureID(&m.ID) }
+func (m *RequestMetric) BeforeCreate(*gorm.DB) error        { return ensureID(&m.ID) }
 
 // ApplyBillingDefaults fills missing billing preference fields.
 func (m *User) ApplyBillingDefaults() {

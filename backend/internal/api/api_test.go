@@ -109,6 +109,7 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 	userSkills := repository.NewUserSkillRepository(db)
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
+	requestMetrics := repository.NewRequestMetricsRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
 	canvasNodes := repository.NewCanvasNodeRepository(db)
 	clis := repository.NewCLIRepository(db)
@@ -143,12 +144,13 @@ func newTestServer(t *testing.T) (*fasthttp.Client, func()) {
 
 	cfg := testCfg()
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
+	metricsSvc := service.NewMetricsService(requestMetrics, dashboardEnvs)
 	authSvc := service.NewAuthService(users, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, fakeProvisioner{}, billingSvc)
 	chatSvc := service.NewChatService(agents, &fakeOcaweProvider{}, fakeEnvPaths{})
 	oauthH := oauth.New(authSvc, cfg)
 
-	handler := New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, nil).Router().Handler
+	handler := New(authSvc, envSvc, chatSvc, billingSvc, metricsSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, nil).Router().Handler
 
 	ln := fasthttputil.NewInmemoryListener()
 	server := &fasthttp.Server{Handler: handler}
@@ -228,6 +230,69 @@ func TestEndToEndProxyFlow(t *testing.T) {
 	}
 	if chat.Response != "llm:hello" {
 		t.Fatalf("unexpected chat response %q", chat.Response)
+	}
+}
+
+func TestRequestMetricsEndpoint(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	// Auth is required.
+	if code, _ := do(t, client, "GET", "/api/metrics/requests", "", ""); code != 401 {
+		t.Fatalf("expected 401 without token, got %d", code)
+	}
+
+	code, body := do(t, client, "POST", "/register", "", `{"username":"m","email":"m@b.com","password":"pw"}`)
+	if code != 201 {
+		t.Fatalf("register code %d: %s", code, body)
+	}
+	var reg registerResponse
+	if err := json.Unmarshal(body, &reg); err != nil {
+		t.Fatal(err)
+	}
+
+	// No traffic yet: a well-formed empty series is returned.
+	code, body = do(t, client, "GET", "/api/metrics/requests", reg.APIKey, "")
+	if code != 200 {
+		t.Fatalf("metrics code %d: %s", code, body)
+	}
+	var empty service.RequestMetricsResult
+	if err := json.Unmarshal(body, &empty); err != nil {
+		t.Fatalf("unmarshal metrics: %v (%s)", err, body)
+	}
+	if empty.Total != 0 || len(empty.Series) != 7 {
+		t.Fatalf("expected empty 7d series, got total=%d series=%d", empty.Total, len(empty.Series))
+	}
+
+	// Provision an environment and send a chat so a metric row is recorded.
+	code, body = do(t, client, "POST", "/environment", reg.APIKey,
+		`{"llm":{"api_key":"sk","base_url":"https://api.anthropic.com"},"agent":{"cli":"","priority":3},"skills":[]}`)
+	if code != 200 {
+		t.Fatalf("environment code %d: %s", code, body)
+	}
+	if code, body = do(t, client, "POST", "/api/chat", reg.APIKey, `{"prompt":"hello"}`); code != 200 {
+		t.Fatalf("chat code %d: %s", code, body)
+	}
+
+	// The metric is now reflected in the aggregated series.
+	code, body = do(t, client, "GET", "/api/metrics/requests?range=24h", reg.APIKey, "")
+	if code != 200 {
+		t.Fatalf("metrics code %d: %s", code, body)
+	}
+	var res service.RequestMetricsResult
+	if err := json.Unmarshal(body, &res); err != nil {
+		t.Fatalf("unmarshal metrics: %v (%s)", err, body)
+	}
+	if res.Range != "24h" || res.Bucket != "hour" {
+		t.Fatalf("unexpected range/bucket: %s/%s", res.Range, res.Bucket)
+	}
+	if res.Total != 1 || res.Success != 1 {
+		t.Fatalf("expected 1 successful request, got total=%d success=%d", res.Total, res.Success)
+	}
+
+	// A bad env filter is rejected.
+	if code, _ = do(t, client, "GET", "/api/metrics/requests?env=not-a-uuid", reg.APIKey, ""); code != 400 {
+		t.Fatalf("expected 400 for bad env id, got %d", code)
 	}
 }
 
