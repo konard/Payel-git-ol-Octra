@@ -104,7 +104,7 @@ func (s *ChatService) Chat(ctx context.Context, user *model.User, prompt string,
 
 	modelStr := resolveModel(agent)
 
-	return s.sendChat(ctx, port, modelStr, prompt)
+	return s.sendChat(ctx, port, modelStr, prompt, agent.LLMAPIKey, agent.LLMBaseURL)
 }
 
 func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User, envID uuid.UUID, prompt string) (string, error) {
@@ -139,15 +139,21 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 	}
 
 	modelStr := resolveModelFromConfig(llmCfg, cliType)
-	return s.sendChat(ctx, port, modelStr, prompt)
+	return s.sendChat(ctx, port, modelStr, prompt, llmCfg.APIKey, llmCfg.BaseURL)
 }
 
-func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt string) (string, error) {
+func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt string, apiKey, baseURL string) (string, error) {
 	body := map[string]any{
 		"model": modelStr,
 		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
+	}
+	if apiKey != "" {
+		body["api_key"] = apiKey
+	}
+	if baseURL != "" {
+		body["base_url"] = baseURL
 	}
 
 	bodyJSON, err := json.Marshal(body)
