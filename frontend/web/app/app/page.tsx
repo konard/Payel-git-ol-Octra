@@ -19,6 +19,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
+import { RequestMetricsOverview } from '../components/RequestMetricsOverview';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowCanvas';
@@ -89,6 +90,16 @@ export default function HomePage() {
     }
     return keys;
   }, [canvasItems]);
+
+  // revealSection makes each secondary-rail button independent: it ensures the
+  // side panel is open and then toggles only its own collapsible section, so the
+  // metrics, endpoints and deployments buttons each control a distinct panel.
+  function revealSection(section: 'metrics' | 'endpoints' | 'deployments') {
+    setPanelOpen(true);
+    if (section === 'metrics') setMetricsOpen((v) => !v);
+    else if (section === 'endpoints') setEndpointsOpen((v) => !v);
+    else setDeploymentsOpen((v) => !v);
+  }
 
   function selectEnv(id: string) {
     console.log('[canvas] selectEnv: attempting switch to', id, 'current ref:', selectedEnvRef.current);
@@ -533,14 +544,7 @@ export default function HomePage() {
           <div className={`collapse-wrap${metricsOpen ? '' : ' collapsed'}`}>
             <div className="collapse-inner">
               <div className="quote-stack">
-                <EmptyDataPanel
-                  compact
-                  icon={Activity}
-                  title="No live metrics yet"
-                  detail="Runtime counters will appear here when backend telemetry is available."
-                  actionHref={ROUTES.DASHBOARD_METRICS}
-                  actionLabel="Open metrics"
-                />
+                <RequestMetricsOverview range="7d" env={selectedEnv || undefined} compact />
               </div>
             </div>
           </div>
@@ -586,16 +590,40 @@ export default function HomePage() {
       </section>
 
       <aside className="home-rail" aria-label="Secondary tools">
-        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Chart" onClick={() => setPanelOpen((v) => !v)}>
+        <button
+          type="button"
+          className={panelOpen ? 'active' : ''}
+          aria-label="Toggle side panel"
+          aria-pressed={panelOpen}
+          onClick={() => setPanelOpen((v) => !v)}
+        >
           <LineChart size={20} />
         </button>
-        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Activity" onClick={() => setPanelOpen((v) => !v)}>
+        <button
+          type="button"
+          className={panelOpen && metricsOpen ? 'active' : ''}
+          aria-label="Runtime metrics"
+          aria-pressed={panelOpen && metricsOpen}
+          onClick={() => revealSection('metrics')}
+        >
           <Activity size={20} />
         </button>
-        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Layers" onClick={() => setPanelOpen((v) => !v)}>
+        <button
+          type="button"
+          className={panelOpen && endpointsOpen ? 'active' : ''}
+          aria-label="Endpoints"
+          aria-pressed={panelOpen && endpointsOpen}
+          onClick={() => revealSection('endpoints')}
+        >
           <Layers3 size={20} />
         </button>
-        <button type="button" className={panelOpen ? 'active' : ''} aria-label="Automation" onClick={() => setPanelOpen((v) => !v)}>
+        <button
+          type="button"
+          className={panelOpen && deploymentsOpen ? 'active' : ''}
+          aria-label="Deployments"
+          aria-pressed={panelOpen && deploymentsOpen}
+          onClick={() => revealSection('deployments')}
+        >
           <Zap size={20} />
         </button>
       </aside>
