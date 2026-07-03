@@ -231,7 +231,7 @@ func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
 		return fmt.Errorf("canvas nodes: %w", err)
 	}
 
-	llmCfg, _, err := extractConfigFromNodes(nodes)
+	llmCfg, cliType, err := extractConfigFromNodes(nodes)
 	if errors.Is(err, ErrNoProviderNode) || llmCfg.APIKey == "" {
 		return nil
 	}
@@ -248,6 +248,9 @@ func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
 	}
 	if llmCfg.Model != "" {
 		body["model"] = llmCfg.Model
+	}
+	if cliType != "" {
+		body["cli"] = string(cliType)
 	}
 
 	bodyJSON, err := json.Marshal(body)
