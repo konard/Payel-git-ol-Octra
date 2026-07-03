@@ -91,6 +91,32 @@ curl http://localhost:8080/api/chat/environments/YOUR_ENV_ID \
   -d '{ "prompt": "hello", "api_key": "octra_…", "stream": false }'
 ```
 
+### OpenAI-Compatible Chat (Dashboard Environment)
+
+Same as above but accepts OpenAI-standard request body. Supports all OpenAI parameters (`messages`, `model`, `temperature`, `max_tokens`, `tools`, etc.). Response format matches the standard endpoints.
+
+```bash
+curl http://localhost:8080/api/chat/openai/environments/YOUR_ENV_ID \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "messages": [{"role": "user", "content": "hello"}],
+    "api_key": "octra_…",
+    "stream": false
+  }'
+# → { "response": "Hello! How can I help you?" }
+
+# Streaming:
+curl -N http://localhost:8080/api/chat/openai/environments/YOUR_ENV_ID \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "messages": [{"role": "user", "content": "hello"}],
+    "api_key": "octra_…",
+    "stream": true
+  }'
+```
+
+Supports multi-turn conversations, tool calls, and any OpenAI chat completion parameter. If `model` is omitted, it uses the model from the environment's canvas configuration.
+
 ## MCP Manager
 
 Full CRUD for MCP servers. All endpoints are proxied to Ocawe at `/v1/mcp/*`.
@@ -393,6 +419,7 @@ octra/
 | POST | `/login` | No | JWT login |
 | POST | `/api/chat` | `octra-api-token` | Chat with agent, `stream: true` for SSE |
 | POST | `/api/chat/environments/{id}` | `api_key` in body | Chat for dashboard environment |
+| POST | `/api/chat/openai/environments/{id}` | `api_key` in body | OpenAI-compatible chat with environment |
 | GET | `/api/catalog/search` | `octra-api-token` | Search providers, CLIs, skills, MCP |
 | GET | `/api/cli` | `octra-api-token` | List available CLIs |
 | GET | `/api/providers` | `octra-api-token` | List LLM providers |
