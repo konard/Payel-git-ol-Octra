@@ -1,37 +1,37 @@
-# Octra — the vps aggregator
+# Octra — AI Environment Hosting Platform
 
-Octra lets anyone run ready-made AI CLIs (claude-code, opencode, codex, …) with
-configured skills **on our infrastructure** — no VPS, no SSH, no JSON config, no
-fighting with ports, processes, or systemd.
-
-We don't build models and we don't write our own agents. We give every user a
-**personal MCP endpoint** they can call over HTTP, backed by an isolated [Nix](https://nixos.org)
-environment with their chosen CLI and skills already installed.
-
-## Why
-
-Setting up an MCP server by hand normally means renting a VPS, SSH-ing in,
-installing dependencies, writing JSON configs, and understanding ports,
-processes, and systemd. Most "vibe coders" and AI users never cross that
-threshold — they give up or lose days. Octra removes the whole setup.
-
-**Who it's for:** vibe coders who want AI with tools without the hassle,
-freelancers who need a 24/7 AI helper, and teams who want to share a single
-agent.
-
-## How it works
+Octra provides **personal MCP endpoints** with AI agents running in isolated Nix
+environments. Users get an API key, create an environment, and talk to their
+agent over HTTP — no VPS, no SSH, no systemd.
 
 ```
-1. Register                → get a personal api_key
-2. POST /environment       → Octra builds your Nix env, installs the CLI + skills
-3. POST /api/chat          → talk to your agent through your MCP endpoint
+User → Octra (Go) → Ocawe (Crystal) → LLM / CLI / Workflow
+                                          ├── openai/gpt-4o
+                                          ├── anthropic/claude-sonnet-4
+                                          ├── cli/opencode
+                                          └── workflow/orator
 ```
 
-If you configure a CLI, Octra runs it as a long-lived subprocess inside your Nix
-environment and pipes prompts to it. If you don't, Octra works as a plain LLM
-proxy with your skills as tools.
+**Octra** — VPS-hosting platform. Manages users, billing, Nix environments, and
+proxies AI/CLI/workflow requests to Ocawe.
 
-### 1. Register
+**Ocawe** — AI engine and workflow runtime (Crystal). Handles all LLM calls, CLI
+subprocess management, MCP server CRUD, workflow execution, and HITL.
+
+## Quick start
+
+```bash
+docker compose up -d --build
+```
+
+API listens on `:8080`. Frontend on `:3000`.
+
+```bash
+cd backend && go build ./... && go test ./...   # SQLite in-memory, no external deps
+cd frontend/web && npm run build                # static export
+```
+
+## Registration
 
 ```bash
 curl http://localhost:8080/register \
@@ -40,24 +40,13 @@ curl http://localhost:8080/register \
 # → { "user_id": "…", "api_key": "octra_…", "balance": 100 }
 ```
 
-### 2. Create your environment
+Save the returned `api_key` — it is used as `octra-api-token` on all subsequent requests.
 
-```bash
-curl http://localhost:8080/environment \
-  -H "octra-api-token: $OCTRA_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "llm":   { "api_key": "sk-…", "base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-6" },
-    "agent": { "cli": "claude-code", "priority": 10 },
-    "skills": ["filesystem", "github", "brave-search"]
-  }'
-# → { "user_id": "…", "agent_id": "…", "api_key": "octra_…" }
-```
+## Chat & Streaming
 
-Octra creates the user's Nix environment, installs the CLI (if given), then
-installs and configures each skill. Leave `cli` empty to run as a pure LLM proxy.
+Send a prompt to your AI agent. The agent is configured via your environment settings (LLM provider, model, skills).
 
-### 3. Chat
+### Non-streaming
 
 ```bash
 curl http://localhost:8080/api/chat \
@@ -67,140 +56,361 @@ curl http://localhost:8080/api/chat \
 # → { "response": "…" }
 ```
 
-Pass only the skills you want active in this request — omit a skill to disable it
-without uninstalling it.
+Request body:
 
-### 4. Billing
+| Field | Type | Description |
+|-------|------|-------------|
+| `prompt` | `string` | The prompt to send to the agent. **Required.** |
+| `skills` | `string[]` | Skills to activate for this request. Omit to use all installed. |
+| `stream` | `boolean` | If `true`, response is sent as SSE. Default `false`. |
 
-Every new user receives 100 credits. One credit is worth 10 cents. Octra charges
-for active hosted environments by recording usage and debiting credits:
-
-```bash
-curl http://localhost:8080/billing/usage \
-  -H "octra-api-token: $OCTRA_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{ "cpu_seconds": 120, "memory_mb_hours": 256, "disk_mb": 512, "load_percent": 150, "standard_payment": 40 }'
-# → { "usage": { … }, "transaction": { "amount": 60, "reason": "hosting", … } }
-```
-
-Top-ups and LeFine rewards credit the same balance ledger:
+### Streaming (SSE)
 
 ```bash
-curl http://localhost:8080/billing/topup \
+curl -N http://localhost:8080/api/chat \
   -H "octra-api-token: $OCTRA_API_KEY" \
   -H 'Content-Type: application/json' \
-  -d '{ "amount": 50 }'
+  -d '{ "prompt": "write a csv parser", "stream": true }'
 ```
 
-By default users run in unlimited margin mode, so hosting charges may make the
-balance negative. A negative balance blocks creation of new agents, but does not
-delete an existing environment. Safe margin mode preserves `safe_margin_limit`
-and suspends the current agent when a charge cannot be paid.
-
-## Request flow
+Each SSE event is a `data:` line with the chat completion chunk:
 
 ```
-request → validate token → load user + agent
-  → if CLI configured:
-      → check Redis: is the process alive?
-        → alive → send prompt to its stdin
-        → dead  → launch subprocess in the user's Nix env (state saved to Redis)
-  → else:
-      → direct LLM call (proxy mode)
-  → return response
+data: {"id":"chatcmpl_...","object":"chat.completion.chunk","choices":[{"delta":{"content":"Sure"},"index":0}]}
+
+data: {"id":"chatcmpl_...","object":"chat.completion.chunk","choices":[{"delta":{"content":","},"index":0}]}
+
+data: [DONE]
 ```
 
-### CLI process management
+### Chat with Dashboard Environment
 
-- The CLI runs as a subprocess inside the user's Nix environment.
-- The process is **not killed after each request** — it is reused.
-- State lives in Redis: `user:{id}:cli_state` (PID, port, start time) and
-  `user:{id}:cli_ttl` (TTL). On each request Octra checks liveness; a dead or
-  expired process is relaunched, and idle processes are reaped once the TTL
-  elapses.
-- Default transport is an stdin/stdout pipe (fast, native for AI CLIs).
+```bash
+curl http://localhost:8080/api/chat/environments/YOUR_ENV_ID \
+  -H 'Content-Type: application/json' \
+  -d '{ "prompt": "hello", "api_key": "octra_…", "stream": false }'
+```
 
-### Session isolation
+## MCP Manager
 
-Each user environment gets its own virtual `$HOME`, `$XDG_CONFIG_HOME`, and
-`$XDG_DATA_HOME` pointing to `environments/<userID>/home/`. This keeps
-CLI authentication tokens, chat history, and configuration strictly
-per-user — no cross-user data leaks even though all environments share
-the same system-level packages and Nix store.
+Full CRUD for MCP servers. All endpoints are proxied to Ocawe at `/v1/mcp/*`.
 
-### Skills
+### List Servers
 
-Skills are ready-made packages from nixpkgs or custom configurations. Users pick
-them on the canvas (frontend); Octra installs them into the user's Nix
-environment and records how each one is installed in the database. Per request,
-the `skills[]` field selects which installed skills are active.
+```bash
+curl http://localhost:8080/v1/mcp/servers \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "servers": [ { "id": "…", "transport": "stdio", "command": "npx", "args": ["-y","@modelcontextprotocol/server-filesystem"], "enabled": true, "status": "running", … } ] }
+```
+
+### Create Server (stdio)
+
+```bash
+curl -X POST http://localhost:8080/v1/mcp/servers \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+    "env": { "ALLOWED_DIRS": "/tmp" }
+  }'
+```
+
+### Create Server (HTTP)
+
+```bash
+curl -X POST http://localhost:8080/v1/mcp/servers \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "transport": "http",
+    "url": "https://my-mcp-server.example.com",
+    "bearer_token": "mcp_secret_token"
+  }'
+```
+
+Request body for create:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transport` | `"stdio"` \| `"http"` | Server transport type. **Required.** |
+| `command` | `string` | (stdio) Binary to execute (e.g. `npx`, `uvx`). |
+| `args` | `string[]` | (stdio) CLI arguments. |
+| `env` | `object` | (stdio) Environment variables for the process. |
+| `url` | `string` | (http) Server URL. |
+| `bearer_token` | `string` | (http) Bearer token for auth. |
+
+### Update Server
+
+```bash
+curl -X PATCH http://localhost:8080/v1/mcp/servers/SERVER_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "enabled": false }'
+```
+
+### Delete Server
+
+```bash
+curl -X DELETE http://localhost:8080/v1/mcp/servers/SERVER_ID \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+### Reconnect
+
+```bash
+curl -X POST http://localhost:8080/v1/mcp/servers/SERVER_ID/reconnect \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+### Browse Server Catalog (Tools/Resources/Prompts)
+
+```bash
+# List all tools from connected MCP servers
+curl http://localhost:8080/v1/mcp/catalog \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "servers": [...], "tools": [...], "resources": [...], "prompts": [...] }
+```
+
+### Search Catalog (Octra-level)
+
+```bash
+# Search across providers, CLIs, skills, and MCP templates
+curl "http://localhost:8080/api/catalog/search?q=filesystem&category=mcp" \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "items": [ { "id": "mcp-filesystem", "type": "mcp_server", "name": "Filesystem", "subtitle": "@modelcontextprotocol/server-filesystem", ... } ] }
+```
+
+Query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `q` | `string` | Search query. |
+| `category` | `string` | Filter: `providers`, `cli`, `skills`, `mcp`, or comma-separated. |
+| `limit` | `int` | Max results (1–100, default 20). |
+
+## Skills
+
+Skills are tool packages installed into your Nix environment. They are configured on the canvas and activated per request via the `skills` field in chat.
+
+### Search Skills
+
+```bash
+curl "http://localhost:8080/api/catalog/search?q=github&category=skills" \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+## CLI
+
+CLIs (opencode, claude-code, codex, etc.) are managed by Ocawe — it runs them as subprocesses and intercepts their LLM requests. Octra provides the catalog.
+
+### List Available CLIs
+
+```bash
+curl http://localhost:8080/api/cli \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+## Workflow Runs
+
+Declarative workflow execution. All endpoints are proxied to Ocawe at `/v1/workflows/*`.
+
+### List Workflow Runs
+
+```bash
+curl "http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs" \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "runs": [ { "run_id": "…", "workflow_id": "…", "status": "running", "updated_at": "…" } ] }
+```
+
+### Start a Run
+
+```bash
+curl -X POST http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "input_data": { "message": "hello" } }'
+# → { "workflow_id": "…", "run_id": "…", "status": "running" }
+```
+
+### Get Run Details
+
+```bash
+curl http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs/RUN_ID \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "workflow_id": "…", "run_id": "…", "status": "completed", "output": { … }, "state": { … }, "node_results": { … }, "updated_at": "…" }
+```
+
+### Resume a Suspended Run
+
+```bash
+curl -X POST http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs/RUN_ID/resume \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "user_input": "continue with option A" }'
+```
+
+### Cancel a Run
+
+```bash
+curl -X POST http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs/RUN_ID/cancel \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+### Restart a Run
+
+```bash
+curl -X POST http://localhost:8080/v1/workflows/YOUR_WORKFLOW_ID/runs/RUN_ID/restart \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+## HITL (Human-in-the-Loop)
+
+When a workflow reaches a `suspend` node, it pauses and waits for human input. HITL endpoints let you view and respond to suspended runs.
+
+### List Suspended Runs
+
+```bash
+curl http://localhost:8080/v1/hitl/runs \
+  -H "octra-api-token: $OCTRA_API_KEY"
+# → { "runs": [ { "workflow_id": "…", "run_id": "…", "resume_labels": ["approve","reject"], "suspend_payload": { … }, "updated_at": "…" } ] }
+```
+
+### Get HITL Run Detail
+
+```bash
+curl http://localhost:8080/v1/hitl/runs/WORKFLOW_ID/RUN_ID \
+  -H "octra-api-token: $OCTRA_API_KEY"
+```
+
+### Resume with User Input
+
+```bash
+curl -X POST http://localhost:8080/v1/hitl/runs/WORKFLOW_ID/RUN_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "action": "resume", "resume_data": { "choice": "approve", "reason": "looks good" } }'
+```
+
+### Cancel HITL Run
+
+```bash
+curl -X POST http://localhost:8080/v1/hitl/runs/WORKFLOW_ID/RUN_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "action": "cancel" }'
+```
+
+## Triggers / Webhooks
+
+HTTP endpoints for automating workflows, agents, skills, and functions. All proxied to Ocawe at `/v1/triggers/*`.
+
+### Trigger a Workflow
+
+```bash
+curl -X POST http://localhost:8080/v1/triggers/workflows/WORKFLOW_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "input_data": { "key": "value" } }'
+# → { "workflow_id": "…", "run_id": "…", "status": "running" }
+```
+
+### Trigger an Agent
+
+```bash
+curl -X POST http://localhost:8080/v1/triggers/agents/AGENT_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "messages": [{ "role": "user", "content": "Hello!" }] }'
+# → { "id": "trg_agent_…", "object": "trigger.agent.response", "agent_id": "…", "output_text": "…" }
+```
+
+### Trigger a Skill
+
+```bash
+curl -X POST http://localhost:8080/v1/triggers/skills/SKILL_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "input": { "param1": "value" } }'
+# → { "id": "trg_skill_…", "object": "trigger.skill.response", "status": "ok" }
+```
+
+### Trigger a Function
+
+```bash
+curl -X POST http://localhost:8080/v1/triggers/functions/FN_ID \
+  -H "octra-api-token: $OCTRA_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "input": { "arg1": "value" } }'
+# → { "id": "trg_fn_…", "object": "trigger.function.response", "output": { "result": "…" } }
+```
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Streaming SSE | `"stream": true` in chat requests → SSE events |
+| MCP Manager | CRUD MCP servers (stdio/HTTP), browse tools/resources/prompts |
+| Workflow Engine | Declarative workflow runs with resume/cancel/restart |
+| HITL | Human-in-the-Loop — suspend workflows for user input |
+| Triggers / Webhooks | HTTP triggers for workflow automation |
+| Canvas | Visual workflow builder via @xyflow/react |
+| Dashboard | MCP, Runs, HITL, Triggers, Metrics, Environments |
+| Catalog | 67 MCP server templates + providers + CLI + skills |
 
 ## Architecture
 
-Octra is a **single Go backend** — the former `user`, `agents`, `orchestrator`,
-and `apigateway` microservices (and the boss/manager/worker agent hierarchy) are
-gone. The `frontend`, `poster`, and `tgbot` are unchanged.
-
-| Component    | Technology |
-|--------------|------------|
-| Language     | Go         |
-| HTTP         | fasthttp   |
-| ORM          | GORM       |
-| Database     | PostgreSQL |
-| Cache/state  | Redis      |
-| Environments | Nix        |
-
 ```
 octra/
-  backend/             — the monolith (see backend/README.md)
+  backend/             — Go monolith (fasthttp + GORM)
     cmd/server/        — entrypoint
     internal/
-      api/             — fasthttp handlers, middleware, routes
-      config/          — env-based configuration
-      model/           — GORM models (User, Agent, Skill, UserSkill)
-      service/         — business logic (auth, environment, chat)
-      repository/      — persistence interfaces + GORM implementations
-      nix/             — per-user Nix environment management
-      cli/             — long-lived AI CLI subprocess management (Redis state)
-      llm/             — direct LLM proxy (Anthropic Messages API)
+      api/             — handlers, middlewares, routes, proxies
+      config/          — env config
+      model/           — GORM models
+      service/         — business logic (auth, env, chat, billing)
+      repository/      — GORM repositories
+      nix/             — Nix environment management
+      cli/             — Ocawe launcher + process manager
       storage/         — DB + Redis wiring
-  frontend/            — web canvas + chat UI (unchanged)
-  poster/              — unchanged
-  tgbot/               — unchanged
+  frontend/web/        — Next.js 16 (static export)
+    app/
+      components/      — WorkflowCanvas, CatalogSearch, EditNodeModal, Metrics
+      dashboard/       — MCP, Runs, HITL, Triggers, Metrics, Environments
+      server/          — typed API clients (auth, mcp, runs, hitl, catalog...)
+      app/page.tsx     — main workspace (canvas + chat + sidebar)
+  ocawe/               — Crystal workflow runtime
   docker-compose.yml
   docker-compose.prod.yml
 ```
 
-### Data models
+## API Reference
 
-| Model         | Fields |
-|---------------|--------|
-| `User`        | ID, email, password hash, api_key, subscription, balance, margin settings |
-| `Agent`       | ID, user ID, LLM config (api_key, base_url, model), CLI (optional), active, priority |
-| `Skill`       | ID, name, type (`built-in` / `nixpkgs` / `custom`), install command, description |
-| `UserSkill`   | user ID, agent ID, skill ID, install status |
-| `Transaction` | user ID, type, amount, reason, optional agent ID, balance after, created_at |
-| `UsageMetric` | user ID, date, CPU seconds, memory MB-hours, disk MB, load percent |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/register` | No | Registration (+100 credits) |
+| POST | `/login` | No | JWT login |
+| POST | `/api/chat` | `octra-api-token` | Chat with agent, `stream: true` for SSE |
+| POST | `/api/chat/environments/{id}` | `api_key` in body | Chat for dashboard environment |
+| GET | `/api/catalog/search` | `octra-api-token` | Search providers, CLIs, skills, MCP |
+| GET | `/api/cli` | `octra-api-token` | List available CLIs |
+| GET | `/api/providers` | `octra-api-token` | List LLM providers |
+| GET/POST | `/api/environments` | `octra-api-token` | Dashboard environments CRUD |
+| POST | `/api/keys` | `octra-api-token` | Create API key |
+| GET | `/api/keys` | `octra-api-token` | List API keys |
+| GET | `/api/metrics/requests` | `octra-api-token` | Request metrics |
+| ANY | `/v1/mcp/{rest:*}` | `octra-api-token` | MCP servers CRUD → Ocawe |
+| ANY | `/v1/workflows/{rest:*}` | `octra-api-token` | Workflow runs → Ocawe |
+| ANY | `/v1/hitl/{rest:*}` | `octra-api-token` | HITL → Ocawe |
+| ANY | `/v1/triggers/{rest:*}` | `octra-api-token` | Triggers → Ocawe |
+| GET | `/billing/balance` | `octra-api-token` | User balance |
+| POST | `/billing/topup` | `octra-api-token` | Top up balance |
+| POST | `/billing/usage` | `octra-api-token` | Record usage + debit |
 
-See [`CONCEPT_USER_PAYMENT.md`](CONCEPT_USER_PAYMENT.md) and
-[`NEW_CONCEPT_USER_BALANCE.md`](NEW_CONCEPT_USER_BALANCE.md) for the payment and
-balance concept details.
+All authenticated endpoints use the `octra-api-token` header (except chat/environments which uses `api_key` in the body).
 
-## Quick start
-
-```bash
-docker compose up -d --build
-```
-
-This starts PostgreSQL, Redis, and the Octra backend (plus the frontend and
-poster). The API listens on `:8080`. See [`backend/README.md`](backend/README.md)
-for configuration variables and local development.
-
-```bash
-cd backend
-go build ./...
-go test ./...   # in-memory SQLite + fakes, no external services needed
-```
+See [backend/README.md](backend/README.md) for all configuration variables.
 
 ---
 
