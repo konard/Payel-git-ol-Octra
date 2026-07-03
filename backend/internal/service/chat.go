@@ -43,6 +43,10 @@ type CanvasNodeRepository interface {
 	ListByEnvironment(ctx context.Context, envID uuid.UUID) ([]model.CanvasNode, error)
 }
 
+type NixInstaller interface {
+	InstallCLI(ctx context.Context, userID, attr, cmd string) error
+}
+
 type ChatService struct {
 	agents    repository.AgentRepository
 	ocaweProv OcawePortProvider
@@ -51,6 +55,7 @@ type ChatService struct {
 
 	dashboardEnvRepo DashboardEnvRepository
 	canvasNodeRepo   CanvasNodeRepository
+	nixInst          NixInstaller
 
 	ocaweHost    string
 	ocaweBaseURL string
@@ -69,6 +74,11 @@ func NewChatService(agents repository.AgentRepository, ocaweProv OcawePortProvid
 func (s *ChatService) WithEnvironmentRepos(dashboardEnvRepo DashboardEnvRepository, canvasNodeRepo CanvasNodeRepository) *ChatService {
 	s.dashboardEnvRepo = dashboardEnvRepo
 	s.canvasNodeRepo = canvasNodeRepo
+	return s
+}
+
+func (s *ChatService) WithNixInstaller(inst NixInstaller) *ChatService {
+	s.nixInst = inst
 	return s
 }
 
@@ -124,6 +134,8 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 	if err != nil {
 		return "", err
 	}
+
+	s.installCLIFromNodes(ctx, nodes, user.ID.String())
 
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
@@ -185,6 +197,8 @@ func (s *ChatService) ChatWithEnvironmentStream(ctx context.Context, user *model
 		return err
 	}
 
+	s.installCLIFromNodes(ctx, nodes, user.ID.String())
+
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
 		EnvPath: s.envPaths.EnvPath(user.ID.String()),
@@ -223,6 +237,21 @@ func (s *ChatService) SyncEnvironment(ctx context.Context, envID uuid.UUID) erro
 		return nil
 	}
 	return s.syncOne(ctx, envID)
+}
+
+func (s *ChatService) installCLIFromNodes(ctx context.Context, nodes []model.CanvasNode, userID string) {
+	if s.nixInst == nil {
+		return
+	}
+	_, cliType, err := extractConfigFromNodes(nodes)
+	if err != nil || cliType == "" {
+		return
+	}
+	pkg, ok := lookupCLIPackage(string(cliType))
+	if !ok {
+		return
+	}
+	s.nixInst.InstallCLI(ctx, userID, pkg.NixAttr, pkg.InstallCmd)
 }
 
 func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
@@ -297,6 +326,8 @@ func (s *ChatService) ChatOpenAIWithEnvironment(ctx context.Context, user *model
 	if err != nil {
 		return err
 	}
+
+	s.installCLIFromNodes(ctx, nodes, user.ID.String())
 
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
@@ -386,6 +417,8 @@ func (s *ChatService) ChatOpenAIWithEnvironmentSync(ctx context.Context, user *m
 	if err != nil {
 		return "", err
 	}
+
+	s.installCLIFromNodes(ctx, nodes, user.ID.String())
 
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
@@ -653,6 +686,15 @@ func strPtrVal(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+func lookupCLIPackage(name string) (cli.CLIPackage, bool) {
+	for _, p := range cli.BuiltinCLIs() {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return cli.CLIPackage{}, false
 }
 
 func resolveModel(agent *model.Agent) string {

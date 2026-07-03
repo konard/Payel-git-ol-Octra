@@ -161,7 +161,8 @@ func main() {
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, nixMgr).
 		WithEnvironmentRepos(dashboardEnvs, canvasNodes).
-		WithBaseURL(ocaweAddr)
+		WithBaseURL(ocaweAddr).
+		WithNixInstaller(nixMgr)
 	oauthH := oauth.New(authSvc, cfg)
 
 	var tsClient *ts.Client

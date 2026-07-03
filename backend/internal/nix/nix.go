@@ -75,6 +75,26 @@ func (m *Manager) CreateEnvironment(ctx context.Context, userID string) error {
 	return nil
 }
 
+// InstallCLI installs a CLI binary into the user's Nix profile. If cmd is
+// non-empty it is run as a shell command; otherwise attr is installed from
+// nixpkgs via `nix profile install`.
+func (m *Manager) InstallCLI(ctx context.Context, userID, attr, cmd string) error {
+	path := m.EnvPath(userID)
+	profile := filepath.Join(path, ".octra", "nix-profile")
+	var shellCmd string
+	if cmd != "" {
+		shellCmd = cmd
+	} else if attr != "" {
+		shellCmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
+	} else {
+		return nil
+	}
+	if out, err := m.runner.Run(ctx, path, shellCmd); err != nil {
+		return fmt.Errorf("install cli: %w\n%s", err, string(out))
+	}
+	return nil
+}
+
 // InstallSkill provisions a single skill into the user's environment. The
 // install strategy depends on the skill type.
 func (m *Manager) InstallSkill(ctx context.Context, userID string, skill model.Skill) error {
