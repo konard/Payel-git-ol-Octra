@@ -16,7 +16,11 @@ export function generateStaticParams() {
         section.slug !== 'overview' &&
         section.slug !== 'settings' &&
         section.slug !== 'environments' &&
-        section.slug !== 'metrics',
+        section.slug !== 'metrics' &&
+        section.slug !== 'mcp' &&
+        section.slug !== 'runs' &&
+        section.slug !== 'hitl' &&
+        section.slug !== 'triggers',
     )
     .map((section) => ({ section: section.slug }));
 }

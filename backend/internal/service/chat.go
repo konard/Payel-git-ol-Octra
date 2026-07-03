@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -136,6 +137,66 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 
 	modelStr := resolveModelFromConfig(llmCfg, cliType)
 	return s.sendChat(ctx, port, modelStr, prompt, llmCfg.APIKey, llmCfg.BaseURL)
+}
+
+func (s *ChatService) ChatStream(ctx context.Context, user *model.User, prompt string, skills []string, w io.Writer) error {
+	agent, err := s.agents.GetByUserID(ctx, user.ID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return ErrNoEnvironment
+	}
+	if err != nil {
+		return err
+	}
+	if !agent.Active {
+		return ErrEnvironmentInactive
+	}
+
+	spec := cli.LaunchSpec{
+		UserID:  user.ID.String(),
+		EnvPath: s.envPaths.EnvPath(user.ID.String()),
+	}
+
+	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
+	if err != nil {
+		return fmt.Errorf("ocawe ensure: %w", err)
+	}
+
+	modelStr := resolveModel(agent)
+	_ = skills
+	return s.sendChatStream(ctx, port, modelStr, prompt, agent.LLMAPIKey, agent.LLMBaseURL, w)
+}
+
+func (s *ChatService) ChatWithEnvironmentStream(ctx context.Context, user *model.User, envID uuid.UUID, prompt string, w io.Writer) error {
+	env, err := s.dashboardEnvRepo.GetByID(ctx, envID)
+	if err != nil {
+		return fmt.Errorf("environment: %w", err)
+	}
+	if env.UserID != user.ID {
+		return fmt.Errorf("not your environment")
+	}
+
+	nodes, err := s.canvasNodeRepo.ListByEnvironment(ctx, envID)
+	if err != nil {
+		return fmt.Errorf("canvas nodes: %w", err)
+	}
+
+	llmCfg, cliType, err := extractConfigFromNodes(nodes)
+	if err != nil {
+		return err
+	}
+
+	spec := cli.LaunchSpec{
+		UserID:  envID.String(),
+		EnvPath: s.envPaths.EnvPath(user.ID.String()),
+	}
+
+	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
+	if err != nil {
+		return fmt.Errorf("ocawe ensure: %w", err)
+	}
+
+	modelStr := resolveModelFromConfig(llmCfg, cliType)
+	return s.sendChatStream(ctx, port, modelStr, prompt, llmCfg.APIKey, llmCfg.BaseURL, w)
 }
 
 func (s *ChatService) SyncEnvironmentBuilds(ctx context.Context) error {
@@ -276,6 +337,65 @@ func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt s
 		sb.WriteString(choice.Message.Content)
 	}
 	return sb.String(), nil
+}
+
+func (s *ChatService) sendChatStream(ctx context.Context, port int, modelStr, prompt string, apiKey, baseURL string, w io.Writer) error {
+	body := map[string]any{
+		"model": modelStr,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"stream": true,
+	}
+	if apiKey != "" {
+		body["api_key"] = apiKey
+	}
+	if baseURL != "" {
+		body["base_url"] = baseURL
+	}
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+
+	var url string
+	if s.ocaweBaseURL != "" {
+		url = fmt.Sprintf("%s/v1/chat/completions", s.ocaweBaseURL)
+	} else {
+		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyJSON))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpCli.Do(req)
+	if err != nil {
+		return fmt.Errorf("ocawe request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("ocawe responded %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if _, err := io.WriteString(w, line+"\n"); err != nil {
+			return err
+		}
+		if line == "" {
+			if f, ok := w.(interface{ Flush() error }); ok {
+				f.Flush()
+			}
+		}
+	}
+	return scanner.Err()
 }
 
 type nodeConfig struct {

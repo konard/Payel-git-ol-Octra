@@ -3,6 +3,7 @@
 import {
   Box,
   Braces,
+  Cable,
   Check,
   Cpu,
   Globe2,
@@ -27,6 +28,7 @@ const categories: Array<{ id: CatalogCategory; label: string }> = [
   { id: 'cli', label: 'CLI' },
   { id: 'skills', label: 'Skills' },
   { id: 'custom', label: 'Custom' },
+  { id: 'mcp', label: 'MCP' },
 ];
 
 const iconByType = {
@@ -34,6 +36,7 @@ const iconByType = {
   cli: Cpu,
   skill: Box,
   custom_provider: Braces,
+  mcp_server: Cable,
 } as const;
 
 export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: CatalogSearchModalProps) {

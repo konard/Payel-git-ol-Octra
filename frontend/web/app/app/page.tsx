@@ -214,12 +214,37 @@ export default function HomePage() {
   function handleCatalogSelect(item: CatalogItem) {
     const envId = selectedEnvRef.current;
     console.log('[canvas] handleCatalogSelect: envId=', envId, 'item=', { id: item.id, name: item.name, type: item.type });
+
+    if (item.type === 'mcp_server') {
+      setCanvasItems((prev) => {
+        const next = [
+          ...prev,
+          {
+            id: `${item.type}-${item.id}-${Date.now()}`,
+            kind: 'mcp_server' as const,
+            name: item.name,
+            detail: item.subtitle || item.description,
+            description: item.description,
+            meta: {
+              command: item.install_cmd || item.subtitle,
+              transport: 'stdio',
+            },
+          },
+        ];
+        if (envId) {
+          saveCanvas(next).catch((err: any) => console.error('save canvas failed', err));
+        }
+        return next;
+      });
+      return;
+    }
+
     setCanvasItems((prev) => {
       const next = [
         ...prev,
         {
           id: `${item.type}-${item.id}-${Date.now()}`,
-          kind: item.type,
+          kind: item.type as Exclude<typeof item.type, 'mcp_server'>,
           name: item.name,
           detail: item.subtitle || item.description,
           description: item.description,

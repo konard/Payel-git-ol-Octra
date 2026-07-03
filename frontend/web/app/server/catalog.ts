@@ -1,10 +1,10 @@
 import { API } from '../config/routes';
 
-export type CatalogCategory = 'all' | 'providers' | 'cli' | 'skills' | 'custom';
+export type CatalogCategory = 'all' | 'providers' | 'cli' | 'skills' | 'custom' | 'mcp';
 
 export type CatalogItem = {
   id: string;
-  type: 'provider' | 'cli' | 'skill' | 'custom_provider';
+  type: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'mcp_server';
   name: string;
   subtitle?: string;
   description?: string;

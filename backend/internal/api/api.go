@@ -152,6 +152,15 @@ func (a *API) Router() *router.Router {
 
 	// Workflow proxy to Ocawe: forwards /v1/workflows/* to the user's Ocawe
 	r.ANY("/v1/workflows/{rest:*}", a.withAuth(a.handleWorkflowProxy))
+
+	// MCP proxy to Ocawe: forwards /v1/mcp/* to the user's Ocawe
+	r.ANY("/v1/mcp/{rest:*}", a.withAuth(a.handleMCPProxy))
+
+	// HITL proxy to Ocawe: forwards /v1/hitl/* to the user's Ocawe
+	r.ANY("/v1/hitl/{rest:*}", a.withAuth(a.handleHITLProxy))
+
+	// Triggers proxy to Ocawe: forwards /v1/triggers/* to the user's Ocawe
+	r.ANY("/v1/triggers/{rest:*}", a.withAuth(a.handleTriggersProxy))
 	return r
 }
 
@@ -353,11 +362,13 @@ func (a *API) handleEnvironment(ctx *fasthttp.RequestCtx) {
 type chatRequest struct {
 	Prompt string   `json:"prompt"`
 	Skills []string `json:"skills"`
+	Stream bool     `json:"stream"`
 }
 
 type chatEnvRequest struct {
 	Prompt string `json:"prompt"`
 	APIKey string `json:"api_key"`
+	Stream bool   `json:"stream"`
 }
 
 type chatResponse struct {
@@ -373,6 +384,21 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 	}
 	if req.Prompt == "" {
 		writeError(ctx, fasthttp.StatusBadRequest, "prompt is required")
+		return
+	}
+
+	if req.Stream {
+		ctx.SetContentType("text/event-stream")
+		ctx.Response.Header.Set("Cache-Control", "no-cache")
+		ctx.Response.Header.Set("Connection", "keep-alive")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		started := time.Now()
+		err := a.chat.ChatStream(ctx, user, req.Prompt, req.Skills, ctx)
+		a.recordChatMetric(ctx, user.ID, nil, "", err == nil, time.Since(started))
+		if err != nil {
+			log.Printf("chat stream error: %v", err)
+		}
 		return
 	}
 
@@ -419,6 +445,21 @@ func (a *API) handleChatWithEnvironment(ctx *fasthttp.RequestCtx) {
 	user, err := a.auth.Authenticate(ctx, req.APIKey)
 	if err != nil {
 		writeError(ctx, fasthttp.StatusUnauthorized, "invalid api key")
+		return
+	}
+
+	if req.Stream {
+		ctx.SetContentType("text/event-stream")
+		ctx.Response.Header.Set("Cache-Control", "no-cache")
+		ctx.Response.Header.Set("Connection", "keep-alive")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		started := time.Now()
+		err := a.chat.ChatWithEnvironmentStream(ctx, user, envID, req.Prompt, ctx)
+		a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
+		if err != nil {
+			log.Printf("chat env stream error: %v", err)
+		}
 		return
 	}
 
@@ -493,6 +534,63 @@ func (a *API) handleWorkflowProxy(ctx *fasthttp.RequestCtx) {
 	a.reverseProxy(ctx, target)
 }
 
+func (a *API) handleHITLProxy(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	if a.workflowProxy == nil {
+		writeError(ctx, fasthttp.StatusNotFound, "hitl proxy not configured")
+		return
+	}
+
+	port, err := a.workflowProxy.OcawePort(ctx, user.ID.String())
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, fmt.Sprintf("ocawe unavailable: %v", err))
+		return
+	}
+
+	path := string(ctx.Path())
+	suffix := strings.TrimPrefix(path, "/v1/hitl")
+	target := fmt.Sprintf("http://127.0.0.1:%d/v1/hitl%s", port, suffix)
+	a.reverseProxy(ctx, target)
+}
+
+func (a *API) handleTriggersProxy(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	if a.workflowProxy == nil {
+		writeError(ctx, fasthttp.StatusNotFound, "triggers proxy not configured")
+		return
+	}
+
+	port, err := a.workflowProxy.OcawePort(ctx, user.ID.String())
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, fmt.Sprintf("ocawe unavailable: %v", err))
+		return
+	}
+
+	path := string(ctx.Path())
+	suffix := strings.TrimPrefix(path, "/v1/triggers")
+	target := fmt.Sprintf("http://127.0.0.1:%d/v1/triggers%s", port, suffix)
+	a.reverseProxy(ctx, target)
+}
+
+func (a *API) handleMCPProxy(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	if a.workflowProxy == nil {
+		writeError(ctx, fasthttp.StatusNotFound, "mcp proxy not configured")
+		return
+	}
+
+	port, err := a.workflowProxy.OcawePort(ctx, user.ID.String())
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, fmt.Sprintf("ocawe unavailable: %v", err))
+		return
+	}
+
+	path := string(ctx.Path())
+	suffix := strings.TrimPrefix(path, "/v1/mcp")
+	target := fmt.Sprintf("http://127.0.0.1:%d/v1/mcp%s", port, suffix)
+	a.reverseProxy(ctx, target)
+}
+
 func (a *API) reverseProxy(ctx *fasthttp.RequestCtx, target string) {
 	body := ctx.PostBody()
 	req, err := http.NewRequest(string(ctx.Method()), target, bytes.NewReader(body))
@@ -512,15 +610,9 @@ func (a *API) reverseProxy(ctx *fasthttp.RequestCtx, target string) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
-		return
-	}
-
 	ctx.SetStatusCode(resp.StatusCode)
 	ctx.SetContentType(resp.Header.Get("Content-Type"))
-	ctx.Write(respBody)
+	io.Copy(ctx, resp.Body)
 }
 
 type billingBalanceResponse struct {
@@ -1498,6 +1590,92 @@ func (a *API) handleCatalogSearch(ctx *fasthttp.RequestCtx) {
 		})
 	}
 
+	if len(items) < limit && includesMCPCategory(category) {
+		mcpServers := []catalogItemResponse{
+			{ID: "mcp-filesystem", Type: "mcp_server", Name: "Filesystem", Subtitle: "@modelcontextprotocol/server-filesystem", Description: "Secure file access with configurable permissions."},
+			{ID: "mcp-github", Type: "mcp_server", Name: "GitHub", Subtitle: "@modelcontextprotocol/server-github", Description: "GitHub API: repos, issues, PRs, search, auth."},
+			{ID: "mcp-gitlab", Type: "mcp_server", Name: "GitLab", Subtitle: "@modelcontextprotocol/server-gitlab", Description: "GitLab API: projects, merge requests, pipelines."},
+			{ID: "mcp-postgres", Type: "mcp_server", Name: "PostgreSQL", Subtitle: "@modelcontextprotocol/server-postgres", Description: "Read-only PostgreSQL access with schema inspection."},
+			{ID: "mcp-sqlite", Type: "mcp_server", Name: "SQLite", Subtitle: "@modelcontextprotocol/server-sqlite", Description: "SQLite database exploration and queries."},
+			{ID: "mcp-mysql", Type: "mcp_server", Name: "MySQL", Subtitle: "@anthropic/mcp-mysql", Description: "MySQL database access and querying."},
+			{ID: "mcp-mongodb", Type: "mcp_server", Name: "MongoDB", Subtitle: "@anthropic/mcp-mongodb", Description: "MongoDB document database operations."},
+			{ID: "mcp-redis", Type: "mcp_server", Name: "Redis", Subtitle: "@modelcontextprotocol/server-redis", Description: "Redis key-value store and cache operations."},
+			{ID: "mcp-clickhouse", Type: "mcp_server", Name: "ClickHouse", Subtitle: "@clickhouse/mcp", Description: "ClickHouse analytical database queries."},
+			{ID: "mcp-duckdb", Type: "mcp_server", Name: "DuckDB", Subtitle: "@duckdb/mcp-server", Description: "DuckDB embedded analytical database."},
+			{ID: "mcp-bigquery", Type: "mcp_server", Name: "BigQuery", Subtitle: "@google/mcp-bigquery", Description: "Google BigQuery data warehouse queries."},
+			{ID: "mcp-snowflake", Type: "mcp_server", Name: "Snowflake", Subtitle: "@snowflake/mcp", Description: "Snowflake cloud data platform access."},
+			{ID: "mcp-supabase", Type: "mcp_server", Name: "Supabase", Subtitle: "@supabase/mcp-server", Description: "Supabase Postgres + Auth + Storage."},
+			{ID: "mcp-firebase", Type: "mcp_server", Name: "Firebase", Subtitle: "@firebase/mcp-server", Description: "Firebase Firestore, Auth, and Storage."},
+			{ID: "mcp-airtable", Type: "mcp_server", Name: "Airtable", Subtitle: "@airtable/mcp-server", Description: "Airtable bases, tables, and records API."},
+			{ID: "mcp-docker", Type: "mcp_server", Name: "Docker", Subtitle: "@modelcontextprotocol/server-docker", Description: "Docker container management and inspection."},
+			{ID: "mcp-kubernetes", Type: "mcp_server", Name: "Kubernetes", Subtitle: "@kubernetes/mcp-server", Description: "Kubernetes cluster management and pod operations."},
+			{ID: "mcp-aws", Type: "mcp_server", Name: "AWS", Subtitle: "@aws/mcp-server", Description: "AWS services: S3, EC2, Lambda, IAM, and more."},
+			{ID: "mcp-gcp", Type: "mcp_server", Name: "Google Cloud", Subtitle: "@google/mcp-server", Description: "GCP services: Cloud Storage, Compute, IAM."},
+			{ID: "mcp-azure", Type: "mcp_server", Name: "Azure", Subtitle: "@microsoft/mcp-azure", Description: "Azure cloud services and resource management."},
+			{ID: "mcp-cloudflare", Type: "mcp_server", Name: "Cloudflare", Subtitle: "@cloudflare/mcp-server", Description: "Cloudflare Workers, KV, R2, D1, and more."},
+			{ID: "mcp-terraform", Type: "mcp_server", Name: "Terraform", Subtitle: "@hashicorp/mcp-terraform", Description: "Terraform infrastructure as code management."},
+			{ID: "mcp-pulumi", Type: "mcp_server", Name: "Pulumi", Subtitle: "@pulumi/mcp-server", Description: "Pulumi cloud infrastructure as code."},
+			{ID: "mcp-puppeteer", Type: "mcp_server", Name: "Puppeteer", Subtitle: "@modelcontextprotocol/server-puppeteer", Description: "Browser automation: scrape, screenshot, PDF."},
+			{ID: "mcp-playwright", Type: "mcp_server", Name: "Playwright", Subtitle: "@microsoft/mcp-playwright", Description: "Cross-browser automation and testing."},
+			{ID: "mcp-browserbase", Type: "mcp_server", Name: "Browserbase", Subtitle: "@browserbase/mcp-server", Description: "Cloud browser automation and web scraping."},
+			{ID: "mcp-slack", Type: "mcp_server", Name: "Slack", Subtitle: "@modelcontextprotocol/server-slack", Description: "Slack messaging, channels, and workspace API."},
+			{ID: "mcp-discord", Type: "mcp_server", Name: "Discord", Subtitle: "@discord/mcp-server", Description: "Discord bot integration: messages, channels, guilds."},
+			{ID: "mcp-telegram", Type: "mcp_server", Name: "Telegram", Subtitle: "@telegram/mcp-server", Description: "Telegram Bot API messaging and file sharing."},
+			{ID: "mcp-gmail", Type: "mcp_server", Name: "Gmail", Subtitle: "@google/mcp-gmail", Description: "Gmail: read, send, search, manage labels."},
+			{ID: "mcp-google-calendar", Type: "mcp_server", Name: "Google Calendar", Subtitle: "@google/mcp-calendar", Description: "Calendar events, scheduling, and availability."},
+			{ID: "mcp-google-sheets", Type: "mcp_server", Name: "Google Sheets", Subtitle: "@google/mcp-sheets", Description: "Spreadsheet read/write and chart management."},
+			{ID: "mcp-google-docs", Type: "mcp_server", Name: "Google Docs", Subtitle: "@google/mcp-docs", Description: "Document creation, editing, and formatting."},
+			{ID: "mcp-google-drive", Type: "mcp_server", Name: "Google Drive", Subtitle: "@google/mcp-drive", Description: "Drive file management, search, and sharing."},
+			{ID: "mcp-notion", Type: "mcp_server", Name: "Notion", Subtitle: "@modelcontextprotocol/server-notion", Description: "Notion pages, databases, and workspace API."},
+			{ID: "mcp-confluence", Type: "mcp_server", Name: "Confluence", Subtitle: "@atlassian/mcp-confluence", Description: "Confluence pages, spaces, and content API."},
+			{ID: "mcp-jira", Type: "mcp_server", Name: "Jira", Subtitle: "@atlassian/mcp-jira", Description: "Jira issues, sprints, projects, and workflows."},
+			{ID: "mcp-linear", Type: "mcp_server", Name: "Linear", Subtitle: "@modelcontextprotocol/server-linear", Description: "Linear issues, projects, and team cycles."},
+			{ID: "mcp-asana", Type: "mcp_server", Name: "Asana", Subtitle: "@asana/mcp-server", Description: "Asana tasks, projects, and team management."},
+			{ID: "mcp-monday", Type: "mcp_server", Name: "Monday.com", Subtitle: "@monday/mcp-server", Description: "Monday.com boards, items, and workflow management."},
+			{ID: "mcp-trello", Type: "mcp_server", Name: "Trello", Subtitle: "@trello/mcp-server", Description: "Trello boards, lists, cards, and checklists."},
+			{ID: "mcp-stripe", Type: "mcp_server", Name: "Stripe", Subtitle: "@stripe/mcp-server", Description: "Stripe payments, customers, invoices, and products."},
+			{ID: "mcp-plaid", Type: "mcp_server", Name: "Plaid", Subtitle: "@plaid/mcp-server", Description: "Plaid financial data and bank account linking."},
+			{ID: "mcp-sentry", Type: "mcp_server", Name: "Sentry", Subtitle: "@sentry/mcp-server", Description: "Error tracking, performance monitoring, and alerts."},
+			{ID: "mcp-datadog", Type: "mcp_server", Name: "Datadog", Subtitle: "@datadog/mcp-server", Description: "Datadog monitoring, dashboards, and alerts."},
+			{ID: "mcp-grafana", Type: "mcp_server", Name: "Grafana", Subtitle: "@grafana/mcp-server", Description: "Grafana dashboards, queries, and alerting."},
+			{ID: "mcp-pagerduty", Type: "mcp_server", Name: "PagerDuty", Subtitle: "@pagerduty/mcp-server", Description: "Incident management, on-call, and escalation."},
+			{ID: "mcp-openai", Type: "mcp_server", Name: "OpenAI", Subtitle: "@openai/mcp-server", Description: "OpenAI models: chat, embeddings, assistants API."},
+			{ID: "mcp-anthropic", Type: "mcp_server", Name: "Anthropic", Subtitle: "@anthropic/mcp-server", Description: "Anthropic Claude API access via MCP."},
+			{ID: "mcp-huggingface", Type: "mcp_server", Name: "HuggingFace", Subtitle: "@huggingface/mcp-server", Description: "HuggingFace models, datasets, and inference API."},
+			{ID: "mcp-replicate", Type: "mcp_server", Name: "Replicate", Subtitle: "@replicate/mcp-server", Description: "Replicate API for open-source model inference."},
+			{ID: "mcp-ollama", Type: "mcp_server", Name: "Ollama", Subtitle: "@ollama/mcp-server", Description: "Local LLM inference via Ollama."},
+			{ID: "mcp-elevenlabs", Type: "mcp_server", Name: "ElevenLabs", Subtitle: "@elevenlabs/mcp-server", Description: "Text-to-speech and voice synthesis."},
+			{ID: "mcp-s3", Type: "mcp_server", Name: "S3 Storage", Subtitle: "@aws/mcp-s3", Description: "Amazon S3 bucket and object management."},
+			{ID: "mcp-dropbox", Type: "mcp_server", Name: "Dropbox", Subtitle: "@dropbox/mcp-server", Description: "Dropbox file storage and sharing API."},
+			{ID: "mcp-memory", Type: "mcp_server", Name: "Memory (Knowledge Graph)", Subtitle: "@modelcontextprotocol/server-memory", Description: "Persistent memory graph for cross-session context."},
+			{ID: "mcp-chroma", Type: "mcp_server", Name: "ChromaDB", Subtitle: "@chromadb/mcp-server", Description: "Chroma vector database for embeddings and semantic search."},
+			{ID: "mcp-pinecone", Type: "mcp_server", Name: "Pinecone", Subtitle: "@pinecone/mcp-server", Description: "Pinecone vector database for semantic search."},
+			{ID: "mcp-weaviate", Type: "mcp_server", Name: "Weaviate", Subtitle: "@weaviate/mcp-server", Description: "Weaviate vector search and hybrid queries."},
+			{ID: "mcp-qdrant", Type: "mcp_server", Name: "Qdrant", Subtitle: "@qdrant/mcp-server", Description: "Qdrant vector similarity search engine."},
+			{ID: "mcp-tavily", Type: "mcp_server", Name: "Tavily Search", Subtitle: "@tavily/mcp-server", Description: "AI-powered web search and research API."},
+			{ID: "mcp-exa", Type: "mcp_server", Name: "Exa Search", Subtitle: "@exa/mcp-server", Description: "Semantic web search and content discovery."},
+			{ID: "mcp-perplexity", Type: "mcp_server", Name: "Perplexity", Subtitle: "@perplexity/mcp-server", Description: "Perplexity AI search with citations."},
+			{ID: "mcp-google-search", Type: "mcp_server", Name: "Google Search", Subtitle: "@google/mcp-search", Description: "Google Custom Search API integration."},
+			{ID: "mcp-bing-search", Type: "mcp_server", Name: "Bing Search", Subtitle: "@microsoft/mcp-bing", Description: "Bing Web Search API."},
+			{ID: "mcp-brave-search", Type: "mcp_server", Name: "Brave Search", Subtitle: "@modelcontextprotocol/server-brave-search", Description: "Web search via Brave Search API."},
+			{ID: "mcp-maps", Type: "mcp_server", Name: "Google Maps", Subtitle: "@google/mcp-maps", Description: "Maps, directions, places, and geocoding API."},
+			{ID: "mcp-weather", Type: "mcp_server", Name: "Weather", Subtitle: "@weather/mcp-server", Description: "Weather forecasts and current conditions."},
+			{ID: "mcp-ffmpeg", Type: "mcp_server", Name: "FFmpeg", Subtitle: "@ffmpeg/mcp-server", Description: "Media file transcoding and processing."},
+			{ID: "mcp-imagemagick", Type: "mcp_server", Name: "ImageMagick", Subtitle: "@imagemagick/mcp-server", Description: "Image processing, conversion, and manipulation."},
+			{ID: "mcp-seqrepo", Type: "mcp_server", Name: "SeqRepo", Subtitle: "@seqrepo/mcp-server", Description: "Biological sequence retrieval (BLAST/ncbi)."},
+			{ID: "mcp-everything", Type: "mcp_server", Name: "Everything (MCP Test)", Subtitle: "@modelcontextprotocol/server-everything", Description: "Reference server with all MCP features for testing."},
+			{ID: "mcp-mcp-cli", Type: "mcp_server", Name: "MCP CLI", Subtitle: "@anthropic/mcp", Description: "CLI tool for connecting and managing MCP servers."},
+		}
+		for _, m := range mcpServers {
+			if textMatches(q, m.Name, m.Subtitle, m.Description) {
+				items = append(items, m)
+				if len(items) >= limit {
+					break
+				}
+			}
+		}
+	}
+
 	writeJSON(ctx, fasthttp.StatusOK, catalogSearchResponse{
 		Query:    q,
 		Category: category,
@@ -1682,6 +1860,8 @@ func normalizeCatalogCategory(raw string) string {
 		return "skills"
 	case "custom", "custom_provider", "custom-provider":
 		return "custom"
+	case "mcp", "mcps", "mcp_server", "mcp-servers":
+		return "mcp"
 	default:
 		return "all"
 	}
@@ -1693,6 +1873,10 @@ func includesCatalogCategory(category, target string) bool {
 
 func includesCustomProvider(category string) bool {
 	return category == "all" || category == "providers" || category == "custom"
+}
+
+func includesMCPCategory(category string) bool {
+	return category == "all" || category == "mcp"
 }
 
 func customProviderMatches(q string) bool {

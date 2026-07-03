@@ -18,14 +18,14 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import { Bot, Box, Braces, Cpu, Globe2, Layers3, Trash2, Unplug, Pencil } from 'lucide-react';
+import { Bot, Box, Braces, Cable, Cpu, Globe2, Layers3, Trash2, Unplug, Pencil } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EditNodeModal } from './EditNodeModal';
 
 export type WorkflowCanvasItem = {
   id: string;
-  kind: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'environment';
+  kind: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'environment' | 'mcp_server';
   name: string;
   detail?: string;
   description?: string;
@@ -57,6 +57,7 @@ const iconByKind = {
   skill: Box,
   custom_provider: Braces,
   environment: Layers3,
+  mcp_server: Cable,
 } as const;
 
 export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
@@ -292,8 +293,10 @@ function nodeKindLabel(kind: WorkflowCanvasItem['kind']) {
       return 'Skill';
     case 'custom_provider':
       return 'Custom';
-    case 'environment':
+	case 'environment':
       return 'Environment';
+    case 'mcp_server':
+      return 'MCP';
     default:
       return 'Node';
   }
