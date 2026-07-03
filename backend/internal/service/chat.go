@@ -249,9 +249,12 @@ func (s *ChatService) installCLIFromNodes(ctx context.Context, nodes []model.Can
 	}
 	pkg, ok := lookupCLIPackage(string(cliType))
 	if !ok {
+		log.Printf("cli install: no package definition for %s", cliType)
 		return
 	}
-	s.nixInst.InstallCLI(ctx, userID, pkg.NixAttr, pkg.InstallCmd)
+	if err := s.nixInst.InstallCLI(ctx, userID, pkg.NixAttr, pkg.InstallCmd); err != nil {
+		log.Printf("cli install: %v", err)
+	}
 }
 
 func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
