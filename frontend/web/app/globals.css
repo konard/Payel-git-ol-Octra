@@ -3807,3 +3807,301 @@ button {
   gap: 8px;
   margin-top: 20px;
 }
+
+/* ------------------------------------------------------------------ */
+/* Request metrics (charts, overview widget, detailed dashboard view)  */
+/* ------------------------------------------------------------------ */
+
+.metrics-chart {
+  margin: 0;
+  width: 100%;
+}
+
+.metrics-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.metrics-grid-line {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.metrics-axis-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.metrics-bar-success {
+  fill: var(--metric-success);
+}
+
+.metrics-bar-failed {
+  fill: var(--metric-danger);
+}
+
+.metrics-line {
+  stroke: var(--metric-success);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.metrics-line-dot {
+  fill: var(--metric-success);
+}
+
+.metric-ok {
+  color: var(--metric-success);
+}
+
+.metric-bad {
+  color: var(--metric-danger);
+}
+
+/* Compact overview widget (workspace side panel + dashboard overview) */
+.metrics-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metrics-overview-stats {
+  display: flex;
+  gap: 10px;
+}
+
+.metrics-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--white-06);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.metrics-stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.metrics-stat-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metrics-overview-link {
+  align-self: flex-start;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+  transition: color var(--anim-ease-fast);
+}
+
+.metrics-overview-link:hover {
+  color: var(--text);
+  border-bottom-color: var(--line-strong);
+}
+
+/* Detailed metrics view */
+.metrics-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 2px 8px;
+}
+
+.metrics-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metrics-filter-group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--white-06);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.metrics-filter {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition:
+    color var(--anim-ease-fast),
+    background var(--anim-ease-fast);
+}
+
+.metrics-filter:hover {
+  color: var(--text);
+}
+
+.metrics-filter.active {
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.metrics-env-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.metrics-env-select select {
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: var(--white-06);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+}
+
+.metrics-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.metrics-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--white-06);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.metrics-summary-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.metrics-summary-label {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metrics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metrics-chart-card,
+.metrics-env-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.metrics-chart-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.metrics-env-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metrics-env-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.metrics-env-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.metrics-env-name.active {
+  color: var(--metric-success);
+}
+
+.metrics-env-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.metrics-env-dot.active {
+  background: var(--metric-success);
+}
+
+.metrics-env-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--white-06);
+  overflow: hidden;
+}
+
+.metrics-env-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--metric-success);
+  min-width: 2px;
+}
+
+.metrics-env-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .metrics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .metrics-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

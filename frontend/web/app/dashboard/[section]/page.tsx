@@ -7,9 +7,17 @@ import { ROUTES } from '../../config/routes';
 
 export const dynamicParams = false;
 
+// `metrics` is served by its own dedicated route (app/dashboard/metrics), so it
+// must be excluded here to avoid a static-generation collision.
 export function generateStaticParams() {
   return routeSections
-    .filter((section) => section.slug !== 'overview' && section.slug !== 'settings' && section.slug !== 'environments')
+    .filter(
+      (section) =>
+        section.slug !== 'overview' &&
+        section.slug !== 'settings' &&
+        section.slug !== 'environments' &&
+        section.slug !== 'metrics',
+    )
     .map((section) => ({ section: section.slug }));
 }
 

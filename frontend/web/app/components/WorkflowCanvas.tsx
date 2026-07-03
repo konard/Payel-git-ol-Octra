@@ -10,6 +10,7 @@ import {
   ReactFlow,
   addEdge,
   applyEdgeChanges,
+  useEdgesState,
   useNodesState,
   type Connection,
   type Edge,
@@ -61,6 +62,7 @@ const iconByKind = {
 export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
   const initialNodes = useMemo(() => buildNodes(items), [items]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(initialNodes);
+  const [edgeState, setEdges, onEdgesStateChange] = useEdgesState<Edge>(edges);
   const [contextMenu, setContextMenu] = useState<{ node: WorkflowNode; x: number; y: number } | null>(null);
   const [editItem, setEditItem] = useState<WorkflowCanvasItem | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,10 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
     console.log('[canvas] WorkflowCanvas useEffect[items]: items count=', items.length, 'ids:', items.map(i => i.id));
     setNodes(buildNodes(items));
   }, [items, setNodes]);
+
+  useEffect(() => {
+    setEdges(edges);
+  }, [edges, setEdges]);
 
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: WorkflowNode) => {
     event.preventDefault();
@@ -88,22 +94,20 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
     const nodeId = contextMenu.node.id;
     const updatedItems = items.filter((i) => i.id !== nodeId);
     onItemsChange?.(updatedItems);
-    if (onEdgesChange) {
-      const remainingEdges = edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
-      onEdgesChange(remainingEdges);
-    }
+    const remainingEdges = edgeState.filter((e) => e.source !== nodeId && e.target !== nodeId);
+    setEdges(remainingEdges);
+    onEdgesChange?.(remainingEdges);
     setContextMenu(null);
-  }, [contextMenu, items, onItemsChange, edges, onEdgesChange]);
+  }, [contextMenu, items, onItemsChange, edgeState, setEdges, onEdgesChange]);
 
   const handleDisconnect = useCallback(() => {
     if (!contextMenu) return;
     const nodeId = contextMenu.node.id;
-    if (onEdgesChange) {
-      const remainingEdges = edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
-      onEdgesChange(remainingEdges);
-    }
+    const remainingEdges = edgeState.filter((e) => e.source !== nodeId && e.target !== nodeId);
+    setEdges(remainingEdges);
+    onEdgesChange?.(remainingEdges);
     setContextMenu(null);
-  }, [contextMenu, edges, onEdgesChange]);
+  }, [contextMenu, edgeState, setEdges, onEdgesChange]);
 
   const handleEdit = useCallback(() => {
     if (!contextMenu) return;
@@ -149,20 +153,21 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
   const onConnect = useCallback(
     (connection: Connection) => {
       console.log('[canvas] onConnect: new connection', connection);
-      if (!onEdgesChange) return;
-      const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, edges);
+      const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, edgeState);
       console.log('[canvas] onConnect: edges now', next.length);
-      onEdgesChange(next);
+      setEdges(next);
+      onEdgesChange?.(next);
     },
-    [edges, onEdgesChange],
+    [edgeState, setEdges, onEdgesChange],
   );
 
   const handleEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      const next = applyEdgeChanges(changes, edges);
+      onEdgesStateChange(changes);
+      const next = applyEdgeChanges(changes, edgeState);
       onEdgesChange?.(next);
     },
-    [edges, onEdgesChange],
+    [onEdgesStateChange, edgeState, onEdgesChange],
   );
 
   return (
@@ -170,7 +175,7 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
       <ReactFlow
         className="octra-flow"
         nodes={nodes}
-        edges={edges}
+        edges={edgeState}
         nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}

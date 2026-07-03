@@ -35,4 +35,5 @@ export const API = {
   PROVIDER_SEARCH: `${API_BASE}/api/providers/search`,
   SKILLS_SEARCH: `${API_BASE}/skills/search`,
   CATALOG_SEARCH: `${API_BASE}/api/catalog/search`,
+  METRICS_REQUESTS: `${API_BASE}/api/metrics/requests`,
 } as const;

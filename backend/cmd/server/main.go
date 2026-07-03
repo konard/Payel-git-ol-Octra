@@ -131,6 +131,7 @@ func main() {
 	userSkills := repository.NewUserSkillRepository(db)
 	transactions := repository.NewTransactionRepository(db)
 	usageMetrics := repository.NewUsageMetricsRepository(db)
+	requestMetrics := repository.NewRequestMetricsRepository(db)
 	apiKeys := repository.NewAPIKeyRepository(db)
 	dashboardEnvs := repository.NewDashboardEnvironmentRepository(db)
 	canvasNodes := repository.NewCanvasNodeRepository(db)
@@ -155,6 +156,7 @@ func main() {
 	defer cliMgr.Shutdown()
 
 	billingSvc := service.NewBillingService(users, agents, transactions, usageMetrics)
+	metricsSvc := service.NewMetricsService(requestMetrics, dashboardEnvs)
 	authSvc := service.NewAuthServiceWithKeys(users, apiKeys, cfg, transactions)
 	envSvc := service.NewEnvironmentService(agents, skills, userSkills, nixMgr, billingSvc)
 	chatSvc := service.NewChatService(agents, cliMgr, nixMgr).
@@ -192,7 +194,7 @@ func main() {
 	seedCLIs(ctx, clis, tsClient)
 	seedProviders(ctx, providers, tsClient)
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient, cliMgr).Router().Handler)
+	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, metricsSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient, cliMgr).Router().Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {

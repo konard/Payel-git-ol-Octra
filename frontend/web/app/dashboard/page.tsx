@@ -1,5 +1,6 @@
-import { Activity, Code2, Settings } from 'lucide-react';
+import { Code2, Settings } from 'lucide-react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
+import { RequestMetricsOverview } from '../components/RequestMetricsOverview';
 import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { DashboardShell } from './DashboardShell';
 import { ROUTES } from '../config/routes';
@@ -8,14 +9,7 @@ export default function DashboardPage() {
   return (
     <DashboardShell activeSection="overview">
       <section className="dashboard-metrics" aria-label="Pipeline metrics">
-        <EmptyDataPanel
-          compact
-          icon={Activity}
-          title="No live metrics yet"
-          detail="Runtime counters will appear here when environments begin reporting telemetry."
-          actionHref={ROUTES.DASHBOARD_METRICS}
-          actionLabel="Open metrics"
-        />
+        <RequestMetricsOverview range="7d" compact />
       </section>
 
       <section className="dashboard-grid">

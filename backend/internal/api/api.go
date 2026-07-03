@@ -38,6 +38,7 @@ type API struct {
 	env     *service.EnvironmentService
 	chat    *service.ChatService
 	billing *service.BillingService
+	metrics *service.MetricsService
 	oauthH  *oauth.Handler
 
 	dashboardEnvRepo repository.DashboardEnvironmentRepository
@@ -54,6 +55,7 @@ func New(
 	env *service.EnvironmentService,
 	chat *service.ChatService,
 	billing *service.BillingService,
+	metrics *service.MetricsService,
 	oauthH *oauth.Handler,
 	dashboardEnvRepo repository.DashboardEnvironmentRepository,
 	canvasNodeRepo repository.CanvasNodeRepository,
@@ -68,6 +70,7 @@ func New(
 		env:              env,
 		chat:             chat,
 		billing:          billing,
+		metrics:          metrics,
 		oauthH:           oauthH,
 		dashboardEnvRepo: dashboardEnvRepo,
 		canvasNodeRepo:   canvasNodeRepo,
@@ -113,6 +116,9 @@ func (a *API) Router() *router.Router {
 	r.POST("/billing/topup", a.withAuth(a.handleBillingTopUp))
 	r.POST("/billing/lefine-reward", a.withAuth(a.handleBillingLefineReward))
 	r.POST("/billing/usage", a.withAuth(a.handleBillingUsage))
+
+	// Request metrics
+	r.GET("/api/metrics/requests", a.withAuth(a.handleRequestMetrics))
 
 	// User API keys
 	r.POST("/api/keys", a.withAuth(a.handleCreateAPIKey))
@@ -370,11 +376,16 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	started := time.Now()
 	resp, err := a.chat.Chat(ctx, user, req.Prompt, req.Skills)
 	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
 		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
 		return
 	}
+	// A request that reached the provider (whether it succeeded or the upstream
+	// failed) counts towards the request metrics; pre-flight validation errors
+	// handled above do not.
+	a.recordChatMetric(ctx, user.ID, nil, "", err == nil, time.Since(started))
 	if err != nil {
 		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
 		return
@@ -411,17 +422,56 @@ func (a *API) handleChatWithEnvironment(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	started := time.Now()
 	resp, err := a.chat.ChatWithEnvironment(ctx, user, envID, req.Prompt)
 	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
 		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
 		return
 	}
+	a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
 	if err != nil {
 		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
 		return
 	}
 
 	writeJSON(ctx, fasthttp.StatusOK, chatResponse{Response: resp})
+}
+
+// recordChatMetric persists one request-metric row. Telemetry must never break
+// the chat response, so recording errors are logged and swallowed.
+func (a *API) recordChatMetric(ctx context.Context, userID uuid.UUID, envID *uuid.UUID, modelStr string, success bool, latency time.Duration) {
+	if a.metrics == nil {
+		return
+	}
+	if err := a.metrics.Record(ctx, userID, envID, modelStr, success, latency); err != nil {
+		log.Printf("record request metric: %v", err)
+	}
+}
+
+func (a *API) handleRequestMetrics(ctx *fasthttp.RequestCtx) {
+	user := userFrom(ctx)
+	if a.metrics == nil {
+		writeError(ctx, fasthttp.StatusServiceUnavailable, "metrics unavailable")
+		return
+	}
+
+	var envID *uuid.UUID
+	if raw := string(ctx.QueryArgs().Peek("env")); raw != "" {
+		parsed, err := uuid.Parse(raw)
+		if err != nil {
+			writeError(ctx, fasthttp.StatusBadRequest, "invalid env id")
+			return
+		}
+		envID = &parsed
+	}
+
+	rangeRaw := string(ctx.QueryArgs().Peek("range"))
+	result, err := a.metrics.RequestMetrics(ctx, user.ID, envID, rangeRaw)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(ctx, fasthttp.StatusOK, result)
 }
 
 func (a *API) handleWorkflowProxy(ctx *fasthttp.RequestCtx) {

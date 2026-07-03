@@ -108,6 +108,7 @@ func skillInstallCommand(skill model.Skill, profile string) string {
 	}
 }
 
+
 func profileBinPaths(workDir string) []string {
 	baseDir := filepath.Dir(workDir)
 	return []string{
