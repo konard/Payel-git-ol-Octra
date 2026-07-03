@@ -398,6 +398,7 @@ func (a *API) handleChat(ctx *fasthttp.RequestCtx) {
 		a.recordChatMetric(ctx, user.ID, nil, "", err == nil, time.Since(started))
 		if err != nil {
 			log.Printf("chat stream error: %v", err)
+			fmt.Fprintf(ctx, "data: {\"error\":\"%s\"}\n\n", err.Error())
 		}
 		return
 	}
@@ -459,6 +460,7 @@ func (a *API) handleChatWithEnvironment(ctx *fasthttp.RequestCtx) {
 		a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
 		if err != nil {
 			log.Printf("chat env stream error: %v", err)
+			fmt.Fprintf(ctx, "data: {\"error\":\"%s\"}\n\n", err.Error())
 		}
 		return
 	}
