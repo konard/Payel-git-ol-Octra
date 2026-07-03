@@ -108,6 +108,7 @@ func (a *API) Router() *router.Router {
 	r.POST("/environment", a.withAuth(a.handleEnvironment))
 	r.POST("/api/chat", a.withAuth(a.handleChat))
 	r.POST("/api/chat/environments/{id}", a.handleChatWithEnvironment)
+	r.POST("/api/chat/openai/environments/{id}", a.handleOpenAIChatWithEnvironment)
 
 	// Billing
 	r.GET("/billing/balance", a.withAuth(a.handleBillingBalance))
@@ -467,6 +468,75 @@ func (a *API) handleChatWithEnvironment(ctx *fasthttp.RequestCtx) {
 
 	started := time.Now()
 	resp, err := a.chat.ChatWithEnvironment(ctx, user, envID, req.Prompt)
+	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
+	a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadGateway, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, chatResponse{Response: resp})
+}
+
+func (a *API) handleOpenAIChatWithEnvironment(ctx *fasthttp.RequestCtx) {
+	body := ctx.PostBody()
+
+	var meta struct {
+		APIKey string `json:"api_key"`
+		Stream bool   `json:"stream"`
+	}
+	if err := json.Unmarshal(body, &meta); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid json body")
+		return
+	}
+	if meta.APIKey == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "api_key is required")
+		return
+	}
+	if !meta.Stream {
+		var msgs struct {
+			Messages []any `json:"messages"`
+		}
+		if err := json.Unmarshal(body, &msgs); err != nil || len(msgs.Messages) == 0 {
+			writeError(ctx, fasthttp.StatusBadRequest, "messages is required")
+			return
+		}
+	}
+
+	idStr := ctx.UserValue("id").(string)
+	envID, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+
+	user, err := a.auth.Authenticate(ctx, meta.APIKey)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusUnauthorized, "invalid api key")
+		return
+	}
+
+	if meta.Stream {
+		ctx.SetContentType("text/event-stream")
+		ctx.Response.Header.Set("Cache-Control", "no-cache")
+		ctx.Response.Header.Set("Connection", "keep-alive")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		started := time.Now()
+		err := a.chat.ChatOpenAIWithEnvironment(ctx, user, envID, body, ctx)
+		a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
+		if err != nil {
+			log.Printf("openai chat stream error: %v", err)
+			fmt.Fprintf(ctx, "data: {\"error\":\"%s\"}\n\n", err.Error())
+		}
+		return
+	}
+
+	started := time.Now()
+	resp, err := a.chat.ChatOpenAIWithEnvironmentSync(ctx, user, envID, body)
 	if errors.Is(err, service.ErrNoEnvironment) || errors.Is(err, service.ErrEnvironmentInactive) {
 		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
 		return
