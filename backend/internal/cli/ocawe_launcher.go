@@ -46,8 +46,6 @@ func (l OcaweLauncher) Launch(ctx context.Context, spec LaunchSpec) (Process, er
 		"XDG_DATA_HOME=" + filepath.Join(homeDir, ".local", "share"),
 		"OCAWE_PORT=" + fmt.Sprintf("%d", port),
 	}...)
-	cmd.Env = append(cmd.Env, llmEnv(spec.LLM)...)
-
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, fmt.Errorf("stderr pipe: %w", err)

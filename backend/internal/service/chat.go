@@ -57,11 +57,11 @@ type ChatService struct {
 
 func NewChatService(agents repository.AgentRepository, ocaweProv OcawePortProvider, envPaths EnvPathResolver) *ChatService {
 	return &ChatService{
-		agents:     agents,
-		ocaweProv:  ocaweProv,
-		envPaths:   envPaths,
-		httpCli:    http.DefaultClient,
-		ocaweHost:  "127.0.0.1",
+		agents:    agents,
+		ocaweProv: ocaweProv,
+		envPaths:  envPaths,
+		httpCli:   http.DefaultClient,
+		ocaweHost: "127.0.0.1",
 	}
 }
 
@@ -93,12 +93,6 @@ func (s *ChatService) Chat(ctx context.Context, user *model.User, prompt string,
 	spec := cli.LaunchSpec{
 		UserID:  user.ID.String(),
 		EnvPath: s.envPaths.EnvPath(user.ID.String()),
-		LLM: cli.LLMConfig{
-			Provider: agent.LLMProvider,
-			APIKey:   agent.LLMAPIKey,
-			BaseURL:  agent.LLMBaseURL,
-			Model:    agent.LLMModel,
-		},
 	}
 
 	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
@@ -133,8 +127,6 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
 		EnvPath: s.envPaths.EnvPath(user.ID.String()),
-		CLI:     cliType,
-		LLM:     llmCfg,
 	}
 
 	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
@@ -286,8 +278,15 @@ func (s *ChatService) sendChat(ctx context.Context, port int, modelStr, prompt s
 	return sb.String(), nil
 }
 
-func extractConfigFromNodes(nodes []model.CanvasNode) (cli.LLMConfig, model.CLIType, error) {
-	var llmCfg cli.LLMConfig
+type nodeConfig struct {
+	Provider string
+	APIKey   string
+	BaseURL  string
+	Model    string
+}
+
+func extractConfigFromNodes(nodes []model.CanvasNode) (nodeConfig, model.CLIType, error) {
+	var cfg nodeConfig
 	var cliType model.CLIType
 
 	for _, n := range nodes {
@@ -300,20 +299,20 @@ func extractConfigFromNodes(nodes []model.CanvasNode) (cli.LLMConfig, model.CLIT
 		case "provider", "custom_provider":
 			if meta != nil {
 				if v := strPtrVal(meta["auth"]); v != "" {
-					llmCfg.APIKey = v
+					cfg.APIKey = v
 				}
 				if v := strPtrVal(meta["base_url"]); v != "" {
-					llmCfg.BaseURL = v
+					cfg.BaseURL = v
 				}
 				if v := strPtrVal(meta["model"]); v != "" {
-					llmCfg.Model = v
+					cfg.Model = v
 				}
 				if v := strPtrVal(meta["provider"]); v != "" {
-					llmCfg.Provider = v
+					cfg.Provider = v
 				}
 			}
-			if llmCfg.Provider == "" {
-				llmCfg.Provider = "openai"
+			if cfg.Provider == "" {
+				cfg.Provider = "openai"
 			}
 		case "cli":
 			if meta != nil {
@@ -324,22 +323,22 @@ func extractConfigFromNodes(nodes []model.CanvasNode) (cli.LLMConfig, model.CLIT
 		}
 	}
 
-	if llmCfg.Provider == "" && llmCfg.APIKey == "" {
-		return llmCfg, cliType, ErrNoProviderNode
+	if cfg.Provider == "" && cfg.APIKey == "" {
+		return cfg, cliType, ErrNoProviderNode
 	}
-	return llmCfg, cliType, nil
+	return cfg, cliType, nil
 }
 
-func resolveModelFromConfig(llmCfg cli.LLMConfig, cliType model.CLIType) string {
+func resolveModelFromConfig(cfg nodeConfig, cliType model.CLIType) string {
 	if cliType != "" {
 		return "cli/" + string(cliType)
 	}
-	if llmCfg.Provider != "" {
-		model := llmCfg.Model
+	if cfg.Provider != "" {
+		model := cfg.Model
 		if model == "" {
 			model = "gpt-4o-mini"
 		}
-		return llmCfg.Provider + "/" + model
+		return cfg.Provider + "/" + model
 	}
 	return "openai/gpt-4o-mini"
 }

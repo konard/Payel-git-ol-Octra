@@ -1,19 +1,13 @@
-// Package nix manages per-user isolated environments. Each user gets their own
-// directory (and Nix profile) into which the chosen AI CLI and skills are
-// installed. The actual command execution is abstracted behind Runner so the
-// Manager can be unit-tested without a real Nix toolchain.
 package nix
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"backend/internal/cli"
 	"backend/internal/model"
 )
 
@@ -72,20 +66,11 @@ func (m *Manager) EnvPath(userID string) string {
 	return filepath.Join(m.baseDir, userID)
 }
 
-// CreateEnvironment ensures the user's environment directory exists. CLI
-// packages are provisioned into the shared system profile by ProvisionSystem so
-// each environment stays focused on per-profile dependencies like skills.
-func (m *Manager) CreateEnvironment(ctx context.Context, userID string, cli model.CLIType) error {
+// CreateEnvironment ensures the user's environment directory exists.
+func (m *Manager) CreateEnvironment(ctx context.Context, userID string) error {
 	path := m.EnvPath(userID)
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		return fmt.Errorf("create env dir: %w", err)
-	}
-	if cli == "" {
-		// No CLI: the environment is only used for proxy-mode requests.
-		return nil
-	}
-	if cliPackage(cli) == "" {
-		return fmt.Errorf("unknown cli %q", cli)
 	}
 	return nil
 }
@@ -97,7 +82,6 @@ func (m *Manager) InstallSkill(ctx context.Context, userID string, skill model.S
 	profile := filepath.Join(path, ".octra", "nix-profile")
 	cmd := skillInstallCommand(skill, profile)
 	if cmd == "" {
-		// built-in skills need no provisioning.
 		return nil
 	}
 	if out, err := m.runner.Run(ctx, path, cmd); err != nil {
@@ -122,46 +106,6 @@ func skillInstallCommand(skill model.Skill, profile string) string {
 	default:
 		return strings.TrimSpace(skill.InstallCmd)
 	}
-}
-
-// cliPackage maps a CLI identifier to its nixpkgs attribute.
-func cliPackage(ct model.CLIType) string {
-	if attr := cli.NixpkgsAttr(string(ct)); attr != "" {
-		return attr
-	}
-	// Allow arbitrary CLIs as long as the name is a plausible attribute.
-	s := string(ct)
-	if s != "" && !strings.ContainsAny(s, " \t\n;|&$`") {
-		return s
-	}
-	return ""
-}
-
-// ProvisionSystem installs every built-in CLI into the default Nix user profile
-// so they are available globally (no per-environment install needed).
-func (m *Manager) ProvisionSystem(ctx context.Context) error {
-	workDir := filepath.Join(m.baseDir, ".system")
-	if err := os.MkdirAll(workDir, 0o755); err != nil {
-		return fmt.Errorf("provision workdir: %w", err)
-	}
-	profile := filepath.Join(workDir, "nix-profile")
-
-	var lastErr error
-	for _, pkg := range cli.BuiltinCLIs() {
-		cmd := pkg.InstallCmd
-		if attr := pkg.NixAttr; attr != "" {
-			cmd = fmt.Sprintf("nix --extra-experimental-features %s profile install --profile %s %s || true", shellQuote("nix-command flakes"), shellQuote(profile), shellQuote("nixpkgs#"+attr))
-		}
-		if cmd == "" {
-			continue
-		}
-		if out, err := m.runner.Run(ctx, workDir, cmd); err != nil {
-			err = fmt.Errorf("provision %s: %w\n%s", pkg.Name, err, string(out))
-			log.Printf("nix provision (non-fatal): %v", err)
-			lastErr = err
-		}
-	}
-	return lastErr
 }
 
 func profileBinPaths(workDir string) []string {

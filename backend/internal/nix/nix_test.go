@@ -2,13 +2,13 @@ package nix
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"backend/internal/model"
 )
 
-// fakeRunner records the commands it is asked to run.
 type fakeRunner struct {
 	commands []string
 	err      error
@@ -19,37 +19,15 @@ func (f *fakeRunner) Run(_ context.Context, _ string, command string) ([]byte, e
 	return []byte("ok"), f.err
 }
 
-func TestCreateEnvironmentWithoutCLI(t *testing.T) {
+func TestCreateEnvironmentCreatesDirectory(t *testing.T) {
 	r := &fakeRunner{}
 	m := NewManager(t.TempDir(), r)
 
-	if err := m.CreateEnvironment(context.Background(), "user1", ""); err != nil {
+	if err := m.CreateEnvironment(context.Background(), "user1"); err != nil {
 		t.Fatalf("CreateEnvironment: %v", err)
 	}
 	if len(r.commands) != 0 {
-		t.Fatalf("expected no install commands for empty CLI, got %v", r.commands)
-	}
-}
-
-func TestCreateEnvironmentUsesGlobalCLIProfile(t *testing.T) {
-	r := &fakeRunner{}
-	m := NewManager(t.TempDir(), r)
-
-	if err := m.CreateEnvironment(context.Background(), "user1", "claude-code"); err != nil {
-		t.Fatalf("CreateEnvironment: %v", err)
-	}
-	if len(r.commands) != 0 {
-		t.Fatalf("expected no per-environment CLI install, got %v", r.commands)
-	}
-}
-
-func TestCreateEnvironmentRejectsUnknownCLI(t *testing.T) {
-	r := &fakeRunner{}
-	m := NewManager(t.TempDir(), r)
-
-	err := m.CreateEnvironment(context.Background(), "user1", "bad cli; rm -rf /")
-	if err == nil {
-		t.Fatal("expected unknown CLI error")
+		t.Fatalf("expected no install commands, got %v", r.commands)
 	}
 }
 
@@ -94,37 +72,10 @@ func TestInstallSkillByType(t *testing.T) {
 	}
 }
 
-func TestProvisionSystemInstallsCLIsIntoPersistentProfile(t *testing.T) {
-	r := &fakeRunner{}
-	baseDir := t.TempDir()
-	m := NewManager(baseDir, r)
-
-	if err := m.ProvisionSystem(context.Background()); err != nil {
-		t.Fatalf("ProvisionSystem: %v", err)
-	}
-	if len(r.commands) == 0 {
-		t.Fatal("expected built-in CLI provisioning commands")
-	}
-	foundNixProfileInstall := false
-	for _, cmd := range r.commands {
-		if strings.Contains(cmd, "profile install") {
-			foundNixProfileInstall = true
-			if !strings.Contains(cmd, ".system/nix-profile") {
-				t.Fatalf("nix CLI install must target persistent system profile: %q", cmd)
-			}
-		}
-		if strings.Contains(cmd, "|| true") {
-			t.Fatalf("provisioning command must not mask failures: %q", cmd)
-		}
-	}
-	if !foundNixProfileInstall {
-		t.Fatal("expected at least one nix profile install command")
-	}
-}
-
 func TestEnvPath(t *testing.T) {
 	m := NewManager("/base", nil)
-	if got := m.EnvPath("abc"); got != "/base/abc" {
-		t.Fatalf("EnvPath = %q", got)
+	want := filepath.Join("/base", "abc")
+	if got := m.EnvPath("abc"); got != want {
+		t.Fatalf("EnvPath = %q, want %q", got, want)
 	}
 }

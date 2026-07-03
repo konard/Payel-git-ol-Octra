@@ -10,20 +10,11 @@ import (
 
 // fakeProcess is an in-memory Process.
 type fakeProcess struct {
-	id      int
-	alive   bool
-	killed  int
-	sendErr error
-	calls   int
+	id     int
+	alive  bool
+	killed int
 }
 
-func (p *fakeProcess) Send(_ context.Context, prompt string) (string, error) {
-	p.calls++
-	if p.sendErr != nil {
-		return "", p.sendErr
-	}
-	return "reply:" + prompt, nil
-}
 func (p *fakeProcess) Alive() bool { return p.alive }
 func (p *fakeProcess) Kill() error { p.killed++; p.alive = false; return nil }
 func (p *fakeProcess) PID() int    { return p.id }
@@ -78,18 +69,15 @@ func TestManagerReusesLiveProcess(t *testing.T) {
 	proc := &fakeProcess{id: 1, alive: true}
 	launcher := &fakeLauncher{next: func(int) Process { return proc }}
 	m := NewManager(launcher, newMemStore(), time.Minute)
-	spec := LaunchSpec{UserID: "u1", CLI: "claude-code"}
+	spec := LaunchSpec{UserID: "u1"}
 
 	for i := 0; i < 3; i++ {
-		if _, err := m.Send(context.Background(), spec, "hi"); err != nil {
-			t.Fatalf("Send: %v", err)
+		if _, err := m.EnsureOcawe(context.Background(), spec); err != nil {
+			t.Fatalf("EnsureOcawe: %v", err)
 		}
 	}
 	if launcher.launches != 1 {
 		t.Fatalf("expected 1 launch, got %d", launcher.launches)
-	}
-	if proc.calls != 3 {
-		t.Fatalf("expected 3 sends to same process, got %d", proc.calls)
 	}
 }
 
@@ -100,13 +88,12 @@ func TestManagerRelaunchesWhenTTLExpired(t *testing.T) {
 	m := NewManager(launcher, store, time.Minute)
 	spec := LaunchSpec{UserID: "u1"}
 
-	if _, err := m.Send(context.Background(), spec, "a"); err != nil {
+	if _, err := m.EnsureOcawe(context.Background(), spec); err != nil {
 		t.Fatal(err)
 	}
-	// Simulate TTL expiry in the store.
 	store.Delete(context.Background(), "u1")
 
-	if _, err := m.Send(context.Background(), spec, "b"); err != nil {
+	if _, err := m.EnsureOcawe(context.Background(), spec); err != nil {
 		t.Fatal(err)
 	}
 	if launcher.launches != 2 {
@@ -124,35 +111,11 @@ func TestManagerRelaunchesWhenProcessDead(t *testing.T) {
 	m := NewManager(launcher, store, time.Minute)
 	spec := LaunchSpec{UserID: "u1"}
 
-	// First call launches proc[0] (alive=false). Manager stores it; next call
-	// sees it dead and relaunches.
-	if _, err := m.Send(context.Background(), spec, "a"); err != nil {
+	if _, err := m.EnsureOcawe(context.Background(), spec); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Send(context.Background(), spec, "b"); err != nil {
+	if _, err := m.EnsureOcawe(context.Background(), spec); err != nil {
 		t.Fatal(err)
-	}
-	if launcher.launches != 2 {
-		t.Fatalf("expected 2 launches, got %d", launcher.launches)
-	}
-}
-
-func TestManagerDropsProcessOnSendError(t *testing.T) {
-	store := newMemStore()
-	procs := []*fakeProcess{{id: 1, alive: true, sendErr: errors.New("boom")}, {id: 2, alive: true}}
-	launcher := &fakeLauncher{next: func(n int) Process { return procs[n-1] }}
-	m := NewManager(launcher, store, time.Minute)
-	spec := LaunchSpec{UserID: "u1"}
-
-	if _, err := m.Send(context.Background(), spec, "a"); err == nil {
-		t.Fatal("expected error from failing process")
-	}
-	if procs[0].killed == 0 {
-		t.Fatal("expected failed process to be killed")
-	}
-	// Next call should relaunch a fresh process and succeed.
-	if _, err := m.Send(context.Background(), spec, "b"); err != nil {
-		t.Fatalf("expected recovery, got %v", err)
 	}
 	if launcher.launches != 2 {
 		t.Fatalf("expected 2 launches, got %d", launcher.launches)

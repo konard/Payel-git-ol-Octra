@@ -202,18 +202,6 @@ func main() {
 		}
 	}()
 
-	// Provision built-in CLIs in the background so the HTTP server starts
-	// accepting requests immediately instead of blocking on Nix downloads.
-	if nix.Available() {
-		go func() {
-			if err := nixMgr.ProvisionSystem(ctx); err != nil {
-				log.Printf("nix provision (non-fatal): %v", err)
-			} else {
-				log.Println("built-in CLIs provisioned into system profile")
-			}
-		}()
-	}
-
 	// Sync unbuilt environments to ocawe in the background.
 	go func() {
 		if err := chatSvc.SyncEnvironmentBuilds(ctx); err != nil {

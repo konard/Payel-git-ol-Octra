@@ -13,9 +13,8 @@ import (
 )
 
 // EnvProvisioner is the subset of nix.Manager the environment service needs.
-// Declaring it as an interface keeps the service unit-testable.
 type EnvProvisioner interface {
-	CreateEnvironment(ctx context.Context, userID string, cli model.CLIType) error
+	CreateEnvironment(ctx context.Context, userID string) error
 	InstallSkill(ctx context.Context, userID string, skill model.Skill) error
 }
 
@@ -95,7 +94,7 @@ func (s *EnvironmentService) Create(ctx context.Context, user *model.User, in En
 	}
 
 	userID := user.ID.String()
-	if err := s.nix.CreateEnvironment(ctx, userID, in.CLI); err != nil {
+	if err := s.nix.CreateEnvironment(ctx, userID); err != nil {
 		return nil, err
 	}
 

@@ -25,8 +25,8 @@ import (
 
 type fakeProvisioner struct{}
 
-func (fakeProvisioner) CreateEnvironment(context.Context, string, model.CLIType) error { return nil }
-func (fakeProvisioner) InstallSkill(context.Context, string, model.Skill) error        { return nil }
+func (fakeProvisioner) CreateEnvironment(context.Context, string) error { return nil }
+func (fakeProvisioner) InstallSkill(context.Context, string, model.Skill) error { return nil }
 
 type fakeEnvPaths struct{}
 

@@ -131,13 +131,11 @@ func TestAuthenticateInvalidToken(t *testing.T) {
 }
 
 type fakeProvisioner struct {
-	created   []model.CLIType
 	skills    []string
 	failSkill string
 }
 
-func (f *fakeProvisioner) CreateEnvironment(_ context.Context, _ string, c model.CLIType) error {
-	f.created = append(f.created, c)
+func (f *fakeProvisioner) CreateEnvironment(_ context.Context, _ string) error {
 	return nil
 }
 func (f *fakeProvisioner) InstallSkill(_ context.Context, _ string, s model.Skill) error {
@@ -193,9 +191,6 @@ func TestEnvironmentCreate(t *testing.T) {
 	}
 	if agent.Priority != 7 {
 		t.Fatalf("agent priority = %d", agent.Priority)
-	}
-	if len(prov.created) != 1 || prov.created[0] != "claude-code" {
-		t.Fatalf("env not created: %v", prov.created)
 	}
 	if len(prov.skills) != 2 {
 		t.Fatalf("expected 2 installed skills, got %v", prov.skills)
