@@ -58,12 +58,21 @@ export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: Catal
   hasMoreRef.current = hasMore;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setItems([]);
+      setError('');
+      setLoading(false);
+      setLoadingMore(false);
+      setHasMore(true);
+      return;
+    }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose();
     }
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open, onClose]);
 
   useEffect(() => {

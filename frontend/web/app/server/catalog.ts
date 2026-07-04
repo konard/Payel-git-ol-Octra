@@ -35,7 +35,7 @@ export async function searchCatalog(
   const params = new URLSearchParams({
     q: query,
     category,
-    limit: '50',
+    limit: '30',
     offset: String(offset),
   });
   const res = await fetch(`${API.CATALOG_SEARCH}?${params.toString()}`, {
