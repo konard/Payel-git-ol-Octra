@@ -1,4 +1,39 @@
 services:
+  typesense:
+    image: typesense/typesense:27.0
+    container_name: octra-typesense
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-octra-typesense-key}
+      - TYPESENSE_ENABLE_CORS=true
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense_data:/data
+    networks:
+      - octra-network
+    restart: unless-stopped
+
+  ocawe:
+    build:
+      context: ./ocawe
+      dockerfile: Dockerfile
+    container_name: octra-ocawe
+    environment:
+      - OCAWE_PORT=4111
+      - OCAWE_WORKFLOWS_ROOT=/ocawe/workflows
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    ports:
+      - "4111:4111"
+    volumes:
+      - ocawe_workflows:/ocawe/workflows
+    networks:
+      - octra-network
+    restart: unless-stopped
+
   postgres:
     image: postgres:15-alpine
     container_name: octra-postgres
@@ -51,6 +86,9 @@ services:
       - ENVIRONMENTS_DIR=/var/lib/octra/environments
       - CLI_TTL=${CLI_TTL:-30m}
       - SKILL_SYNC_DISABLED=1
+      - TYPESENSE_HOST=typesense:8108
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-octra-typesense-key}
+      - OCAWE_ADDR=http://ocawe:4111
     ports:
       - "8080:8080"
     volumes:
@@ -60,6 +98,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      typesense:
+        condition: service_started
     networks:
       - octra-network
     restart: unless-stopped
@@ -90,4 +130,6 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  typesense_data:
   octra_environments:
+  ocawe_workflows:
