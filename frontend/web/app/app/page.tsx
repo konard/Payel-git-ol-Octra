@@ -24,6 +24,7 @@ import { RequestMetricsOverview } from '../components/RequestMetricsOverview';
 import { UserBalance } from '../components/UserBalance';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { WorkflowCanvas, type WorkflowCanvasItem } from '../components/WorkflowCanvas';
+import { SetupProgressModal, type SetupGroup } from '../components/SetupProgressModal';
 import type { Edge } from '@xyflow/react';
 import { CreateEnvironmentModal } from '../components/CreateEnvironmentModal';
 import { IconButton } from '../components/IconButton';
@@ -64,6 +65,9 @@ export default function HomePage() {
   const [canvasItems, setCanvasItems] = useState<WorkflowCanvasItem[]>([]);
   const [canvasEdges, setCanvasEdges] = useState<Edge[]>([]);
   const [copiedEnvId, setCopiedEnvId] = useState<string | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupGroups, setSetupGroups] = useState<SetupGroup[]>([]);
+  const setupIdRef = useRef(0);
   const canvasItemsRef = useRef(canvasItems);
   canvasItemsRef.current = canvasItems;
   const canvasEdgesRef = useRef(canvasEdges);
@@ -180,6 +184,42 @@ export default function HomePage() {
     console.log('[canvas] handleCanvasItemsChange: save timer set for 500ms');
   }, [saveCanvas]);
 
+  const triggerSetup = useCallback((title: string, items: { id: string; label: string; status?: 'pending' | 'complete' | 'failed' }[], isFailed = false) => {
+    const groups: SetupGroup[] = [{
+      title,
+      items: items.map(item => ({ ...item, status: item.status ?? 'pending' as const })),
+    }];
+    setSetupGroups(groups);
+    setSetupOpen(true);
+
+    if (isFailed) {
+      // Show error immediately — no progress animation
+      return;
+    }
+
+    // Animate through statuses: pending → progress (staggered) → complete
+    items.forEach((item, i) => {
+      setTimeout(() => {
+        setSetupGroups(prev => prev.map(g => ({
+          ...g,
+          items: g.items.map(gi => gi.id === item.id ? { ...gi, status: 'progress' as const } : gi),
+        })));
+      }, 300 + i * 400);
+    });
+
+    const totalDelay = 300 + items.length * 400 + 600;
+    setTimeout(() => {
+      setSetupGroups(prev => prev.map(g => ({
+        ...g,
+        items: g.items.map(gi => ({ ...gi, status: 'complete' as const })),
+      })));
+    }, totalDelay);
+  }, []);
+
+  const handleItemSetup = useCallback((name: string, status: 'success' | 'failed') => {
+    triggerSetup(status === 'failed' ? 'Error' : 'Configure', [{ id: `setup-${Date.now()}`, label: name, status: status === 'failed' ? 'failed' : 'pending' }], status === 'failed');
+  }, [triggerSetup]);
+
   async function handlePause(id: string) {
     const res = await patchDashboardEnvironment(id, { active: false });
     if (!res.ok) return;
@@ -244,6 +284,7 @@ export default function HomePage() {
         }
         return next;
       });
+      triggerSetup('Install MCP server', [{ id: `mcp-${Date.now()}`, label: item.name }]);
       return;
     }
 
@@ -274,6 +315,7 @@ export default function HomePage() {
         }
         return next;
       });
+      triggerSetup('Configure adapter', [{ id: `adapter-${Date.now()}`, label: item.name }]);
       return;
     }
 
@@ -305,6 +347,11 @@ export default function HomePage() {
       }
       return next;
     });
+
+    const kind = item.type === 'provider' ? 'Provider' :
+      item.type === 'cli' ? 'CLI' :
+      item.type === 'skill' ? 'Skill' : 'Resource';
+    triggerSetup(`Install ${kind}`, [{ id: `add-${Date.now()}`, label: item.name }]);
   }
 
   function fetchEnvs() {
@@ -553,7 +600,12 @@ export default function HomePage() {
           </h1>
 
           <section className="node-canvas" id="node-canvas" aria-label="React Flow environment nodes">
-            <WorkflowCanvas items={canvasItems} onItemsChange={handleCanvasItemsChange} edges={canvasEdges} onEdgesChange={setCanvasEdges} />
+            <WorkflowCanvas items={canvasItems} onItemsChange={handleCanvasItemsChange} edges={canvasEdges} onEdgesChange={setCanvasEdges} onItemSetup={handleItemSetup} />
+            <SetupProgressModal
+              open={setupOpen}
+              groups={setupGroups}
+              onClose={() => setSetupOpen(false)}
+            />
           </section>
 
           <section className="active-environments" aria-label="Active environments list">
