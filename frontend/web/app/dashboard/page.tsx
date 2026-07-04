@@ -1,13 +1,10 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Code2, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { RequestMetricsOverview } from '../components/RequestMetricsOverview';
 import { DashboardShell } from './DashboardShell';
 import { ROUTES } from '../config/routes';
-
-const WorkflowCanvas = dynamic(() => import('../components/WorkflowCanvas').then((m) => m.WorkflowCanvas), { ssr: false });
 
 export default function DashboardPage() {
   return (
@@ -17,18 +14,6 @@ export default function DashboardPage() {
       </section>
 
       <section className="dashboard-grid">
-        <article className="traffic-panel large-panel" aria-label="Environment nodes canvas">
-          <div className="panel-heading">
-            <span>Environment nodes canvas</span>
-            <a className="ghost-command" href={ROUTES.DASHBOARD_ENVIRONMENTS}>
-              <Code2 size={15} />
-              Edit
-            </a>
-          </div>
-          <section className="dashboard-canvas" id="node-canvas">
-            <WorkflowCanvas />
-          </section>
-        </article>
         <article className="architecture-panel large-panel" aria-label="Workspace policy data">
           <div className="panel-heading">
             <span>Workspace policy</span>
