@@ -12,7 +12,7 @@ import {
   Server,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { searchCatalog, type CatalogCategory, type CatalogItem } from '../server/catalog';
 
 type CatalogSearchModalProps = {
@@ -44,7 +44,18 @@ export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: Catal
   const [category, setCategory] = useState<CatalogCategory>('all');
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const isLoadingRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const queryRef = useRef(query);
+  const categoryRef = useRef(category);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  queryRef.current = query;
+  categoryRef.current = category;
+  hasMoreRef.current = hasMore;
 
   useEffect(() => {
     if (!open) return;
@@ -59,17 +70,25 @@ export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: Catal
     if (!open) return;
     const controller = new AbortController();
     const handle = window.setTimeout(() => {
+      isLoadingRef.current = true;
       setLoading(true);
+      setLoadingMore(false);
       setError('');
-      searchCatalog(query, category, controller.signal)
-        .then((result) => setItems(result.items))
+      searchCatalog(query, category, 0, controller.signal)
+        .then((result) => {
+          setItems(result.items);
+          setHasMore(result.items.length < result.count);
+        })
         .catch((err: Error) => {
           if (controller.signal.aborted) return;
           setItems([]);
           setError(err.message || 'Search failed');
         })
         .finally(() => {
-          if (!controller.signal.aborted) setLoading(false);
+          if (!controller.signal.aborted) {
+            isLoadingRef.current = false;
+            setLoading(false);
+          }
         });
     }, 140);
 
@@ -79,7 +98,39 @@ export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: Catal
     };
   }, [open, query, category]);
 
-  const visibleItems = items;
+  useEffect(() => {
+    if (!open) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        if (isLoadingRef.current || !hasMoreRef.current) return;
+
+        isLoadingRef.current = true;
+        setLoadingMore(true);
+
+        searchCatalog(queryRef.current, categoryRef.current, items.length)
+          .then((result) => {
+            setItems((prev) => {
+              const updated = [...prev, ...result.items];
+              setHasMore(updated.length < result.count);
+              return updated;
+            });
+          })
+          .catch(() => {})
+          .finally(() => {
+            isLoadingRef.current = false;
+            setLoadingMore(false);
+          });
+      },
+      { rootMargin: '300px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [open]);
 
   if (!open) return null;
 
@@ -122,8 +173,14 @@ export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: Catal
         <div className="catalog-results" aria-live="polite">
           {loading ? <p className="catalog-state">Searching...</p> : null}
           {!loading && error ? <p className="catalog-state">{error}</p> : null}
-          {!loading && !error && visibleItems.length === 0 ? <p className="catalog-state">No results</p> : null}
-          {!loading && !error ? visibleItems.map((item) => <CatalogResult key={`${item.type}-${item.id}`} item={item} onSelect={onSelect} addedKeys={addedKeys} />) : null}
+          {!loading && !error && items.length === 0 ? <p className="catalog-state">No results</p> : null}
+          {!loading && !error
+            ? items.map((item) => (
+                <CatalogResult key={`${item.type}-${item.id}`} item={item} onSelect={onSelect} addedKeys={addedKeys} />
+              ))
+            : null}
+          {loadingMore ? <p className="catalog-state">Loading more...</p> : null}
+          <div ref={sentinelRef} style={{ height: 1 }} />
         </div>
       </section>
     </div>

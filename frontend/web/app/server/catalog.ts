@@ -29,12 +29,14 @@ export type CatalogSearchResponse = {
 export async function searchCatalog(
   query: string,
   category: CatalogCategory,
+  offset: number = 0,
   signal?: AbortSignal,
 ): Promise<CatalogSearchResponse> {
   const params = new URLSearchParams({
     q: query,
     category,
-    limit: '24',
+    limit: '50',
+    offset: String(offset),
   });
   const res = await fetch(`${API.CATALOG_SEARCH}?${params.toString()}`, {
     cache: 'no-cache',

@@ -1848,74 +1848,94 @@ func (a *API) handleCatalogSearch(ctx *fasthttp.RequestCtx) {
 	q := strings.TrimSpace(string(ctx.QueryArgs().Peek("q")))
 	category := normalizeCatalogCategory(string(ctx.QueryArgs().Peek("category")))
 	limit := boundedQueryInt(ctx, "limit", 20, 1, 100)
-	items := make([]catalogItemResponse, 0, limit)
+	offset := boundedQueryInt(ctx, "offset", 0, 0, 10000)
+
+	subLimit := 10000
+
+	type scoredItem struct {
+		item  catalogItemResponse
+		score int
+	}
+	all := make([]scoredItem, 0)
 
 	if includesCatalogCategory(category, "providers") {
-		providers, err := a.searchProviderResponses(ctx, q, limit-len(items))
+		providers, err := a.searchProviderResponses(ctx, q, subLimit)
 		if err != nil {
 			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 			return
 		}
 		for _, p := range providers {
-			items = append(items, catalogItemResponse{
-				ID:           p.ID,
-				Type:         "provider",
-				Name:         p.Name,
-				Subtitle:     p.BaseURL,
-				Description:  p.Description,
-				Key:          p.Key,
-				BaseURL:      p.BaseURL,
-				AuthEnv:      p.AuthEnv,
-				DefaultModel: p.DefaultModel,
+			all = append(all, scoredItem{
+				item: catalogItemResponse{
+					ID:           p.ID,
+					Type:         "provider",
+					Name:         p.Name,
+					Subtitle:     p.BaseURL,
+					Description:  p.Description,
+					Key:          p.Key,
+					BaseURL:      p.BaseURL,
+					AuthEnv:      p.AuthEnv,
+					DefaultModel: p.DefaultModel,
+				},
+				score: scoreRelevance(q, p.Name, p.BaseURL, p.Description),
 			})
 		}
 	}
-	if len(items) < limit && includesCatalogCategory(category, "cli") {
-		clis, err := a.searchCLIResponses(ctx, q, limit-len(items))
+	if includesCatalogCategory(category, "cli") {
+		clis, err := a.searchCLIResponses(ctx, q, subLimit)
 		if err != nil {
 			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 			return
 		}
 		for _, c := range clis {
-			items = append(items, catalogItemResponse{
-				ID:         c.ID,
-				Type:       "cli",
-				Name:       c.Name,
-				Subtitle:   c.NixAttr,
-				NixAttr:    c.NixAttr,
-				InstallCmd: c.InstallCmd,
+			all = append(all, scoredItem{
+				item: catalogItemResponse{
+					ID:         c.ID,
+					Type:       "cli",
+					Name:       c.Name,
+					Subtitle:   c.NixAttr,
+					NixAttr:    c.NixAttr,
+					InstallCmd: c.InstallCmd,
+				},
+				score: scoreRelevance(q, c.Name, c.NixAttr, ""),
 			})
 		}
 	}
-	if len(items) < limit && includesCatalogCategory(category, "skills") {
-		skills, err := a.searchSkillHits(ctx, q, limit-len(items))
+	if includesCatalogCategory(category, "skills") {
+		skills, err := a.searchSkillHits(ctx, q, subLimit)
 		if err != nil {
 			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
 			return
 		}
 		for _, s := range skills {
-			items = append(items, catalogItemResponse{
-				ID:         s.ID,
-				Type:       "skill",
-				Name:       s.Name,
-				Subtitle:   s.Source,
-				SkillID:    s.SkillID,
-				Source:     s.Source,
-				InstallCmd: s.InstallCmd,
+			all = append(all, scoredItem{
+				item: catalogItemResponse{
+					ID:         s.ID,
+					Type:       "skill",
+					Name:       s.Name,
+					Subtitle:   s.Source,
+					SkillID:    s.SkillID,
+					Source:     s.Source,
+					InstallCmd: s.InstallCmd,
+				},
+				score: scoreRelevance(q, s.Name, s.Source, ""),
 			})
 		}
 	}
-	if len(items) < limit && includesCustomProvider(category) && customProviderMatches(q) {
-		items = append(items, catalogItemResponse{
-			ID:          "custom-provider",
-			Type:        "custom_provider",
-			Name:        "Custom provider",
-			Subtitle:    "Base URL and API key",
-			Description: "Configure an OpenAI-compatible provider endpoint.",
+	if includesCustomProvider(category) && customProviderMatches(q) {
+		all = append(all, scoredItem{
+			item: catalogItemResponse{
+				ID:          "custom-provider",
+				Type:        "custom_provider",
+				Name:        "Custom provider",
+				Subtitle:    "Base URL and API key",
+				Description: "Configure an OpenAI-compatible provider endpoint.",
+			},
+			score: scoreRelevance(q, "Custom provider", "Base URL and API key", "Configure an OpenAI-compatible provider endpoint."),
 		})
 	}
 
-	if len(items) < limit && includesMCPCategory(category) {
+	if includesMCPCategory(category) {
 		mcpServers := []catalogItemResponse{
 			{ID: "mcp-filesystem", Type: "mcp_server", Name: "Filesystem", Subtitle: "@modelcontextprotocol/server-filesystem", Description: "Secure file access with configurable permissions."},
 			{ID: "mcp-github", Type: "mcp_server", Name: "GitHub", Subtitle: "@modelcontextprotocol/server-github", Description: "GitHub API: repos, issues, PRs, search, auth."},
@@ -1993,20 +2013,66 @@ func (a *API) handleCatalogSearch(ctx *fasthttp.RequestCtx) {
 		}
 		for _, m := range mcpServers {
 			if textMatches(q, m.Name, m.Subtitle, m.Description) {
-				items = append(items, m)
-				if len(items) >= limit {
-					break
-				}
+				all = append(all, scoredItem{
+					item:  m,
+					score: scoreRelevance(q, m.Name, m.Subtitle, m.Description),
+				})
 			}
 		}
+	}
+
+	sort.SliceStable(all, func(i, j int) bool {
+		return all[i].score > all[j].score
+	})
+
+	totalCount := len(all)
+	if offset >= totalCount {
+		all = nil
+	} else {
+		end := offset + limit
+		if end > totalCount {
+			end = totalCount
+		}
+		all = all[offset:end]
+	}
+
+	items := make([]catalogItemResponse, len(all))
+	for i, si := range all {
+		items[i] = si.item
 	}
 
 	writeJSON(ctx, fasthttp.StatusOK, catalogSearchResponse{
 		Query:    q,
 		Category: category,
 		Items:    items,
-		Count:    len(items),
+		Count:    totalCount,
 	})
+}
+
+func scoreRelevance(query, name, subtitle, description string) int {
+	if query == "" {
+		return 0
+	}
+	q := strings.ToLower(strings.TrimSpace(query))
+	n := strings.ToLower(name)
+	s := strings.ToLower(subtitle)
+	d := strings.ToLower(description)
+
+	score := 0
+	if n == q {
+		score += 100
+	} else if strings.HasPrefix(n, q) {
+		score += 80
+	} else if strings.Contains(n, q) {
+		score += 50
+	}
+	if strings.Contains(s, q) {
+		score += 20
+	}
+	if strings.Contains(d, q) {
+		score += 10
+	}
+	return score
 }
 
 func (a *API) searchSkillHits(ctx context.Context, q string, limit int) ([]skillSearchHit, error) {
