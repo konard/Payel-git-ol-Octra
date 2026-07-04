@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Plus } from 'lucide-react';
+import { Bell, Plus, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { UserBalance } from '../components/UserBalance';
 import { dashboardSections, dashboardTabs } from './sections';
@@ -71,6 +71,9 @@ export function DashboardShell({ activeSection, children, hideSidebarItems, show
           </div>
           <div className="topbar-actions">
             <UserBalance />
+            <a className="icon-button dark-icon" href={ROUTES.PROFILE_LEADERBOARD} aria-label="User leaderboard" title="User leaderboard">
+              <Trophy size={18} />
+            </a>
             {showNotifications && (
               <a className="icon-button dark-icon" href={ROUTES.DASHBOARD_SECURITY} aria-label="Notifications">
                 <Bell size={18} />

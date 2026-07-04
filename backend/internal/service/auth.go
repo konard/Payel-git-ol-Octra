@@ -24,15 +24,15 @@ const (
 )
 
 var (
-	ErrEmailTaken       = errors.New("email already registered")
-	ErrUsernameTaken    = errors.New("username already taken")
-	ErrInvalidToken     = errors.New("invalid api token")
-	ErrInvalidJWT       = errors.New("invalid or expired token")
-	ErrInvalidRefresh   = errors.New("invalid refresh token")
-	ErrUserNotFound     = errors.New("user not found")
-	ErrAPIKeyNameEmpty  = errors.New("key name is required")
-	ErrAPIKeyNotFound   = errors.New("api key not found")
-	ErrAPIKeyExpired    = errors.New("api key expired")
+	ErrEmailTaken      = errors.New("email already registered")
+	ErrUsernameTaken   = errors.New("username already taken")
+	ErrInvalidToken    = errors.New("invalid api token")
+	ErrInvalidJWT      = errors.New("invalid or expired token")
+	ErrInvalidRefresh  = errors.New("invalid refresh token")
+	ErrUserNotFound    = errors.New("user not found")
+	ErrAPIKeyNameEmpty = errors.New("key name is required")
+	ErrAPIKeyNotFound  = errors.New("api key not found")
+	ErrAPIKeyExpired   = errors.New("api key expired")
 )
 
 type AuthService struct {
@@ -56,6 +56,14 @@ func NewAuthServiceWithKeys(users repository.UserRepository, apiKeys repository.
 		txs = transactions[0]
 	}
 	return &AuthService{users: users, apiKeys: apiKeys, transactions: txs, cfg: cfg}
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*model.User, error) {
+	return s.users.GetByID(ctx, userID)
+}
+
+func (s *AuthService) ListUsers(ctx context.Context, limit int) ([]model.User, error) {
+	return s.users.List(ctx, limit)
 }
 
 func (s *AuthService) Authenticate(ctx context.Context, apiKey string) (*model.User, error) {

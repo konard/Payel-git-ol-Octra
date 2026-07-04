@@ -25,6 +25,7 @@ type UserRepository interface {
 	GetByAPIKey(ctx context.Context, apiKey string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
+	List(ctx context.Context, limit int) ([]model.User, error)
 }
 
 // AgentRepository persists agents (user environments).
@@ -149,6 +150,15 @@ func (r *userRepo) GetByUsername(ctx context.Context, username string) (*model.U
 	var u model.User
 	err := r.db.WithContext(ctx).Where("username = ?", username).First(&u).Error
 	return firstResult(&u, err)
+}
+
+func (r *userRepo) List(ctx context.Context, limit int) ([]model.User, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	var users []model.User
+	err := r.db.WithContext(ctx).Order("created_at asc").Limit(limit).Find(&users).Error
+	return users, err
 }
 
 type agentRepo struct{ db *gorm.DB }
