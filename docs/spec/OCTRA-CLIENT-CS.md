@@ -19,9 +19,10 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 public record LLMConfig(
-    [property: JsonPropertyName("api_key")] string ApiKey,
-    [property: JsonPropertyName("base_url")] string BaseUrl,
-    [property: JsonPropertyName("model")] string Model);
+    [property: JsonPropertyName("provider")] string? Provider,
+    [property: JsonPropertyName("api_key")] string? ApiKey,
+    [property: JsonPropertyName("base_url")] string? BaseUrl,
+    [property: JsonPropertyName("model")] string? Model);
 
 public class OctraClient
 {
@@ -51,9 +52,9 @@ public class OctraClient
         return JsonDocument.Parse(text).RootElement;
     }
 
-    public async Task<string> RegisterAsync(string email, string password)
+    public async Task<string> RegisterAsync(string username, string email, string password)
     {
-        var root = await PostAsync("/register", new { email, password });
+        var root = await PostAsync("/register", new { username, email, password });
         _apiKey = root.GetProperty("api_key").GetString(); // remember it for later calls
         return root.GetProperty("user_id").GetString()!;
     }
@@ -86,12 +87,12 @@ public class OctraClient
 var client = new OctraClient("http://localhost:8080");
 
 // 1. Register and capture the API key.
-var userId = await client.RegisterAsync("me@example.com", "secret");
+var userId = await client.RegisterAsync("me", "me@example.com", "secret");
 Console.WriteLine($"user_id: {userId}");
 
 // 2. Create an environment: an AI CLI plus some skills.
 await client.CreateEnvironmentAsync(
-    new LLMConfig("sk-...", "https://api.anthropic.com", "claude-sonnet-4-6"),
+    new LLMConfig("claude", "sk-...", "https://api.anthropic.com", "claude-sonnet-4-6"),
     cli: "claude-code",
     skills: new[] { "filesystem", "github", "brave-search" });
 

@@ -18,8 +18,8 @@ class OctraClient
   def initialize(@base_url : String = "http://localhost:8080", @api_key : String? = nil)
   end
 
-  def register(email : String, password : String) : JSON::Any
-    data = post("/register", {email: email, password: password})
+  def register(username : String, email : String, password : String) : JSON::Any
+    data = post("/register", {username: username, email: email, password: password})
     @api_key = data["api_key"].as_s # remember it for later calls
     data
   end
@@ -55,12 +55,13 @@ end
 client = OctraClient.new("http://localhost:8080")
 
 # 1. Register and capture the API key.
-account = client.register("me@example.com", "secret")
+account = client.register("me", "me@example.com", "secret")
 puts "user_id: #{account["user_id"]}"
 
 # 2. Create an environment: an AI CLI plus some skills.
 client.create_environment(
   llm: {
+    provider: "claude",
     api_key:  "sk-...",
     base_url: "https://api.anthropic.com",
     model:    "claude-sonnet-4-6",

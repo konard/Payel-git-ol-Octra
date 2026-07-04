@@ -27,10 +27,10 @@ class OctraClient:
             headers["octra-api-token"] = self.api_key
         return headers
 
-    def register(self, email, password):
+    def register(self, username, email, password):
         resp = self.session.post(
             f"{self.base_url}/register",
-            json={"email": email, "password": password},
+            json={"username": username, "email": email, "password": password},
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -66,12 +66,13 @@ class OctraClient:
 client = OctraClient(base_url="http://localhost:8080")
 
 # 1. Register and capture the API key.
-account = client.register("me@example.com", "secret")
+account = client.register("me", "me@example.com", "secret")
 print("user_id:", account["user_id"])
 
 # 2. Create an environment: an AI CLI plus some skills.
 client.create_environment(
     llm={
+        "provider": "claude",
         "api_key": "sk-...",
         "base_url": "https://api.anthropic.com",
         "model": "claude-sonnet-4-6",

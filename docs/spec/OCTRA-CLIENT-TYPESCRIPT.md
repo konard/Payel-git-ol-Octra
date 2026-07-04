@@ -12,9 +12,10 @@ The full flow is: **register** to get an `api_key`, **create an environment**
 
 ```ts
 interface LLMConfig {
-  api_key: string;
-  base_url: string;
-  model: string;
+  provider?: string;
+  api_key?: string;
+  base_url?: string;
+  model?: string;
 }
 
 export class OctraClient {
@@ -46,10 +47,10 @@ export class OctraClient {
     return resp.json() as Promise<T>;
   }
 
-  async register(email: string, password: string) {
-    const data = await this.post<{ user_id: string; api_key: string }>(
+  async register(username: string, email: string, password: string) {
+    const data = await this.post<{ user_id: string; api_key: string; balance: number }>(
       "/register",
-      { email, password },
+      { username, email, password },
     );
     this.apiKey = data.api_key; // remember it for later calls
     return data;
@@ -80,19 +81,20 @@ export class OctraClient {
 const client = new OctraClient("http://localhost:8080");
 
 // 1. Register and capture the API key.
-const account = await client.register("me@example.com", "secret");
+const account = await client.register("me", "me@example.com", "secret");
 console.log("user_id:", account.user_id);
 
 // 2. Create an environment: an AI CLI plus some skills.
-await client.createEnvironment(
-  {
-    api_key: "sk-...",
-    base_url: "https://api.anthropic.com",
-    model: "claude-sonnet-4-6",
-  },
-  "claude-code",
-  ["filesystem", "github", "brave-search"],
-);
+  await client.createEnvironment(
+    {
+      provider: "claude",
+      api_key: "sk-...",
+      base_url: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    },
+    "claude-code",
+    ["filesystem", "github", "brave-search"],
+  );
 
 // 3. Send a prompt.
 const answer = await client.chat("write a csv parser", ["filesystem"]);

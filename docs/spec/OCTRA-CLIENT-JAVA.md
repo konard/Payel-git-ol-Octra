@@ -54,14 +54,14 @@ public class OctraClient {
         return json.substring(start, end);
     }
 
-    public String register(String email, String password) throws Exception {
-        String body = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
+    public String register(String username, String email, String password) throws Exception {
+        String body = "{\"username\":\"" + username + "\",\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
         String resp = post("/register", body);
         this.apiKey = field(resp, "api_key"); // remember it for later calls
         return field(resp, "user_id");
     }
 
-    public void createEnvironment(String llmApiKey, String llmBaseUrl,
+    public void createEnvironment(String provider, String llmApiKey, String llmBaseUrl,
                                   String model, String cli, String[] skills) throws Exception {
         StringBuilder skillsJson = new StringBuilder("[");
         for (int i = 0; i < skills.length; i++) {
@@ -70,10 +70,21 @@ public class OctraClient {
         }
         skillsJson.append(']');
 
+        StringBuilder llmJson = new StringBuilder("{");
+        if (provider != null && !provider.isEmpty())
+            llmJson.append("\"provider\":\"").append(provider).append("\",");
+        if (llmApiKey != null && !llmApiKey.isEmpty())
+            llmJson.append("\"api_key\":\"").append(llmApiKey).append("\",");
+        if (llmBaseUrl != null && !llmBaseUrl.isEmpty())
+            llmJson.append("\"base_url\":\"").append(llmBaseUrl).append("\",");
+        if (model != null && !model.isEmpty())
+            llmJson.append("\"model\":\"").append(model).append("\",");
+        if (llmJson.charAt(llmJson.length() - 1) == ',')
+            llmJson.setLength(llmJson.length() - 1);
+        llmJson.append("}");
+
         String body = "{"
-                + "\"llm\":{\"api_key\":\"" + llmApiKey + "\","
-                + "\"base_url\":\"" + llmBaseUrl + "\","
-                + "\"model\":\"" + model + "\"},"
+                + "\"llm\":" + llmJson + ","
                 + "\"agent\":{\"cli\":\"" + cli + "\"},"
                 + "\"skills\":" + skillsJson
                 + "}";
@@ -107,11 +118,12 @@ public class Main {
         OctraClient client = new OctraClient("http://localhost:8080");
 
         // 1. Register and capture the API key.
-        String userId = client.register("me@example.com", "secret");
+        String userId = client.register("me", "me@example.com", "secret");
         System.out.println("user_id: " + userId);
 
         // 2. Create an environment: an AI CLI plus some skills.
         client.createEnvironment(
+                "claude",
                 "sk-...",
                 "https://api.anthropic.com",
                 "claude-sonnet-4-6",

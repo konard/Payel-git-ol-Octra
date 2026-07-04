@@ -31,9 +31,10 @@ func NewClient(baseURL string) *Client {
 }
 
 type LLMConfig struct {
-	APIKey  string `json:"api_key"`
-	BaseURL string `json:"base_url"`
-	Model   string `json:"model"`
+	Provider string `json:"provider,omitempty"`
+	APIKey   string `json:"api_key,omitempty"`
+	BaseURL  string `json:"base_url,omitempty"`
+	Model    string `json:"model,omitempty"`
 }
 
 func (c *Client) post(path string, body, out any) error {
@@ -63,12 +64,13 @@ func (c *Client) post(path string, body, out any) error {
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
-func (c *Client) Register(email, password string) (string, error) {
+func (c *Client) Register(username, email, password string) (string, error) {
 	var out struct {
 		UserID string `json:"user_id"`
 		APIKey string `json:"api_key"`
 	}
 	err := c.post("/register", map[string]string{
+		"username": username,
 		"email":    email,
 		"password": password,
 	}, &out)
@@ -116,7 +118,7 @@ func main() {
 	client := octra.NewClient("http://localhost:8080")
 
 	// 1. Register and capture the API key.
-	userID, err := client.Register("me@example.com", "secret")
+	userID, err := client.Register("me", "me@example.com", "secret")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -124,9 +126,10 @@ func main() {
 
 	// 2. Create an environment: an AI CLI plus some skills.
 	err = client.CreateEnvironment(octra.LLMConfig{
-		APIKey:  "sk-...",
-		BaseURL: "https://api.anthropic.com",
-		Model:   "claude-sonnet-4-6",
+		Provider: "claude",
+		APIKey:   "sk-...",
+		BaseURL:  "https://api.anthropic.com",
+		Model:    "claude-sonnet-4-6",
 	}, "claude-code", []string{"filesystem", "github", "brave-search"})
 	if err != nil {
 		log.Fatal(err)

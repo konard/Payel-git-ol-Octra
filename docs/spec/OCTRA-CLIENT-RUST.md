@@ -23,17 +23,23 @@ The full flow is: **register** to get an `api_key`, **create an environment**
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct LlmConfig {
-    pub api_key: String,
-    pub base_url: String,
-    pub model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct Account {
     pub user_id: String,
     pub api_key: String,
+    pub balance: i32,
 }
 
 pub struct OctraClient {
@@ -62,9 +68,9 @@ impl OctraClient {
         req.send().await?.error_for_status()
     }
 
-    pub async fn register(&mut self, email: &str, password: &str) -> reqwest::Result<Account> {
+    pub async fn register(&mut self, username: &str, email: &str, password: &str) -> reqwest::Result<Account> {
         let account: Account = self
-            .post("/register", json!({ "email": email, "password": password }))
+            .post("/register", json!({ "username": username, "email": email, "password": password }))
             .await?
             .json()
             .await?;
@@ -111,16 +117,17 @@ async fn main() -> reqwest::Result<()> {
     let mut client = OctraClient::new("http://localhost:8080");
 
     // 1. Register and capture the API key.
-    let account = client.register("me@example.com", "secret").await?;
+    let account = client.register("me", "me@example.com", "secret").await?;
     println!("user_id: {}", account.user_id);
 
     // 2. Create an environment: an AI CLI plus some skills.
     client
         .create_environment(
             LlmConfig {
-                api_key: "sk-...".into(),
-                base_url: "https://api.anthropic.com".into(),
-                model: "claude-sonnet-4-6".into(),
+                provider: Some("claude".into()),
+                api_key: Some("sk-...".into()),
+                base_url: Some("https://api.anthropic.com".into()),
+                model: Some("claude-sonnet-4-6".into()),
             },
             "claude-code",
             &["filesystem", "github", "brave-search"],
