@@ -2978,10 +2978,17 @@ button {
 }
 
 .octra-flow-node.kind-cli {
+  border-left: 3px solid var(--white-48);
+}
+
+.octra-flow-node.kind-skill {
   border-left: 3px solid var(--metric-warning);
 }
 
-.octra-flow-node.kind-skill,
+.octra-flow-node.kind-mcp_server {
+  border-left: 3px solid var(--metric-danger);
+}
+
 .octra-flow-node.kind-environment {
   border-left: 3px solid var(--bar-light);
 }
