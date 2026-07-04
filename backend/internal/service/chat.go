@@ -652,6 +652,19 @@ func extractConfigFromNodes(nodes []model.CanvasNode) (nodeConfig, model.CLIType
 					cliType = model.CLIType(resolveCLIValue(v))
 				}
 			}
+		case "adapter":
+			// Adapter nodes define the ingress protocol for the environment.
+			// They don't directly affect LLM config, but can override it.
+			if meta != nil {
+				// protocol: grpc, graphql, websocket
+				if v := strPtrVal(meta["protocol"]); v != "" {
+					// store for later use by protocol-specific handler
+				}
+				// path: custom path override
+				if v := strPtrVal(meta["path"]); v != "" {
+					// custom path
+				}
+			}
 		}
 	}
 
@@ -673,6 +686,25 @@ func resolveModelFromConfig(cfg nodeConfig, cliType model.CLIType) string {
 		return cfg.Provider + "/" + model
 	}
 	return "openai/gpt-4o-mini"
+}
+
+// HasAdapterNode checks if any canvas node has kind "adapter" with the given protocol.
+func HasAdapterNode(nodes []model.CanvasNode, protocol string) bool {
+	for _, n := range nodes {
+		if n.Kind != "adapter" {
+			continue
+		}
+		var meta map[string]*string
+		if n.Meta != "" {
+			json.Unmarshal([]byte(n.Meta), &meta)
+		}
+		if meta != nil {
+			if v := strPtrVal(meta["protocol"]); v == protocol {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func strPtrVal(p *string) string {

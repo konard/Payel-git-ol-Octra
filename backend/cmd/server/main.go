@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
@@ -12,6 +13,8 @@ import (
 	"backend/internal/api"
 	"backend/internal/cli"
 	"backend/internal/config"
+	"backend/internal/graphqlhandler"
+	"backend/internal/grpcserver"
 	"backend/internal/model"
 	"backend/internal/nix"
 	"backend/internal/oauth"
@@ -22,6 +25,9 @@ import (
 	ts "backend/internal/typesense"
 
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 func seedCLIs(ctx context.Context, cliRepo repository.CLIRepository, tsClient *ts.Client) {
@@ -195,13 +201,44 @@ func main() {
 	seedCLIs(ctx, clis, tsClient)
 	seedProviders(ctx, providers, tsClient)
 
-	handler := loggingMiddleware(api.New(authSvc, envSvc, chatSvc, billingSvc, metricsSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient, cliMgr).Router().Handler)
+	apiInstance := api.New(authSvc, envSvc, chatSvc, billingSvc, metricsSvc, oauthH, dashboardEnvs, canvasNodes, skills, clis, providers, tsClient, cliMgr)
+	router := apiInstance.Router()
+
+	// GraphQL endpoint
+	graphqlH, err := graphqlhandler.New(authSvc, dashboardEnvs, canvasNodes, chatSvc)
+	if err != nil {
+		log.Fatalf("graphql: %v", err)
+	}
+	router.POST("/graphql", graphqlH.ServeFastHTTP)
+
+	handler := loggingMiddleware(router.Handler)
 	server := &fasthttp.Server{Handler: handler, Name: "octra"}
 
 	go func() {
 		log.Printf("octra backend listening on %s", cfg.HTTPAddr)
 		if err := server.ListenAndServe(cfg.HTTPAddr); err != nil {
 			log.Fatalf("http server: %v", err)
+		}
+	}()
+
+	// gRPC server
+	grpcAddr := cfg.GRPCAddr
+	if grpcAddr == "" {
+		grpcAddr = ":9090"
+	}
+	grpcSrv := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	grpcServerSvc := grpcserver.New(authSvc, dashboardEnvs, canvasNodes, chatSvc)
+	grpcServerSvc.RegisterWith(grpcSrv)
+	reflection.Register(grpcSrv)
+
+	go func() {
+		log.Printf("octra gRPC listening on %s", grpcAddr)
+		lis, err := net.Listen("tcp", grpcAddr)
+		if err != nil {
+			log.Fatalf("grpc listen: %v", err)
+		}
+		if err := grpcSrv.Serve(lis); err != nil {
+			log.Fatalf("grpc server: %v", err)
 		}
 	}()
 
@@ -216,6 +253,8 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 	log.Println("shutting down...")
+
+	grpcSrv.GracefulStop()
 	if err := server.Shutdown(); err != nil {
 		log.Printf("shutdown: %v", err)
 	}

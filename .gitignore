@@ -25,3 +25,4 @@ backend/ocawecore
 frontend/web/tsconfig.tsbuildinfo
 .claude
 parser.rb
+tester

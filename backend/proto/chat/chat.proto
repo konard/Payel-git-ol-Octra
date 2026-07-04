@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package chat;
+
+option go_package = "backend/proto/chat";
+
+service ChatService {
+  rpc Chat(stream ChatRequest) returns (stream ChatResponse);
+}
+
+message ChatRequest {
+  string prompt = 1;
+}
+
+message ChatResponse {
+  oneof payload {
+    string token = 1;
+    string error = 2;
+  }
+  bool done = 3;
+}

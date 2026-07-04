@@ -2993,6 +2993,10 @@ button {
   border-left: 3px solid var(--bar-light);
 }
 
+.octra-flow-node.kind-adapter {
+  border-left: 3px solid #5b9bd5;
+}
+
 .octra-flow-node p {
   margin: 0;
   color: var(--muted);
@@ -4270,6 +4274,74 @@ button {
 
 .edit-node-field input:focus {
   border-color: var(--line-strong);
+}
+
+.edit-node-select {
+  background: var(--white-06);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--anim-ease-fast);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.edit-node-select:focus {
+  border-color: var(--line-strong);
+}
+
+.adapter-contract {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white-subtle);
+}
+
+.adapter-contract-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.adapter-contract-block {
+  display: grid;
+  gap: 10px;
+}
+
+.adapter-contract-row {
+  display: grid;
+  gap: 4px;
+}
+
+.adapter-contract-label {
+  color: var(--quiet);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.adapter-contract-row code,
+.adapter-contract-row pre {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--dark-bg);
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .edit-node-actions {

@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Server,
+  Unplug,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,6 +30,7 @@ const categories: Array<{ id: CatalogCategory; label: string }> = [
   { id: 'skills', label: 'Skills' },
   { id: 'custom', label: 'Custom' },
   { id: 'mcp', label: 'MCP' },
+  { id: 'adapters', label: 'Adapters' },
 ];
 
 const iconByType = {
@@ -37,6 +39,7 @@ const iconByType = {
   skill: Box,
   custom_provider: Braces,
   mcp_server: Cable,
+  adapter: Unplug,
 } as const;
 
 export function CatalogSearchModal({ open, onClose, onSelect, addedKeys }: CatalogSearchModalProps) {

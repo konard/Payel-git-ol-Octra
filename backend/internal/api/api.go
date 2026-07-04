@@ -143,6 +143,8 @@ func (a *API) Router() *router.Router {
 
 	// WebSocket for real-time canvas sync (auth via query param)
 	r.GET("/ws/canvas/{id}", a.handleWSCanvas)
+	// WebSocket for real-time chat
+	r.GET("/ws/chat/{id}", a.handleWSChat)
 
 	// Skills search
 	r.GET("/skills/search", a.handleSkillSearch)
@@ -1620,6 +1622,127 @@ func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+type wsChatRequest struct {
+	Prompt string `json:"prompt"`
+}
+
+type wsChatResponse struct {
+	Type   string `json:"type"`
+	Token  string `json:"token,omitempty"`
+	Error  string `json:"error,omitempty"`
+}
+
+func (a *API) handleWSChat(ctx *fasthttp.RequestCtx) {
+	envID, err := uuid.Parse(ctx.UserValue("id").(string))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid environment id")
+		return
+	}
+
+	upgrader := websocket.FastHTTPUpgrader{
+		CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true },
+	}
+
+	err = upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
+		defer conn.Close()
+
+		conn.SetPongHandler(func(_ string) error {
+			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			return nil
+		})
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+
+		token := string(ctx.QueryArgs().Peek("token"))
+		if token == "" {
+			token = string(ctx.Request.Header.Peek(authHeader))
+		}
+		if token == "" {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "missing api token"})
+			return
+		}
+
+		user, err := a.auth.Authenticate(ctx, token)
+		if err != nil {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "invalid api key"})
+			return
+		}
+
+		env, err := a.dashboardEnvRepo.GetByID(ctx, envID)
+		if err != nil {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "environment not found"})
+			return
+		}
+		if env.UserID != user.ID {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "not your environment"})
+			return
+		}
+
+		nodes, err := a.canvasNodeRepo.ListByEnvironment(ctx, envID)
+		if err != nil {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "failed to read canvas nodes"})
+			return
+		}
+		if !hasAdapterNode(nodes, "websocket") {
+			conn.WriteJSON(&wsChatResponse{Type: "error", Error: "WebSocket adapter not enabled: add an Adapter node with protocol 'WebSocket' on the canvas"})
+			return
+		}
+
+		conn.WriteJSON(&wsChatResponse{Type: "connected"})
+
+		done := make(chan struct{})
+		defer close(done)
+
+		go func() {
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					conn.WriteMessage(websocket.PingMessage, nil)
+				case <-done:
+					return
+				}
+			}
+		}()
+
+		for {
+			var msg wsChatRequest
+			if err := conn.ReadJSON(&msg); err != nil {
+				break
+			}
+			if msg.Prompt == "" {
+				conn.WriteJSON(&wsChatResponse{Type: "error", Error: "prompt is required"})
+				continue
+			}
+
+			started := time.Now()
+			err := a.chat.ChatWithEnvironmentStream(ctx, user, envID, msg.Prompt, &wsStreamWriter{conn: conn})
+			a.recordChatMetric(ctx, user.ID, &envID, "", err == nil, time.Since(started))
+			if err != nil {
+				conn.WriteJSON(&wsChatResponse{Type: "error", Error: err.Error()})
+			} else {
+				conn.WriteJSON(&wsChatResponse{Type: "done"})
+			}
+		}
+	})
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, err.Error())
+	}
+}
+
+// wsStreamWriter wraps a WebSocket connection as an io.Writer for SSE streaming.
+// Each write is sent as a WS text message with type "token".
+type wsStreamWriter struct {
+	conn *websocket.Conn
+}
+
+func (w *wsStreamWriter) Write(p []byte) (int, error) {
+	if err := w.conn.WriteJSON(&wsChatResponse{Type: "token", Token: string(p)}); err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func writeJSON(ctx *fasthttp.RequestCtx, status int, body any) {
 	ctx.SetContentType("application/json; charset=utf-8")
 	ctx.SetStatusCode(status)
@@ -2021,6 +2144,22 @@ func (a *API) handleCatalogSearch(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
+	if includesAdapterCategory(category) {
+		adapters := []catalogItemResponse{
+			{ID: "adapter-websocket", Type: "adapter", Name: "WebSocket", Subtitle: "ws://host/ws/chat/{env_id}", Description: "Real-time bidirectional chat over WebSocket."},
+			{ID: "adapter-grpc", Type: "adapter", Name: "gRPC", Subtitle: "grpc://host/chat.ChatService", Description: "High-performance gRPC streaming chat."},
+			{ID: "adapter-graphql", Type: "adapter", Name: "GraphQL", Subtitle: "http://host/graphql", Description: "GraphQL mutation-based chat endpoint."},
+		}
+		for _, a := range adapters {
+			if textMatches(q, a.Name, a.Subtitle, a.Description) {
+				all = append(all, scoredItem{
+					item:  a,
+					score: scoreRelevance(q, a.Name, a.Subtitle, a.Description),
+				})
+			}
+		}
+	}
+
 	sort.SliceStable(all, func(i, j int) bool {
 		return all[i].score > all[j].score
 	})
@@ -2253,6 +2392,8 @@ func normalizeCatalogCategory(raw string) string {
 		return "custom"
 	case "mcp", "mcps", "mcp_server", "mcp-servers":
 		return "mcp"
+	case "adapters", "adapter":
+		return "adapters"
 	default:
 		return "all"
 	}
@@ -2268,6 +2409,10 @@ func includesCustomProvider(category string) bool {
 
 func includesMCPCategory(category string) bool {
 	return category == "all" || category == "mcp"
+}
+
+func includesAdapterCategory(category string) bool {
+	return category == "all" || category == "adapters"
 }
 
 func customProviderMatches(q string) bool {
@@ -2297,6 +2442,31 @@ func minInt(a, b int) int {
 func getStrField(m map[string]interface{}, key string) string {
 	v, _ := m[key].(string)
 	return v
+}
+
+func hasAdapterNode(nodes []model.CanvasNode, protocol string) bool {
+	for _, n := range nodes {
+		if n.Kind != "adapter" {
+			continue
+		}
+		var meta map[string]*string
+		if n.Meta != "" {
+			json.Unmarshal([]byte(n.Meta), &meta)
+		}
+		if meta != nil {
+			if v := strPtr(meta["protocol"]); v == protocol {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func strPtr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }
 
 var _ context.Context = (*fasthttp.RequestCtx)(nil)

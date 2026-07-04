@@ -241,12 +241,41 @@ export default function HomePage() {
       return;
     }
 
+    if (item.type === 'adapter') {
+      const protocolMap: Record<string, string> = {
+        'adapter-websocket': 'websocket',
+        'adapter-grpc': 'grpc',
+        'adapter-graphql': 'graphql',
+      };
+      const protocol = protocolMap[item.id] || 'websocket';
+      setCanvasItems((prev) => {
+        const next = [
+          ...prev,
+          {
+            id: `${item.type}-${item.id}-${Date.now()}`,
+            kind: 'adapter' as const,
+            name: item.name,
+            detail: item.subtitle || item.description,
+            description: item.description,
+            meta: {
+              protocol,
+            },
+          },
+        ];
+        if (envId) {
+          saveCanvas(next).catch((err: any) => console.error('save canvas failed', err));
+        }
+        return next;
+      });
+      return;
+    }
+
     setCanvasItems((prev) => {
       const next = [
         ...prev,
         {
           id: `${item.type}-${item.id}-${Date.now()}`,
-          kind: item.type as Exclude<typeof item.type, 'mcp_server'>,
+          kind: item.type as Exclude<typeof item.type, 'mcp_server' | 'adapter'>,
           name: item.name,
           detail: item.subtitle || item.description,
           description: item.description,

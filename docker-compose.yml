@@ -95,8 +95,10 @@ services:
       - TYPESENSE_HOST=typesense:8108
       - TYPESENSE_API_KEY=octra-typesense-key
       - OCAWE_ADDR=http://octra-ocawe:4111
+      - GRPC_ADDR=:9090
     ports:
       - "8080:8080"
+      - "9090:9090"
     volumes:
       - octra_environments:/var/lib/octra/environments
     depends_on:

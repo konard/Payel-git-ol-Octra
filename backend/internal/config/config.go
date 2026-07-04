@@ -14,6 +14,9 @@ type Config struct {
 	// HTTPAddr is the listen address for the public HTTP API, e.g. ":8080".
 	HTTPAddr string
 
+	// GRPCAddr is the listen address for the gRPC server, e.g. ":9090".
+	GRPCAddr string
+
 	// DBDsn is the PostgreSQL DSN consumed by GORM.
 	DBDsn string
 
@@ -62,6 +65,7 @@ type Config struct {
 func Load() Config {
 	return Config{
 		HTTPAddr:        getEnv("HTTP_ADDR", ":8080"),
+		GRPCAddr:        getEnv("GRPC_ADDR", ":9090"),
 		DBDsn:           getEnv("DB_DNS", "host=localhost user=octra password=octra dbname=octra port=5432 sslmode=disable"),
 		RedisURL:        getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		EnvironmentsDir: getEnv("ENVIRONMENTS_DIR", "/var/lib/octra/environments"),

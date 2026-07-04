@@ -25,7 +25,7 @@ import { EditNodeModal } from './EditNodeModal';
 
 export type WorkflowCanvasItem = {
   id: string;
-  kind: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'environment' | 'mcp_server';
+  kind: 'provider' | 'cli' | 'skill' | 'custom_provider' | 'environment' | 'mcp_server' | 'adapter';
   name: string;
   detail?: string;
   description?: string;
@@ -58,6 +58,7 @@ const iconByKind = {
   custom_provider: Braces,
   environment: Layers3,
   mcp_server: Cable,
+  adapter: Unplug,
 } as const;
 
 export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
@@ -293,10 +294,12 @@ function nodeKindLabel(kind: WorkflowCanvasItem['kind']) {
       return 'Skill';
     case 'custom_provider':
       return 'Custom';
-	case 'environment':
+    case 'environment':
       return 'Environment';
     case 'mcp_server':
       return 'MCP';
+    case 'adapter':
+      return 'Adapter';
     default:
       return 'Node';
   }

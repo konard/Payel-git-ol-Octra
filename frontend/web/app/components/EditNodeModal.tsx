@@ -1,7 +1,7 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Copy, Check, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import type { WorkflowCanvasItem } from './WorkflowCanvas';
 
 type EditNodeModalProps = {
@@ -13,7 +13,8 @@ type EditNodeModalProps = {
 type FieldDef = {
   key: string;
   label: string;
-  type: 'text' | 'password';
+  type: 'text' | 'password' | 'select';
+  options?: { value: string; label: string }[];
 };
 
 function fieldsForKind(kind: WorkflowCanvasItem['kind']): FieldDef[] {
@@ -34,13 +35,55 @@ function fieldsForKind(kind: WorkflowCanvasItem['kind']): FieldDef[] {
         { key: 'skill', label: 'Skill name / ID', type: 'text' },
         { key: 'cli', label: 'Install method', type: 'text' },
       ];
+    case 'adapter':
+      return [
+        {
+          key: 'protocol',
+          label: 'Protocol',
+          type: 'select',
+          options: [
+            { value: 'grpc', label: 'gRPC' },
+            { value: 'graphql', label: 'GraphQL' },
+            { value: 'websocket', label: 'WebSocket' },
+          ],
+        },
+        { key: 'path', label: 'Path', type: 'text' },
+      ];
     default:
       return [];
   }
 }
 
+const adapterContractSchemas: Record<string, { endpoint: string; method: string; headers: string; body: string }> = {
+  grpc: {
+    endpoint: 'grpc://<host>:9090/chat.ChatService/Chat',
+    method: 'Bidirectional streaming RPC',
+    headers: 'x-api-key: <api_key>\nx-environment-id: <environment_id>',
+    body: `{
+  "prompt": "Hello, agent!"
+}`,
+  },
+  graphql: {
+    endpoint: 'http://<host>:8080/graphql',
+    method: 'POST',
+    headers: `Content-Type: application/json`,
+    body: `{
+  "query": "mutation { chat(environmentId: \\\"<env_id>\\\", prompt: \\\"Hello\\\", apiKey: \\\"<api_key>\\\") }"
+}`,
+  },
+  websocket: {
+    endpoint: 'ws://<host>:8080/ws/chat/<environment_id>',
+    method: 'WebSocket (bidirectional)',
+    headers: 'x-api-key: <api_key> (query param: ?token=<api_key>)',
+    body: `{
+  "prompt": "Hello, agent!"
+}`,
+  },
+};
+
 export function EditNodeModal({ item, onSave, onClose }: EditNodeModalProps) {
   const [name, setName] = useState(item.name);
+  const [copied, setCopied] = useState(false);
   const [meta, setMeta] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
     for (const [k, v] of Object.entries(item.meta ?? {})) {
@@ -58,6 +101,9 @@ export function EditNodeModal({ item, onSave, onClose }: EditNodeModalProps) {
   }, [onClose]);
 
   const fields = fieldsForKind(item.kind);
+  const isAdapter = item.kind === 'adapter';
+  const protocol = meta.protocol || 'websocket';
+  const contract = isAdapter ? adapterContractSchemas[protocol] : null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +112,18 @@ export function EditNodeModal({ item, onSave, onClose }: EditNodeModalProps) {
       name,
       meta: { ...item.meta, ...meta },
     });
+  }
+
+  const handleCopyReference = useCallback(async () => {
+    if (!contract) return;
+    const ref = `# ${protocol.toUpperCase()} Adapter\n\nEndpoint: ${contract.endpoint}\nMethod: ${contract.method}\nHeaders:\n${contract.headers}\n\nBody:\n${contract.body}`;
+    await navigator.clipboard.writeText(ref);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [contract, protocol]);
+
+  function updateMeta(key: string, value: string) {
+    setMeta((prev) => ({ ...prev, [key]: value }));
   }
 
   return (
@@ -90,14 +148,66 @@ export function EditNodeModal({ item, onSave, onClose }: EditNodeModalProps) {
           {fields.map((f) => (
             <label className="edit-node-field" key={f.key}>
               <span>{f.label}</span>
-              <input
-                type={f.type}
-                value={meta[f.key] ?? ''}
-                onChange={(e) => setMeta((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.label}
-              />
+              {f.type === 'select' && f.options ? (
+                <div className="custom-select" style={{ width: '100%' }}>
+                  <select
+                    className="edit-node-select"
+                    value={meta[f.key] ?? f.options[0].value}
+                    onChange={(e) => updateMeta(f.key, e.target.value)}
+                  >
+                    {f.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <input
+                  type={f.type}
+                  value={meta[f.key] ?? ''}
+                  onChange={(e) => setMeta((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.label}
+                />
+              )}
             </label>
           ))}
+
+          {isAdapter && contract && (
+            <div className="adapter-contract">
+              <div className="adapter-contract-header">
+                <span>Contract schema — {protocol.toUpperCase()}</span>
+                <button
+                  type="button"
+                  className="icon-button"
+                  onClick={handleCopyReference}
+                  aria-label="Copy reference"
+                  title="Copy reference"
+                >
+                  {copied ? <Check size={15} /> : <Copy size={15} />}
+                </button>
+              </div>
+              <div className="adapter-contract-block">
+                <div className="adapter-contract-row">
+                  <span className="adapter-contract-label">Endpoint</span>
+                  <code>{contract.endpoint}</code>
+                </div>
+                <div className="adapter-contract-row">
+                  <span className="adapter-contract-label">Method</span>
+                  <code>{contract.method}</code>
+                </div>
+                <div className="adapter-contract-row">
+                  <span className="adapter-contract-label">Headers</span>
+                  <pre>{contract.headers}</pre>
+                </div>
+                <div className="adapter-contract-row">
+                  <span className="adapter-contract-label">Body</span>
+                  <pre>{contract.body}</pre>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="edit-node-actions">
             <button type="button" className="secondary-button" onClick={onClose}>
               Cancel
@@ -124,5 +234,7 @@ function nodeKindLabel(kind: WorkflowCanvasItem['kind']) {
       return 'Custom Provider';
     case 'environment':
       return 'Environment';
+    case 'adapter':
+      return 'Adapter';
   }
 }
