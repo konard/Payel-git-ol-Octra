@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -120,6 +121,10 @@ func (a *API) Router() *router.Router {
 
 	// Request metrics
 	r.GET("/api/metrics/requests", a.withAuth(a.handleRequestMetrics))
+
+	// Public user profiles
+	r.GET("/api/users/leaderboard", a.handleUserLeaderboard)
+	r.GET("/api/users/{id}/profile", a.handleUserProfile)
 
 	// User API keys
 	r.POST("/api/keys", a.withAuth(a.handleCreateAPIKey))
@@ -585,6 +590,254 @@ func (a *API) handleRequestMetrics(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	writeJSON(ctx, fasthttp.StatusOK, result)
+}
+
+type publicUserSummary struct {
+	ID                   string    `json:"id"`
+	Username             string    `json:"username"`
+	CreatedAt            time.Time `json:"created_at"`
+	PublicEnvCount       int       `json:"public_env_count"`
+	ActivePublicEnvCount int       `json:"active_public_env_count"`
+	WorkloadScore        int       `json:"workload_score"`
+}
+
+type publicEnvironmentSummary struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type publicWorkloadPoint struct {
+	Start time.Time `json:"start"`
+	Label string    `json:"label"`
+	Value int       `json:"value"`
+}
+
+type publicWorkloadCandle struct {
+	Start time.Time `json:"start"`
+	Label string    `json:"label"`
+	Open  int       `json:"open"`
+	High  int       `json:"high"`
+	Low   int       `json:"low"`
+	Close int       `json:"close"`
+}
+
+type publicWorkloadSummary struct {
+	Range        string                 `json:"range"`
+	Bucket       string                 `json:"bucket"`
+	Total        int                    `json:"total"`
+	Success      int                    `json:"success"`
+	Failed       int                    `json:"failed"`
+	AvgLatencyMs int64                  `json:"avg_latency_ms"`
+	Line         []publicWorkloadPoint  `json:"line"`
+	Candles      []publicWorkloadCandle `json:"candles"`
+}
+
+type publicProfileResponse struct {
+	User               publicUserSummary          `json:"user"`
+	PublicEnvironments []publicEnvironmentSummary `json:"public_environments"`
+	Workload           publicWorkloadSummary      `json:"workload"`
+}
+
+type publicLeaderboardEntry struct {
+	Rank  int                   `json:"rank"`
+	User  publicUserSummary     `json:"user"`
+	Trend []publicWorkloadPoint `json:"trend"`
+}
+
+type publicLeaderboardResponse struct {
+	Range string                   `json:"range"`
+	Users []publicLeaderboardEntry `json:"users"`
+}
+
+func (a *API) handleUserProfile(ctx *fasthttp.RequestCtx) {
+	userID, err := uuid.Parse(ctx.UserValue("id").(string))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	user, err := a.auth.GetUserByID(ctx, userID)
+	if errors.Is(err, repository.ErrNotFound) {
+		writeError(ctx, fasthttp.StatusNotFound, "user not found")
+		return
+	}
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	envs, err := a.dashboardEnvRepo.ListByUserID(ctx, user.ID)
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	workload, err := a.publicWorkload(ctx, user.ID, publicMetricsRange(ctx, "24h"))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, publicProfileResponse{
+		User:               publicUserFromModel(*user, envs, workload.Total),
+		PublicEnvironments: publicEnvironmentsFromModels(envs),
+		Workload:           workload,
+	})
+}
+
+func (a *API) handleUserLeaderboard(ctx *fasthttp.RequestCtx) {
+	users, err := a.auth.ListUsers(ctx, boundedQueryInt(ctx, "limit", 50, 1, 100))
+	if err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	rangeRaw := publicMetricsRange(ctx, "7d")
+	entries := make([]publicLeaderboardEntry, 0, len(users))
+	for _, user := range users {
+		envs, err := a.dashboardEnvRepo.ListByUserID(ctx, user.ID)
+		if err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		workload, err := a.publicWorkload(ctx, user.ID, rangeRaw)
+		if err != nil {
+			writeError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+		entries = append(entries, publicLeaderboardEntry{
+			User:  publicUserFromModel(user, envs, workload.Total),
+			Trend: workload.Line,
+		})
+	}
+
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].User.WorkloadScore != entries[j].User.WorkloadScore {
+			return entries[i].User.WorkloadScore > entries[j].User.WorkloadScore
+		}
+		if entries[i].User.ActivePublicEnvCount != entries[j].User.ActivePublicEnvCount {
+			return entries[i].User.ActivePublicEnvCount > entries[j].User.ActivePublicEnvCount
+		}
+		return entries[i].User.Username < entries[j].User.Username
+	})
+	for i := range entries {
+		entries[i].Rank = i + 1
+	}
+
+	writeJSON(ctx, fasthttp.StatusOK, publicLeaderboardResponse{
+		Range: rangeRaw,
+		Users: entries,
+	})
+}
+
+func publicMetricsRange(ctx *fasthttp.RequestCtx, fallback string) string {
+	raw := string(ctx.QueryArgs().Peek("range"))
+	switch raw {
+	case "24h", "day", "1d", "7d", "week", "30d", "month":
+		return raw
+	default:
+		return fallback
+	}
+}
+
+func (a *API) publicWorkload(ctx context.Context, userID uuid.UUID, rangeRaw string) (publicWorkloadSummary, error) {
+	if a.metrics == nil {
+		return publicWorkloadSummary{Range: rangeRaw}, nil
+	}
+	result, err := a.metrics.RequestMetrics(ctx, userID, nil, rangeRaw)
+	if err != nil {
+		return publicWorkloadSummary{}, err
+	}
+	return publicWorkloadFromMetrics(result), nil
+}
+
+func publicUserFromModel(user model.User, envs []model.DashboardEnvironment, workloadScore int) publicUserSummary {
+	publicCount, activeCount := publicEnvironmentCounts(envs)
+	return publicUserSummary{
+		ID:                   user.ID.String(),
+		Username:             user.Username,
+		CreatedAt:            user.CreatedAt,
+		PublicEnvCount:       publicCount,
+		ActivePublicEnvCount: activeCount,
+		WorkloadScore:        workloadScore,
+	}
+}
+
+func publicEnvironmentCounts(envs []model.DashboardEnvironment) (int, int) {
+	var publicCount, activeCount int
+	for _, env := range envs {
+		if env.Visibility != "public" {
+			continue
+		}
+		publicCount++
+		if env.Active {
+			activeCount++
+		}
+	}
+	return publicCount, activeCount
+}
+
+func publicEnvironmentsFromModels(envs []model.DashboardEnvironment) []publicEnvironmentSummary {
+	out := make([]publicEnvironmentSummary, 0, len(envs))
+	for _, env := range envs {
+		if env.Visibility != "public" {
+			continue
+		}
+		out = append(out, publicEnvironmentSummary{
+			ID:        env.ID.String(),
+			Name:      env.Name,
+			Active:    env.Active,
+			CreatedAt: env.CreatedAt,
+		})
+	}
+	return out
+}
+
+func publicWorkloadFromMetrics(result *service.RequestMetricsResult) publicWorkloadSummary {
+	line := make([]publicWorkloadPoint, 0, len(result.Series))
+	candles := make([]publicWorkloadCandle, 0, len(result.Series))
+	previous := 0
+	for _, bucket := range result.Series {
+		line = append(line, publicWorkloadPoint{
+			Start: bucket.Start,
+			Label: bucket.Label,
+			Value: bucket.Count,
+		})
+
+		open := previous
+		close := bucket.Count
+		high := maxInt(open, close)
+		low := minInt(open, close)
+		candles = append(candles, publicWorkloadCandle{
+			Start: bucket.Start,
+			Label: bucket.Label,
+			Open:  open,
+			High:  high,
+			Low:   low,
+			Close: close,
+		})
+		previous = close
+	}
+
+	return publicWorkloadSummary{
+		Range:        result.Range,
+		Bucket:       result.Bucket,
+		Total:        result.Total,
+		Success:      result.Success,
+		Failed:       result.Failed,
+		AvgLatencyMs: result.AvgLatencyMs,
+		Line:         line,
+		Candles:      candles,
+	}
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func (a *API) handleWorkflowProxy(ctx *fasthttp.RequestCtx) {
@@ -1226,14 +1479,14 @@ func (a *API) handlePutCanvas(ctx *fasthttp.RequestCtx) {
 }
 
 type wsCanvasMessage struct {
-	Type  string             `json:"type"`
+	Type  string              `json:"type"`
 	Nodes []canvasNodeRequest `json:"nodes,omitempty"`
 }
 
 type wsCanvasResponse struct {
-	Type  string              `json:"type"`
+	Type  string               `json:"type"`
 	Nodes []canvasNodeResponse `json:"nodes,omitempty"`
-	Error string              `json:"error,omitempty"`
+	Error string               `json:"error,omitempty"`
 }
 
 func (a *API) handleWSCanvas(ctx *fasthttp.RequestCtx) {

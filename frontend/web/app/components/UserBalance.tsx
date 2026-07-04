@@ -74,6 +74,10 @@ export function UserBalance() {
       })
       .then((payload) => {
         if (cancelled) return;
+        const user = payload.data;
+        const userId = user?.user_id ?? user?.id;
+        if (userId) window.localStorage.setItem('octra_user_id', userId);
+        if (user?.username) window.localStorage.setItem('octra_username', user.username);
         const balance = balanceFromResponse(payload);
         setState(typeof balance === 'number' ? { status: 'ready', balance } : { status: 'error' });
       })

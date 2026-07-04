@@ -22,6 +22,8 @@ export const ROUTES = {
   DASHBOARD_TRIGGERS: '/dashboard/triggers',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+  PROFILE_LEADERBOARD: '/profile/leaderboard',
+  PROFILE_BY_ID: (id: string) => `/profile/${id}`,
   PROFILE_SETTINGS: '/profile/settings',
   PROFILE_API: '/profile/api',
 } as const;
@@ -40,6 +42,8 @@ export const API = {
   SKILLS_SEARCH: `${API_BASE}/skills/search`,
   CATALOG_SEARCH: `${API_BASE}/api/catalog/search`,
   METRICS_REQUESTS: `${API_BASE}/api/metrics/requests`,
+  USER_PROFILE: (id: string) => `${API_BASE}/api/users/${id}/profile`,
+  USER_LEADERBOARD: `${API_BASE}/api/users/leaderboard`,
   MCP_SERVERS: `${API_BASE}/v1/mcp/servers`,
   MCP_CATALOG: `${API_BASE}/v1/mcp/catalog`,
   WORKFLOW_RUNS: (workflowId: string) => `${API_BASE}/v1/workflows/${workflowId}/runs`,

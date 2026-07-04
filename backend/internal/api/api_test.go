@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 
 type fakeProvisioner struct{}
 
-func (fakeProvisioner) CreateEnvironment(context.Context, string) error { return nil }
+func (fakeProvisioner) CreateEnvironment(context.Context, string) error         { return nil }
 func (fakeProvisioner) InstallSkill(context.Context, string, model.Skill) error { return nil }
 
 type fakeEnvPaths struct{}
@@ -293,6 +294,98 @@ func TestRequestMetricsEndpoint(t *testing.T) {
 	// A bad env filter is rejected.
 	if code, _ = do(t, client, "GET", "/api/metrics/requests?env=not-a-uuid", reg.APIKey, ""); code != 400 {
 		t.Fatalf("expected 400 for bad env id, got %d", code)
+	}
+}
+
+func TestPublicProfileAndLeaderboard(t *testing.T) {
+	client, cleanup := newTestServer(t)
+	defer cleanup()
+
+	code, body := do(t, client, "POST", "/register", "", `{"username":"alpha","email":"alpha@example.com","password":"pw"}`)
+	if code != 201 {
+		t.Fatalf("register alpha code %d: %s", code, body)
+	}
+	var alpha registerResponse
+	if err := json.Unmarshal(body, &alpha); err != nil {
+		t.Fatal(err)
+	}
+
+	code, body = do(t, client, "POST", "/register", "", `{"username":"beta","email":"beta@example.com","password":"pw"}`)
+	if code != 201 {
+		t.Fatalf("register beta code %d: %s", code, body)
+	}
+	var beta registerResponse
+	if err := json.Unmarshal(body, &beta); err != nil {
+		t.Fatal(err)
+	}
+
+	code, body = do(t, client, "POST", "/api/environments", alpha.APIKey, `{"name":"Shared Pipeline","visibility":"public"}`)
+	if code != 201 {
+		t.Fatalf("create public env code %d: %s", code, body)
+	}
+	code, body = do(t, client, "POST", "/api/environments", alpha.APIKey, `{"name":"Private Lab","visibility":"private"}`)
+	if code != 201 {
+		t.Fatalf("create private env code %d: %s", code, body)
+	}
+	code, body = do(t, client, "POST", "/api/environments", beta.APIKey, `{"name":"Quiet Public Env","visibility":"public"}`)
+	if code != 201 {
+		t.Fatalf("create beta env code %d: %s", code, body)
+	}
+
+	code, body = do(t, client, "POST", "/environment", alpha.APIKey, `{"llm":{"api_key":"sk"},"agent":{"cli":""}}`)
+	if code != 200 {
+		t.Fatalf("agent environment code %d: %s", code, body)
+	}
+	code, body = do(t, client, "POST", "/api/chat", alpha.APIKey, `{"prompt":"hello"}`)
+	if code != 200 {
+		t.Fatalf("chat code %d: %s", code, body)
+	}
+
+	code, body = do(t, client, "GET", "/api/users/"+alpha.UserID+"/profile?range=24h", "", "")
+	if code != 200 {
+		t.Fatalf("profile code %d: %s", code, body)
+	}
+	if strings.Contains(string(body), "alpha@example.com") || strings.Contains(string(body), alpha.APIKey) {
+		t.Fatalf("public profile leaked private user fields: %s", body)
+	}
+
+	var profile publicProfileResponse
+	if err := json.Unmarshal(body, &profile); err != nil {
+		t.Fatalf("unmarshal profile: %v (%s)", err, body)
+	}
+	if profile.User.ID != alpha.UserID || profile.User.Username != "alpha" {
+		t.Fatalf("unexpected profile user: %+v", profile.User)
+	}
+	if profile.User.PublicEnvCount != 1 || profile.User.ActivePublicEnvCount != 1 {
+		t.Fatalf("unexpected public env counts: %+v", profile.User)
+	}
+	if len(profile.PublicEnvironments) != 1 || profile.PublicEnvironments[0].Name != "Shared Pipeline" {
+		t.Fatalf("profile should expose only public envs, got %+v", profile.PublicEnvironments)
+	}
+	if profile.Workload.Total != 1 || len(profile.Workload.Candles) != 24 {
+		t.Fatalf("expected one request and hourly candles, got total=%d candles=%d", profile.Workload.Total, len(profile.Workload.Candles))
+	}
+
+	code, body = do(t, client, "GET", "/api/users/leaderboard?range=7d", "", "")
+	if code != 200 {
+		t.Fatalf("leaderboard code %d: %s", code, body)
+	}
+	if strings.Contains(string(body), alpha.APIKey) || strings.Contains(string(body), beta.APIKey) {
+		t.Fatalf("leaderboard leaked api keys: %s", body)
+	}
+
+	var leaderboard publicLeaderboardResponse
+	if err := json.Unmarshal(body, &leaderboard); err != nil {
+		t.Fatalf("unmarshal leaderboard: %v (%s)", err, body)
+	}
+	if len(leaderboard.Users) != 2 {
+		t.Fatalf("expected two leaderboard users, got %+v", leaderboard.Users)
+	}
+	if leaderboard.Users[0].Rank != 1 || leaderboard.Users[0].User.ID != alpha.UserID {
+		t.Fatalf("expected alpha first by workload, got %+v", leaderboard.Users)
+	}
+	if len(leaderboard.Users[0].Trend) != 7 {
+		t.Fatalf("expected weekly trend points, got %d", len(leaderboard.Users[0].Trend))
 	}
 }
 

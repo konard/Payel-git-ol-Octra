@@ -70,6 +70,7 @@ export default function AuthPage() {
       const accessToken = body?.data?.access_token;
       const refreshToken = body?.data?.refresh_token;
       const uname = body?.data?.user?.username;
+      const userId = body?.data?.user?.id ?? body?.data?.user?.user_id;
       if (accessToken) {
         window.localStorage.setItem('octra_access_token', accessToken);
         window.localStorage.setItem('access_token', accessToken);
@@ -80,6 +81,9 @@ export default function AuthPage() {
       }
       if (uname) {
         window.localStorage.setItem('octra_username', uname);
+      }
+      if (userId) {
+        window.localStorage.setItem('octra_user_id', userId);
       }
       window.location.href = ROUTES.WORKSPACE;
     } catch {
@@ -110,11 +114,13 @@ export default function AuthPage() {
       }
       const body = await res.json();
       const apiKey = body?.api_key;
+      const userId = body?.user_id;
       const uname = form.get('username') as string;
       if (apiKey) {
         window.localStorage.setItem('octra_access_token', apiKey);
         window.localStorage.setItem('access_token', apiKey);
         window.localStorage.setItem('octra_username', uname);
+        if (userId) window.localStorage.setItem('octra_user_id', userId);
         window.localStorage.setItem('octra_show_welcome', '1');
       }
       window.location.href = ROUTES.WORKSPACE;

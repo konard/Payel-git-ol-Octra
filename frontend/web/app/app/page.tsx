@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Trash2,
+  Trophy,
   Workflow,
   Zap,
 } from 'lucide-react';
@@ -46,6 +47,7 @@ export default function HomePage() {
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -292,6 +294,8 @@ export default function HomePage() {
     }
 
     const cached = window.localStorage.getItem('octra_username');
+    const cachedUserId = window.localStorage.getItem('octra_user_id');
+    if (cachedUserId) setUserId(cachedUserId);
     if (cached) {
       setUsername(cached);
     } else if (hasToken) {
@@ -300,10 +304,16 @@ export default function HomePage() {
         fetchMe(token).then(async (res) => {
           if (!res.ok) return;
           const body = await res.json();
-          const u = body?.data?.username ?? body?.username;
+          const data = body?.data ?? body;
+          const u = data?.username;
+          const id = data?.user_id ?? data?.id;
           if (u) {
             window.localStorage.setItem('octra_username', u);
             setUsername(u);
+          }
+          if (id) {
+            window.localStorage.setItem('octra_user_id', id);
+            setUserId(id);
           }
         }).catch(() => {});
       }
@@ -471,8 +481,11 @@ export default function HomePage() {
 
         <div className="tv-actions">
           <UserBalance />
+          <a className="icon-button dark-icon" href={ROUTES.PROFILE_LEADERBOARD} aria-label="User leaderboard" title="User leaderboard">
+            <Trophy size={18} />
+          </a>
           {isAuthed ? (
-            <a className="avatar-button" href={ROUTES.PROFILE} aria-label="Open profile">{username ? username[0].toUpperCase() : '?'}</a>
+            <a className="avatar-button" href={userId ? ROUTES.PROFILE_BY_ID(userId) : ROUTES.PROFILE} aria-label="Open profile">{username ? username[0].toUpperCase() : '?'}</a>
           ) : (
             <a className="upgrade-button" href={ROUTES.LOGIN}>
               <Sparkles size={16} />
