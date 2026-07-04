@@ -252,7 +252,7 @@ export default function HomePage() {
             provider: item.key,
             base_url: item.base_url,
             model: item.default_model,
-            cli: item.nix_attr || item.install_cmd,
+            cli: item.name,
             skill: item.skill_id || item.source,
             auth: item.api_key ? 'set' : item.auth_env,
           },

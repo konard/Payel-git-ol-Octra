@@ -23,7 +23,7 @@ type CLIPackage struct {
 func BuiltinCLIs() []CLIPackage {
 	return []CLIPackage{
 		{Name: "codex", NixAttr: "codex", Binary: "codex"},
-		{Name: "opencode", NixAttr: "opencode", Binary: "opencode"},
+		{Name: "opencode", NixAttr: "", Binary: "opencode", InstallCmd: `curl -fsSL https://opencode.ai/install | bash`},
 		{Name: "claude-code", NixAttr: "claude-code", Binary: "claude-code"},
 		{Name: "cursor", NixAttr: "cursor", Binary: "cursor"},
 		{Name: "antigravity", NixAttr: "", Binary: "antigravity", InstallCmd: `nix-shell -p curl bash --run "curl -fsSL https://antigravity.google/cli/install.sh | bash"`},

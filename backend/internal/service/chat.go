@@ -135,8 +135,6 @@ func (s *ChatService) ChatWithEnvironment(ctx context.Context, user *model.User,
 		return "", err
 	}
 
-	s.installCLIFromNodes(ctx, nodes, user.ID.String())
-
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
 		EnvPath: s.envPaths.EnvPath(user.ID.String()),
@@ -196,8 +194,6 @@ func (s *ChatService) ChatWithEnvironmentStream(ctx context.Context, user *model
 	if err != nil {
 		return err
 	}
-
-	s.installCLIFromNodes(ctx, nodes, user.ID.String())
 
 	spec := cli.LaunchSpec{
 		UserID:  envID.String(),
@@ -264,16 +260,17 @@ func (s *ChatService) syncOne(ctx context.Context, envID uuid.UUID) error {
 	}
 
 	llmCfg, cliType, err := extractConfigFromNodes(nodes)
-	if errors.Is(err, ErrNoProviderNode) || llmCfg.APIKey == "" {
+	if errors.Is(err, ErrNoProviderNode) && cliType == "" {
 		return nil
 	}
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNoProviderNode) {
 		return err
 	}
 
-	body := map[string]any{
-		"provider": llmCfg.Provider,
-		"api_key":  llmCfg.APIKey,
+	body := map[string]any{}
+	if llmCfg.APIKey != "" {
+		body["provider"] = llmCfg.Provider
+		body["api_key"] = llmCfg.APIKey
 	}
 	if llmCfg.BaseURL != "" {
 		body["base_url"] = llmCfg.BaseURL
@@ -330,16 +327,19 @@ func (s *ChatService) ChatOpenAIWithEnvironment(ctx context.Context, user *model
 		return err
 	}
 
-	s.installCLIFromNodes(ctx, nodes, user.ID.String())
-
-	spec := cli.LaunchSpec{
-		UserID:  envID.String(),
-		EnvPath: s.envPaths.EnvPath(user.ID.String()),
-	}
-
-	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
-	if err != nil {
-		return fmt.Errorf("ocawe ensure: %w", err)
+	var url string
+	if s.ocaweBaseURL != "" {
+		url = s.ocaweBaseURL + "/v1/chat/completions"
+	} else {
+		spec := cli.LaunchSpec{
+			UserID:  envID.String(),
+			EnvPath: s.envPaths.EnvPath(user.ID.String()),
+		}
+		port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
+		if err != nil {
+			return fmt.Errorf("ocawe ensure: %w", err)
+		}
+		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
 	}
 
 	var req map[string]any
@@ -363,12 +363,6 @@ func (s *ChatService) ChatOpenAIWithEnvironment(ctx context.Context, user *model
 		return fmt.Errorf("marshal: %w", err)
 	}
 
-	var url string
-	if s.ocaweBaseURL != "" {
-		url = fmt.Sprintf("%s/v1/chat/completions", s.ocaweBaseURL)
-	} else {
-		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
-	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(newBody))
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
@@ -421,16 +415,19 @@ func (s *ChatService) ChatOpenAIWithEnvironmentSync(ctx context.Context, user *m
 		return "", err
 	}
 
-	s.installCLIFromNodes(ctx, nodes, user.ID.String())
-
-	spec := cli.LaunchSpec{
-		UserID:  envID.String(),
-		EnvPath: s.envPaths.EnvPath(user.ID.String()),
-	}
-
-	port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
-	if err != nil {
-		return "", fmt.Errorf("ocawe ensure: %w", err)
+	var url string
+	if s.ocaweBaseURL != "" {
+		url = s.ocaweBaseURL + "/v1/chat/completions"
+	} else {
+		spec := cli.LaunchSpec{
+			UserID:  envID.String(),
+			EnvPath: s.envPaths.EnvPath(user.ID.String()),
+		}
+		port, err := s.ocaweProv.EnsureOcawe(ctx, spec)
+		if err != nil {
+			return "", fmt.Errorf("ocawe ensure: %w", err)
+		}
+		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
 	}
 
 	var req map[string]any
@@ -453,12 +450,6 @@ func (s *ChatService) ChatOpenAIWithEnvironmentSync(ctx context.Context, user *m
 		return "", fmt.Errorf("marshal: %w", err)
 	}
 
-	var url string
-	if s.ocaweBaseURL != "" {
-		url = fmt.Sprintf("%s/v1/chat/completions", s.ocaweBaseURL)
-	} else {
-		url = fmt.Sprintf("http://%s:%d/v1/chat/completions", s.ocaweHost, port)
-	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(newBody))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
@@ -658,7 +649,7 @@ func extractConfigFromNodes(nodes []model.CanvasNode) (nodeConfig, model.CLIType
 		case "cli":
 			if meta != nil {
 				if v := strPtrVal(meta["cli"]); v != "" {
-					cliType = model.CLIType(v)
+					cliType = model.CLIType(resolveCLIValue(v))
 				}
 			}
 		}
@@ -689,6 +680,24 @@ func strPtrVal(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+// resolveCLIValue takes a raw CLI value from canvas meta (could be a name
+// or an install command like from old frontend versions) and returns the
+// canonical CLI name.
+func resolveCLIValue(v string) string {
+	for _, p := range cli.BuiltinCLIs() {
+		if p.Name == v {
+			return v
+		}
+	}
+	// Fallback: check if the value contains a known package name.
+	for _, p := range cli.BuiltinCLIs() {
+		if strings.Contains(strings.ToLower(v), strings.ToLower(p.Name)) {
+			return p.Name
+		}
+	}
+	return v
 }
 
 func lookupCLIPackage(name string) (cli.CLIPackage, bool) {
