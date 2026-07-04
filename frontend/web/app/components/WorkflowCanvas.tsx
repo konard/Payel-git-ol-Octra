@@ -45,6 +45,7 @@ type WorkflowCanvasProps = {
   onItemsChange?: (items: WorkflowCanvasItem[]) => void;
   edges?: Edge[];
   onEdgesChange?: (edges: Edge[]) => void;
+  onItemSetup?: (name: string, status: 'success' | 'failed') => void;
 };
 
 const nodeTypes = {
@@ -61,7 +62,7 @@ const iconByKind = {
   adapter: Unplug,
 } as const;
 
-export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesChange, onItemSetup }: WorkflowCanvasProps) {
   const initialNodes = useMemo(() => buildNodes(items), [items]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(initialNodes);
   const [edgeState, setEdges, onEdgesStateChange] = useEdgesState<Edge>(edges);
@@ -94,22 +95,26 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
   const handleDelete = useCallback(() => {
     if (!contextMenu) return;
     const nodeId = contextMenu.node.id;
+    const nodeName = contextMenu.node.data.item.name;
     const updatedItems = items.filter((i) => i.id !== nodeId);
     onItemsChange?.(updatedItems);
     const remainingEdges = edgeState.filter((e) => e.source !== nodeId && e.target !== nodeId);
     setEdges(remainingEdges);
     onEdgesChange?.(remainingEdges);
+    onItemSetup?.(`Remove ${nodeName}`, 'success');
     setContextMenu(null);
-  }, [contextMenu, items, onItemsChange, edgeState, setEdges, onEdgesChange]);
+  }, [contextMenu, items, onItemsChange, edgeState, setEdges, onEdgesChange, onItemSetup]);
 
   const handleDisconnect = useCallback(() => {
     if (!contextMenu) return;
     const nodeId = contextMenu.node.id;
+    const nodeName = contextMenu.node.data.item.name;
     const remainingEdges = edgeState.filter((e) => e.source !== nodeId && e.target !== nodeId);
     setEdges(remainingEdges);
     onEdgesChange?.(remainingEdges);
+    onItemSetup?.(`Disconnect ${nodeName}`, 'success');
     setContextMenu(null);
-  }, [contextMenu, edgeState, setEdges, onEdgesChange]);
+  }, [contextMenu, edgeState, setEdges, onEdgesChange, onItemSetup]);
 
   const handleEdit = useCallback(() => {
     if (!contextMenu) return;
@@ -121,9 +126,10 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
     (updated: WorkflowCanvasItem) => {
       const updatedItems = items.map((i) => (i.id === updated.id ? updated : i));
       onItemsChange?.(updatedItems);
+      onItemSetup?.(updated.name, 'success');
       setEditItem(null);
     },
-    [items, onItemsChange],
+    [items, onItemsChange, onItemSetup],
   );
 
   const handleNodesChange = useCallback(
@@ -152,15 +158,33 @@ export function WorkflowCanvas({ items = [], onItemsChange, edges = [], onEdgesC
     [items, onItemsChange, onNodesChange],
   );
 
+  function sameGroup(a: WorkflowCanvasItem['kind'], b: WorkflowCanvasItem['kind']) {
+    if (a === 'cli' && b === 'cli') return true;
+    if ((a === 'provider' || a === 'custom_provider') && (b === 'provider' || b === 'custom_provider')) return true;
+    return false;
+  }
+
   const onConnect = useCallback(
     (connection: Connection) => {
       console.log('[canvas] onConnect: new connection', connection);
+      if (!onItemSetup) return;
+      const source = items.find(i => i.id === connection.source);
+      const target = items.find(i => i.id === connection.target);
+      const sourceName = source?.name ?? connection.source;
+      const targetName = target?.name ?? connection.target;
+
+      if (source && target && (source.id === target.id || sameGroup(source.kind, target.kind))) {
+        onItemSetup(`Connect ${sourceName} → ${targetName}`, 'failed');
+        return;
+      }
+
       const next = addEdge({ ...connection, animated: true, type: 'smoothstep' }, edgeState);
       console.log('[canvas] onConnect: edges now', next.length);
       setEdges(next);
       onEdgesChange?.(next);
+      onItemSetup(`Connect ${sourceName} → ${targetName}`, 'success');
     },
-    [edgeState, setEdges, onEdgesChange],
+    [edgeState, setEdges, onEdgesChange, items, onItemSetup],
   );
 
   const handleEdgesChange = useCallback(
