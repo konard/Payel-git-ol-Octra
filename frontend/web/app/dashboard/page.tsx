@@ -1,9 +1,13 @@
+'use client';
+
+import dynamic from 'next/dynamic';
 import { Code2, Settings } from 'lucide-react';
 import { EmptyDataPanel } from '../components/EmptyDataPanel';
 import { RequestMetricsOverview } from '../components/RequestMetricsOverview';
-import { WorkflowCanvas } from '../components/WorkflowCanvas';
 import { DashboardShell } from './DashboardShell';
 import { ROUTES } from '../config/routes';
+
+const WorkflowCanvas = dynamic(() => import('../components/WorkflowCanvas').then((m) => m.WorkflowCanvas), { ssr: false });
 
 export default function DashboardPage() {
   return (
