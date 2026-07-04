@@ -9,7 +9,8 @@
     "start": "pnpm exec serve dist",
     "test:frontend": "node scripts/check-next-frontend.mjs",
     "test:environment-state": "node scripts/check-environment-state.mjs",
-    "test": "pnpm run test:frontend && pnpm run test:environment-state"
+    "test:adapter-modal": "node scripts/check-adapter-modal.mjs",
+    "test": "node scripts/check-next-frontend.mjs && node scripts/check-environment-state.mjs && node scripts/check-adapter-modal.mjs"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.1",

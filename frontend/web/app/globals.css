@@ -1161,12 +1161,13 @@ button {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 90;
+  max-height: 220px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--hex-141416);
   box-shadow: 0 12px 40px var(--black-50);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .custom-select-option {
@@ -1188,6 +1189,7 @@ button {
 }
 
 .custom-select-option.selected {
+  background: var(--white-08);
   color: var(--text);
   font-weight: 800;
 }
@@ -4231,8 +4233,10 @@ button {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 24px;
-  width: 420px;
-  max-width: 90vw;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   box-shadow: var(--shadow);
 }
 
@@ -4257,8 +4261,20 @@ button {
 }
 
 .edit-node-field > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+.edit-node-required {
+  color: var(--quiet);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .edit-node-field input {
@@ -4276,21 +4292,12 @@ button {
   border-color: var(--line-strong);
 }
 
-.edit-node-select {
-  background: var(--white-06);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  color: var(--text);
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color var(--anim-ease-fast);
-  cursor: pointer;
-  appearance: auto;
+.edit-node-protocol-select {
+  width: 100%;
 }
 
-.edit-node-select:focus {
-  border-color: var(--line-strong);
+.edit-node-protocol-select .custom-select-trigger {
+  background: var(--white-06);
 }
 
 .adapter-contract {
@@ -4305,11 +4312,52 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.adapter-contract-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.adapter-contract-field {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--black-22);
+}
+
+.adapter-contract-field span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--quiet);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.adapter-contract-field code {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.adapter-contract-field small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .adapter-contract-block {
@@ -4341,14 +4389,34 @@ button {
   font-size: 0.78rem;
   overflow-x: auto;
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.45;
 }
 
 .edit-node-actions {
+  position: sticky;
+  bottom: -24px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+  padding-top: 14px;
+  padding-bottom: 24px;
+  background: linear-gradient(180deg, transparent, var(--panel-elevated) 34%);
+}
+
+@media (max-width: 640px) {
+  .edit-node-modal {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    padding: 18px;
+  }
+
+  .edit-node-actions {
+    bottom: -18px;
+    padding-bottom: 18px;
+  }
 }
 
 /* ------------------------------------------------------------------ */

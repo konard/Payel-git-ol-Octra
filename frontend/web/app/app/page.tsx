@@ -34,6 +34,12 @@ import { ASSETS } from '../config/images';
 import { ROUTES } from '../config/routes';
 import { fetchMe } from '../server/user';
 
+const adapterDefaultPaths: Record<string, string> = {
+  websocket: '/ws/chat/<environment_id>',
+  grpc: 'chat.ChatService/Chat',
+  graphql: '/graphql',
+};
+
 const toolItems = [
   { label: 'Environments', icon: Workflow, href: ROUTES.DASHBOARD_ENVIRONMENTS },
   { label: 'Streams', icon: Activity, href: '/dashboard/metrics' },
@@ -259,6 +265,7 @@ export default function HomePage() {
             description: item.description,
             meta: {
               protocol,
+              path: adapterDefaultPaths[protocol],
             },
           },
         ];

@@ -254,7 +254,9 @@ function buildNodes(items: WorkflowCanvasItem[]): WorkflowNode[] {
 function WorkflowNodeCard({ data }: NodeProps<WorkflowNode>) {
   const item = data.item;
   const Icon = iconByKind[item.kind] ?? Bot;
-  const metaRows = Object.entries(item.meta ?? {}).filter((entry): entry is [string, string] => Boolean(entry[1])).slice(0, 3);
+  const metaRows = Object.entries(item.meta ?? {})
+    .filter((entry): entry is [string, string] => Boolean(entry[1]))
+    .slice(0, 3);
 
   return (
     <article className={`octra-flow-node kind-${item.kind}`}>
@@ -273,8 +275,8 @@ function WorkflowNodeCard({ data }: NodeProps<WorkflowNode>) {
         <dl>
           {metaRows.map(([key, value]) => (
             <div key={key}>
-              <dt>{key}</dt>
-              <dd>{value}</dd>
+              <dt>{formatMetaKey(key)}</dt>
+              <dd>{formatMetaValue(key, value)}</dd>
             </div>
           ))}
         </dl>
@@ -282,6 +284,19 @@ function WorkflowNodeCard({ data }: NodeProps<WorkflowNode>) {
       <Handle className="octra-flow-handle" type="source" position={Position.Right} />
     </article>
   );
+}
+
+function formatMetaKey(key: string) {
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatMetaValue(key: string, value: string) {
+  if (/api[_-]?key|token|secret|password/i.test(key)) {
+    return value === 'set' ? value : '******';
+  }
+  return value;
 }
 
 function nodeKindLabel(kind: WorkflowCanvasItem['kind']) {
